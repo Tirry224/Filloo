@@ -9,6 +9,9 @@ build/
 .env*.local
 .DS_Store
 *.log
+
+# Réglages d'éditeur : ils suivent la personne, pas le projet
+.vscode/
 .vercel
 
 # canvas assemblé, régénérable depuis design/*.dc.html
