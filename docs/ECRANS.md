@@ -54,6 +54,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 30 | Fil de discussion | Produits cités, produit vendu grisé |
 | 31 | Citer un produit | Rend viable « un fil par client » |
 | 32 | Actions conversation | Signaler, bloquer |
+| 32b | Signaler une conversation | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
 
 ## Transverse — 1
 

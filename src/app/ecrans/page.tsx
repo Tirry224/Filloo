@@ -103,6 +103,7 @@ function screenGroups(ids: ScreenIds): {
         ["30", "Fil de discussion", ids.conversation && `/messages/${ids.conversation}`, MANQUE_FIL],
         ["31", "Citer un produit", ids.conversation && `/messages/${ids.conversation}/citer`, MANQUE_FIL],
         ["32", "Actions conversation", ids.conversation && `/messages/${ids.conversation}/actions`, MANQUE_FIL],
+        ["32b", "Signaler une conversation", ids.conversation && `/messages/${ids.conversation}/signaler`, MANQUE_FIL],
       ],
     },
     {

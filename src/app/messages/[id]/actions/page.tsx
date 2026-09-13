@@ -4,7 +4,7 @@ import { ActionRow } from "@/components/ui/ActionRow";
 import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext } from "@/lib/data/messages";
-import { blockPeerAction, reportConversationAction } from "@/lib/actions/messages";
+import { blockPeerAction } from "@/lib/actions/messages";
 
 /**
  * Écran 32 — actions sur une conversation.
@@ -40,8 +40,7 @@ export default async function ThreadActionsPage({ params }: { params: Promise<{ 
             label="Signaler cette conversation"
             description="Insultes, arnaque, spam. Notre équipe la lira."
             tone="danger"
-            action={reportConversationAction}
-            hiddenFields={{ conversationId: id, reason: "Signalement depuis une conversation" }}
+            href={`/messages/${id}/signaler`}
           />
         ) : null}
 

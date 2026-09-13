@@ -114,15 +114,25 @@ export async function blockPeerAction(formData: FormData) {
 }
 
 /**
- * Signaler une conversation — écran 32. Aucune feuille de motifs n'existe
- * dans la maquette pour cette action précise (contrairement au
- * signalement d'un produit, écran 10) : un motif générique est envoyé,
- * l'équipe lit le fil elle-même pour comprendre pourquoi.
+ * Signaler une conversation — écran 32b.
+ *
+ * La maquette `design/SignalerConversation.dc.html` prévoit bien une
+ * feuille de motifs, avec sa propre liste : on ne signale pas une
+ * personne pour « photo trompeuse ». Le motif arrive donc de
+ * `/messages/[id]/signaler`, jamais d'un libellé figé — un signalement
+ * sans motif oblige l'équipe à relire tout le fil pour deviner le
+ * reproche, ce qui revient à ne pas traiter le signalement.
+ *
+ * Les précisions facultatives sont recollées au motif : `reports.reason`
+ * est une colonne de texte libre, et une deuxième colonne pour trois
+ * lignes de contexte ne vaut pas une migration.
  */
 export async function reportConversationAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
-  const reason = String(formData.get("reason") ?? "Signalement depuis une conversation");
+  const reason = String(formData.get("reason") ?? "").trim();
+  const details = String(formData.get("details") ?? "").trim();
   if (!conversationId) redirect("/messages");
+  if (!reason) backToThread(conversationId, "Choisissez un motif de signalement.");
 
   const supabase = await createClient();
   const context = await getThreadContext(supabase, conversationId);
@@ -132,7 +142,7 @@ export async function reportConversationAction(formData: FormData) {
     reporter_id: context.myParticipantId,
     target_type: "conversation",
     target_id: conversationId,
-    reason,
+    reason: details ? `${reason} — ${details}` : reason,
   });
 
   // Un signalement avalé en silence est pire qu'un bouton absent : la
