@@ -54,7 +54,15 @@ une partie à la vente — à écrire avant le premier litige, pas pendant.
 
 ### Commencé le 2026-09-12, pas fini
 
-**3. Parcourir tous les écrans dans un navigateur.** Le premier vrai
+**3. Parcourir tous les écrans dans un navigateur.**
+*Avancé le 2026-09-13* : 10 écrans parcourus en 400 px depuis
+l'environnement de travail (Chromium local contre `npm run dev`), deux
+défauts trouvés et corrigés — voir le journal. **Mais cet environnement
+ne joint ni `*.supabase.co` ni `*.vercel.app`** (403 de la politique
+d'egress, images Docker bloquées aussi, donc pas de pile Supabase
+locale) : je peux voir le rendu et le comportement base injoignable,
+jamais un écran portant de vraies données. Les trois parcours ci-dessous
+restent donc entièrement à toi.* Le premier vrai
 passage sur téléphone a trouvé en quelques minutes quatre défauts que ni
 le build, ni le typecheck, ni 55 tests de sécurité n'avaient signalés
 (détail en section 5). Il reste à faire le tour, écran par écran :
@@ -614,6 +622,22 @@ L'environnement de travail peut désormais **exécuter les tests** : un
 PostgreSQL local monté dans le bac à sable rejoue les 12 migrations
 depuis une base vierge et passe les 55 vérifications de sécurité. C'est
 la première session où cette propriété est constatée plutôt que citée.
+
+**Et regarder les écrans** : Chromium pilote `npm run dev` en 400 px.
+Deux défauts vus immédiatement, du même genre que ceux du 12/09 :
+`getSessionUser` ignorait l'erreur de `auth.getUser()`, donc une base
+injoignable se faisait passer pour une absence de connexion — `/messages`
+répondait « Aucune conversation » sans avoir pu regarder ; et `/messages`
+ne redirigeait pas un visiteur anonyme là où `/compte` le faisait.
+
+**Ce qui reste hors de portée depuis ici, et pourquoi** : ni
+`*.supabase.co` ni `*.vercel.app` ne sont joignables (403 de la politique
+d'egress de l'organisation), et les images Docker non plus, donc pas de
+pile Supabase locale. Conclusion pratique : une session peut vérifier le
+rendu, la largeur, les redirections et le comportement base injoignable ;
+elle ne peut pas voir un écran portant de vraies données. La messagerie
+entre deux comptes, l'envoi d'une photo et le refus d'une boutique
+restent à regarder sur un vrai téléphone.
 
 ---
 
