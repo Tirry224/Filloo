@@ -3,6 +3,7 @@ import { Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Photo } from "@/components/ui/Photo";
+import { Notice } from "@/components/ui/Notice";
 import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
@@ -11,10 +12,20 @@ import { getProduct } from "@/lib/data/products";
 import Link from "next/link";
 
 /** Fiche produit — écrans 7 et 8 de docs/ECRANS.md. */
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  /* `?info=` est posé par `reportProductAction` : sans lui, signaler un
+     produit refermait la feuille sans rien dire, là où signaler une
+     conversation confirmait. */
+  searchParams: Promise<{ info?: string }>;
+}) {
   /* Depuis Next 15, `params` est une promesse : la page peut commencer à
      s'afficher avant que le routeur ait fini de résoudre l'URL. */
   const { id } = await params;
+  const { info } = await searchParams;
   const supabase = await createClient();
   const product = await getProduct(supabase, id);
   if (!product) notFound();
@@ -30,6 +41,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   return (
     <Screen>
       <ScreenBody>
+        {info ? <Notice tone="success">{info}</Notice> : null}
         <div className="relative">
           <Link href={`/produit/${product.id}/photos`} aria-label="Voir les photos">
             <Photo

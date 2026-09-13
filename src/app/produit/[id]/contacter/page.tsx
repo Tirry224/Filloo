@@ -26,6 +26,20 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
 
   const clientProfile = await getMyProfile(supabase, "client");
+
+  /* Un client suspendu n'était arrêté nulle part sur ce chemin. Il
+     arrivait jusqu'à `findOrCreateConversation`, que le RLS refuse
+     (`is_active_profile` dans « conversations: un client contacte un
+     commercant ») — et l'exception remontait jusqu'à la frontière
+     d'erreur, qui affiche « Vérifiez votre connexion ». Trois causes
+     très différentes donnaient donc le même écran : le réseau coupé, le
+     quota de conversations atteint, et le compte suspendu.
+
+     La personne suspendue croyait que son téléphone captait mal et
+     réessayait indéfiniment, sans jamais voir /compte/suspendu qui
+     existe précisément pour le lui dire. */
+  if (clientProfile?.isSuspended) redirect("/compte/suspendu");
+
   if (clientProfile) {
     const conversationId = await findOrCreateConversation(supabase, clientProfile.id, product.merchant.id);
     redirect(`/messages/${conversationId}?produit=${product.id}`);

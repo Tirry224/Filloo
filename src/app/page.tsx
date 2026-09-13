@@ -47,9 +47,9 @@ import { searchProducts } from "@/lib/data/products";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ville?: string; categorie?: string }>;
+  searchParams: Promise<{ ville?: string; categorie?: string; tri?: string }>;
 }) {
-  const { ville: villeParam, categorie = "Tout" } = await searchParams;
+  const { ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
   const supabase = await createClient();
 
   /* Le fil client n'est pas l'écran d'ouverture d'un commerçant — décision
@@ -77,9 +77,13 @@ export default async function HomePage({
   const ville = villeParam ?? profileCityName ?? "Conakry";
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === "Conakry");
 
-  const inCity = city ? await searchProducts(supabase, { cityId: city.id, limit: 50 }) : [];
+  const sort = tri === "populaire" ? "popular" : "recent";
+  const inCity = city ? await searchProducts(supabase, { cityId: city.id, sort, limit: 50 }) : [];
   const visible = categorie === "Tout" ? inCity : inCity.filter((p) => p.category === categorie);
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
+
+  const triHref = (valeur: string) =>
+    `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
 
   return (
@@ -153,9 +157,33 @@ export default async function HomePage({
         ) : null}
 
         <Section className="gap-2 pt-3.5">
+          {/* « Populaires » était un <span> en couleur d'accent, posé
+              exactement là où toutes les autres listes de l'application
+              mettent un lien actif : on le touchait, rien ne bougeait. Le
+              fil était figé sur `recent` alors que `search_products` sait
+              déjà trier par popularité et que la décision 4 de
+              docs/SPEC.md prévoit ce classement.
+
+              Les deux sont maintenant de vrais liens, et celui qui est
+              actif porte la couleur d'accent — c'est-à-dire que la
+              couleur redevient une information vraie au lieu d'un
+              ornement. Ils gardent ville et catégorie : changer l'ordre
+              ne doit pas défaire le filtre. */}
           <div className="flex items-baseline justify-between">
-            <SectionLabel>Récents</SectionLabel>
-            <span className="text-sm font-semibold text-accent">Populaires</span>
+            {sort === "popular" ? (
+              <Link href={triHref("recent")} className="text-sm font-semibold text-accent">
+                Récents
+              </Link>
+            ) : (
+              <SectionLabel>Récents</SectionLabel>
+            )}
+            {sort === "popular" ? (
+              <SectionLabel>Populaires</SectionLabel>
+            ) : (
+              <Link href={triHref("populaire")} className="text-sm font-semibold text-accent">
+                Populaires
+              </Link>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {gridItems.map((p) => (

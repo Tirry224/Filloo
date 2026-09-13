@@ -200,5 +200,14 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
     return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  redirect(`/produit/${productId}`);
+  /* Signaler une conversation confirmait (« Signalement envoyé. Notre
+     équipe va lire cette conversation. »), signaler un produit non : la
+     feuille se refermait et la fiche réapparaissait à l'identique, sans
+     rien distinguer « c'est parti » de « ça n'a pas marché ». Le code
+     vérifiait pourtant l'écriture juste au-dessus — le résultat était
+     mesuré côté serveur puis jeté avant d'arriver à l'écran.
+
+     Deux écrans qui font la même chose ne peuvent pas rendre compte
+     différemment : le même `?info=` que le fil, lu par la fiche. */
+  redirect(`/produit/${productId}?info=${encodeURIComponent("Signalement envoyé. Notre équipe va examiner ce produit.")}`);
 }
