@@ -24,11 +24,20 @@ vraie base, elle est en ligne, et il lui manque les emails pour pouvoir
 **1. Les emails (Resend).** C'est le seul vrai verrou. Deux besoins
 distincts, un seul fournisseur :
 
-- **Notification de nouveau message** — compteur de non-lus dans
-  l'application *et* email. Sans ça, la messagerie est une boîte aux
-  lettres que personne ne relève : un commerçant qui n'est jamais
-  prévenu ne revient pas, et le produit entier repose sur cette
-  messagerie.
+- **Notification de nouveau message par email.** Sans elle, la
+  messagerie est une boîte aux lettres que personne ne relève : un
+  commerçant qui n'est jamais prévenu ne revient pas, et le produit
+  entier repose sur cette messagerie.
+  *Vérifié le 2026-09-13 — le compteur de non-lus, lui, est déjà fait
+  de bout en bout* : `messages.read_at` existe (`0001`), le RLS
+  n'autorise l'écriture QUE de cette colonne (`0002`),
+  `src/lib/data/messages.ts` calcule `unreadCount` depuis la vraie
+  base, `ThreadRow` l'affiche par fil, et ouvrir un fil marque ses
+  messages comme lus (`src/app/messages/[id]/page.tsx`). **Il ne manque
+  que le badge global sur la barre d'onglets** — `BottomNav` ne porte
+  aucun compteur, donc rien n'appelle depuis un autre écran. C'est un
+  petit travail, indépendant de Resend, et qui a de la valeur même sans
+  email.
 - **Emails d'authentification** — réinitialisation de mot de passe, et
   confirmation d'inscription si elle est réactivée.
   `/mot-de-passe-oublie` promet noir sur blanc « vous recevrez un
@@ -571,6 +580,14 @@ Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »
 passe en tête, l'archéologie des branches est réduite aux règles qui en
 sortent, et l'état du dépôt est revérifié — 4 branches distantes et non
 2, dont deux supprimables sans perte (point 14).
+
+Puis **audit du fichier contre le code**, plutôt que recopie de ce que
+l'ancienne version affirmait. Il en sort une correction de fond : le
+compteur de non-lus était listé comme restant à faire alors qu'il est
+fait de bout en bout depuis le schéma jusqu'à l'écran ; seul le badge
+de la barre d'onglets manque (point 1). **Un fichier de reprise qui
+surestime ce qui reste coûte autant qu'un qui le sous-estime** — il
+fait repartir de zéro un travail déjà payé.
 
 ---
 
