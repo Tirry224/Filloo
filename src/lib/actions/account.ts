@@ -25,11 +25,19 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   const profile = await getMyProfile(supabase, "client");
   if (!profile) return { error: "Vous devez être connecté." };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({ full_name: fullName, phone, city_id: cityId })
-    .eq("id", profile.id);
+    .eq("id", profile.id)
+    .select("id");
   if (error) return { error: error.message };
+  // Le `using` de la policy filtre des LIGNES : s'il écarte celle-ci, la
+  // réponse est un succès portant zéro ligne, pas une erreur. Sans cette
+  // vérification, un profil suspendu voyait ses modifications acceptées à
+  // l'écran et perdues en base.
+  if (!data || data.length === 0) {
+    return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
+  }
 
   redirect("/compte");
 }
@@ -88,11 +96,25 @@ export async function deleteAccountAction() {
       // suffit à obtenir le même résultat visible (policy "products:
       // catalogue public" exige déjà un produit `active`).
       if (merchant) {
-        await admin.from("products").update({ status: "hidden" }).eq("merchant_id", merchant.id);
+        const { error: hideError } = await admin
+          .from("products")
+          .update({ status: "hidden" })
+          .eq("merchant_id", merchant.id);
+        if (hideError) throw hideError;
       }
     }
 
-    await admin
+    // `throw` et non un message d'erreur rendu à l'écran : ces deux
+    // écritures tournent avec `service_role`, donc le RLS ne peut pas les
+    // écarter — une erreur ici est une vraie panne, pas un refus.
+    //
+    // Elles n'inspectaient rien du tout, et c'était le pire endroit du
+    // projet pour le faire : si l'anonymisation échoue alors que le
+    // bannissement qui suit réussit, la personne perd l'accès à son compte
+    // pendant que son nom et son téléphone restent en base. « Supprimer
+    // mon compte » aurait alors fait exactement l'inverse de ce qu'il
+    // promet, sans que personne puisse s'en apercevoir.
+    const { error: anonError } = await admin
       .from("profiles")
       .update({
         full_name: "Compte supprimé",
@@ -101,6 +123,7 @@ export async function deleteAccountAction() {
         deleted_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
+    if (anonError) throw anonError;
   }
 
   // ~100 ans : Supabase n'a pas de "bannissement permanent" dédié, une

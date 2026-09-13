@@ -64,7 +64,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return { error: "Vous devez être connecté en tant que commerçant." };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("merchants")
     .update({
       shop_name: shopName,
@@ -73,8 +73,16 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
       whatsapp_phone: whatsappPhone || null,
       description: description || null,
     })
-    .eq("profile_id", merchantProfile.id);
+    .eq("profile_id", merchantProfile.id)
+    .select("id");
   if (error) return { error: error.message };
+  // Même raison que le profil client : un `update` écarté par le RLS
+  // répond un succès à zéro ligne. Une boutique dont les modifications
+  // disparaissent sans message est la panne la plus décourageante pour un
+  // commerçant qui vient de tout ressaisir.
+  if (!data || data.length === 0) {
+    return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
+  }
 
   redirect("/vendeur");
 }

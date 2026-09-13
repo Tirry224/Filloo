@@ -149,13 +149,21 @@ export async function reportConversationAction(formData: FormData) {
     .select("id");
 
   // Un signalement avalé en silence est pire qu'un bouton absent : la
-  // personne croit l'équipe prévenue et n'en reparle jamais. Le
-  // commentaire ci-dessus décrivait ce risque depuis le 2026-09-12 sans
-  // que le code s'en protège : `insert` sans `.select("id")` ne peut pas
-  // distinguer « écrit » de « écarté par le RLS », qui répond un succès à
-  // zéro ligne. La policy « reports: je signale » exige
-  // `is_active_profile(reporter_id)`, donc un profil suspendu tombait
-  // exactement dans ce trou.
+  // personne croit l'équipe prévenue et n'en reparle jamais.
+  //
+  // Précision mesurée le 2026-09-13 sur un PostgreSQL local, parce que ce
+  // commentaire a d'abord porté une explication FAUSSE : un `insert`
+  // refusé par le RLS n'est PAS silencieux. Un `with check` qui échoue
+  // lève « new row violates row-level security policy », donc `error`
+  // suffisait déjà ici. Le succès muet à zéro ligne est le propre des
+  // `update` et `delete`, dont le `using` filtre des lignes au lieu de
+  // refuser une valeur.
+  //
+  // Le `.select("id")` reste, pour la seule raison qui tienne : un
+  // trigger `before insert` qui renvoie NULL écarte la ligne SANS erreur
+  // (vérifié de la même façon). Aucun trigger du projet ne le fait
+  // aujourd'hui, mais une écriture qui sait ce qu'elle a écrit ne dépend
+  // pas de cette promesse.
   if (error) backToThread(conversationId, error.message);
   if (!data || data.length === 0) {
     backToThread(conversationId, "Signalement impossible. Reconnectez-vous, puis réessayez.");

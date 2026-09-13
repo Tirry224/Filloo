@@ -87,11 +87,20 @@ export async function createProductAction(_prevState: ActionState | null, formDa
   }
 
   if (publish) {
-    const { error: publishError } = await supabase
+    const { data: published, error: publishError } = await supabase
       .from("products")
       .update({ status: "active" })
-      .eq("id", productId);
+      .eq("id", productId)
+      .select("id");
     if (publishError) return { error: publishError.message };
+    // C'est EXACTEMENT le cas que `setProductStatus` protège plus bas et
+    // que celui-ci laissait passer : publier est refusé par le trigger
+    // `products_check_publishable` quand la boutique n'est plus validée,
+    // et un `update` refusé répond un succès à zéro ligne. Le produit
+    // restait en `draft` pendant que l'écran annonçait la publication.
+    if (!published || published.length === 0) {
+      return { error: "Publication impossible : votre boutique doit être validée, et le produit avoir au moins une photo. Il est enregistré en brouillon." };
+    }
   }
 
   redirect("/vendeur");
@@ -136,7 +145,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("products")
     .update({
       category_id: fields.categoryId,
@@ -145,8 +154,12 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       price_gnf: fields.priceGnf,
       is_negotiable: fields.isNegotiable,
     })
-    .eq("id", productId);
+    .eq("id", productId)
+    .select("id");
   if (updateError) return { error: updateError.message };
+  if (!updated || updated.length === 0) {
+    return { error: "Modification impossible : ce produit n'existe plus, ou il n'est pas le vôtre." };
+  }
 
   // Remplace toutes les lignes `product_images` par la liste finale envoyée
   // par `PhotoPicker`, plutôt que de comparer ancien/nouveau photo par
@@ -154,7 +167,16 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   // qu'une photo du milieu est retirée (les positions suivantes se
   // décalent). Les fichiers dans Storage, eux, sont déjà supprimés par
   // `PhotoPicker` au moment du clic sur « retirer » — voir ce fichier.
-  await supabase.from("product_images").delete().eq("product_id", productId);
+  // Cette suppression ne lisait NI son erreur NI son résultat. Si le RLS
+  // l'écarte, les anciennes lignes restent et la ré-insertion qui suit
+  // ajoute les nouvelles par-dessus : le produit se retrouve avec les deux
+  // jeux de photos, et `unique (product_id, position)` fait alors échouer
+  // l'insertion avec un message incompréhensible pour le commerçant.
+  const { error: clearError } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("product_id", productId);
+  if (clearError) return { error: clearError.message };
   if (fields.imagePaths.length > 0) {
     const { error: imagesError } = await supabase.from("product_images").insert(
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),

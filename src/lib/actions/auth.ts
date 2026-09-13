@@ -125,9 +125,21 @@ export async function requestPasswordResetAction(
   const supabase = await createClient();
   const host = (await headers()).get("host");
   const origin = `${process.env.NODE_ENV === "development" ? "http" : "https"}://${host}`;
-  await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/confirm?next=/reinitialiser-mot-de-passe`,
   });
+  // La réponse rendue reste `sent: true` DANS TOUS LES CAS, y compris en
+  // cas d'échec : répondre autre chose pour une adresse inconnue dirait à
+  // un inconnu qui a un compte ici. Ce n'est pas un oubli, c'est la
+  // protection contre l'énumération des comptes, et elle ne bouge pas.
+  //
+  // Mais l'erreur était jusqu'ici invisible AUSSI côté serveur, ce qui est
+  // un autre problème : le serveur mail intégré de Supabase plafonne à
+  // quelques envois par heure (étape 2 de docs/REPRISE.md), donc l'échec
+  // attendu ici est le dépassement de quota — précisément celui qu'il faut
+  // pouvoir constater dans les journaux Vercel pour savoir que Resend
+  // devient urgent.
+  if (error) console.error("resetPasswordForEmail a échoué :", error.message);
   return { sent: true };
 }
 
