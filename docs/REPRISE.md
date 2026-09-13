@@ -450,13 +450,25 @@ temps.
 
 ### Sur la couche applicative
 
-- **« Pas d'erreur » ne veut jamais dire « c'est fait ».** Quand le RLS
-  écarte une ligne, PostgREST ne renvoie pas d'erreur : il renvoie un
-  SUCCÈS portant zéro ligne. Six actions (`markSold`, `hide`,
-  `republish`, `delete`, `blockPeer`, `reportConversation`) ne lisaient
-  pas leur résultat et redirigeaient comme si tout allait bien — le cas
-  d'échec le plus probable était donc le plus silencieux. La seule façon
-  de savoir ce qui a changé est un `.select("id")` sur l'écriture.
+- **« Pas d'erreur » ne veut jamais dire « c'est fait » — mais pas pour
+  toutes les écritures.** Quand le RLS écarte une ligne, PostgREST ne
+  renvoie pas d'erreur : il renvoie un SUCCÈS portant zéro ligne. La
+  seule façon de savoir ce qui a changé est un `.select("id")` sur
+  l'écriture.
+  **Précision mesurée le 2026-09-13, après s'être trompé dessus** : cela
+  vaut pour les `update` et les `delete`, dont le `using` filtre des
+  LIGNES. Un `insert` refusé, lui, n'est PAS silencieux — un `with
+  check` qui échoue lève « new row violates row-level security policy »,
+  donc `error` suffit. Vérifié sur un PostgreSQL local, dans les deux
+  sens, parce que la version imprécise de cette leçon a fait « corriger »
+  deux `insert` qui allaient bien pendant que cinq `update`/`delete`
+  restaient exposés.
+  Le seul `insert` réellement silencieux est celui qu'un trigger `before
+  insert` annule en renvoyant NULL (vérifié aussi) : aucun trigger du
+  projet ne le fait aujourd'hui.
+  **Une leçon formulée trop largement coûte autant qu'une leçon fausse :
+  elle fait corriger les mauvais endroits avec la bonne conscience d'un
+  travail fini.**
 - **Une action dont on ne peut pas savoir si elle a réussi est une
   action cassée, même quand elle fonctionne.** Vécu dans les deux sens
   le même jour : le Table Editor de Supabase changeait un statut sans
@@ -575,7 +587,7 @@ n'existait (il existait) ; avoir classé le routage par rôle comme
 bug ; avoir annoncé un travail terminé alors qu'un tiers seulement de la
 règle était traité.
 
-### 2026-09-13 — remise en ordre du fichier de reprise
+### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »
 passe en tête, l'archéologie des branches est réduite aux règles qui en
 sortent, et l'état du dépôt est revérifié — 4 branches distantes et non
@@ -588,6 +600,20 @@ fait de bout en bout depuis le schéma jusqu'à l'écran ; seul le badge
 de la barre d'onglets manque (point 1). **Un fichier de reprise qui
 surestime ce qui reste coûte autant qu'un qui le sous-estime** — il
 fait repartir de zéro un travail déjà payé.
+
+Puis, `main` remise à jour : l'écran 32b (signaler une conversation avec
+un vrai motif) fusionné depuis la branche `transpose-thomson`, et **les
+écritures qui pouvaient échouer en silence** fermées. Un `grep` sur
+`.insert(`, `.update(` et `.delete()` en avait listé quatorze ; la
+mesure sur PostgreSQL a ramené le vrai périmètre à cinq `update`/`delete`
+plus deux écritures `service_role` de la suppression de compte qui
+n'inspectaient rien. Voir la leçon rectifiée en section 5 — la première
+formulation avait fait corriger les mauvais endroits.
+
+L'environnement de travail peut désormais **exécuter les tests** : un
+PostgreSQL local monté dans le bac à sable rejoue les 12 migrations
+depuis une base vierge et passe les 55 vérifications de sécurité. C'est
+la première session où cette propriété est constatée plutôt que citée.
 
 ---
 
