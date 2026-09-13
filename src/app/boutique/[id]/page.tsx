@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, Clock, MapPin } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Card } from "@/components/ui/Card";
@@ -44,10 +44,17 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
               <MapPin size={17} strokeWidth={1.8} className="shrink-0 text-ink-soft" aria-hidden />
               {merchant.addressHint} · {merchant.city}
             </p>
-            <p className="flex items-center gap-2.5 text-sm">
-              <Clock size={17} strokeWidth={1.8} className="shrink-0 text-ink-soft" aria-hidden />
-              Répond en général dans la journée
-            </p>
+            {/* « Répond en général dans la journée » a été retiré le
+                2026-09-13 : c'était un texte FIXE, identique pour toutes
+                les boutiques, qu'aucune colonne ni aucune requête ne
+                mesure — y compris pour un vendeur qui ne répond jamais.
+                Un client le lit comme une promesse du service.
+
+                Même raison que « Ma ville » retirée de /compte et que le
+                motif de suspension inventé par la maquette : on ne
+                simule pas une donnée qui n'existe pas. Le jour où
+                `messages` permettra de calculer un vrai délai médian par
+                boutique, la ligne reviendra avec un chiffre derrière. */}
           </Card>
 
           <SectionLabel>

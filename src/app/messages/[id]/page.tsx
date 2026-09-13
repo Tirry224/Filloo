@@ -34,12 +34,22 @@ export default async function ThreadPage({
 
   // Marquer comme lu ce que je viens de voir — seuls les messages reçus,
   // jamais les miens (policy "messages: marquer comme lu", 0002).
-  await supabase
+  /* Seule écriture du projet qui n'inspectait toujours RIEN — ni son
+     erreur, ni son nombre de lignes. Son échec n'empêche personne de
+     lire, mais il laisse le badge de non-lus faux indéfiniment, sans que
+     rien ne le signale : exactement l'angle mort que le reste du code
+     s'emploie à fermer partout ailleurs.
+
+     L'erreur est journalisée plutôt que levée : rater le marquage « lu »
+     ne doit pas empêcher d'AFFICHER le fil, ce serait échanger un badge
+     faux contre un écran vide. */
+  const { error: readError } = await supabase
     .from("messages")
     .update({ read_at: new Date().toISOString() })
     .eq("conversation_id", id)
     .is("read_at", null)
     .neq("sender_id", context.myParticipantId);
+  if (readError) console.error("marquage lu impossible :", readError.message);
 
   const blockedByPeer = context.blockedBy !== null && context.blockedBy !== context.myParticipantId;
   // Le premier message d'un fil DOIT citer un produit (trigger
