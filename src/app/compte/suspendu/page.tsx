@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { clientSpaceFallback, getMyProfile } from "@/lib/data/session";
+import { clientSpaceFallback, getMyProfiles, landingForSession } from "@/lib/data/session";
 
 /**
  * Écran 19 — compte suspendu.
@@ -21,9 +21,21 @@ import { clientSpaceFallback, getMyProfile } from "@/lib/data/session";
  */
 export default async function SuspendedPage() {
   const supabase = await createClient();
-  const profile = await getMyProfile(supabase, "client");
-  if (!profile) redirect(await clientSpaceFallback(supabase));
-  if (!profile.isSuspended) redirect("/compte");
+
+  // Cet écran cherchait UNIQUEMENT un profil client, et c'était la moitié
+  // d'une règle : la suspension vit sur `profiles`, donc elle frappe un
+  // commerçant exactement pareil. Un commerçant suspendu qu'on aurait
+  // envoyé ici aurait été renvoyé vers son espace, qui l'aurait renvoyé
+  // ici — une boucle. D'où la recherche par SUSPENSION plutôt que par
+  // rôle : c'est la propriété qui compte, pas le rôle qui la porte.
+  const profiles = await getMyProfiles(supabase);
+  const suspended = profiles.find((p) => p.isSuspended && !p.isDeleted);
+  // Deux sorties distinctes, parce que ce sont deux situations
+  // distinctes : sans profil du tout on n'est pas connecté et on va se
+  // connecter ; avec un profil non suspendu, on n'a rien à faire ici et
+  // on repart vers son écran d'ouverture.
+  if (profiles.length === 0) redirect(await clientSpaceFallback(supabase));
+  if (!suspended) redirect(await landingForSession(supabase));
 
   return (
     <Screen>
@@ -32,7 +44,11 @@ export default async function SuspendedPage() {
         <EmptyState
           icon={Flag}
           title="Votre compte est suspendu"
-          description="Vous pouvez encore consulter le catalogue, mais pas envoyer de messages."
+          description={
+            suspended.role === "merchant"
+              ? "Vous pouvez encore consulter le catalogue, mais pas publier de produit ni répondre à vos clients."
+              : "Vous pouvez encore consulter le catalogue, mais pas envoyer de messages."
+          }
         >
           <Button variant="secondary" href="/">
             Voir les produits

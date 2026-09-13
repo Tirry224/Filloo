@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { deleteAccountAction } from "@/lib/actions/account";
 import { createClient } from "@/lib/supabase/server";
-import { clientSpaceFallback, getMyProfile } from "@/lib/data/session";
+import { clientSpaceFallback, getMyProfiles } from "@/lib/data/session";
 
 /**
  * Confirmation de suppression — la maquette n'avait qu'un bouton direct,
@@ -24,8 +24,18 @@ import { clientSpaceFallback, getMyProfile } from "@/lib/data/session";
  */
 export default async function ConfirmDeleteAccountPage() {
   const supabase = await createClient();
-  const profile = await getMyProfile(supabase, "client");
-  if (!profile) redirect(await clientSpaceFallback(supabase));
+  // Neutre au rôle depuis le 2026-09-13 : la suppression porte sur la
+  // CONNEXION entière (anonymisation de tous les profils + bannissement de
+  // `auth.users`), pas sur un rôle. Exiger un profil client ici rendait
+  // l'écran inatteignable à un commerçant qui n'en a pas — /compte l'aurait
+  // renvoyé vers son espace. Le seul droit qu'on ne peut pas contourner
+  // était réservé à la moitié des comptes.
+  const profiles = await getMyProfiles(supabase);
+  // `clientSpaceFallback` et non `landingForSession` : ce garde-fou ne se
+  // déclenche que sans profil utilisable, donc pour quelqu'un de non
+  // connecté — et on l'envoie se connecter, pas au catalogue. Vérifié
+  // dans un navigateur, la première version renvoyait vers `/`.
+  if (!profiles.some((p) => !p.isDeleted)) redirect(await clientSpaceFallback(supabase));
 
   return (
     <Sheet

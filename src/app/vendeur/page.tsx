@@ -11,6 +11,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductRow } from "@/components/product/ProductRow";
 import { createClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/data/session";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 
 /**
@@ -31,6 +32,16 @@ export default async function SellerPage({
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
+  // La suspension n'était vérifiée QUE sur /compte. Un commerçant suspendu
+  // voyait donc son espace normal, où chaque écriture échouait en silence
+  // (la policy « products: je gere mes produits » exige
+  // `is_active_profile`, et un `update` écarté répond un succès à zéro
+  // ligne). Une application qui a l'air de marcher et où rien ne marche
+  // est le pire des deux mondes : la personne réessaie au lieu de
+  // comprendre. Trouvé le 2026-09-13 en balayant les symétries.
+  const merchantProfile = await getMyProfile(supabase, "merchant");
+  if (merchantProfile?.isSuspended) redirect("/compte/suspendu");
+
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
   if (merchant.status === "pending") redirect("/vendeur/attente");

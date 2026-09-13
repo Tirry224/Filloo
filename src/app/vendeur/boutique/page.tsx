@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileText, LogOut, ShoppingBag } from "lucide-react";
+import { FileText, LogOut, ShoppingBag, Trash2 } from "lucide-react";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { MenuItem, MenuList } from "@/components/ui/MenuList";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
@@ -45,6 +45,9 @@ export default async function EditShopPage() {
     getCities(supabase),
   ]);
   if (!merchantProfile) redirect("/inscription/boutique");
+  // Même garde que /vendeur : la suspension vit sur `profiles`, elle
+  // frappe les deux rôles, et elle n'était vérifiée que côté client.
+  if (merchantProfile.isSuspended) redirect("/compte/suspendu");
 
   const { data: row, error } = await supabase
     .from("merchants")
@@ -116,7 +119,21 @@ export default async function EditShopPage() {
             <MenuItem icon={FileText} label="Conditions d'utilisation" />
           </MenuList>
 
+          {/* La suppression de compte n'était atteignable QUE depuis
+              /compte/informations, c'est-à-dire uniquement par quelqu'un
+              ayant un profil client. Un commerçant sans compte client ne
+              pouvait donc pas supprimer le sien : /compte le renvoyait
+              ici. Une fonctionnalité décidée, construite et testée
+              (anonymisation + bannissement) restait inaccessible à la
+              moitié des comptes — et c'est celle qu'on ne peut pas
+              remplacer par un contournement. */}
           <MenuList>
+            <MenuItem
+              icon={Trash2}
+              label="Supprimer mon compte"
+              href="/compte/informations/supprimer"
+              tone="danger"
+            />
             <MenuItem icon={LogOut} label="Se déconnecter" tone="danger" action={signOutAction} />
           </MenuList>
         </Section>
