@@ -18,6 +18,18 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
  * comprise comme « l'application est cassée », pas comme « le réseau est
  * mauvais ». La différence entre les deux, c'est un utilisateur qui
  * revient ou pas.
+ *
+ * Le titre disait « Impossible de charger les produits », et c'était vrai
+ * de l'écran 4 seulement. Or c'est l'UNIQUE `error.tsx` du projet : il
+ * couvre donc toute l'application, et il annonçait des produits à qui
+ * venait d'échouer en envoyant un message, en ouvrant son compte ou en
+ * contactant un vendeur. Constaté au balayage navigateur du 2026-09-13,
+ * où même l'espace commerçant l'affichait.
+ *
+ * C'est le message d'erreur le plus fréquent de l'application, sur le
+ * marché le plus instable : il doit être vrai partout, donc ne nommer
+ * aucun contenu en particulier. Un écran de section peut toujours poser
+ * son propre `error.tsx` plus précis par-dessus.
  */
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
@@ -30,7 +42,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
       <ScreenBody>
         <EmptyState
           icon={WifiOff}
-          title="Impossible de charger les produits"
+          title="Impossible d'afficher cette page"
           description="Vérifiez votre connexion, puis réessayez."
         >
           <Button onClick={reset}>Réessayer</Button>

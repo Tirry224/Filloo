@@ -38,7 +38,14 @@ const CLIENT_TABS = [
 
 const MERCHANT_TABS = [
   { key: "shop", label: "Ma boutique", href: "/vendeur", icon: Store },
-  { key: "messages", label: "Messages", href: "/messages", icon: MessageCircle },
+  // `?vue=commercant` n'était produit par AUCUN écran : cet onglet
+  // pointait sur `/messages` nu, et `/messages` choisit l'espace client
+  // par défaut dès que les deux profils existent. Une personne ayant les
+  // deux comptes liés — le scénario même de la décision 8 — touchait donc
+  // « Messages » depuis sa boutique et voyait ses conversations
+  // D'ACHETEUR. Ses clients lui écrivaient dans le vide, et les deux
+  // espaces se mélangeaient, ce que design/README.md interdit.
+  { key: "messages", label: "Messages", href: "/messages?vue=commercant", icon: MessageCircle },
   { key: "account", label: "Compte", href: "/vendeur/boutique", icon: User },
 ] as const;
 

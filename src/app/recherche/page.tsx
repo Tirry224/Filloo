@@ -52,21 +52,48 @@ export default async function SearchPage({
     <Screen>
       <TopBar
         title={
-          <div className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
-            <Search size={18} strokeWidth={1.8} className="shrink-0 text-ink-soft" aria-hidden />
-            <span className={q ? "flex-1 truncate text-base font-medium" : "flex-1 text-base text-ink-soft"}>
-              {q || "Rechercher un produit"}
-            </span>
+          /* Cette barre AFFICHAIT la recherche sans jamais permettre de la
+             taper : un <div> contenant un <span>, aucun <input>, aucun
+             <form>. `q` n'était donc renseignable qu'en écrivant l'URL à
+             la main, et `search_products` — la fonction SQL qui cherche
+             dans le titre, la description et le nom de boutique, sans
+             accents ni casse — restait inatteignable depuis l'écran qui
+             existe pour elle. La croix « Effacer la recherche »
+             apparaissait pourtant dès que `q` était rempli : l'écran
+             était construit autour d'un champ qui n'a jamais été posé.
+
+             `method="get"` sur un vrai <form> : la recherche marche sans
+             JavaScript, comme le reste des formulaires du projet, et la
+             requête reste dans l'URL donc partageable et revenable. Les
+             trois champs cachés reportent ville, catégorie et tri —
+             chercher ne doit pas réinitialiser ce qu'on avait réglé. */
+          <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
+            <input type="hidden" name="ville" value={ville} />
+            <input type="hidden" name="categorie" value={categorie} />
+            <input type="hidden" name="tri" value={tri} />
+            <button type="submit" aria-label="Lancer la recherche" className="shrink-0 text-ink-soft">
+              <Search size={18} strokeWidth={1.8} aria-hidden />
+            </button>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              enterKeyHint="search"
+              autoComplete="off"
+              placeholder="Rechercher un produit"
+              aria-label="Rechercher un produit"
+              className="h-full min-w-0 flex-1 bg-transparent text-base font-medium outline-none placeholder:font-normal placeholder:text-ink-soft"
+            />
             {q ? (
               <Link
-                href={`/recherche?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}`}
+                href={`/recherche?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`}
                 aria-label="Effacer la recherche"
                 className="shrink-0 text-ink-soft"
               >
                 <X size={17} strokeWidth={2} aria-hidden />
               </Link>
             ) : null}
-          </div>
+          </form>
         }
       />
 
