@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileText, LogOut } from "lucide-react";
+import { FileText, LogOut, ShoppingBag } from "lucide-react";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { MenuItem, MenuList } from "@/components/ui/MenuList";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
@@ -90,7 +90,27 @@ export default async function EditShopPage() {
               target={clientProfile.fullName}
               href="/compte"
             />
-          ) : null}
+          ) : (
+            /* Le miroir exact de `/compte` : sans compte client, cet
+               emplacement était vide, et un commerçant n'avait donc aucun
+               chemin pour s'en créer un.
+
+               Ajouté le 2026-09-13 APRÈS avoir ouvert la même porte côté
+               client — et seulement parce que le porteur du projet a
+               demandé « et la bascule ? ». C'est la deuxième fois que la
+               question est posée pour la même raison : une règle qui vaut
+               dans les deux sens n'a été traitée que dans un (voir la
+               leçon du 2026-09-12 sur les barres d'onglets). Corriger la
+               moitié d'une symétrie laisse un défaut qui ressemble à un
+               travail fini.
+
+               Un commerçant peut parcourir le catalogue sans compte, mais
+               pas ÉCRIRE à un vendeur : sans profil client, il ne peut pas
+               acheter sur sa propre place de marché. */
+            <MenuList>
+              <MenuItem icon={ShoppingBag} label="Créer mon compte client" href="/inscription" />
+            </MenuList>
+          )}
 
           <MenuList>
             <MenuItem icon={FileText} label="Conditions d'utilisation" />
