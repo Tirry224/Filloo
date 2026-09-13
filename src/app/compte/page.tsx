@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileText, LogOut, MessageCircle, User } from "lucide-react";
+import { FileText, LogOut, MessageCircle, Store, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { MenuItem, MenuList } from "@/components/ui/MenuList";
@@ -52,7 +52,29 @@ export default async function AccountPage() {
               target={merchant.shopName}
               href="/vendeur"
             />
-          ) : null}
+          ) : (
+            /* Sans compte commerçant, cet emplacement était VIDE, et c'est
+               ce qui rendait les comptes liés inatteignables. Constaté dans
+               la vraie base le 2026-09-13 : les deux profils du projet sont
+               derrière DEUX connexions distinctes, alors que le schéma
+               (`unique (auth_user_id, role)`) et `/inscription` savent
+               depuis le début en tenir deux sur une seule.
+
+               La mécanique existait, le chemin pour y arriver non : le seul
+               lien vers `/inscription` pour un client connecté vivait dans
+               l'état vide du fil d'accueil (« Devenir vendeur à X »), et
+               disparaît donc dès qu'un produit existe dans sa ville. Une
+               fonctionnalité décidée, construite et testée ne sert à rien
+               tant qu'aucun écran n'y mène.
+
+               `/inscription` reconnaît déjà une personne connectée : il
+               passe en mode « lié », pré-remplit nom et téléphone, et
+               n'offre que le rôle manquant. Il n'y avait rien à construire,
+               seulement une porte à ouvrir. */
+            <MenuList>
+              <MenuItem icon={Store} label="Créer mon compte vendeur" href="/inscription" />
+            </MenuList>
+          )}
 
           <MenuList>
             <MenuItem icon={FileText} label="Conditions d'utilisation" />

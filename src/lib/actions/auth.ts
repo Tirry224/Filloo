@@ -13,7 +13,14 @@ export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: 
  * cacherait l'information utile en cas de bug. */
 function translateAuthError(message: string): string {
   if (message.includes("already registered") || message.includes("already exists")) {
-    return "Un compte existe déjà avec cet email. Essayez de vous connecter.";
+    // Ce message disait seulement « essayez de vous connecter », et c'est
+    // vraisemblablement lui qui a produit le résultat constaté dans la
+    // vraie base le 2026-09-13 : deux connexions distinctes au lieu d'un
+    // second profil lié. Quelqu'un qui veut « aussi vendre » lit « compte
+    // déjà pris », comprend « il me faut une autre adresse », et repart
+    // avec un deuxième email. Dire ce qu'il faut faire ENSUITE coûte une
+    // phrase et évite un compte en trop qu'on ne peut plus fusionner.
+    return "Un compte existe déjà avec cet email. Connectez-vous : vous pourrez ajouter votre second compte depuis « Mon compte », sans changer d'adresse.";
   }
   if (message.includes("Invalid login credentials")) {
     return "Email ou mot de passe incorrect.";
