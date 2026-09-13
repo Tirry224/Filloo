@@ -158,7 +158,14 @@ export default async function SearchPage({
             <EmptyState
               icon={Search}
               title={q ? `Aucun résultat pour « ${q} »` : "Aucun produit ici"}
-              description="Essayez un mot plus court, ou retirez le filtre de ville pour chercher dans toute la Guinée."
+              /* Ce texte disait « retirez le filtre de ville pour chercher
+                 dans toute la Guinée » — une action qui n'existe pas et
+                 ne peut pas exister : la décision 9 de docs/SPEC.md
+                 impose une ville, `searchProducts` exige `cityId`, et la
+                 feuille /recherche/ville n'offre aucune option neutre.
+                 On demandait à la personne de faire ce que le produit
+                 interdit. */
+              description="Essayez un mot plus court, ou changez de ville."
             >
               <Button href={searchInConakryHref}>Chercher à Conakry</Button>
               <Button variant="secondary" href={clearFiltersHref}>

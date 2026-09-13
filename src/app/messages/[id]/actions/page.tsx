@@ -50,7 +50,16 @@ export default async function ThreadActionsPage({ params }: { params: Promise<{ 
           <ActionRow
             icon={Ban}
             label="Bloquer cette personne"
-            description="Elle ne pourra plus vous écrire. Le fil reste consultable."
+            // « Le fil reste consultable » se lisait comme un geste doux
+            // et réversible. Il ne l'est pas : la policy « conversations:
+            // je bloque mon interlocuteur » n'autorise qu'à POSER
+            // `blocked_by`, jamais à l'effacer, et aucun écran ne propose
+            // de débloquer — c'est une décision assumée de v1
+            // (docs/REPRISE.md section 4). Sur un marché où l'on se
+            // recroise, un blocage par erreur ferme définitivement le
+            // seul canal de contact avec un vendeur. La décision reste,
+            // l'écran cesse de la cacher.
+            description="Elle ne pourra plus vous écrire. Le fil reste consultable. C'est définitif : on ne peut pas débloquer."
             tone="danger"
             action={blockPeerAction}
             hiddenFields={{ conversationId: id }}
