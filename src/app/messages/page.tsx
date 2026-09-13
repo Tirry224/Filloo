@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Button } from "@/components/ui/Button";
@@ -6,7 +7,7 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ThreadRow } from "@/components/chat/ThreadRow";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfile } from "@/lib/data/session";
+import { getMyProfile, clientSpaceFallback } from "@/lib/data/session";
 import { getMyThreadsAsClient, getMyThreadsAsMerchant } from "@/lib/data/messages";
 
 /**
@@ -29,6 +30,14 @@ export default async function MessagesPage({
     getMyProfile(supabase, "client"),
     getMyProfile(supabase, "merchant"),
   ]);
+
+  // Sans aucun profil, personne n'est connecté : `/messages` affichait
+  // alors « Aucune conversation », c'est-à-dire une réponse à une question
+  // qu'il n'avait pas posée. Vu à l'écran le 2026-09-13 en ouvrant
+  // l'onglet « Messages » sans session. `/compte` redirigeait déjà, lui —
+  // deux écrans du même espace ne peuvent pas traiter l'anonymat
+  // différemment.
+  if (!clientProfile && !merchantProfile) redirect(await clientSpaceFallback(supabase));
 
   const hasBoth = Boolean(clientProfile) && Boolean(merchantProfile);
   const asClient = hasBoth ? vue !== "commercant" : Boolean(clientProfile);

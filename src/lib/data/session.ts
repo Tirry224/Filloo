@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
 export type SessionProfile = {
@@ -31,7 +32,24 @@ export type SessionProfile = {
 export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): Promise<User | null> => {
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+
+  // `error` était ignoré, et c'était le défaut le plus coûteux du projet :
+  // `getUser()` renvoie `user: null` AUSSI quand il n'a pas pu joindre le
+  // serveur, pas seulement quand personne n'est connecté. Les deux cas
+  // étaient donc traités comme « visiteur anonyme ».
+  //
+  // Vu à l'écran le 2026-09-13, base injoignable, session ouverte :
+  // `/messages` affichait « Aucune conversation » — il annonçait à
+  // quelqu'un qu'il n'a pas de messages alors qu'il n'avait pas pu
+  // regarder. Sur un réseau guinéen instable, c'est aussi une
+  // déconnexion apparente à chaque coupure passagère.
+  //
+  // « Pas de session » est une réponse ; tout le reste est une panne, et
+  // une panne se propage pour que la frontière d'erreur affiche « Pas de
+  // connexion » comme le fait déjà le fil d'accueil.
+  if (error && !isAuthSessionMissingError(error)) throw error;
   return user;
 });
 
