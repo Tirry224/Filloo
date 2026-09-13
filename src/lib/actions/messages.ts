@@ -138,16 +138,28 @@ export async function reportConversationAction(formData: FormData) {
   const context = await getThreadContext(supabase, conversationId);
   if (!context) backToThread(conversationId, "Conversation introuvable.");
 
-  const { error } = await supabase.from("reports").insert({
-    reporter_id: context.myParticipantId,
-    target_type: "conversation",
-    target_id: conversationId,
-    reason: details ? `${reason} — ${details}` : reason,
-  });
+  const { data, error } = await supabase
+    .from("reports")
+    .insert({
+      reporter_id: context.myParticipantId,
+      target_type: "conversation",
+      target_id: conversationId,
+      reason: details ? `${reason} — ${details}` : reason,
+    })
+    .select("id");
 
   // Un signalement avalé en silence est pire qu'un bouton absent : la
-  // personne croit l'équipe prévenue et n'en reparle jamais.
+  // personne croit l'équipe prévenue et n'en reparle jamais. Le
+  // commentaire ci-dessus décrivait ce risque depuis le 2026-09-12 sans
+  // que le code s'en protège : `insert` sans `.select("id")` ne peut pas
+  // distinguer « écrit » de « écarté par le RLS », qui répond un succès à
+  // zéro ligne. La policy « reports: je signale » exige
+  // `is_active_profile(reporter_id)`, donc un profil suspendu tombait
+  // exactement dans ce trou.
   if (error) backToThread(conversationId, error.message);
+  if (!data || data.length === 0) {
+    backToThread(conversationId, "Signalement impossible. Reconnectez-vous, puis réessayez.");
+  }
   backToThread(conversationId, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
 }
 
@@ -165,13 +177,20 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
   const reporter = profiles.find((p) => !p.isSuspended && !p.isDeleted);
   if (!reporter) return { error: "Vous devez être connecté pour signaler un produit." };
 
-  const { error } = await supabase.from("reports").insert({
-    reporter_id: reporter.id,
-    target_type: "product",
-    target_id: productId,
-    reason: fullReason,
-  });
+  const { data, error } = await supabase
+    .from("reports")
+    .insert({
+      reporter_id: reporter.id,
+      target_type: "product",
+      target_id: productId,
+      reason: fullReason,
+    })
+    .select("id");
   if (error) return { error: error.message };
+  // Même raison que le signalement d'une conversation, juste au-dessus.
+  if (!data || data.length === 0) {
+    return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
+  }
 
   redirect(`/produit/${productId}`);
 }
