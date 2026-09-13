@@ -93,13 +93,26 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .eq("id", productId)
       .select("id");
     if (publishError) return { error: publishError.message };
-    // C'est EXACTEMENT le cas que `setProductStatus` protège plus bas et
-    // que celui-ci laissait passer : publier est refusé par le trigger
-    // `products_check_publishable` quand la boutique n'est plus validée,
-    // et un `update` refusé répond un succès à zéro ligne. Le produit
-    // restait en `draft` pendant que l'écran annonçait la publication.
+    // Les DEUX refus possibles ne passent pas par le même canal, et il a
+    // fallu les lire dans la vraie base (2026-09-13) pour cesser de les
+    // confondre :
+    //
+    // - « pas de photo » et « boutique non validée » viennent du trigger
+    //   `check_product_publishable`, qui lève une EXCEPTION portant son
+    //   propre message en français. C'est `publishError` juste au-dessus
+    //   qui les rend, et rien n'est silencieux de ce côté ;
+    // - le succès muet à zéro ligne vient du RLS. La policy « products:
+    //   je gere mes produits » exige `merchant_id = my_merchant_id()` ET
+    //   `is_active_profile(...)` — elle ne regarde PAS la validation de
+    //   la boutique. La ligne n'est donc écartée en silence que si le
+    //   compte commerçant est suspendu ou supprimé, ou si le produit
+    //   n'est pas le sien.
+    //
+    // Le message ci-dessous doit nommer CE cas-là, pas celui du trigger :
+    // un message qui accuse la mauvaise cause envoie le commerçant
+    // chercher une photo alors que son compte est suspendu.
     if (!published || published.length === 0) {
-      return { error: "Publication impossible : votre boutique doit être validée, et le produit avoir au moins une photo. Il est enregistré en brouillon." };
+      return { error: "Publication impossible : votre compte commerçant n'est plus actif. Le produit est enregistré en brouillon." };
     }
   }
 
@@ -158,7 +171,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     .select("id");
   if (updateError) return { error: updateError.message };
   if (!updated || updated.length === 0) {
-    return { error: "Modification impossible : ce produit n'existe plus, ou il n'est pas le vôtre." };
+    return { error: "Modification impossible : ce produit n'est pas le vôtre, ou votre compte commerçant n'est plus actif." };
   }
 
   // Remplace toutes les lignes `product_images` par la liste finale envoyée
