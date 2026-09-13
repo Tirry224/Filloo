@@ -28,7 +28,7 @@ export type Merchant = {
 
 export type Product = {
   id: string;
-  merchant: Pick<Merchant, "id" | "shopName" | "city" | "addressHint">;
+  merchant: Pick<Merchant, "id" | "shopName" | "city" | "addressHint" | "whatsappPhone">;
   category: string;
   title: string;
   description: string | null;

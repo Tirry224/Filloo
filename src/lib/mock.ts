@@ -16,6 +16,7 @@ const aissatou: Product["merchant"] = {
   shopName: "Chez Aïssatou",
   city: "Conakry",
   addressHint: "Marché de Madina, allée 3",
+  whatsappPhone: null,
 };
 
 const techKaloum: Product["merchant"] = {
@@ -23,6 +24,7 @@ const techKaloum: Product["merchant"] = {
   shopName: "Tech Kaloum",
   city: "Conakry",
   addressHint: "Avenue de la République",
+  whatsappPhone: null,
 };
 
 const fanta: Product["merchant"] = {
@@ -30,6 +32,7 @@ const fanta: Product["merchant"] = {
   shopName: "Boutique Fanta",
   city: "Conakry",
   addressHint: "Marché de Matam",
+  whatsappPhone: null,
 };
 
 export const merchantAissatou: Merchant = {

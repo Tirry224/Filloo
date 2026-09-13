@@ -98,7 +98,13 @@ export async function getMerchantProducts(
     const cover = [...row.product_images].sort((a, b) => a.position - b.position)[0];
     return {
       id: row.id,
-      merchant: { id: merchant.id, shopName: merchant.shopName, city: merchant.city, addressHint: merchant.addressHint },
+      merchant: {
+        id: merchant.id,
+        shopName: merchant.shopName,
+        city: merchant.city,
+        addressHint: merchant.addressHint,
+        whatsappPhone: merchant.whatsappPhone,
+      },
       category: row.categories?.name ?? "",
       title: row.title,
       description: null,

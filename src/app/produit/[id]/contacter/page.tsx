@@ -23,6 +23,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   const product = await getProduct(supabase, id);
   if (!product) notFound();
 
+  const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
+
   const clientProfile = await getMyProfile(supabase, "client");
   if (clientProfile) {
     const conversationId = await findOrCreateConversation(supabase, clientProfile.id, product.merchant.id);
@@ -46,9 +48,21 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       <Button variant="secondary" size="sm" href="/connexion">
         J&apos;ai déjà un compte
       </Button>
-      <p className="text-center text-xs text-ink-soft">
-        Ou appelez directement le vendeur sur WhatsApp.
-      </p>
+      {/* Cette phrase était un texte NU : ni lien, ni numéro, rien à
+          toucher. Sur l'unique écran où l'on demande un compte, elle
+          présentait WhatsApp comme l'échappatoire — c'est le chemin le
+          plus crédible en Guinée, et c'était un cul-de-sac. Elle ne
+          s'affiche plus du tout quand la boutique n'a pas donné de
+          numéro : une porte de sortie qu'on annonce sans l'ouvrir est
+          pire que pas de porte. */}
+      {waNumber ? (
+        <a
+          href={`https://wa.me/${waNumber}`}
+          className="text-center text-xs text-ink-soft underline underline-offset-2"
+        >
+          Ou appelez directement le vendeur sur WhatsApp.
+        </a>
+      ) : null}
     </Sheet>
   );
 }

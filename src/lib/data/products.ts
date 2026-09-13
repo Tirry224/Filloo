@@ -19,6 +19,10 @@ function mapRow(row: SearchRow): Product {
       shopName: row.shop_name,
       city: row.city_name,
       addressHint: null,
+      // `search_products` ne remonte pas le numéro : la liste n'en a pas
+      // besoin, seule la FICHE propose d'appeler. Nul ici veut donc dire
+      // « non chargé », pas « la boutique n'en a pas ».
+      whatsappPhone: null,
     },
     category: row.category_name,
     title: row.title,
@@ -55,6 +59,7 @@ type ProductDetailRow = {
     id: string;
     shop_name: string;
     address_hint: string | null;
+    whatsapp_phone: string | null;
     cities: { name: string } | null;
   } | null;
 };
@@ -67,6 +72,7 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
       shopName: row.merchants?.shop_name ?? "",
       city: row.merchants?.cities?.name ?? "",
       addressHint: row.merchants?.address_hint ?? null,
+      whatsappPhone: row.merchants?.whatsapp_phone ?? null,
     },
     category: row.categories?.name ?? "",
     title: row.title,
@@ -92,7 +98,7 @@ export async function getProduct(supabase: SupabaseClient<Database>, id: string)
     supabase
       .from("products")
       .select(
-        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, cities(name))",
+        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, cities(name))",
       )
       .eq("id", id)
       .maybeSingle<ProductDetailRow>(),

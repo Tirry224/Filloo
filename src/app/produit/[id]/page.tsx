@@ -19,6 +19,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const product = await getProduct(supabase, id);
   if (!product) notFound();
 
+  /* wa.me n'accepte que des chiffres, indicatif compris et sans « + ».
+     Les commerçants saisissent leur numéro comme ils l'écrivent — avec
+     espaces, tirets ou « +224 » — donc on ne garde que les chiffres. Un
+     champ qui n'en contient aucun est traité comme absent. */
+  const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
+
   const sold = product.status === "sold";
 
   return (
@@ -90,14 +96,27 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Button icon={MessageCircle} href={`/produit/${product.id}/contacter`}>
               Contacter le vendeur
             </Button>
-            <Button
-              variant="secondary"
-              fullWidth={false}
-              aria-label="Contacter sur WhatsApp"
-              className="w-control shrink-0 text-success"
-            >
-              WA
-            </Button>
+            {/* Ce bouton n'avait NI href NI onClick : rendu en <button
+                type="button"> inerte, il était donc une promesse que rien
+                ne tenait — et sur un écran sans compte, WhatsApp est
+                présenté comme l'échappatoire la plus crédible en Guinée.
+                Le numéro existait pourtant en base ; il n'était
+                simplement pas remonté jusqu'ici par `getProduct`.
+
+                Il disparaît quand la boutique n'a pas donné de numéro,
+                plutôt que de rester affiché sans rien faire : un bouton
+                absent se comprend, un bouton mort se réessaie. */}
+            {waNumber ? (
+              <Button
+                variant="secondary"
+                fullWidth={false}
+                href={`https://wa.me/${waNumber}`}
+                aria-label={`Contacter ${product.merchant.shopName} sur WhatsApp`}
+                className="w-control shrink-0 text-success"
+              >
+                WA
+              </Button>
+            ) : null}
           </>
         )}
       </ScreenFooter>
