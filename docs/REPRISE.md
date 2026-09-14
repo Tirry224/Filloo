@@ -64,7 +64,7 @@ locale) : je peux voir le rendu et le comportement base injoignable,
 jamais un écran portant de vraies données. Les trois parcours ci-dessous
 restent donc entièrement à toi.* Le premier vrai
 passage sur téléphone a trouvé en quelques minutes quatre défauts que ni
-le build, ni le typecheck, ni 55 tests de sécurité n'avaient signalés
+le build, ni le typecheck, ni 61 tests de sécurité n'avaient signalés
 (détail en section 5). Il reste à faire le tour, écran par écran :
 `/ecrans` les liste en développement et allume chaque lien dès que
 l'enregistrement correspondant existe. **Noter les défauts au fil de
@@ -142,7 +142,7 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 55 tests couvrent le SQL, zéro
+- **Aucun test automatisé côté front.** 61 tests couvrent le SQL, zéro
   couvre la couche applicative — là où se trouvaient les quatre bugs du
   2026-09-12. C'est le déséquilibre de fond du projet : la couche la
   mieux testée n'est pas celle qui casse.
@@ -198,7 +198,7 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 12 fichiers SQL, à exécuter dans
+2026-09-11. `supabase/migrations/` — 13 fichiers SQL, à exécuter dans
 l'ordre sur un projet neuf :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
@@ -219,16 +219,21 @@ l'ordre sur un projet neuf :
   cellule `merchants.status` suffit à valider ou refuser une boutique :
   la date se pose seule, un refus sans motif est refusé, un motif
   périmé s'efface.
+- `0013_a_suspended_merchant_leaves_the_catalogue.sql` — la suspension
+  vit sur `profiles.is_suspended`, la visibilité sur `merchants.status`,
+  et RIEN ne reliait les deux : un commerçant suspendu gardait boutique,
+  produits et bouton « Contacter ». On pouvait donc lui écrire sans
+  qu'il puisse jamais répondre.
 
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 12 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 13 migrations rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **55 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **61 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5).
 
@@ -396,7 +401,7 @@ npm run parcours               # mesure d'un parcours
   dans la même session**, et toute migration commitée est appliquée dans
   la même session. Les deux sens produisent le même écart : un dépôt qui
   décrit une base qui n'existe pas (ou plus).
-- **Relancer les 55 tests après TOUTE modification de policy.** C'est
+- **Relancer les 61 tests après TOUTE modification de policy.** C'est
   ainsi que trois failles ont été trouvées, et aucune ne produisait
   d'erreur.
 
@@ -522,7 +527,7 @@ temps.
   leçon la plus rentable du projet. Les environnements de travail
   successifs ne pouvant pas joindre `*.supabase.co`, tout avait été
   vérifié autrement : requêtes rejouées en tant qu'anonyme réel,
-  migrations rejouées sur un PostgreSQL vierge, 55 tests, build de
+  migrations rejouées sur un PostgreSQL vierge, 61 tests, build de
   production. **Le premier vrai passage sur téléphone, le 2026-09-12, a
   trouvé quatre défauts en quelques minutes** — neuf liens morts sur
   `/ecrans`, la barre d'onglets du client servie au commerçant, le fil
@@ -619,8 +624,8 @@ n'inspectaient rien. Voir la leçon rectifiée en section 5 — la première
 formulation avait fait corriger les mauvais endroits.
 
 L'environnement de travail peut désormais **exécuter les tests** : un
-PostgreSQL local monté dans le bac à sable rejoue les 12 migrations
-depuis une base vierge et passe les 55 vérifications de sécurité. C'est
+PostgreSQL local monté dans le bac à sable rejoue les 13 migrations
+depuis une base vierge et passe les 61 vérifications de sécurité. C'est
 la première session où cette propriété est constatée plutôt que citée.
 
 **Et regarder les écrans** : Chromium pilote `npm run dev` en 400 px.

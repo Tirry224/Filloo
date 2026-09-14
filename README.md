@@ -13,7 +13,7 @@ conclut hors de l'application.
 
 - [x] Spécification validée
 - [x] Schéma de base de données, règles métier et sécurité (RLS)
-- [x] Tests de sécurité (55 vérifications, voir `supabase/tests/`)
+- [x] Tests de sécurité (61 vérifications, voir `supabase/tests/`)
 - [x] Budgets de performance mesurés (`npm run poids`, voir `docs/PERFORMANCE.md`)
 - [x] Projet Supabase créé et migrations exécutées
 - [x] Design system et bibliothèque de composants (`src/styles/`, `src/components/`)

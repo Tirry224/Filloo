@@ -766,5 +766,69 @@ select pg_temp.check('la boutique est restee en attente malgre les deux tentativ
   (select status from public.merchants where shop_name = 'Boutique G') = 'pending');
 
 
+-- =====================================================================
+-- 23. Une boutique suspendue quitte la vitrine (0013)
+-- =====================================================================
+-- La suspension vit sur `profiles.is_suspended`, la visibilité sur
+-- `merchants.status` : rien ne reliait les deux, et un commerçant
+-- suspendu gardait boutique, produits et bouton « Contacter ». Le pire
+-- n'était pas qu'il reste visible, c'est qu'on pouvait lui ÉCRIRE sans
+-- qu'il puisse jamais répondre.
+
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+-- En brouillon d'abord : `check_product_publishable` (0011) refuse de
+-- publier un produit sans photo, et c'est exactement ce qu'il doit faire.
+insert into public.products (merchant_id, category_id, title, price_gnf, status)
+  select id, 1, 'Produit vitrine G', 50000, 'draft'
+    from public.merchants where shop_name = 'Boutique G';
+insert into public.product_images (product_id, storage_path, position)
+  select id, 'g/photo.webp', 0 from public.products where title = 'Produit vitrine G';
+update public.products set status = 'active' where title = 'Produit vitrine G';
+
+-- D'abord la référence : tout est bien public tant que rien n'est suspendu.
+reset role;
+select pg_temp.login(null);
+set role anon;
+select pg_temp.check('avant suspension, la boutique est publique',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 1);
+select pg_temp.check('avant suspension, son produit est au catalogue',
+  (select count(*) from public.products where title = 'Produit vitrine G') = 1);
+
+-- On suspend le PROFIL, sans toucher à `merchants.status`.
+reset role;
+update public.profiles set is_suspended = true where full_name = 'Boutique G';
+
+select pg_temp.login(null);
+set role anon;
+select pg_temp.check('une boutique suspendue disparait de la vitrine',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 0);
+select pg_temp.check('ses produits quittent le catalogue public',
+  (select count(*) from public.products where title = 'Produit vitrine G') = 0);
+
+-- Et surtout : on ne peut plus lui écrire.
+reset role;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+do $$
+declare mid uuid;
+begin
+  select id into mid from public.merchants where shop_name = 'Boutique G';
+  insert into public.conversations (client_id, merchant_id)
+    values (public.my_profile_id('client'), mid);
+  raise exception 'ECHEC un client a ouvert un fil avec un commerçant suspendu';
+exception when insufficient_privilege then
+  raise notice 'OK    on ne peut pas ecrire a un commercant suspendu';
+end $$;
+
+-- La réversibilité compte autant : lever la suspension remet en vitrine.
+reset role;
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+select pg_temp.login(null);
+set role anon;
+select pg_temp.check('lever la suspension remet la boutique en vitrine',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 1);
+reset role;
+
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
