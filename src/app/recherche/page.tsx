@@ -6,9 +6,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { CategoryGrid } from "@/components/product/CategoryGrid";
+import { RecentSearches } from "@/components/product/RecentSearches";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { createClient } from "@/lib/supabase/server";
 import { getCategories, getCities } from "@/lib/data/reference";
-import { searchProducts } from "@/lib/data/products";
+import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
 import Link from "next/link";
 
 /**
@@ -39,7 +42,16 @@ export default async function SearchPage({
     ? await searchProducts(supabase, { query: q, cityId: city.id, categoryId: category?.id ?? null, sort, limit: 50 })
     : [];
 
+  // Un résultat vide dû au filtre de ville, pas à la recherche elle-même,
+  // se chiffre plutôt que de laisser croire au catalogue vide — jamais
+  // affiché sans ce chiffre (décision 9 : filtre manuel, jamais automatique).
+  const elsewhereCount =
+    results.length === 0 ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null }) : 0;
+
   const activeFilterCount = (ville !== "Conakry" ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
+  // Écran de repos : rien à afficher, tout à proposer. Le fil d'accueil
+  // montre déjà des produits ; en montrer ici ferait croire à des résultats.
+  const resting = !q && categorie === "Tout";
 
   /* Ces deux liens gardent la recherche tapée — sinon on efface aussi ce
      que la personne cherchait, ce qui n'est pas ce que « filtres » veut
@@ -98,88 +110,99 @@ export default async function SearchPage({
       />
 
       <ScreenBody>
-        <Section className="gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-ink-soft">
-              <b className="text-ink">
-                {results.length} produit{results.length > 1 ? "s" : ""}
-              </b>{" "}
-              trouvé{results.length > 1 ? "s" : ""}
-            </p>
-            <Chip
-              href={`/recherche/filtres?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}`}
-              selected={activeFilterCount > 0}
-              icon={SlidersHorizontal}
-            >
-              Filtres{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
-            </Chip>
-          </div>
+        {resting ? (
+          // État de repos : rien à afficher, tout à proposer. Montrer des
+          // produits ici ferait croire à des résultats de recherche.
+          <Section className="gap-4">
+            <RecentSearches q="" show />
+            <SectionLabel>Parcourir</SectionLabel>
+            <CategoryGrid categories={categories} ville={ville} />
+          </Section>
+        ) : (
+          <Section className="gap-3">
+            {/* Mémoire silencieuse : cette recherche a été réellement
+                lancée, elle mérite d'être retenue. */}
+            <RecentSearches q={q} show={false} />
 
-          {/* Les filtres actifs restent visibles : un résultat vide sans
-              filtre affiché est incompréhensible — on croit le catalogue
-              vide alors qu'on a simplement trop filtré. La catégorie ne
-              s'affiche plus en rangée complète (dix puces à faire défiler) :
-              elle se choisit dans la feuille « Filtres », et seule celle
-              retenue apparaît ici, avec de quoi la retirer d'un tap. Ville
-              ouvre sa propre feuille ; Récents/Populaires sont deux puces
-              mutuellement exclusives, un choix binaire n'a pas besoin d'une
-              feuille pour se faire. */}
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
-            <Chip
-              href={`/recherche/ville?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`}
-              selected
-            >
-              {ville}
-            </Chip>
-            <Chip
-              href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=recent`}
-              selected={tri !== "populaire"}
-            >
-              Récents
-            </Chip>
-            <Chip
-              href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=populaire`}
-              selected={tri === "populaire"}
-            >
-              Populaires
-            </Chip>
-            {categorie !== "Tout" ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-ink-soft">
+                <b className="text-ink">
+                  {results.length} produit{results.length > 1 ? "s" : ""}
+                </b>{" "}
+                trouvé{results.length > 1 ? "s" : ""}
+              </p>
               <Chip
-                href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=Tout&tri=${encodeURIComponent(tri)}`}
-                selected
-                icon={X}
+                href={`/recherche/filtres?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}`}
+                selected={activeFilterCount > 0}
+                icon={SlidersHorizontal}
               >
-                {categorie}
+                Filtres{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
               </Chip>
-            ) : null}
-          </div>
-
-          {results.length === 0 ? (
-            <EmptyState
-              icon={Search}
-              title={q ? `Aucun résultat pour « ${q} »` : "Aucun produit ici"}
-              /* Ce texte disait « retirez le filtre de ville pour chercher
-                 dans toute la Guinée » — une action qui n'existe pas et
-                 ne peut pas exister : la décision 9 de docs/SPEC.md
-                 impose une ville, `searchProducts` exige `cityId`, et la
-                 feuille /recherche/ville n'offre aucune option neutre.
-                 On demandait à la personne de faire ce que le produit
-                 interdit. */
-              description="Essayez un mot plus court, ou changez de ville."
-            >
-              <Button href={searchInConakryHref}>Chercher à Conakry</Button>
-              <Button variant="secondary" href={clearFiltersHref}>
-                Effacer les filtres
-              </Button>
-            </EmptyState>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {results.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
             </div>
-          )}
-        </Section>
+
+            {/* Les filtres actifs restent visibles : un résultat vide sans
+                filtre affiché est incompréhensible — on croit le catalogue
+                vide alors qu'on a simplement trop filtré. La catégorie ne
+                s'affiche plus en rangée complète (dix puces à faire défiler) :
+                elle se choisit dans la feuille « Filtres », et seule celle
+                retenue apparaît ici, avec de quoi la retirer d'un tap. Ville
+                ouvre sa propre feuille ; Récents/Populaires sont deux puces
+                mutuellement exclusives, un choix binaire n'a pas besoin d'une
+                feuille pour se faire. */}
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
+              <Chip
+                href={`/recherche/ville?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`}
+                selected
+              >
+                {ville}
+              </Chip>
+              <Chip
+                href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=recent`}
+                selected={tri !== "populaire"}
+              >
+                Récents
+              </Chip>
+              <Chip
+                href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=populaire`}
+                selected={tri === "populaire"}
+              >
+                Populaires
+              </Chip>
+              {categorie !== "Tout" ? (
+                <Chip
+                  href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=Tout&tri=${encodeURIComponent(tri)}`}
+                  selected
+                  icon={X}
+                >
+                  {categorie}
+                </Chip>
+              ) : null}
+            </div>
+
+            {results.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                title={q ? `Aucun résultat pour « ${q} »` : "Aucun produit ici"}
+                description={
+                  elsewhereCount > 0
+                    ? `${elsewhereCount} produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
+                    : "Essayez un mot plus court, ou changez de ville."
+                }
+              >
+                {elsewhereCount === 0 ? <Button href={searchInConakryHref}>Chercher à Conakry</Button> : null}
+                <Button variant="secondary" href={clearFiltersHref}>
+                  Effacer les filtres
+                </Button>
+              </EmptyState>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {results.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
       </ScreenBody>
 
       <BottomNav active="search" />

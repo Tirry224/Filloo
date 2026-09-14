@@ -42,8 +42,12 @@ function mapRow(row: SearchRow): Product {
 /**
  * Fil d'accueil et recherche partagent la même fonction SQL (voir
  * 0003_search_and_seed.sql) ; ce module partage donc le même point d'entrée
- * côté app. `cityId` est obligatoire : contrairement à la catégorie, il n'y
- * a pas de fil « toutes villes » — décision 9 de docs/SPEC.md.
+ * côté app. `cityId` reste obligatoire pour le FIL affiché : contrairement à
+ * la catégorie, il n'y a pas de fil « toutes villes » — décision 9 de
+ * docs/SPEC.md, jamais de filtrage automatique. `cityId` omis sert
+ * uniquement à CHIFFRER un résultat vide (« 3 produits ailleurs »), jamais à
+ * afficher une liste : la décision reste manuelle, seul le compte est
+ * automatique.
  */
 type ProductDetailRow = {
   id: string;
@@ -117,7 +121,7 @@ export async function searchProducts(
   supabase: SupabaseClient<Database>,
   opts: {
     query?: string;
-    cityId: number;
+    cityId?: number;
     categoryId?: number | null;
     sort?: "recent" | "popular";
     limit?: number;
@@ -125,11 +129,28 @@ export async function searchProducts(
 ): Promise<Product[]> {
   const { data, error } = await supabase.rpc("search_products", {
     p_query: opts.query || undefined,
-    p_city_id: opts.cityId,
+    p_city_id: opts.cityId ?? undefined,
     p_category_id: opts.categoryId ?? undefined,
     p_sort: opts.sort ?? "recent",
     p_limit: opts.limit ?? 24,
   });
   if (error) throw error;
   return data.map(mapRow);
+}
+
+/** Compte les résultats d'une recherche sans filtre de ville — sert
+ * uniquement à chiffrer un écran vide (« N produits ailleurs »), jamais à
+ * les lister : la décision 9 de docs/SPEC.md interdit tout filtrage
+ * automatique, seul le CHIFFRE l'est. */
+export async function countProductsElsewhere(
+  supabase: SupabaseClient<Database>,
+  opts: { query?: string; categoryId?: number | null },
+): Promise<number> {
+  const { data, error } = await supabase.rpc("search_products", {
+    p_query: opts.query || undefined,
+    p_category_id: opts.categoryId ?? undefined,
+    p_limit: 500,
+  });
+  if (error) throw error;
+  return data.length;
 }
