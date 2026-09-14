@@ -60,7 +60,7 @@ export default async function ThreadPage({
 
   return (
     <Screen>
-      <RealtimeThread conversationId={id} />
+      <RealtimeThread conversationId={id} myParticipantId={context.myParticipantId} />
       <TopBar
         backHref="/messages"
         title={
