@@ -8,6 +8,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ProductRef } from "@/components/chat/ProductRef";
 import { Composer } from "@/components/chat/Composer";
+import { RealtimeThread } from "@/components/chat/RealtimeThread";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext, getMessages } from "@/lib/data/messages";
 import { getProduct } from "@/lib/data/products";
@@ -59,6 +60,7 @@ export default async function ThreadPage({
 
   return (
     <Screen>
+      <RealtimeThread conversationId={id} />
       <TopBar
         backHref="/messages"
         title={
