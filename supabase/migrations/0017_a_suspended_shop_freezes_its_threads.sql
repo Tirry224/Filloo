@@ -33,9 +33,29 @@
 -- n'importe quelle boutique : croisée avec le catalogue public, elle
 -- permettrait de distinguer « suspendue » de « refusée ou en attente »,
 -- c'est-à-dire de lire une sanction. C'est précisément ce que 0013
--- s'était interdit. Un identifiant de CONVERSATION, lui, n'est connu que
--- de ses deux participants — qui ont déjà le droit de savoir que ce fil
--- ne prend plus d'écriture, puisque l'écran doit le leur dire.
+-- s'était interdit.
+--
+-- POURQUOI ELLE VÉRIFIE AUSSI QUI DEMANDE
+-- Première version de cette fonction : elle ne regardait que l'état de
+-- la boutique, en tenant pour acquis qu'un identifiant de conversation
+-- n'est connu que de ses deux participants. Vérification du
+-- 2026-09-15, faite AVANT de l'appliquer : un troisième compte, à qui
+-- le RLS refuse la conversation, ses messages et jusqu'à la boutique,
+-- obtenait quand même `true` en appelant la fonction avec cet
+-- identifiant. Autrement dit, `security definer` rouvrait par la petite
+-- porte ce que trois policies fermaient par la grande.
+--
+-- Que l'identifiant soit difficile à deviner n'est pas une protection,
+-- c'est une probabilité : il circule dans les URL, les journaux, les
+-- liens partagés, les captures d'écran. C'est la leçon que 0005 avait
+-- déjà tirée sur `is_active_profile`, qui répondait de la même façon sur
+-- un profil quelconque.
+--
+-- La fonction exige donc en plus que l'appelant soit DANS ce fil. Pour
+-- tous les autres elle répond `false`, exactement comme pour un fil
+-- gelé : on ne peut donc pas distinguer « fermé » de « pas le mien »,
+-- et il n'y a rien à apprendre en la sondant. La policy d'envoi, elle,
+-- n'y perd rien — celui qui écrit est toujours un participant.
 
 create or replace function public.conversation_is_open(cid uuid)
 returns boolean
@@ -50,13 +70,16 @@ as $$
       join public.merchants m on m.id = c.merchant_id
       join public.profiles  p on p.id = m.profile_id
      where c.id = cid
+       -- Les deux côtés du fil, et personne d'autre.
+       and (c.client_id = public.my_profile_id('client')
+            or c.merchant_id = public.my_merchant_id())
        and p.is_suspended = false
        and p.is_deleted   = false
   );
 $$;
 
 comment on function public.conversation_is_open(uuid) is
-  'Ce fil accepte-t-il encore des messages ? Faux dès que la boutique en face a un compte suspendu ou supprimé. Ne dit rien du statut de validation de la boutique.';
+  'Ce fil accepte-t-il encore MES messages ? Faux si je n''y participe pas, ou si la boutique en face a un compte suspendu ou supprimé. Ne dit rien du statut de validation de la boutique, ni ne distingue ces deux cas.';
 
 -- Même précaution que `resubmit_my_merchant` (0015) : Supabase accorde
 -- `execute` à `public` — donc à `anon` — sur toute fonction nouvelle. Un

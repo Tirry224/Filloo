@@ -1200,6 +1200,40 @@ select pg_temp.check('lever la suspension rouvre l''ecriture du fil',
     where mm.shop_name = 'Boutique G') = 3);
 reset role;
 
+-- (g) `conversation_is_open` ne répond qu'aux participants. Ce test
+--     existe parce que la première version de la fonction échouait ici :
+--     elle ne regardait que l'état de la boutique, et un tiers à qui le
+--     RLS refuse le fil, ses messages et jusqu'à la boutique obtenait
+--     quand même `true` en l'appelant avec l'identifiant du fil.
+--     `security definer` rouvrait ainsi ce que trois policies fermaient.
+--     Un identifiant difficile à deviner n'est pas une protection : il
+--     circule dans les URL, les journaux et les captures d'écran.
+--     Pour un tiers, la réponse est `false` — indistinguable d'un fil
+--     gelé, donc sans rien à apprendre en la sondant.
+select pg_temp.login('66666666-6666-6666-6666-666666666666');
+set role authenticated;
+select pg_temp.check('conversation_is_open est muette pour un tiers',
+  not public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+reset role;
+
+-- Et un visiteur non connecté n'a pas même le droit de poser la
+-- question : `execute` lui est révoqué (0017), comme pour
+-- `resubmit_my_merchant` (0015).
+select pg_temp.login(null);
+set role anon;
+do $$
+begin
+  perform public.conversation_is_open('00000000-0000-0000-0000-000000000000');
+  raise exception 'ECHEC un anonyme a appele conversation_is_open';
+exception when insufficient_privilege then
+  raise notice 'OK    un anonyme ne peut pas appeler conversation_is_open';
+end $$;
+reset role;
+
 -- (f) Une boutique renvoyée à la VÉRIFICATION n'est pas une boutique
 --     suspendue : ses fils continuent. C'est la raison pour laquelle
 --     0017 n'emploie pas `merchant_is_public`, qui exige 'approved' —
