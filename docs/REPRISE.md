@@ -5,8 +5,8 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-15** (audit des parcours — voir le
-journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-15** (audit des parcours, puis audit du
+parcours d'achat complet et son contre-audit — voir le journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -119,6 +119,16 @@ personne DÉJÀ connectée — ce qui n'est pas le réflexe de quelqu'un qui
 veut « aussi vendre ». Si le porteur du projet se trompe, l'utilisateur
 se trompera.
 
+**15. Écrire à un CLIENT suspendu : faut-il l'interdire aussi ?** La
+décision du 2026-09-15 porte sur la boutique suspendue, et `0017`
+l'applique à la lettre. L'audit du lendemain a mesuré le cas miroir : un
+client suspendu ne peut plus écrire, mais le commerçant, lui, peut
+toujours lui répondre — dans le vide, puisque l'autre ne pourra pas
+réagir. C'est exactement le défaut que `0017` a fermé, pris par l'autre
+bout. Le rendre symétrique tient en une condition de plus dans
+`conversation_is_open` ; l'assumer tient en une phrase dans
+`docs/SPEC.md`. Ce qui n'est pas tenable, c'est de ne pas choisir.
+
 ### Non bloquant
 
 **9. Temps réel de la messagerie.** Le fil se recharge à la navigation,
@@ -149,10 +159,29 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 74 tests couvrent le SQL, zéro
+- **Aucun test automatisé côté front.** 96 tests couvrent le SQL, zéro
   couvre la couche applicative — là où se trouvaient les quatre bugs du
   2026-09-12. C'est le déséquilibre de fond du projet : la couche la
-  mieux testée n'est pas celle qui casse.
+  mieux testée n'est pas celle qui casse. **Démontré une fois de plus le
+  2026-09-15** : le contournement de `safeNextPath` par une tabulation
+  vivait précisément là, et les quinze cas qui l'ont trouvé ont été
+  exécutés depuis `/tmp` — ils ne sont pas dans le dépôt. Le même défaut
+  peut donc revenir sans que rien ne le dise. Node 22 sait exécuter
+  `node --test` sans installer quoi que ce soit : il n'y a même plus
+  l'excuse de la dépendance.
+- **`?next=` se perd sur deux chemins.** `signUpAction` ne passe pas
+  d'`emailRedirectTo`, donc si la confirmation par email est réactivée
+  (décision 6), le lien reçu ramène à la racine du site et le produit est
+  perdu. Le lien « Mot de passe oublié ? » de l'écran de connexion ne
+  transporte pas `next` non plus. Latent aujourd'hui : la confirmation
+  est désactivée, vérifié en base le 2026-09-15 (`confirmation_sent_at`
+  nul sur tous les comptes).
+- **Un test de quota accepte n'importe quelle erreur.** Dans
+  `security_test.sql`, la boucle des 100 messages par jour affiche `OK`
+  dans un `exception when others` sans vérifier le `sqlstate` : un refus
+  RLS ou une faute de frappe dans le jeu de données produiraient le même
+  vert. Le test du quota de conversations, lui, exige `P0001` — les deux
+  devraient se ressembler.
 - **Polices : 60 Ko pour un budget de 40** (`npm run poids`). Deux
   familles Google, toutes deux préchargées ; `preload: false` sur celle
   des titres suffirait peut-être. À mesurer, pas à supposer.
@@ -206,8 +235,8 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 15 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf. **Les 15 sont appliquées au projet Supabase**,
+2026-09-11. `supabase/migrations/` — 17 fichiers SQL, à exécuter dans
+l'ordre sur un projet neuf. **Les 17 sont appliquées au projet Supabase**,
 vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
@@ -240,18 +269,40 @@ vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
   ('rejected' → 'pending'), sur sa propre boutique, jamais vers
   'approved' : le commerçant n'a toujours aucun droit d'écriture sur
   `merchants.status`.
+- `0016_a_conversation_survives_a_suspension.sql` — deux défauts d'un
+  seul tenant. **Suspendre un vendeur ne doit pas effacer ce que ses
+  clients ont vécu** : `0013` retirait la ligne `merchants` à tout le
+  monde, donc `getThreadContext` perdait sa jointure et le fil du client
+  devenait une page introuvable, avec une ligne sans nom dans
+  `/messages`. `i_talk_with_merchant` rend la boutique lisible à qui a
+  déjà un fil avec elle — la branche symétrique de « profiles: je vois
+  mes interlocuteurs », qui existait déjà dans l'autre sens. **Et
+  personne ne contacte sa propre boutique** : le fil avait le même être
+  humain des deux côtés, et surtout `bump_contact_count` faisait monter
+  le produit dans le tri « populaires ».
+- `0017_a_suspended_shop_freezes_its_threads.sql` — une boutique
+  suspendue met ses fils en **lecture seule** : l'historique reste
+  entier et lisible, plus personne n'y écrit. `conversation_is_open(cid)`
+  garde la policy d'envoi. Elle ne regarde QUE l'état du compte en face,
+  jamais `merchants.status` — une boutique renvoyée à la vérification
+  (`0015`) n'a rien fait de mal et ses clients attendent une réponse.
+  Elle exige en plus que l'appelant soit participant du fil : voir le
+  piège correspondant en section 5.
 
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 15 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 17 migrations rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **74 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **96 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
-échouent, et ont déjà trouvé **trois vraies failles** (section 5).
+échouent, et ont déjà trouvé **trois vraies failles** (section 5). La
+quatrième, la fuite de `conversation_is_open`, a été trouvée par une
+vérification ciblée AVANT application, puis figée par deux tests de plus :
+le filet n'attrape que ce qu'on lui a appris à attraper.
 
 ### Les quatre trous de schéma, tous comblés
 
@@ -395,6 +446,19 @@ npm run parcours               # mesure d'un parcours
 - **Disponibilité binaire** : disponible ou vendu. Pas de gestion de
   stock.
 - **Filtre de ville manuel**, jamais automatique.
+- **La suspension coupe l'écriture, jamais la lecture.** Une boutique
+  suspendue quitte la vitrine et ses fils passent en lecture seule des
+  deux côtés ; l'historique reste entier et consultable. Décision du
+  2026-09-15, appliquée par `0017`. Un refus de validation, lui, n'est
+  pas une suspension : il retire du catalogue sans geler les fils.
+- **On ne contacte pas sa propre boutique.** « Un client contacte un
+  commerçant » veut dire quelqu'un d'autre — sans quoi le compteur de
+  contacts, qui sert au tri « populaires », se remplit tout seul.
+- **L'intention survit à l'authentification.** Le seul écran qui exige
+  un compte est « Contacter le vendeur » ; qui s'y inscrit ou s'y
+  connecte revient sur CE produit, jamais sur le fil d'accueil. Le
+  paramètre `?next=` porte cette intention, et `safeNextPath` est le
+  seul endroit qui décide s'il est sûr.
 - **Pas de notation** tant que la transaction reste hors du système.
 - **Aucune monétisation** en v1 (choix assumé).
 - Direction visuelle **« A — Marché »** : fond papier chaud, accent
@@ -450,6 +514,20 @@ temps.
   fuite : `is_active_profile(pid)` révélait si un profil ARBITRAIRE
   était suspendu ou supprimé. Ni « tout corriger » ni « tout ignorer »
   n'aurait donné le bon résultat.
+- **Un identifiant difficile à deviner n'est pas une protection.** La
+  première version de `conversation_is_open` (`0017`) ne regardait que
+  l'état de la boutique, en tenant pour acquis qu'un identifiant de
+  conversation n'est connu que de ses deux participants. Mesuré avant
+  application : un troisième compte, à qui le RLS refuse la
+  conversation, ses messages et jusqu'à la fiche boutique, obtenait
+  quand même sa réponse en appelant la fonction avec cet identifiant.
+  `security definer` rouvrait par la petite porte ce que trois policies
+  fermaient par la grande. Un identifiant circule dans les URL, les
+  journaux, les liens partagés et les captures d'écran : c'est une
+  probabilité, pas une barrière. **Toute fonction `security definer`
+  doit vérifier QUI demande, pas seulement CE QU'on lui demande** — la
+  leçon avait déjà été tirée sur `is_active_profile` (`0005`), elle n'a
+  pas été appliquée du premier coup à la suivante.
 - **Un confort administratif est le moment exact où l'on rouvre une
   faille.** En simplifiant la validation d'une boutique (`0012`),
   mettre les fonctions en `security definer` les aurait rendues
@@ -479,6 +557,29 @@ temps.
 
 ### Sur la couche applicative
 
+- **Une liste blanche qui compare des préfixes valide une ORTHOGRAPHE,
+  pas une adresse.** `safeNextPath` refusait `//autre.gn` et
+  `/\autre.gn` en testant le début de la chaîne. Mesuré le
+  2026-09-15 : une tabulation glissée en deuxième position
+  (`/<TAB>/faux-makiti.gn`) passait le filtre, et Node émet l'en-tête
+  `Location` avec la tabulation intacte — or la spécification URL impose
+  aux navigateurs d'effacer tabulations, retours chariot et sauts de
+  ligne AVANT d'analyser l'adresse, qui redevient alors `//faux-makiti.gn`.
+  La redirection ouverte que le filtre existait pour fermer restait donc
+  ouverte. **Une adresse se valide en l'analysant comme le fera celui
+  qui la suivra** : caractères de contrôle refusés, puis résolution
+  contre une origine qui n'existe pas, et l'origine doit être inchangée.
+- **Une règle posée dans la base doit être DEMANDÉE à la base, et
+  jamais sans session.** `getThreadContext` interroge
+  `conversation_is_open` pour savoir s'il faut afficher le champ de
+  saisie — bonne idée, une seule règle pour l'écran et pour la policy.
+  Mais `execute` est révoquée à `anon` : pour un visiteur, la réponse
+  était un refus, propagé jusqu'à la frontière d'erreur. Un lien de
+  conversation partagé sur WhatsApp, ouvert sans session, affichait donc
+  « Vérifiez votre connexion » — une panne réseau imaginaire — là où il
+  rendait auparavant la page introuvable. Aucune page de `/messages`
+  n'exige de session en amont : le middleware ne fait que rafraîchir le
+  cookie.
 - **« Pas d'erreur » ne veut jamais dire « c'est fait » — mais pas pour
   toutes les écritures.** Quand le RLS écarte une ligne, PostgREST ne
   renvoie pas d'erreur : il renvoie un SUCCÈS portant zéro ligne. La
@@ -669,6 +770,57 @@ pas ses voisins ») :
 Et trois vérifications de sécurité de plus sur `0015` (74 au total) :
 'approved' → 'pending' impossible, un commerçant suspendu ne renvoie pas
 sa boutique, un compte client n'en trouve aucune à renvoyer.
+
+### 2026-09-15 (suite) — le parcours d'achat, puis son contre-audit
+Deuxième audit du même jour, par scénario complet cette fois : visiteur →
+ville → recherche → produit → boutique → contacter le vendeur →
+connexion/inscription → conversation → premier message → réponse. Lu
+d'abord, corrigé ensuite, et vérifié sur un PostgreSQL local avant toute
+correction — la mesure d'abord, la conclusion après.
+
+Quatre défauts, dans l'ordre où ils font mal :
+
+- **Une conversation devenait une page introuvable** dès que la boutique
+  était suspendue (`0016`). Le client perdait l'accès à son propre
+  historique sans qu'aucun écran ne le lui dise.
+- **On pouvait contacter sa propre boutique** (`0016`). Le fil absurde
+  n'était pas le problème : `bump_contact_count` faisait monter le
+  produit dans le tri « populaires », donc un vendeur pouvait se
+  recommander lui-même.
+- **L'intention se perdait à l'inscription.** « Contacter le vendeur »
+  → « Créer mon compte » → fil d'accueil, produit envolé. Elle voyage
+  maintenant dans `?next=`.
+- **Une redirection ouverte dormait déjà dans `/auth/confirm`** :
+  `?next=@exemple.gn` recollé à l'origine donne une adresse dont le vrai
+  domaine est `exemple.gn`.
+
+Puis une décision du porteur du projet sur la suspension — lecture seule,
+pas suppression — appliquée par `0017`, et le quota de 20 conversations
+par jour qui cesse de s'afficher comme une panne réseau.
+
+**Et surtout un contre-audit demandé ensuite**, dépôt et base relus sans
+faire confiance aux messages de commit. Il a trouvé deux défauts dans le
+travail des heures précédentes :
+
+- **La protection contre la redirection ouverte se contournait** avec
+  une tabulation (voir section 5). Le correctif prétendait fermer la
+  porte et la laissait entrebâillée.
+- **Un visiteur sans session tombait sur « Vérifiez votre connexion »**
+  en ouvrant un lien de conversation, à cause de la RPC ajoutée par
+  `0017` (voir section 5).
+
+Ce que ce contre-audit dit du reste : les deux défauts étaient dans le
+code applicatif, celui que rien ne teste. Les 96 vérifications SQL, elles,
+n'ont rien laissé passer — et l'une d'elles, ajoutée avant application, a
+attrapé la première version de `conversation_is_open` qui répondait à des
+tiers.
+
+`0016` et `0017` sont **appliquées au projet Supabase** (versions
+`20260915214106` et `20260915214137`), et vérifiées plutôt que supposées :
+l'empreinte `md5(pg_get_functiondef())` de `conversation_is_open` et
+celles des trois policies concernées sont identiques en local et en
+production, aucun compte de ligne n'a bougé, et `execute` sur la fonction
+n'est accordée qu'à `authenticated`.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »
