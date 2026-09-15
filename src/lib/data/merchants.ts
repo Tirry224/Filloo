@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Merchant, Product } from "@/lib/types";
@@ -51,8 +52,15 @@ export async function getMerchant(supabase: SupabaseClient<Database>, id: string
  * à `getMerchant`, réservée à un visiteur et donc muette sur une boutique
  * en attente ou refusée. Sert à tout l'espace vendeur : lui seul a le
  * droit de savoir où en est SA boutique.
+ *
+ * Mise en cache pour la durée d'UNE requête, pour la même raison que
+ * `getSessionUser` et `getMyProfiles` : depuis que le badge de non-lus
+ * existe, les écrans vendeur appellent cette fonction DEUX fois — une pour
+ * la page, une pour `countUnreadMessages` — et rien ne justifiait de payer
+ * deux fois le même aller-retour. `createClient` est lui aussi mis en
+ * cache, donc les deux appels partagent bien la même clé.
  */
-export async function getMyMerchant(supabase: SupabaseClient<Database>): Promise<Merchant | null> {
+export const getMyMerchant = cache(async (supabase: SupabaseClient<Database>): Promise<Merchant | null> => {
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return null;
   const { data, error } = await supabase
@@ -63,7 +71,7 @@ export async function getMyMerchant(supabase: SupabaseClient<Database>): Promise
   if (error) throw error;
   if (!data) return null;
   return mapMerchant(data);
-}
+});
 
 type MerchantProductRow = {
   id: string;

@@ -149,7 +149,7 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 67 tests couvrent le SQL, zéro
+- **Aucun test automatisé côté front.** 74 tests couvrent le SQL, zéro
   couvre la couche applicative — là où se trouvaient les quatre bugs du
   2026-09-12. C'est le déséquilibre de fond du projet : la couche la
   mieux testée n'est pas celle qui casse.
@@ -249,7 +249,7 @@ supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **67 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **74 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5).
 
@@ -417,7 +417,7 @@ npm run parcours               # mesure d'un parcours
   dans la même session**, et toute migration commitée est appliquée dans
   la même session. Les deux sens produisent le même écart : un dépôt qui
   décrit une base qui n'existe pas (ou plus).
-- **Relancer les 67 tests après TOUTE modification de policy.** C'est
+- **Relancer les 74 tests après TOUTE modification de policy.** C'est
   ainsi que trois failles ont été trouvées, et aucune ne produisait
   d'erreur.
 
@@ -643,6 +643,25 @@ sort, dans l'ordre de gravité :
   conditions d'utilisation qui cessent d'être un bouton mort, et les
   photos dont la suppression dans Storage attend désormais
   l'enregistrement en base.
+
+**Vérification ciblée le même jour**, demandée avant de passer à autre
+chose. Elle a trouvé deux défauts dans le travail qui venait d'être
+poussé, tous deux dans la même famille (« j'ai regardé le cas nominal,
+pas ses voisins ») :
+
+- **Un chemin de photo encore cité ailleurs pouvait être détruit.**
+  `product_images.storage_path` n'est unique nulle part et `imagePaths`
+  vient du navigateur : une écriture sur le produit X pouvait supprimer le
+  fichier du produit Y. Le ménage dans Storage vérifie désormais qu'aucune
+  ligne ne cite plus le chemin avant de l'effacer.
+- **`getMyMerchant` était appelée deux fois par écran vendeur** depuis que
+  le badge existe. Mise en cache par requête, comme `getSessionUser` et
+  `getMyProfiles` — la leçon était déjà écrite, elle n'avait pas été
+  appliquée à la nouvelle lecture.
+
+Et trois vérifications de sécurité de plus sur `0015` (74 au total) :
+'approved' → 'pending' impossible, un commerçant suspendu ne renvoie pas
+sa boutique, un compte client n'en trouve aucune à renvoyer.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »

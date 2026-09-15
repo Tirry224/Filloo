@@ -838,8 +838,10 @@ reset role;
 -- `resubmit_my_merchant()` est `security definer` — donc exécutée avec les
 -- droits du propriétaire de la fonction, RLS contourné — et c'est
 -- précisément le genre de fonction qui a déjà rouvert une faille ici
--- (voir 0012). Ces quatre vérifications tiennent sa promesse : une seule
--- transition, sur sa propre boutique, jamais vers 'approved'.
+-- (voir 0012). Ces vérifications tiennent sa promesse, clause par clause :
+-- une seule transition ('rejected' → 'pending'), sur sa propre boutique,
+-- jamais vers 'approved', jamais pour un compte suspendu, jamais pour un
+-- anonyme ni pour un compte client.
 
 reset role;
 update public.merchants
@@ -896,6 +898,76 @@ exception when insufficient_privilege then
   raise notice 'OK    un anonyme ne peut pas appeler resubmit_my_merchant';
 end $$;
 reset role;
+
+-- 5. Le cas le plus dangereux, posé explicitement : A est APPROUVÉE, B est
+--    REFUSÉE. Si la fonction se trompait de boutique ou de transition, ce
+--    test le dirait — il vérifie les deux à la fois.
+--    'approved' → 'pending' déclasserait une boutique validée ; toucher
+--    celle du voisin serait pire encore, puisque la sienne est justement
+--    dans l'état que la fonction sait traiter.
+reset role;
+update public.merchants set status = 'approved' where shop_name = 'Chez A';
+update public.merchants
+   set status = 'rejected', rejection_reason = 'Numéro injoignable'
+ where shop_name = 'Chez B';
+
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+do $$
+begin
+  perform public.resubmit_my_merchant();
+  raise exception 'ECHEC une boutique approuvee a ete renvoyee en attente';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    une boutique approuvee ne repasse pas en attente';
+end $$;
+reset role;
+select pg_temp.check('une boutique approuvee reste approuvee',
+  (select status from public.merchants where shop_name = 'Chez A') = 'approved');
+select pg_temp.check('la boutique refusee du voisin reste refusee',
+  (select status from public.merchants where shop_name = 'Chez B') = 'rejected');
+
+-- 6. Un commerçant SUSPENDU ne renvoie pas sa boutique. La fonction
+--    contourne le RLS par construction : sans ce test, rien ne prouverait
+--    qu'elle n'est pas devenue la porte dérobée de la suspension.
+reset role;
+update public.merchants
+   set status = 'rejected', rejection_reason = 'Numéro injoignable'
+ where shop_name = 'Chez A';
+update public.profiles set is_suspended = true
+ where id = '11111111-1111-1111-1111-111111111111';
+
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+do $$
+begin
+  perform public.resubmit_my_merchant();
+  raise exception 'ECHEC un commercant suspendu a renvoye sa boutique';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    un commercant suspendu ne renvoie pas sa boutique';
+end $$;
+reset role;
+select pg_temp.check('la boutique du commercant suspendu reste refusee',
+  (select status from public.merchants where shop_name = 'Chez A') = 'rejected');
+update public.profiles set is_suspended = false
+ where id = '11111111-1111-1111-1111-111111111111';
+
+-- 7. Un compte CLIENT n'a pas de boutique à renvoyer, et la fonction ne
+--    doit pas en trouver une pour lui.
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+set role authenticated;
+do $$
+begin
+  perform public.resubmit_my_merchant();
+  raise exception 'ECHEC un client a appele resubmit_my_merchant';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    un compte client ne renvoie aucune boutique';
+end $$;
+reset role;
+select pg_temp.check('aucune boutique n''a bouge sur appel d''un client',
+  (select count(*) from public.merchants where status = 'rejected') = 2);
 
 
 \echo ''

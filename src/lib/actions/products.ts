@@ -222,9 +222,29 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   const removedPaths = (previousImages ?? [])
     .map((image) => image.storage_path)
     .filter((path) => !fields.imagePaths.includes(path));
+
+  /* Une dernière question avant de détruire quoi que ce soit : ce fichier
+     est-il encore cité AILLEURS ? `product_images.storage_path` n'est
+     unique nulle part, et `imagePaths` vient du formulaire, donc du
+     navigateur — un envoi fabriqué peut faire pointer un produit sur le
+     chemin d'un autre. Supprimer sans regarder reviendrait à laisser une
+     écriture sur le produit X détruire la photo du produit Y.
+     Le RLS du stockage limite déjà les dégâts au dossier du commerçant
+     lui-même ; ce n'est pas une raison de le laisser casser SES propres
+     annonces. Une requête de plus, et seulement quand une photo est
+     réellement retirée. */
   if (removedPaths.length > 0) {
-    const { error: storageError } = await supabase.storage.from("product-images").remove(removedPaths);
-    if (storageError) console.error("photos retirées non supprimées du stockage :", storageError.message);
+    const { data: stillReferenced } = await supabase
+      .from("product_images")
+      .select("storage_path")
+      .in("storage_path", removedPaths);
+    const referenced = new Set((stillReferenced ?? []).map((image) => image.storage_path));
+    const orphanPaths = removedPaths.filter((path) => !referenced.has(path));
+
+    if (orphanPaths.length > 0) {
+      const { error: storageError } = await supabase.storage.from("product-images").remove(orphanPaths);
+      if (storageError) console.error("photos retirées non supprimées du stockage :", storageError.message);
+    }
   }
 
   redirect("/vendeur");
