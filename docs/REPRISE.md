@@ -207,8 +207,8 @@ français.
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
 2026-09-11. `supabase/migrations/` — 15 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf. **`0015` est la seule qui ne soit pas encore
-appliquée au projet Supabase** (voir le journal du 2026-09-15) :
+l'ordre sur un projet neuf. **Les 15 sont appliquées au projet Supabase**,
+vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -634,10 +634,17 @@ sort, dans l'ordre de gravité :
   informations ne changeait pas `status`, et le commerçant n'avait aucun
   moyen de repartir vers la vérification. Migration `0015` : une fonction
   qui n'autorise QUE 'rejected' → 'pending', sur sa propre boutique.
-  **Commitée, PAS encore appliquée au projet Supabase** — l'environnement
-  de travail ne joint toujours pas `*.supabase.co`. C'est l'écart que la
-  règle de travail interdit : à appliquer au tableau de bord avant tout
-  autre travail sur la base.
+  **Appliquée au projet Supabase le jour même** (version
+  `20260915210337`), et vérifiée en base ensuite plutôt que supposée : la
+  fonction est bien `security definer` avec `search_path` figé et sans
+  aucun paramètre, `anon` n'a PAS le droit de l'exécuter
+  (`has_function_privilege` le confirme, et l'entrée PUBLIC a bien
+  disparu de l'ACL), et l'advisor Supabase ne la signale que dans la
+  liste « signed-in users », jamais dans la liste « anon ».
+  À noter pour la prochaine fois : le texte enregistré dans l'historique
+  des migrations est la version SANS les commentaires du fichier. La
+  logique est identique, mais le dépôt reste la seule copie lisible du
+  raisonnement.
 - Le reste : badge de non-lus sur la barre d'onglets, ville de recherche
   harmonisée, mot de passe accessible à un commerçant sans compte client,
   conditions d'utilisation qui cessent d'être un bouton mort, et les
