@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Message, Thread } from "@/lib/types";
 import { productImageUrl } from "@/lib/storage";
-import { getMyProfile } from "@/lib/data/session";
+import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatMessageTime } from "@/lib/format";
 import type { Space } from "@/lib/space";
@@ -153,6 +153,30 @@ export async function getThreadContext(
   supabase: SupabaseClient<Database>,
   conversationId: string,
 ): Promise<ThreadContext | null> {
+  /* Sans session, il n'y a pas de fil à résoudre — et surtout, il ne
+     faut pas POSER la question.
+
+     `conversation_is_open` est révoquée à `anon` (0017), donc la RPC
+     ci-dessous répond « permission refusée » à un visiteur, et cette
+     erreur était propagée : `/messages/<id>` ouvert sans session
+     affichait la frontière d'erreur (« Vérifiez votre connexion »)
+     au lieu de la page introuvable qu'il rendait avant 0017. Un lien
+     de conversation partagé sur WhatsApp, ou remis en favori après
+     expiration de la session, faisait donc croire à une panne réseau
+     et invitait à réessayer — pour un fil que le RLS n'aurait de
+     toute façon pas laissé lire.
+
+     Aucune page de `/messages` n'exige de session en amont : le
+     middleware ne fait que rafraîchir le cookie. C'est donc ici que
+     le cas se traite, en une ligne et pour les quatre écrans et les
+     trois actions serveur qui passent par cette fonction.
+
+     Gratuit pour une session ouverte : `getSessionUser` est mis en
+     cache pour la durée de la requête, et `getMyProfile` l'appelle de
+     toute façon quelques lignes plus bas. */
+  const user = await getSessionUser(supabase);
+  if (!user) return null;
+
   /* L'ouverture du fil est demandée à la BASE (`conversation_is_open`,
      0017) et non déduite ici : c'est la même fonction qui décide, dans la
      policy d'envoi, si le message passera. Une règle appliquée à deux
