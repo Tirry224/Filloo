@@ -66,9 +66,17 @@ export function MenuItem({
       </form>
     );
   }
-  return (
-    <button type="button" className={cn(className, "w-full cursor-pointer text-left")}>
-      {content}
-    </button>
-  );
+  /* Ni lien ni action : ce n'est pas un bouton, c'est une ligne
+     d'information. Elle en rendait un quand même — `cursor-pointer`
+     compris — et « Conditions d'utilisation » était donc, sur `/compte`
+     comme sur `/vendeur/boutique`, un bouton qu'on touche et qui ne fait
+     rien. On réessaie, on croit l'application bloquée : exactement le
+     défaut déjà rencontré avec l'onglet « Accueil » mort du commerçant
+     (docs/REPRISE.md, section 5).
+
+     Le texte des conditions n'existe pas encore (étape 2 de
+     docs/REPRISE.md) ; il ne s'invente pas ici. En attendant, la ligne dit
+     ce qu'elle est — présente, pas encore ouverte — au lieu de promettre
+     un écran qui n'existe pas. */
+  return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }

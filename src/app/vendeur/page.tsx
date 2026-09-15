@@ -13,6 +13,8 @@ import { ProductRow } from "@/components/product/ProductRow";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
+import { countUnreadMessages } from "@/lib/data/messages";
+import { messagesHref } from "@/lib/space";
 
 /**
  * Mes produits — écrans 22 et 23 de docs/ECRANS.md.
@@ -49,6 +51,7 @@ export default async function SellerPage({
 
   const catalogue = await getMerchantProducts(supabase, merchant);
   const published = catalogue.filter((p) => p.status === "active").length;
+  const unreadCount = await countUnreadMessages(supabase, "merchant");
 
   return (
     <Screen>
@@ -82,19 +85,26 @@ export default async function SellerPage({
           </EmptyState>
         ) : (
           <Section className="gap-3.5">
-            {/* Deux chiffres, pas six. Le second est le seul qui fera
-                revenir un commerçant chaque matin — mais le compteur de
-                non-lus n'existe pas encore (étape 3 de docs/REPRISE.md) :
-                un lien honnête vaut mieux qu'un chiffre inventé. */}
+            {/* Deux chiffres, pas six — comme l'écran 22 le demande
+                (« publiés, messages non lus »). Le second manquait :
+                `countUnreadMessages` le calcule désormais depuis la vraie
+                base, donc le lien honnête peut redevenir un chiffre.
+
+                Et il mène à `/messages?vue=commercant`, pas à `/messages`
+                nu : un commerçant qui a aussi un compte client tombait
+                sinon dans sa boîte d'ACHETEUR depuis sa propre boutique. */}
             <div className="flex gap-3">
               <Card className="flex flex-1 flex-col gap-0.5 p-3.5">
                 <span className="font-display text-2xl font-bold">{published}</span>
                 <span className="text-xs text-ink-soft">produits publiés</span>
               </Card>
-              <Link href="/messages" className="flex-1">
+              <Link href={messagesHref("merchant")} className="flex-1">
                 <Card className="flex h-full flex-col items-start justify-center gap-1 border-accent bg-accent-soft p-3.5">
                   <MessageCircle size={20} strokeWidth={1.9} className="text-accent-hover" aria-hidden />
-                  <span className="text-xs font-medium text-accent-hover">Mes messages</span>
+                  <span className="font-display text-2xl font-bold text-accent-hover">{unreadCount}</span>
+                  <span className="text-xs font-medium text-accent-hover">
+                    message{unreadCount > 1 ? "s" : ""} non lu{unreadCount > 1 ? "s" : ""}
+                  </span>
                 </Card>
               </Link>
             </div>
@@ -119,7 +129,7 @@ export default async function SellerPage({
         </ScreenFooter>
       ) : null}
 
-      <BottomNav active="shop" space="merchant" />
+      <BottomNav active="shop" space="merchant" unreadCount={unreadCount} />
     </Screen>
   );
 }

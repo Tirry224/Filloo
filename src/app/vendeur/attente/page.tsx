@@ -9,6 +9,8 @@ import { StepList } from "@/components/ui/StepList";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
+import { getMyProfile } from "@/lib/data/session";
+import { countUnreadMessages } from "@/lib/data/messages";
 
 /**
  * Écran 20 — boutique en cours de vérification.
@@ -19,10 +21,19 @@ import { getMyMerchant } from "@/lib/data/merchants";
  */
 export default async function PendingShopPage() {
   const supabase = await createClient();
+  // Même garde que /vendeur et /vendeur/boutique : la suspension vit sur
+  // `profiles` et frappe les deux rôles. Sans elle, ces deux écrans
+  // restaient atteignables en tapant l'adresse, et proposaient de préparer
+  // des produits à quelqu'un dont chaque écriture serait écartée par le
+  // RLS — une application qui a l'air de marcher et où rien ne marche.
+  const merchantProfile = await getMyProfile(supabase, "merchant");
+  if (merchantProfile?.isSuspended) redirect("/compte/suspendu");
+
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
   if (merchant.status === "approved") redirect("/vendeur");
   if (merchant.status === "rejected") redirect("/vendeur/refusee");
+  const unreadCount = await countUnreadMessages(supabase, "merchant");
 
   return (
     <Screen>
@@ -65,7 +76,7 @@ export default async function PendingShopPage() {
         </Section>
       </ScreenBody>
 
-      <BottomNav active="shop" space="merchant" />
+      <BottomNav active="shop" space="merchant" unreadCount={unreadCount} />
     </Screen>
   );
 }

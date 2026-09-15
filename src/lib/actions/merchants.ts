@@ -41,6 +41,34 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 }
 
 /**
+ * Renvoyer ma boutique à la vérification — écran 21, après correction.
+ *
+ * C'est la flèche qui manquait au parcours « refusée → correction →
+ * renvoi → attente » : corriger ses informations n'a JAMAIS changé
+ * `merchants.status`, donc une boutique refusée le restait indéfiniment
+ * quoi que son propriétaire corrige.
+ *
+ * Le statut n'est pas écrit ici : il l'est par `resubmit_my_merchant()`
+ * (0015), en base, qui n'autorise qu'une seule transition
+ * ('rejected' → 'pending') et seulement sur la boutique de la connexion
+ * qui appelle. Le commerçant n'a toujours aucun droit d'écriture sur
+ * `merchants.status` — s'auto-valider reste impossible, et c'est bien la
+ * base qui le garantit, pas cet écran.
+ *
+ * Une `<form>` de composant serveur, sans `useActionState` : comme les
+ * actions produit, elle fonctionne sans JavaScript, et son message
+ * d'erreur voyage donc dans l'URL, lu par `Notice` sur `/vendeur/refusee`.
+ */
+export async function resubmitMerchantAction() {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("resubmit_my_merchant");
+  // Les messages de la fonction sont déjà écrits en français pour être lus
+  // tels quels, comme ceux des triggers de 0002.
+  if (error) redirect(`/vendeur/refusee?erreur=${encodeURIComponent(error.message)}`);
+  redirect("/vendeur/attente");
+}
+
+/**
  * Modifier ma boutique — écran 26. Ne touche jamais `status` : contrairement
  * à ce que la maquette affichait, changer le nom ou la ville ne déclenche
  * PAS de nouvelle vérification — aucune règle de la base ne le fait, et en

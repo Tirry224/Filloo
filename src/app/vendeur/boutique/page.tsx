@@ -6,9 +6,11 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { ShopEditForm } from "@/components/auth/ShopEditForm";
+import { UpdatePasswordForm } from "@/components/auth/UpdatePasswordForm";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
+import { countUnreadMessages } from "@/lib/data/messages";
 import { signOutAction } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import type { Merchant } from "@/lib/types";
@@ -48,6 +50,7 @@ export default async function EditShopPage() {
   // Même garde que /vendeur : la suspension vit sur `profiles`, elle
   // frappe les deux rôles, et elle n'était vérifiée que côté client.
   if (merchantProfile.isSuspended) redirect("/compte/suspendu");
+  const unreadCount = await countUnreadMessages(supabase, "merchant");
 
   const { data: row, error } = await supabase
     .from("merchants")
@@ -87,6 +90,21 @@ export default async function EditShopPage() {
         <Section className="gap-5">
           <ShopEditForm merchant={merchant} cityId={row.city_id} cities={cities} />
 
+          {/* Le mot de passe appartient à la CONNEXION (`auth.users`), pas
+              au profil : une personne qui a ses deux comptes liés n'en a
+              qu'un seul, et c'est bien le même formulaire des deux côtés.
+
+              Il ne vivait pourtant que sur `/compte/informations`, écran
+              réservé à un profil CLIENT — un commerçant sans compte client
+              lié était donc renvoyé ici par `clientSpaceFallback` et
+              n'avait plus aucun moyen de changer son mot de passe. Le
+              troisième trou de la même symétrie, après la bascule et la
+              suppression de compte : cet écran fait office de « compte »
+              côté commerçant (docs/ECRANS.md, écran 26), il doit porter ce
+              que « mon compte » porte. */}
+          <div className="my-1 h-px bg-line" />
+          <UpdatePasswordForm />
+
           {clientProfile ? (
             <SwitchSpaceCard
               label="Basculer vers mon espace client"
@@ -116,7 +134,7 @@ export default async function EditShopPage() {
           )}
 
           <MenuList>
-            <MenuItem icon={FileText} label="Conditions d'utilisation" />
+            <MenuItem icon={FileText} label="Conditions d'utilisation" value="Bientôt" />
           </MenuList>
 
           {/* La suppression de compte n'était atteignable QUE depuis
@@ -139,7 +157,7 @@ export default async function EditShopPage() {
         </Section>
       </ScreenBody>
 
-      <BottomNav active="account" space="merchant" />
+      <BottomNav active="account" space="merchant" unreadCount={unreadCount} />
     </Screen>
   );
 }

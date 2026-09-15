@@ -94,16 +94,30 @@ export function PhotoPicker({
     );
   }
 
+  /**
+   * Retirer une photo du formulaire — et RIEN d'autre.
+   *
+   * Le fichier était supprimé de Storage ici même, au clic. Sur un produit
+   * qu'on modifie, ses photos sont déjà référencées par `product_images` :
+   * retirer une photo puis quitter l'écran sans enregistrer — ou perdre le
+   * réseau à l'enregistrement — détruisait le fichier en laissant la ligne
+   * en base. Le produit restait publié avec une vignette cassée dans le
+   * catalogue public, et rien ne pouvait plus la réparer : le fichier
+   * n'existait plus nulle part.
+   *
+   * Le formulaire ne décide donc plus de rien : il propose une liste, et
+   * c'est l'ENREGISTREMENT qui tranche. `updateProductAction` remplace les
+   * lignes `product_images`, puis supprime dans Storage les fichiers que
+   * plus aucune ligne ne référence — dans cet ordre, jamais l'inverse.
+   *
+   * Le cas symétrique reste ouvert et il est bénin : une photo envoyée puis
+   * retirée avant tout enregistrement laisse un fichier orphelin dans
+   * Storage. Un octet en trop ne casse aucun écran ; une référence morte,
+   * si. Entre les deux erreurs possibles, on choisit celle qui ne se voit
+   * pas.
+   */
   function removeSlot(id: string) {
-    const slot = slots.find((x) => x.id === id);
     setSlots((s) => s.filter((x) => x.id !== id));
-    if (slot?.path) {
-      const supabase = createClient();
-      // Best effort : si la suppression échoue (réseau coupé), le fichier
-      // reste orphelin dans Storage — sans conséquence, il n'est plus
-      // référencé par aucun `product_images.storage_path`.
-      void supabase.storage.from("product-images").remove([slot.path]);
-    }
   }
 
   return (

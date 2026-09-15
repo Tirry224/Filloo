@@ -9,6 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
+import { countUnreadMessages } from "@/lib/data/messages";
 
 /** Boutique publique — écran 11 de docs/ECRANS.md. */
 export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   if (!merchant) notFound();
 
   const catalogue = await getMerchantProducts(supabase, merchant);
+  const unreadCount = await countUnreadMessages(supabase, "client");
 
   return (
     <Screen>
@@ -68,7 +70,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
         </Section>
       </ScreenBody>
 
-      <BottomNav active="search" />
+      <BottomNav active="search" unreadCount={unreadCount} />
     </Screen>
   );
 }

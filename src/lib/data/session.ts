@@ -138,8 +138,28 @@ export async function clientSpaceFallback(supabase: SupabaseClient<Database>): P
  */
 export async function landingForSession(supabase: SupabaseClient<Database>): Promise<string> {
   const profiles = await getMyProfiles(supabase);
-  const onlyMerchant =
-    profiles.some((p) => p.role === "merchant") && !profiles.some((p) => p.role === "client");
+  const merchant = profiles.find((p) => p.role === "merchant");
+  const onlyMerchant = Boolean(merchant) && !profiles.some((p) => p.role === "client");
+
+  /* Une BOUCLE, et la boucle exacte que `/compte/suspendu` cherchait déjà
+     à éviter de son côté :
+
+       /compte/suspendu → « Voir les produits » → / → /vendeur →
+       /compte/suspendu → …
+
+     Un commerçant suspendu SANS compte client était renvoyé chez lui par
+     cette fonction, et `/vendeur` le renvoyait aussitôt sur l'écran de
+     suspension, qui lui promet précisément de pouvoir encore consulter le
+     catalogue. Le seul bouton de cet écran ne menait donc nulle part.
+
+     La suspension coupe l'écriture, pas la lecture (voir
+     `/compte/suspendu`) : le catalogue public est l'endroit où cette
+     personne a le droit d'être, et c'est donc là qu'elle atterrit tant
+     que sa boutique lui est fermée. Elle y voit la barre d'onglets du
+     client, comme tout visiteur du catalogue — et son espace commerçant
+     ne lui est pas présenté comme utilisable alors qu'il ne l'est pas. */
+  if (onlyMerchant && merchant?.isSuspended) return "/";
+
   return onlyMerchant ? "/vendeur" : "/";
 }
 

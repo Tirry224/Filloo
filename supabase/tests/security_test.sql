@@ -830,5 +830,73 @@ select pg_temp.check('lever la suspension remet la boutique en vitrine',
 reset role;
 
 
+-- =====================================================================
+-- 12. Renvoyer une boutique refusée à la vérification (0015)
+-- =====================================================================
+-- La règle du projet : toute nouvelle porte ouverte dans la base
+-- s'accompagne d'un test qui prouve ce qu'elle NE laisse PAS faire.
+-- `resubmit_my_merchant()` est `security definer` — donc exécutée avec les
+-- droits du propriétaire de la fonction, RLS contourné — et c'est
+-- précisément le genre de fonction qui a déjà rouvert une faille ici
+-- (voir 0012). Ces quatre vérifications tiennent sa promesse : une seule
+-- transition, sur sa propre boutique, jamais vers 'approved'.
+
+reset role;
+update public.merchants
+   set status = 'rejected', rejection_reason = 'Numéro injoignable'
+ where shop_name in ('Chez A', 'Chez B');
+
+-- 1. Le commerçant renvoie SA boutique : c'est le parcours attendu.
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+select public.resubmit_my_merchant();
+reset role;
+select pg_temp.check('une boutique refusee repasse en attente',
+  (select status from public.merchants where shop_name = 'Chez A') = 'pending');
+-- Le motif périmé s'efface (trigger de 0012) : il décrivait un refus qui
+-- n'a plus cours.
+select pg_temp.check('le motif de refus disparait au renvoi',
+  (select rejection_reason from public.merchants where shop_name = 'Chez A') is null);
+-- Et la boutique du voisin, refusée elle aussi, n'a pas bougé d'un pouce.
+select pg_temp.check('renvoyer la sienne ne touche pas celle du voisin',
+  (select status from public.merchants where shop_name = 'Chez B') = 'rejected');
+
+-- 2. Rien à renvoyer : la fonction refuse au lieu de mentir.
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+do $$
+begin
+  perform public.resubmit_my_merchant();
+  raise exception 'ECHEC une boutique en attente a ete renvoyee une seconde fois';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    une boutique non refusee ne se renvoie pas';
+end $$;
+
+-- 3. Toujours aucun droit d'écriture sur `status` : renvoyer n'est pas
+--    s'auto-valider, et la liste blanche de colonnes de 0002 tient.
+do $$
+begin
+  update public.merchants set status = 'approved'
+   where profile_id = public.my_profile_id('merchant');
+  raise exception 'ECHEC un commercant s''est auto-valide apres 0015';
+exception when insufficient_privilege then
+  raise notice 'OK    renvoyer sa boutique ne donne pas le droit de la valider';
+end $$;
+
+-- 4. Un visiteur non connecté n'a même pas le droit d'appeler la fonction.
+reset role;
+select pg_temp.login(null);
+set role anon;
+do $$
+begin
+  perform public.resubmit_my_merchant();
+  raise exception 'ECHEC un anonyme a appele resubmit_my_merchant';
+exception when insufficient_privilege then
+  raise notice 'OK    un anonyme ne peut pas appeler resubmit_my_merchant';
+end $$;
+reset role;
+
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

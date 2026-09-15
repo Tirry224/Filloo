@@ -9,6 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
+import { countUnreadMessages } from "@/lib/data/messages";
 import { signOutAction } from "@/lib/actions/auth";
 
 /**
@@ -23,6 +24,7 @@ export default async function AccountPage() {
   if (profile.isSuspended) redirect("/compte/suspendu");
 
   const merchant = await getMyMerchant(supabase);
+  const unreadCount = await countUnreadMessages(supabase, "client");
 
   return (
     <Screen>
@@ -77,7 +79,7 @@ export default async function AccountPage() {
           )}
 
           <MenuList>
-            <MenuItem icon={FileText} label="Conditions d'utilisation" />
+            <MenuItem icon={FileText} label="Conditions d'utilisation" value="Bientôt" />
           </MenuList>
 
           <MenuList>
@@ -86,7 +88,7 @@ export default async function AccountPage() {
         </Section>
       </ScreenBody>
 
-      <BottomNav active="account" />
+      <BottomNav active="account" unreadCount={unreadCount} />
     </Screen>
   );
 }

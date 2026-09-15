@@ -5,6 +5,7 @@ import { productImageUrl } from "@/lib/storage";
 import { getMyProfile } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatMessageTime } from "@/lib/format";
+import type { Space } from "@/lib/space";
 
 type MessageRow = {
   id: string;
@@ -237,4 +238,50 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
       imageUrl: cover ? productImageUrl(cover.storage_path) : undefined,
     };
   });
+}
+
+/**
+ * Le nombre de messages non lus DANS UN ESPACE — client ou commerçant —
+ * pour le badge de la barre d'onglets (décision 5 de docs/SPEC.md).
+ *
+ * Compté par espace et jamais globalement : un commerçant qui range sa
+ * boutique n'a pas à voir clignoter les messages de son compte d'acheteur,
+ * et l'inverse non plus. C'est la même règle que le reste du projet — à
+ * tout instant, un seul contexte est actif.
+ *
+ * Deux requêtes plutôt qu'une jointure filtrée : la seconde est un `head`
+ * (aucune ligne rapatriée, juste le compte), et les deux sont couvertes
+ * par le RLS, qui ne laisse déjà voir que MES conversations. Renvoie 0
+ * sans rien interroger pour un visiteur anonyme ou pour un espace dont la
+ * connexion n'a pas le profil — le cas le plus fréquent sur le catalogue
+ * public, qui ne doit rien coûter.
+ */
+export async function countUnreadMessages(
+  supabase: SupabaseClient<Database>,
+  space: Space,
+): Promise<number> {
+  const profile = await getMyProfile(supabase, space === "merchant" ? "merchant" : "client");
+  if (!profile) return 0;
+
+  let conversationQuery = supabase.from("conversations").select("id");
+  if (space === "merchant") {
+    const merchant = await getMyMerchant(supabase);
+    if (!merchant) return 0;
+    conversationQuery = conversationQuery.eq("merchant_id", merchant.id);
+  } else {
+    conversationQuery = conversationQuery.eq("client_id", profile.id);
+  }
+
+  const { data: conversations, error: conversationsError } = await conversationQuery;
+  if (conversationsError) throw conversationsError;
+  if (conversations.length === 0) return 0;
+
+  const { count, error } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .in("conversation_id", conversations.map((c) => c.id))
+    .is("read_at", null)
+    .neq("sender_id", profile.id);
+  if (error) throw error;
+  return count ?? 0;
 }

@@ -418,6 +418,15 @@ export type Database = {
         Returns: string
       }
       owns_profile: { Args: { pid: string }; Returns: boolean }
+      /* Ajoutée à la main, avec 0015 : ce fichier est engendré depuis la
+         base, et l'environnement de travail ne joint pas *.supabase.co
+         (docs/REPRISE.md) — il ne peut donc pas être régénéré ici. La
+         signature est celle du fichier de migration, à recopier telle
+         quelle à la prochaine régénération. */
+      resubmit_my_merchant: {
+        Args: never
+        Returns: Database["public"]["Tables"]["merchants"]["Row"]
+      }
       search_products: {
         Args: {
           p_category_id?: number

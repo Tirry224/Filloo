@@ -5,7 +5,8 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-13**. Réécrit de zéro ce jour-là, parce
+Dernière mise à jour : **2026-09-15** (audit des parcours — voir le
+journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -33,11 +34,12 @@ distincts, un seul fournisseur :
   n'autorise l'écriture QUE de cette colonne (`0002`),
   `src/lib/data/messages.ts` calcule `unreadCount` depuis la vraie
   base, `ThreadRow` l'affiche par fil, et ouvrir un fil marque ses
-  messages comme lus (`src/app/messages/[id]/page.tsx`). **Il ne manque
-  que le badge global sur la barre d'onglets** — `BottomNav` ne porte
-  aucun compteur, donc rien n'appelle depuis un autre écran. C'est un
-  petit travail, indépendant de Resend, et qui a de la valeur même sans
-  email.
+  messages comme lus (`src/app/messages/[id]/page.tsx`). **Le badge
+  global de la barre d'onglets est fait depuis le 2026-09-15** :
+  `countUnreadMessages` (`src/lib/data/messages.ts`) le compte PAR ESPACE,
+  `BottomNav` le porte, et « Mes produits » affiche enfin son second
+  chiffre. Reste donc le seul vrai manque de ce point : l'email, qui
+  prévient quand personne ne regarde l'écran.
 - **Emails d'authentification** — réinitialisation de mot de passe, et
   confirmation d'inscription si elle est réactivée.
   `/mot-de-passe-oublie` promet noir sur blanc « vous recevrez un
@@ -51,6 +53,11 @@ distincts, un seul fournisseur :
 écrans (`/compte`, `/vendeur/boutique`) mais ne mène nulle part : il
 manque le TEXTE, pas le code. Makiti est un intermédiaire technique, non
 une partie à la vente — à écrire avant le premier litige, pas pendant.
+*Le 2026-09-15, la ligne a au moins cessé d'être un BOUTON mort* : un
+`MenuItem` sans `href` ni action rend désormais une ligne d'information
+(« Bientôt ») au lieu d'un bouton qu'on touche sans effet. Le texte, lui,
+reste entièrement à écrire — il ne s'invente pas depuis une session de
+code.
 
 ### Commencé le 2026-09-12, pas fini
 
@@ -142,7 +149,7 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 61 tests couvrent le SQL, zéro
+- **Aucun test automatisé côté front.** 67 tests couvrent le SQL, zéro
   couvre la couche applicative — là où se trouvaient les quatre bugs du
   2026-09-12. C'est le déséquilibre de fond du projet : la couche la
   mieux testée n'est pas celle qui casse.
@@ -161,10 +168,11 @@ de `main` (voir points 10 et 11).
   `redirectTo` — mais la protection vit dans un réglage de tableau de
   bord plutôt que dans le dépôt ; un `NEXT_PUBLIC_SITE_URL` la ramènerait
   sous contrôle de version.
-- **`/recherche` a son propre défaut « Conakry » en dur**, indépendant de
-  celui du fil d'accueil, et s'en sert pour calculer le badge « filtre
-  actif ». L'harmoniser casserait le sens actuel d'`activeFilterCount` :
-  à trancher séparément.
+- ~~**`/recherche` a son propre défaut « Conakry » en dur**~~ — réglé le
+  2026-09-15. La ville de départ est résolue au même endroit pour les deux
+  écrans (`getDefaultCityName`), et `activeFilterCount` compare désormais à
+  CETTE ville : pour un client de Boké, sa propre ville n'est pas un filtre
+  qu'il a posé. Le filtre reste manuel — `?ville=` gagne toujours.
 - **`/inscription/boutique` hérite du squelette de chargement client** et
   affiche donc brièvement « Conakry » pendant l'inscription commerçant.
 
@@ -198,8 +206,9 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 13 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf :
+2026-09-11. `supabase/migrations/` — 15 fichiers SQL, à exécuter dans
+l'ordre sur un projet neuf. **`0015` est la seule qui ne soit pas encore
+appliquée au projet Supabase** (voir le journal du 2026-09-15) :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -224,16 +233,23 @@ l'ordre sur un projet neuf :
   et RIEN ne reliait les deux : un commerçant suspendu gardait boutique,
   produits et bouton « Contacter ». On pouvait donc lui écrire sans
   qu'il puisse jamais répondre.
+- `0014_realtime_on_messages.sql` — le fil se rafraîchit à l'arrivée d'un
+  message.
+- `0015_a_rejected_shop_can_be_resubmitted.sql` — une boutique refusée
+  peut repartir en vérification après correction. UNE transition
+  ('rejected' → 'pending'), sur sa propre boutique, jamais vers
+  'approved' : le commerçant n'a toujours aucun droit d'écriture sur
+  `merchants.status`.
 
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 13 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 15 migrations rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **61 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **67 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5).
 
@@ -401,7 +417,7 @@ npm run parcours               # mesure d'un parcours
   dans la même session**, et toute migration commitée est appliquée dans
   la même session. Les deux sens produisent le même écart : un dépôt qui
   décrit une base qui n'existe pas (ou plus).
-- **Relancer les 61 tests après TOUTE modification de policy.** C'est
+- **Relancer les 67 tests après TOUTE modification de policy.** C'est
   ainsi que trois failles ont été trouvées, et aucune ne produisait
   d'erreur.
 
@@ -599,6 +615,34 @@ n'existait (il existait) ; avoir classé le routage par rôle comme
 « décision produit ouverte » alors qu'une décision écrite en faisait un
 bug ; avoir annoncé un travail terminé alors qu'un tiers seulement de la
 règle était traité.
+
+### 2026-09-15 — l'audit des parcours : navigation, suspensions, refus
+Audit demandé par le porteur du projet sur la cohérence des parcours, à
+périmètre fermé (aucune refonte, aucune fonctionnalité neuve). Ce qui en
+sort, dans l'ordre de gravité :
+
+- **Le contexte client/commerçant se perdait dans la messagerie.** Le lien
+  de retour d'un fil était figé sur `/messages`, qui choisit l'espace
+  CLIENT dès que les deux profils existent. Il se déduit désormais du FIL
+  lui-même (`iAmMerchant`) et non d'un paramètre d'URL : une conversation
+  a deux côtés, on sait toujours de quel côté on est.
+- **Une boucle de redirection sur un commerçant suspendu sans compte
+  client** : `/compte/suspendu` → « Voir les produits » → `/` →
+  `/vendeur` → `/compte/suspendu`. `landingForSession` ne renvoie plus
+  vers `/vendeur` un profil commerçant suspendu.
+- **Une boutique refusée ne pouvait pas être renvoyée.** Corriger ses
+  informations ne changeait pas `status`, et le commerçant n'avait aucun
+  moyen de repartir vers la vérification. Migration `0015` : une fonction
+  qui n'autorise QUE 'rejected' → 'pending', sur sa propre boutique.
+  **Commitée, PAS encore appliquée au projet Supabase** — l'environnement
+  de travail ne joint toujours pas `*.supabase.co`. C'est l'écart que la
+  règle de travail interdit : à appliquer au tableau de bord avant tout
+  autre travail sur la base.
+- Le reste : badge de non-lus sur la barre d'onglets, ville de recherche
+  harmonisée, mot de passe accessible à un commerçant sans compte client,
+  conditions d'utilisation qui cessent d'être un bouton mort, et les
+  photos dont la suppression dans Storage attend désormais
+  l'enregistrement en base.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »

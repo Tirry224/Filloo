@@ -3,6 +3,7 @@ import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
+import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfiles, landingForSession } from "@/lib/data/session";
@@ -37,6 +38,19 @@ export default async function SuspendedPage() {
   if (profiles.length === 0) redirect(await clientSpaceFallback(supabase));
   if (!suspended) redirect(await landingForSession(supabase));
 
+  /* La suspension frappe un PROFIL, jamais une connexion (docs/SPEC.md,
+     décision 8 : « suspendre le compte client ne gèle pas la boutique »).
+     Cet écran l'affirmait dans son commentaire et le démentait à l'écran :
+     quelqu'un dont le compte client est suspendu mais dont la boutique
+     tourne n'avait ici qu'un bouton « Voir les produits », c'est-à-dire
+     aucune mention du seul espace qui lui reste ouvert. Il en concluait
+     que tout était bloqué.
+
+     La bascule n'est pas un raccourci de confort : c'est ce qui rend la
+     règle visible. Même carte que `/compte` et `/vendeur/boutique`, pour
+     que changer d'espace se reconnaisse partout au même geste. */
+  const stillActive = profiles.find((p) => !p.isSuspended && !p.isDeleted);
+
   return (
     <Screen>
       <TopBar title={<Wordmark />} />
@@ -54,6 +68,23 @@ export default async function SuspendedPage() {
             Voir les produits
           </Button>
         </EmptyState>
+        {stillActive ? (
+          <Section className="pt-0">
+            <SwitchSpaceCard
+              label={
+                stillActive.role === "merchant"
+                  ? "Basculer vers mon espace commerçant"
+                  : "Basculer vers mon espace client"
+              }
+              target={
+                stillActive.role === "merchant"
+                  ? "Cette suspension ne touche pas votre boutique."
+                  : "Cette suspension ne touche pas votre compte client."
+              }
+              href={stillActive.role === "merchant" ? "/vendeur" : "/compte"}
+            />
+          </Section>
+        ) : null}
         <Section className="pt-0">
           <p className="rounded-lg bg-warn-soft px-3.5 py-3 text-sm leading-normal text-warn-ink">
             Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, écrivez-nous en expliquant la

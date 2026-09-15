@@ -8,7 +8,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { ThreadRow } from "@/components/chat/ThreadRow";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile, clientSpaceFallback } from "@/lib/data/session";
-import { getMyThreadsAsClient, getMyThreadsAsMerchant } from "@/lib/data/messages";
+import { countUnreadMessages, getMyThreadsAsClient, getMyThreadsAsMerchant } from "@/lib/data/messages";
 
 /**
  * Messages — écrans 27, 28 et 29 de docs/ECRANS.md.
@@ -43,6 +43,10 @@ export default async function MessagesPage({
   const asClient = hasBoth ? vue !== "commercant" : Boolean(clientProfile);
 
   const list = asClient ? await getMyThreadsAsClient(supabase) : await getMyThreadsAsMerchant(supabase);
+  // Le badge de l'onglet reste juste sur l'écran qui LISTE les fils :
+  // ouvrir un fil marque ses messages comme lus, donc revenir ici après
+  // lecture doit faire retomber le compteur, pas le laisser figé.
+  const unreadCount = await countUnreadMessages(supabase, asClient ? "client" : "merchant");
 
   return (
     <Screen>
@@ -50,12 +54,27 @@ export default async function MessagesPage({
 
       <ScreenBody>
         {list.length === 0 ? (
+          /* Un écran vide dit ce qu'il faut faire ENSUITE — et ce qu'il
+             faut faire n'est pas le même selon l'espace. Ce texte parlait
+             d'écrire au vendeur depuis sa fiche, et son bouton renvoyait
+             au fil client : servi à un commerçant qui attend les messages
+             de ses clients, il lui conseillait d'aller acheter, puis le
+             sortait de son espace. Les deux espaces ne se mélangent
+             jamais, l'état vide compris. */
           <EmptyState
             icon={MessageCircle}
             title="Aucune conversation"
-            description="Quand un produit vous intéresse, écrivez au vendeur depuis sa fiche. Vos échanges apparaîtront ici."
+            description={
+              asClient
+                ? "Quand un produit vous intéresse, écrivez au vendeur depuis sa fiche. Vos échanges apparaîtront ici."
+                : "Vos clients vous écriront depuis vos produits. Publiez et soignez vos photos : c'est ce qui déclenche le premier message."
+            }
           >
-            <Button href="/">Parcourir les produits</Button>
+            {asClient ? (
+              <Button href="/">Parcourir les produits</Button>
+            ) : (
+              <Button href="/vendeur">Voir ma boutique</Button>
+            )}
           </EmptyState>
         ) : (
           <Section className="gap-0 pt-0.5">
@@ -66,7 +85,7 @@ export default async function MessagesPage({
         )}
       </ScreenBody>
 
-      <BottomNav active="messages" space={asClient ? "client" : "merchant"} />
+      <BottomNav active="messages" space={asClient ? "client" : "merchant"} unreadCount={unreadCount} />
     </Screen>
   );
 }

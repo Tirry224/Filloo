@@ -15,9 +15,10 @@ import { Button } from "@/components/ui/Button";
 import { Package } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getCategories, getCities } from "@/lib/data/reference";
-import { getMyProfile, landingForSession } from "@/lib/data/session";
+import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
+import { landingForSession } from "@/lib/data/session";
 import { searchProducts } from "@/lib/data/products";
+import { countUnreadMessages } from "@/lib/data/messages";
 
 /**
  * Fil d'accueil — écrans 1 et 2 de docs/ECRANS.md.
@@ -68,14 +69,13 @@ export default async function HomePage({
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
-  const [cities, categories, profile] = await Promise.all([
-    getCities(supabase),
-    getCategories(supabase),
-    getMyProfile(supabase, "client"),
-  ]);
-  const profileCityName = cities.find((c) => c.id === profile?.cityId)?.name;
-  const ville = villeParam ?? profileCityName ?? "Conakry";
-  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === "Conakry");
+  const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
+  const unreadCount = await countUnreadMessages(supabase, "client");
+  // Même résolution que `/recherche`, au même endroit : la règle « ma
+  // ville d'abord, Conakry sinon » était écrite deux fois et appliquée une
+  // seule.
+  const ville = villeParam ?? (await getDefaultCityName(supabase, cities));
+  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
 
   const sort = tri === "populaire" ? "popular" : "recent";
   const inCity = city ? await searchProducts(supabase, { cityId: city.id, sort, limit: 50 }) : [];
@@ -126,7 +126,11 @@ export default async function HomePage({
             title={`Aucun produit à ${ville} pour le moment`}
             description="Makiti démarre à Conakry. Changez de ville pour voir ce qui est en vente, ou inscrivez-vous comme vendeur pour être le premier ici."
           >
-            <Button href="/?ville=Conakry">Voir les produits à Conakry</Button>
+            {ville !== FALLBACK_CITY ? (
+              <Button href={`/?ville=${encodeURIComponent(FALLBACK_CITY)}`}>
+                Voir les produits à {FALLBACK_CITY}
+              </Button>
+            ) : null}
             <Button variant="secondary" href="/inscription">
               Devenir vendeur à {ville}
             </Button>
@@ -195,7 +199,7 @@ export default async function HomePage({
         )}
       </ScreenBody>
 
-      <BottomNav active="home" />
+      <BottomNav active="home" unreadCount={unreadCount} />
     </Screen>
   );
 }

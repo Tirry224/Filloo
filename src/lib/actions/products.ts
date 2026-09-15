@@ -178,13 +178,22 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   // par `PhotoPicker`, plutôt que de comparer ancien/nouveau photo par
   // photo : `unique (product_id, position)` rendrait ce calcul fragile dès
   // qu'une photo du milieu est retirée (les positions suivantes se
-  // décalent). Les fichiers dans Storage, eux, sont déjà supprimés par
-  // `PhotoPicker` au moment du clic sur « retirer » — voir ce fichier.
+  // décalent).
+  //
   // Cette suppression ne lisait NI son erreur NI son résultat. Si le RLS
   // l'écarte, les anciennes lignes restent et la ré-insertion qui suit
   // ajoute les nouvelles par-dessus : le produit se retrouve avec les deux
   // jeux de photos, et `unique (product_id, position)` fait alors échouer
   // l'insertion avec un message incompréhensible pour le commerçant.
+  //
+  // Les chemins d'AVANT sont relus juste avant d'être remplacés : ce sont
+  // eux qui diront, une fois la base à jour, quels fichiers ne sont plus
+  // référencés par personne.
+  const { data: previousImages } = await supabase
+    .from("product_images")
+    .select("storage_path")
+    .eq("product_id", productId);
+
   const { error: clearError } = await supabase
     .from("product_images")
     .delete()
@@ -195,6 +204,27 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),
     );
     if (imagesError) return { error: imagesError.message };
+  }
+
+  /* Le ménage dans Storage vient APRÈS l'écriture en base, jamais avant.
+     `PhotoPicker` supprimait le fichier au clic sur « retirer », donc avant
+     tout enregistrement : quitter l'écran sans enregistrer — ou perdre le
+     réseau en chemin — laissait `product_images` pointer sur un fichier
+     détruit, c'est-à-dire une vignette cassée dans le catalogue public que
+     plus rien ne pouvait réparer.
+     La base est la source de vérité, le stockage la suit. Un fichier qu'on
+     supprime ici n'est référencé par aucune ligne : les lignes finales
+     viennent d'être écrites juste au-dessus.
+
+     Best effort assumé : une suppression ratée laisse un fichier orphelin,
+     qui ne casse aucun écran — personne ne le référence. C'est l'erreur la
+     moins chère des deux, et la seule qui ne se voie pas. */
+  const removedPaths = (previousImages ?? [])
+    .map((image) => image.storage_path)
+    .filter((path) => !fields.imagePaths.includes(path));
+  if (removedPaths.length > 0) {
+    const { error: storageError } = await supabase.storage.from("product-images").remove(removedPaths);
+    if (storageError) console.error("photos retirées non supprimées du stockage :", storageError.message);
   }
 
   redirect("/vendeur");

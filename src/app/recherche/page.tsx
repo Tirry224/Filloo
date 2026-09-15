@@ -10,8 +10,9 @@ import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { createClient } from "@/lib/supabase/server";
-import { getCategories, getCities } from "@/lib/data/reference";
+import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
 import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
+import { countUnreadMessages } from "@/lib/data/messages";
 import Link from "next/link";
 
 /**
@@ -30,11 +31,24 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string; ville?: string; categorie?: string; tri?: string }>;
 }) {
-  const { q = "", ville = "Conakry", categorie = "Tout", tri = "recent" } = await searchParams;
+  const { q = "", ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
   const supabase = await createClient();
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
-  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === "Conakry");
+  const unreadCount = await countUnreadMessages(supabase, "client");
+
+  /* Cet écran avait son propre "Conakry" en dur, indépendant de celui du
+     fil d'accueil : un client de Boké voyait son fil à Boké, touchait
+     l'onglet « Rechercher », et se retrouvait à Conakry sans avoir rien
+     demandé — sa ville perdue en changeant d'onglet.
+
+     La ville de départ est désormais résolue au même endroit pour les deux
+     écrans (`getDefaultCityName`). Changer de ville reste possible et
+     manuel : `?ville=` gagne toujours, la feuille `/recherche/ville` ne
+     bouge pas. */
+  const defaultVille = await getDefaultCityName(supabase, cities);
+  const ville = villeParam ?? defaultVille;
+  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
   const category = categorie !== "Tout" ? categories.find((c) => c.name === categorie) : undefined;
   const sort = tri === "populaire" ? "popular" : "recent";
 
@@ -48,7 +62,11 @@ export default async function SearchPage({
   const elsewhereCount =
     results.length === 0 ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null }) : 0;
 
-  const activeFilterCount = (ville !== "Conakry" ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
+  /* « Filtre actif » veut dire « différent de ce qu'on aurait sans rien
+     toucher », pas « différent de Conakry » : pour un client de Boké, sa
+     propre ville n'est pas un filtre qu'il a posé. Le chiffre suit donc la
+     ville de départ, comme le reste de l'écran. */
+  const activeFilterCount = (ville !== defaultVille ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
   // Écran de repos : rien à afficher, tout à proposer. Le fil d'accueil
   // montre déjà des produits ; en montrer ici ferait croire à des résultats.
   const resting = !q && categorie === "Tout";
@@ -57,8 +75,11 @@ export default async function SearchPage({
      que la personne cherchait, ce qui n'est pas ce que « filtres » veut
      dire. Deux boutons parce que ce sont deux gestes différents : changer
      de ville en gardant la catégorie choisie, ou tout remettre à zéro. */
-  const searchInConakryHref = `/recherche?q=${encodeURIComponent(q)}&ville=Conakry&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`;
-  const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=Conakry`;
+  const searchInConakryHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(FALLBACK_CITY)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`;
+  // « Effacer les filtres » remet la ville de DÉPART, pas Conakry : effacer
+  // un filtre qu'on n'a pas posé reviendrait à déplacer quelqu'un de chez
+  // lui pour lui rendre service.
+  const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
 
   return (
     <Screen>
@@ -189,7 +210,13 @@ export default async function SearchPage({
                     : "Essayez un mot plus court, ou changez de ville."
                 }
               >
-                {elsewhereCount === 0 ? <Button href={searchInConakryHref}>Chercher à Conakry</Button> : null}
+                {/* Proposer « Chercher à Conakry » à quelqu'un qui cherche
+                    DÉJÀ à Conakry est un bouton qui ne fait rien : la plus
+                    grosse ville du catalogue reste la bonne suggestion,
+                    mais seulement pour qui est ailleurs. */}
+                {elsewhereCount === 0 && ville !== FALLBACK_CITY ? (
+                  <Button href={searchInConakryHref}>Chercher à {FALLBACK_CITY}</Button>
+                ) : null}
                 <Button variant="secondary" href={clearFiltersHref}>
                   Effacer les filtres
                 </Button>
@@ -205,7 +232,7 @@ export default async function SearchPage({
         )}
       </ScreenBody>
 
-      <BottomNav active="search" />
+      <BottomNav active="search" unreadCount={unreadCount} />
     </Screen>
   );
 }
