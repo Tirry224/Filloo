@@ -70,10 +70,21 @@ export default async function ThreadPage({
   const space = context.iAmMerchant ? "merchant" : "client";
 
   const blockedByPeer = context.blockedBy !== null && context.blockedBy !== context.myParticipantId;
+  /* Fil gelé : la boutique en face a un compte suspendu ou supprimé
+     (0017). Le fil reste entièrement lisible — c'est la décision du
+     2026-09-15, lecture seule et non suppression — mais plus personne n'y
+     écrit, le commerçant suspendu compris.
+
+     Sans cet état, le champ de saisie restait allumé et la base refusait
+     l'envoi : le client recevait « new row violates row-level security
+     policy », c'est-à-dire une phrase qui ne veut rien dire pour lui,
+     après avoir tapé son message. Dire NON AVANT la frappe coûte une
+     ligne et évite le message perdu. */
+  const frozen = !context.isOpen;
   // Le premier message d'un fil DOIT citer un produit (trigger
   // `check_message_product`, 0002) : sans citation en attente sur un fil
   // encore vide, écrire échouerait — autant le dire avant plutôt qu'après.
-  const mustCiteFirst = messages.length === 0 && !citing;
+  const mustCiteFirst = messages.length === 0 && !citing && !frozen;
 
   return (
     <Screen>
@@ -116,7 +127,7 @@ export default async function ThreadPage({
       </ScreenBody>
 
       <ScreenFooter className="flex flex-col gap-2">
-        {citing ? (
+        {frozen ? null : citing ? (
           <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs">
             <span className="flex-1 truncate">
               Concerne : <b>{citing.title}</b>
@@ -150,7 +161,19 @@ export default async function ThreadPage({
           </Link>
         ) : null}
 
-        {blockedByPeer ? (
+        {frozen ? (
+          /* Le texte ne dit pas « suspendue » : la sanction d'un
+             commerçant ne se publie pas à ses clients (même raison que
+             `merchant_is_public`, 0013, qui confond volontairement
+             refusée, en attente et suspendue). Il dit ce qui est vrai et
+             utile — la boutique ne peut plus répondre, et ce qui a été
+             échangé reste là. */
+          <p className="py-2 text-center text-sm text-ink-soft">
+            {context.iAmMerchant
+              ? "Votre compte ne permet plus d'écrire. Vos conversations restent consultables."
+              : "Cette boutique n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."}
+          </p>
+        ) : blockedByPeer ? (
           <p className="py-2 text-center text-sm text-ink-soft">Vous ne pouvez plus écrire dans ce fil.</p>
         ) : (
           <Composer conversationId={id} citingProductId={citing?.id} disabled={mustCiteFirst} />

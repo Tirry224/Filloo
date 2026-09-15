@@ -411,6 +411,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      /* Ajoutée à la main, avec 0017, pour la même raison que
+         `resubmit_my_merchant` plus bas : ce fichier est engendré depuis
+         la base, et l'environnement de travail ne joint pas
+         *.supabase.co. Elle répond « ce fil accepte-t-il encore des
+         messages ? » — faux dès que la boutique en face est suspendue. */
+      conversation_is_open: { Args: { cid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
       my_merchant_id: { Args: never; Returns: string }
       my_profile_id: {

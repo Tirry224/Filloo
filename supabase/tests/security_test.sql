@@ -1083,5 +1083,201 @@ exception when others then
 end $$;
 reset role;
 
+
+-- =====================================================================
+-- 26. Une boutique suspendue met ses fils en lecture seule (0017)
+-- =====================================================================
+-- Décision du 2026-09-15 : la suspension gèle l'écriture des DEUX côtés
+-- et ne supprime rien. Ces vérifications sont la preuve des deux
+-- moitiés — celle qui ferme, et celle qui doit rester ouverte.
+-- Le test 24 a déjà prouvé que le fil reste LISIBLE ; celui-ci prouve
+-- qu'il n'accepte plus d'écriture, et que l'historique ne bouge pas.
+
+reset role;
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+
+-- (a) Boutique ACTIVE : lecture ET écriture, le cas normal d'abord —
+--     sans lui, un gel généralisé passerait pour un succès.
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+select pg_temp.check('boutique active : le fil accepte l''ecriture',
+  public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+insert into public.messages (conversation_id, sender_id, body)
+  select c.id, '44444444-4444-4444-4444-444444444444', 'Toujours dispo ?'
+    from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and m.shop_name = 'Boutique G';
+select pg_temp.check('boutique active : le message du client est passe',
+  (select count(*) from public.messages m
+     join public.conversations c on c.id = m.conversation_id
+     join public.merchants mm on mm.id = c.merchant_id
+    where mm.shop_name = 'Boutique G') = 2);
+reset role;
+
+-- On suspend, et RIEN d'autre : aucun effacement, aucun changement de
+-- `merchants.status`.
+update public.profiles set is_suspended = true where full_name = 'Boutique G';
+
+-- (b) Le CLIENT ne peut plus écrire.
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+select pg_temp.check('boutique suspendue : le fil est ferme a l''ecriture',
+  not public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+do $$
+declare v_conv uuid;
+begin
+  select c.id into v_conv from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and m.shop_name = 'Boutique G';
+  insert into public.messages (conversation_id, sender_id, body)
+    values (v_conv, '44444444-4444-4444-4444-444444444444', 'Vous etes la ?');
+  raise exception 'ECHEC un client a ecrit a une boutique suspendue';
+exception when insufficient_privilege then
+  raise notice 'OK    un client n''ecrit plus a une boutique suspendue';
+end $$;
+
+-- (c) Et la LECTURE, elle, ne bouge pas : c'est une lecture seule, pas
+--     une suppression. Deux messages écrits, deux messages toujours là.
+select pg_temp.check('boutique suspendue : l''historique reste lisible',
+  (select count(*) from public.messages m
+     join public.conversations c on c.id = m.conversation_id
+     join public.merchants mm on mm.id = c.merchant_id
+    where mm.shop_name = 'Boutique G') = 2);
+select pg_temp.check('boutique suspendue : le fil lui-meme reste lisible',
+  (select count(*) from public.conversations c
+     join public.merchants m on m.id = c.merchant_id
+    where c.client_id = '44444444-4444-4444-4444-444444444444'
+      and m.shop_name = 'Boutique G') = 1);
+reset role;
+
+-- (d) Le COMMERÇANT suspendu ne répond pas non plus. Déjà refusé par
+--     `is_active_profile` avant 0017 : ce test fige cette garantie, pour
+--     qu'une réécriture de la policy d'envoi ne la perde pas en chemin.
+select pg_temp.login('77777777-7777-7777-7777-777777777777');
+set role authenticated;
+do $$
+declare v_conv uuid;
+begin
+  select c.id into v_conv from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where m.shop_name = 'Boutique G'
+     and c.client_id = '44444444-4444-4444-4444-444444444444';
+  insert into public.messages (conversation_id, sender_id, body)
+    values (v_conv, '77777777-7777-7777-7777-777777777777', 'Oui, bonjour');
+  raise exception 'ECHEC un commercant suspendu a repondu';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant suspendu ne repond pas dans ses fils';
+end $$;
+reset role;
+
+-- (e) La réversibilité, comme au test 23 : lever la suspension rouvre
+--     l'écriture. Un gel qui ne se lève pas serait une suppression
+--     déguisée.
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+insert into public.messages (conversation_id, sender_id, body)
+  select c.id, '44444444-4444-4444-4444-444444444444', 'Rebonjour'
+    from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and m.shop_name = 'Boutique G';
+select pg_temp.check('lever la suspension rouvre l''ecriture du fil',
+  (select count(*) from public.messages m
+     join public.conversations c on c.id = m.conversation_id
+     join public.merchants mm on mm.id = c.merchant_id
+    where mm.shop_name = 'Boutique G') = 3);
+reset role;
+
+-- (f) Une boutique renvoyée à la VÉRIFICATION n'est pas une boutique
+--     suspendue : ses fils continuent. C'est la raison pour laquelle
+--     0017 n'emploie pas `merchant_is_public`, qui exige 'approved' —
+--     sans ce test, un futur « simplifions, une seule fonction » gèlerait
+--     les conversations d'un commerçant qui n'a rien fait de mal.
+update public.merchants set status = 'pending' where shop_name = 'Boutique G';
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+select pg_temp.check('une boutique en attente de validation garde ses fils ouverts',
+  public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+reset role;
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+
+
+-- =====================================================================
+-- 27. Le quota de 20 boutiques par jour refuse VRAIMENT (0002, 3.4)
+-- =====================================================================
+-- Le quota était déjà testé plus haut (section des limites) ; ce qui ne
+-- l'était pas, c'est ce que l'application en fait. Deux garanties
+-- comptent pour l'écran 16 : le refus porte le code P0001 — celui que
+-- `findOrCreateConversation` reconnaît pour afficher une explication au
+-- lieu de « Vérifiez votre connexion » — et AUCUNE conversation n'est
+-- créée, le trigger s'exécutant avant l'insertion.
+
+reset role;
+-- Le client E a déjà épuisé ses 20 fils dans les tests de limite.
+select pg_temp.check('le client E est bien au plafond',
+  (select count(*) from public.conversations
+    where client_id = '55555555-5555-5555-5555-555555555555'
+      and created_at > now() - interval '1 day') >= 20);
+
+select pg_temp.login('55555555-5555-5555-5555-555555555555');
+set role authenticated;
+do $$
+declare
+  v_avant int;
+  v_apres int;
+begin
+  select count(*) into v_avant from public.conversations;
+  begin
+    insert into public.conversations (client_id, merchant_id)
+      select '55555555-5555-5555-5555-555555555555', id
+        from public.merchants where shop_name = 'Boutique G';
+    raise exception 'ECHEC le quota de 20 conversations n''a pas arrete l''insertion';
+  exception when raise_exception then
+    if sqlerrm like 'ECHEC%' then raise; end if;
+    -- P0001 : le code que l'application reconnaît. S'il changeait, le
+    -- message d'explication redeviendrait « Vérifiez votre connexion ».
+    if sqlstate <> 'P0001' then
+      raise exception 'ECHEC le refus de quota ne porte plus le code P0001 mais % ', sqlstate;
+    end if;
+    raise notice 'OK    quota atteint : refus P0001, message « % »', sqlerrm;
+  end;
+  select count(*) into v_apres from public.conversations;
+  if v_avant <> v_apres then
+    raise exception 'ECHEC une conversation a ete creee malgre le quota';
+  end if;
+  raise notice 'OK    quota atteint : aucune conversation supplementaire creee';
+end $$;
+reset role;
+
+-- Et sous le quota, rien ne change : le client C n'a qu'un fil ouvert.
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+set role authenticated;
+do $$
+begin
+  insert into public.conversations (client_id, merchant_id)
+    select '33333333-3333-3333-3333-333333333333', id
+      from public.merchants where shop_name = 'Boutique G';
+  raise notice 'OK    sous le quota, ouvrir un fil reste possible';
+exception when others then
+  raise exception 'ECHEC un client sous le quota ne peut plus ouvrir de fil : %', sqlerrm;
+end $$;
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

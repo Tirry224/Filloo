@@ -139,6 +139,11 @@ export type ThreadContext = {
   blockedBy: string | null;
   /** L'identifiant public de la boutique, pour "Voir sa fiche" côté client. */
   merchantPublicId: string;
+  /** `false` quand la boutique du fil a un compte suspendu ou supprimé :
+   * le fil passe alors en LECTURE SEULE (0017). Ni le client ni le
+   * commerçant ne peuvent plus y écrire, mais tout l'historique reste
+   * affiché — c'est la décision du 2026-09-15. */
+  isOpen: boolean;
 };
 
 /** Résout un fil pour la connexion active : qui je suis dedans, qui est en
@@ -148,21 +153,34 @@ export async function getThreadContext(
   supabase: SupabaseClient<Database>,
   conversationId: string,
 ): Promise<ThreadContext | null> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(
-      "id, client_id, merchant_id, blocked_by, profiles!conversations_client_id_fkey(full_name), merchants(id, shop_name, profile_id)",
-    )
-    .eq("id", conversationId)
-    .maybeSingle<{
-      id: string;
-      client_id: string;
-      merchant_id: string;
-      blocked_by: string | null;
-      profiles: { full_name: string } | null;
-      merchants: { id: string; shop_name: string; profile_id: string } | null;
-    }>();
+  /* L'ouverture du fil est demandée à la BASE (`conversation_is_open`,
+     0017) et non déduite ici : c'est la même fonction qui décide, dans la
+     policy d'envoi, si le message passera. Une règle appliquée à deux
+     endroits finit toujours par diverger, et l'écran promettrait alors un
+     champ de saisie que la base refuserait — ou l'inverse, plus sournois :
+     un champ éteint alors que tout va bien.
+
+     Les deux appels partent ensemble : la question coûte une lecture
+     d'index, pas un aller-retour de plus. */
+  const [{ data, error }, { data: isOpen, error: openError }] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select(
+        "id, client_id, merchant_id, blocked_by, profiles!conversations_client_id_fkey(full_name), merchants(id, shop_name, profile_id)",
+      )
+      .eq("id", conversationId)
+      .maybeSingle<{
+        id: string;
+        client_id: string;
+        merchant_id: string;
+        blocked_by: string | null;
+        profiles: { full_name: string } | null;
+        merchants: { id: string; shop_name: string; profile_id: string } | null;
+      }>(),
+    supabase.rpc("conversation_is_open", { cid: conversationId }),
+  ]);
   if (error) throw error;
+  if (openError) throw openError;
   if (!data || !data.merchants) return null;
 
   const merchantProfile = await getMyProfile(supabase, "merchant");
@@ -177,6 +195,7 @@ export async function getThreadContext(
     merchantPublicId: data.merchants.id,
     iAmMerchant,
     blockedBy: data.blocked_by,
+    isOpen: isOpen === true,
   };
 }
 

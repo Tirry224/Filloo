@@ -58,9 +58,48 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
      existe précisément pour le lui dire. */
   if (clientProfile?.isSuspended) redirect("/compte/suspendu");
 
-  if (clientProfile) {
-    const conversationId = await findOrCreateConversation(supabase, clientProfile.id, product.merchant.id);
-    redirect(`/messages/${conversationId}?produit=${product.id}`);
+  /* Un refus de la base n'est pas une panne. Le seul possible ici est le
+     quota de 20 nouvelles conversations par jour (décision 13) : il
+     remontait jusqu'à la frontière d'erreur, qui affiche « Vérifiez votre
+     connexion » — donc la personne croyait son réseau coupé et
+     réessayait, indéfiniment, un geste que la base refusera toute la
+     journée. C'est le même défaut que celui corrigé pour la suspension
+     juste au-dessus, sur le même écran.
+
+     Aucune conversation n'est créée quand la limite est atteinte : le
+     trigger s'exécute avant l'insertion (0002, 3.4). */
+  const outcome = clientProfile
+    ? await findOrCreateConversation(supabase, clientProfile.id, product.merchant.id)
+    : null;
+  if (outcome?.kind === "ready") {
+    redirect(`/messages/${outcome.conversationId}?produit=${product.id}`);
+  }
+
+  if (outcome?.kind === "refused") {
+    return (
+      <Sheet
+        title="Vous avez contacté beaucoup de vendeurs aujourd'hui"
+        description={outcome.reason}
+        closeHref={`/produit/${product.id}`}
+      >
+        {/* Ce que la personne peut faire MAINTENANT, plutôt qu'un simple
+            refus : ses fils déjà ouverts restent accessibles — la limite
+            ne porte que sur les NOUVELLES boutiques — et WhatsApp reste
+            la porte de sortie habituelle quand la boutique en a donné un. */}
+        <Button href="/messages">Voir mes conversations</Button>
+        <Button variant="secondary" size="sm" href={`/produit/${product.id}`}>
+          Revenir au produit
+        </Button>
+        {waNumber ? (
+          <a
+            href={`https://wa.me/${waNumber}`}
+            className="text-center text-xs text-ink-soft underline underline-offset-2"
+          >
+            Ou appelez directement le vendeur sur WhatsApp.
+          </a>
+        ) : null}
+      </Sheet>
+    );
   }
 
   /* L'intention (« écrire au vendeur de CE produit ») voyage avec la

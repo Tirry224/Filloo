@@ -24,6 +24,22 @@ function backToThread(conversationId: string, errorMessage?: string, successMess
 }
 
 /**
+ * Ce que répond « Contacter le vendeur » : un fil prêt à recevoir un
+ * message, ou un refus à MONTRER.
+ *
+ * Un simple `string` obligeait l'appelant à traiter tout refus comme une
+ * panne : l'exception remontait à la frontière d'erreur, qui affiche
+ * « Vérifiez votre connexion ». Le quota de 20 boutiques par jour
+ * (décision 13 de docs/SPEC.md) est pourtant une règle, pas un incident —
+ * et son message, écrit en français dans le trigger `check_conversation_
+ * rate_limit` (0002, 3.4), existe précisément pour être lu par la
+ * personne concernée.
+ */
+export type ConversationOutcome =
+  | { kind: "ready"; conversationId: string }
+  | { kind: "refused"; reason: string };
+
+/**
  * Ouvrir (ou retrouver) le fil avec une boutique — depuis « Contacter le
  * vendeur » (écran 16/30). Appelée directement depuis le composant serveur
  * de la page, pas depuis un formulaire : il n'y a pas de geste
@@ -37,7 +53,7 @@ export async function findOrCreateConversation(
   supabase: SupabaseClient<Database>,
   clientProfileId: string,
   merchantId: string,
-): Promise<string> {
+): Promise<ConversationOutcome> {
   const { data: existing, error: findError } = await supabase
     .from("conversations")
     .select("id")
@@ -45,7 +61,11 @@ export async function findOrCreateConversation(
     .eq("merchant_id", merchantId)
     .maybeSingle();
   if (findError) throw findError;
-  if (existing) return existing.id;
+  /* Le quota ne compte que les fils NOUVEAUX : quelqu'un qui a déjà écrit
+     à cette boutique la retrouve toujours, même après vingt autres
+     contacts dans la journée. C'est ce que dit le trigger (`before
+     insert`), et l'ordre de ce code le respecte — chercher d'abord. */
+  if (existing) return { kind: "ready", conversationId: existing.id };
 
   const { data: created, error: createError } = await supabase
     .from("conversations")
@@ -67,6 +87,16 @@ export async function findOrCreateConversation(
      Une course perdue n'est pas un échec ici — le résultat voulu existe,
      il suffit de le relire. */
   if (createError) {
+    /* P0001 = un `raise exception` d'un trigger. Sur une insertion dans
+       `conversations`, il n'y en a qu'un : le quota de 20 par jour. Son
+       texte est déjà écrit pour être lu tel quel (« Limite atteinte :
+       20 nouvelles conversations par jour maximum. »), donc on le relaie
+       sans le réécrire — le traduire deux fois, c'est se condamner à ce
+       que les deux versions divergent.
+
+       Aucune conversation n'est créée dans ce cas : le trigger s'exécute
+       AVANT l'insertion. Le refus est donc complet, pas partiel. */
+    if (createError.code === "P0001") return { kind: "refused", reason: createError.message };
     if (createError.code !== "23505") throw createError;
     const { data: raced, error: raceError } = await supabase
       .from("conversations")
@@ -76,9 +106,9 @@ export async function findOrCreateConversation(
       .maybeSingle();
     if (raceError) throw raceError;
     if (!raced) throw createError;
-    return raced.id;
+    return { kind: "ready", conversationId: raced.id };
   }
-  return created.id;
+  return { kind: "ready", conversationId: created.id };
 }
 
 /**
@@ -105,7 +135,25 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
     body,
     product_id: productId,
   });
-  if (error) return { error: error.message };
+  /* Les refus des triggers (P0001) sont déjà rédigés en français et se
+     relaient tels quels — c'est le commentaire ci-dessus. Le refus du
+     RLS, lui, ne l'est pas : il dit « new row violates row-level
+     security policy for table "messages" », une phrase écrite pour un
+     développeur qui lit des journaux, pas pour quelqu'un qui vient de
+     taper un message sur son téléphone.
+     
+     Trois causes possibles, et toutes veulent dire la même chose pour
+     l'expéditeur : le fil ne prend plus d'écriture — l'autre m'a bloqué
+     (0002, 6.7), mon compte est suspendu, ou la boutique en face l'est
+     (0017). L'écran du fil affiche normalement l'explication AVANT la
+     frappe ; ce message-ci ne sert qu'au cas où l'état a changé pendant
+     qu'on écrivait, et il vaut mieux qu'il soit compréhensible. */
+  if (error) {
+    if (error.code === "42501") {
+      return { error: "Ce fil n'accepte plus de nouveaux messages. Vos échanges restent consultables." };
+    }
+    return { error: error.message };
+  }
 
   redirect(`/messages/${conversationId}`);
 }
