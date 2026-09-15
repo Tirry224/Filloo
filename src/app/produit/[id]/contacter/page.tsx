@@ -7,6 +7,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { getMyProfile } from "@/lib/data/session";
+import { getMyMerchant } from "@/lib/data/merchants";
 import { findOrCreateConversation } from "@/lib/actions/messages";
 
 /**
@@ -27,6 +28,23 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
 
   const clientProfile = await getMyProfile(supabase, "client");
 
+  /* On ne se contacte pas soi-même. Une personne qui possède les deux
+     comptes liés (décision 8) voit ses propres produits comme n'importe
+     quel visiteur : rien ne l'empêchait d'ouvrir un fil avec sa propre
+     boutique. Le fil avait alors le même être humain des deux côtés, et
+     surtout `bump_contact_count` (0002, 3.3) incrémentait le compteur qui
+     sert au tri « populaires » — un vendeur pouvait faire monter ses
+     propres produits en s'écrivant à lui-même.
+
+     La base refuse désormais cette insertion (0016), donc le fond est
+     tenu ; ici on évite seulement que le refus se présente comme une
+     panne. Renvoyer vers l'écran d'actions de SON produit, c'est répondre
+     à ce que la personne voulait probablement faire en y arrivant. */
+  const myMerchant = await getMyMerchant(supabase);
+  if (myMerchant && myMerchant.id === product.merchant.id) {
+    redirect(`/vendeur/produits/${product.id}/actions`);
+  }
+
   /* Un client suspendu n'était arrêté nulle part sur ce chemin. Il
      arrivait jusqu'à `findOrCreateConversation`, que le RLS refuse
      (`is_active_profile` dans « conversations: un client contacte un
@@ -45,6 +63,13 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
     redirect(`/messages/${conversationId}?produit=${product.id}`);
   }
 
+  /* L'intention (« écrire au vendeur de CE produit ») voyage avec la
+     personne jusqu'à la fin de son inscription ou de sa connexion :
+     sinon elle revenait sur le fil d'accueil, le produit perdu, et
+     devait le retrouver à la main pour recommencer. Voir
+     `safeNextPath`. */
+  const next = encodeURIComponent(`/produit/${product.id}/contacter`);
+
   return (
     <Sheet
       title="Créez un compte pour écrire"
@@ -58,8 +83,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
           <PriceTag amount={product.priceGnf} size="sm" />
         </div>
       </Card>
-      <Button href="/inscription">Créer mon compte</Button>
-      <Button variant="secondary" size="sm" href="/connexion">
+      <Button href={`/inscription?next=${next}`}>Créer mon compte</Button>
+      <Button variant="secondary" size="sm" href={`/connexion?next=${next}`}>
         J&apos;ai déjà un compte
       </Button>
       {/* Cette phrase était un texte NU : ni lien, ni numéro, rien à

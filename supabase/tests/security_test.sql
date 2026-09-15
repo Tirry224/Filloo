@@ -970,5 +970,118 @@ select pg_temp.check('aucune boutique n''a bouge sur appel d''un client',
   (select count(*) from public.merchants where status = 'rejected') = 2);
 
 
+
+-- =====================================================================
+-- 24. Une conversation survit à la suspension de la boutique (0016)
+-- =====================================================================
+-- Le pendant du test 23 : celui-ci vérifie ce que la suspension NE doit
+-- PAS emporter. 23 prouve qu'un commerçant suspendu quitte la vitrine,
+-- 24 prouve qu'il ne disparaît pas des fils déjà ouverts — sinon le
+-- client perd l'accès à son propre historique, et `/messages/[id]`
+-- répond « page introuvable » pour une conversation qui est la sienne.
+
+reset role;
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+
+-- Le client D ouvre un fil avec la Boutique G, tant qu'elle est en ligne.
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+insert into public.conversations (client_id, merchant_id)
+  select '44444444-4444-4444-4444-444444444444', id
+    from public.merchants where shop_name = 'Boutique G';
+insert into public.messages (conversation_id, sender_id, product_id, body)
+  select c.id, '44444444-4444-4444-4444-444444444444', p.id, 'Bonjour, c''est disponible ?'
+    from public.conversations c, public.products p
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and p.title = 'Produit vitrine G'
+     and c.merchant_id = p.merchant_id;
+
+-- La boutique est suspendue APRÈS coup.
+reset role;
+update public.profiles set is_suspended = true where full_name = 'Boutique G';
+
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+-- Compté sur CETTE boutique précisément : le client D a d'autres fils
+-- ouverts par les tests précédents, et un total ne prouverait rien.
+select pg_temp.check('mon fil avec une boutique suspendue reste lisible',
+  (select count(*) from public.conversations c
+     join public.merchants m on m.id = c.merchant_id
+    where c.client_id = '44444444-4444-4444-4444-444444444444'
+      and m.shop_name = 'Boutique G') = 1);
+-- C'est CE point qui manquait : sans lui, la jointure `merchants(...)`
+-- de `getThreadContext` revient vide et le fil devient un 404.
+select pg_temp.check('la boutique de mon fil reste lisible malgre la suspension',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 1);
+select pg_temp.check('ses produits, eux, restent hors du catalogue',
+  (select count(*) from public.products where title = 'Produit vitrine G') = 0);
+reset role;
+
+-- Et la boutique ne devient pas lisible pour autant par qui n'a jamais
+-- parlé avec elle : la nouvelle branche est une porte, pas une brèche.
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+set role authenticated;
+select pg_temp.check('un client sans fil ne voit toujours pas la boutique suspendue',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 0);
+reset role;
+select pg_temp.login(null);
+set role anon;
+select pg_temp.check('un visiteur anonyme ne voit toujours pas la boutique suspendue',
+  (select count(*) from public.merchants where shop_name = 'Boutique G') = 0);
+reset role;
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+
+
+-- =====================================================================
+-- 25. On ne contacte pas sa propre boutique (0016)
+-- =====================================================================
+-- Le commerçant A possède aussi un compte client lié (test 19). Rien ne
+-- l'empêchait d'ouvrir un fil avec SA boutique : le fil avait la même
+-- personne des deux côtés, et surtout `bump_contact_count` incrémentait
+-- le compteur qui sert au tri « populaires ». Un vendeur pouvait donc
+-- faire monter ses propres produits en s'écrivant à lui-même.
+
+reset role;
+update public.merchants set status = 'approved' where shop_name = 'Chez A';
+update public.profiles set is_suspended = false
+ where id = '11111111-1111-1111-1111-111111111111';
+
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+set role authenticated;
+do $$
+begin
+  insert into public.conversations (client_id, merchant_id)
+    values (public.my_profile_id('client'), public.my_merchant_id());
+  raise exception 'ECHEC un commercant a ouvert un fil avec sa propre boutique';
+exception when insufficient_privilege then
+  raise notice 'OK    on ne peut pas contacter sa propre boutique';
+end $$;
+reset role;
+
+-- Le refus ne doit pas déborder sur le cas normal : un client qui n'a
+-- aucune boutique reste libre de contacter n'importe quel commerçant.
+-- (`merchant_id <> my_merchant_id()` vaut NULL quand la personne n'a pas
+-- de boutique — d'où le `is null or` de la policy, que ce test protège.)
+update public.merchants set status = 'approved' where shop_name = 'Chez B';
+-- Le client D, et non E : E a épuisé son quota de 20 conversations dans
+-- les tests de limite, et son refus n'aurait rien prouvé ici.
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+set role authenticated;
+-- Le fil créé n'est pas effacé ensuite : `delete` est révoqué sur
+-- `conversations` (0002, partie 4), et c'est très bien ainsi.
+do $$
+declare v_id uuid;
+begin
+  insert into public.conversations (client_id, merchant_id)
+    select '44444444-4444-4444-4444-444444444444', id
+      from public.merchants where shop_name = 'Chez B'
+  returning id into v_id;
+  raise notice 'OK    un client sans boutique contacte toujours un fil (%)', v_id;
+exception when others then
+  raise exception 'ECHEC un client sans boutique ne peut plus contacter personne : %', sqlerrm;
+end $$;
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

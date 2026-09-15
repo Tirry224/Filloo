@@ -52,7 +52,32 @@ export async function findOrCreateConversation(
     .insert({ client_id: clientProfileId, merchant_id: merchantId })
     .select("id")
     .single();
-  if (createError) throw createError;
+
+  /* « Chercher puis créer » laisse une fenêtre entre les deux : deux
+     requêtes parties presque en même temps — un double tap sur
+     « Contacter », ou la page rouverte pendant que la première charge —
+     ne trouvent ni l'une ni l'autre de fil, et tentent toutes deux de
+     l'insérer. La base tient bon : `unique (client_id, merchant_id)`
+     (0001) refuse la seconde, et c'est elle qui garantit vraiment le
+     « un seul fil par couple », pas ce code.
+
+     Ce qui manquait, c'est la suite : l'erreur 23505 remontait jusqu'à
+     la frontière d'erreur, donc le deuxième tap affichait « Vérifiez
+     votre connexion » alors que le fil venait précisément d'être créé.
+     Une course perdue n'est pas un échec ici — le résultat voulu existe,
+     il suffit de le relire. */
+  if (createError) {
+    if (createError.code !== "23505") throw createError;
+    const { data: raced, error: raceError } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("client_id", clientProfileId)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+    if (raceError) throw raceError;
+    if (!raced) throw createError;
+    return raced.id;
+  }
   return created.id;
 }
 

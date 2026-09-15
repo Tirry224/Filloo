@@ -4,9 +4,16 @@ import { TopBar } from "@/components/ui/TopBar";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles } from "@/lib/data/session";
+import { safeNextPath } from "@/lib/next-param";
 
-/** Inscription — écran 12 de docs/ECRANS.md. */
-export default async function SignupPage() {
+/** Inscription — écran 12 de docs/ECRANS.md. `?next=` : voir
+ * `safeNextPath` et l'écran 16, d'où l'on arrive le plus souvent. */
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const next = safeNextPath((await searchParams).next) ?? undefined;
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
 
@@ -18,7 +25,10 @@ export default async function SignupPage() {
 
   return (
     <Screen>
-      <TopBar title="Créer un compte" backHref="/" />
+      {/* Le retour ramène là d'où l'on vient (la fiche produit, presque
+          toujours) plutôt qu'au fil d'accueil : renoncer à créer un compte
+          ne doit pas non plus faire perdre le produit. */}
+      <TopBar title="Créer un compte" backHref={next ?? "/"} />
 
       <ScreenBody>
         <Section className="gap-4">
@@ -27,6 +37,7 @@ export default async function SignupPage() {
             excludeRole={existing?.role}
             defaultFullName={existing?.fullName}
             defaultPhone={existing?.phone}
+            next={next}
           />
         </Section>
       </ScreenBody>

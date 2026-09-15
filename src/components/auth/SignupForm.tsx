@@ -56,11 +56,14 @@ export function SignupForm({
   excludeRole,
   defaultFullName,
   defaultPhone,
+  next,
 }: {
   mode: "new" | "linked";
   excludeRole?: "client" | "merchant";
   defaultFullName?: string;
   defaultPhone?: string;
+  /** L'écran à rejoindre une fois le compte créé — voir `safeNextPath`. */
+  next?: string;
 }) {
   const [role, setRole] = useState<"client" | "merchant">(excludeRole === "client" ? "merchant" : "client");
   const action = mode === "linked" ? createLinkedProfileAction : signUpAction;
@@ -78,6 +81,7 @@ export function SignupForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="role" value={role} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className="flex flex-col gap-2.5">
         <SectionLabel>Je viens sur Makiti pour</SectionLabel>

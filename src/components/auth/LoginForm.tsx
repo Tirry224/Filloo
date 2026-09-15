@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { signInAction, type ActionState } from "@/lib/actions/auth";
 
-/** Connexion — écran 14. */
-export function LoginForm() {
+/** Connexion — écran 14. `next` porte l'écran à rejoindre une fois
+ * connecté : on n'arrive presque jamais ici pour le plaisir de se
+ * connecter, mais parce qu'un geste a été interrompu. */
+export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(signInAction, null);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Email" htmlFor="email">
         <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
       </Field>
@@ -29,7 +32,7 @@ export function LoginForm() {
       <Button type="submit" disabled={pending}>
         {pending ? "Connexion…" : "Se connecter"}
       </Button>
-      <Button variant="secondary" href="/inscription">
+      <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
         Créer un compte
       </Button>
     </form>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, landingForSession } from "@/lib/data/session";
+import { safeNextPath } from "@/lib/next-param";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -65,7 +66,10 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (!data.session) return { needsConfirmation: true };
 
   if (role === "merchant") redirect("/inscription/boutique");
-  redirect("/");
+  // `next` porte l'intention qui a mené ici — presque toujours
+  // « contacter ce vendeur » (écran 16). Voir `safeNextPath`, qui refuse
+  // tout ce qui n'est pas une adresse interne.
+  redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
 /** Créer le SECOND compte lié (écran 12, en étant déjà connecté) : pas de
@@ -93,7 +97,10 @@ export async function createLinkedProfileAction(
   }
 
   if (role === "merchant") redirect("/inscription/boutique");
-  redirect("/");
+  // Même reprise d'intention que pour une inscription complète : une
+  // connexion qui n'avait qu'un compte commerçant vient peut-être de
+  // créer son compte client POUR écrire à un vendeur.
+  redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
 /** Connexion — écran 14. */
@@ -106,11 +113,20 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: translateAuthError(error.message) };
 
-  // Jamais `/` en dur : une connexion qui n'a qu'un compte commerçant
-  // atterrissait sur le fil client, avec la barre d'onglets du client —
-  // ce que `design/README.md` interdit explicitement. Voir
-  // `landingForSession`.
-  redirect(await landingForSession(supabase));
+  /* Jamais `/` en dur : une connexion qui n'a qu'un compte commerçant
+     atterrissait sur le fil client, avec la barre d'onglets du client —
+     ce que `design/README.md` interdit explicitement. Voir
+     `landingForSession`.
+
+     `landingForSession` garde donc le dernier mot quand il ne vaut pas « / » :
+     une connexion qui n'a QUE un compte commerçant n'a rien à faire sur
+     un écran client, quelle que soit l'adresse demandée — c'est la
+     décision 8 de docs/SPEC.md, et un paramètre d'URL ne la défait pas.
+     Dans tous les autres cas, on reprend là où la personne avait été
+     interrompue. */
+  const landing = await landingForSession(supabase);
+  const next = safeNextPath(formData.get("next"));
+  redirect(next && landing === "/" ? next : landing);
 }
 
 /** Déconnexion. Utilisée depuis /compte et /vendeur/boutique. */

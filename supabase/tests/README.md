@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d makiti_test -f
 psql -d makiti_test -f supabase/tests/security_test.sql
 ```
 
-Les 61 vérifications affichent `OK`. La première qui échoue interrompt tout
+Les 81 vérifications affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 ## Ce que ces tests protègent

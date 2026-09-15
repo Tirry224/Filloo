@@ -114,6 +114,15 @@ export async function getProduct(supabase: SupabaseClient<Database>, id: string)
   ]);
   if (error) throw error;
   if (!row) return null;
+  /* Un produit sans sa boutique n'est pas une fiche produit : `mapDetailRow`
+     remplissait alors `merchant.id` avec une chaîne vide, et l'écran
+     continuait comme si de rien n'était — lien « boutique » vers
+     `/boutique/`, et « Contacter le vendeur » partant créer une
+     conversation avec un identifiant qui n'existe pas. Le cas ne devrait
+     pas se produire (le RLS montre toujours la boutique d'un produit
+     visible), mais « ne devrait pas » n'est pas une garantie : faute de
+     vendeur, il n'y a rien à afficher, donc rien à trouver. */
+  if (!row.merchants) return null;
   return mapDetailRow(row, (images ?? []).map((i) => productImageUrl(i.storage_path)));
 }
 
