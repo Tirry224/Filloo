@@ -17,8 +17,13 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d makiti_test -f
 psql -d makiti_test -f supabase/tests/security_test.sql
 ```
 
-Les 114 vérifications affichent `OK`. La première qui échoue interrompt tout
+Les 138 vérifications affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
+
+Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les
+migrations en en omettant une, et regarde la suite s'arrêter : sans `0019`,
+elle tombe sur « une boutique creee approuvee a sa case cochee » ; sans
+`0020`, sur « pending + draft → sold refusé (LA FAILLE) ».
 
 ## Ce que ces tests protègent
 
