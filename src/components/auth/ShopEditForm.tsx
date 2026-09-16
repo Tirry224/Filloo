@@ -13,12 +13,18 @@ import type { Merchant } from "@/lib/types";
  * voir le commentaire de `updateMerchantAction` sur la promesse de
  * « nouvelle vérification » retirée de cet écran.
  *
- * Pas de `<ScreenBody>`/`<ScreenFooter>` ici : la page a besoin d'afficher
- * d'autres blocs (bascule d'espace, déconnexion) APRÈS ce formulaire mais
- * dans le même `<main>` — et ces blocs sont eux-mêmes de petites `<form>`
- * (voir `MenuItem`), qu'on ne peut pas imbriquer dans celle-ci. Le bouton
- * « Enregistrer » vit donc dans la barre du haut de la page, relié à ce
- * formulaire par l'attribut HTML `form`, pas par l'imbrication du JSX.
+ * Pas de `<ScreenBody>`/`<ScreenFooter>` ici : c'est la page qui pose le
+ * cadre, ce composant ne rend que les champs. Le bouton « Enregistrer »
+ * vit dans la barre du haut et rejoint cette `<form>` par l'attribut HTML
+ * `form`, pas par l'imbrication du JSX.
+ *
+ * Ce lien par attribut avait d'abord été choisi pour une autre raison :
+ * ce formulaire cohabitait sur `/vendeur/boutique` avec des blocs qui
+ * sont eux-mêmes de petites `<form>` (bascule d'espace, déconnexion), et
+ * on n'imbrique pas une `<form>` dans une autre. Il vit maintenant seul
+ * sur `/vendeur/boutique/modifier`, mais le montage reste le bon : un
+ * bouton dans la barre du haut ne peut de toute façon pas être un enfant
+ * du formulaire qu'il envoie.
  */
 export function ShopEditForm({
   merchant,
