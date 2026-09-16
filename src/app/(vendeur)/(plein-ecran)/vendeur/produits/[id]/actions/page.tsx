@@ -60,7 +60,7 @@ export default async function ProductActionsPage({ params }: { params: Promise<{
   const isDraft = product.status === "draft";
 
   return (
-    <Sheet title={product.title} closeHref="/vendeur">
+    <Sheet title={product.title} closeHref="/vendeur/produits">
       <div>
         {/* En premier pour un brouillon : c'est la raison pour laquelle on
             ouvre cette feuille. La base reste seule à décider si la

@@ -87,7 +87,8 @@ function screenGroups(ids: ScreenIds): {
       screens: [
         ["20", "Boutique en attente", "/vendeur/attente"],
         ["21", "Boutique refusée", "/vendeur/refusee"],
-        ["22", "Mes produits", "/vendeur"],
+        ["22", "Mes produits", "/vendeur/produits"],
+        ["22b", "Accueil commerçant", "/vendeur"],
         ["23", "Mes produits — vide", "/vendeur?etat=vide"],
         ["24", "Ajouter un produit", "/vendeur/produits/nouveau"],
         ["25", "Actions produit", ids.produit && `/vendeur/produits/${ids.produit}/actions`, MANQUE_PRODUIT],

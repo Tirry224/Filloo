@@ -20,11 +20,15 @@ import { getMyMerchant } from "@/lib/data/merchants";
 export default async function PendingShopPage({
   searchParams,
 }: {
-  /* Même canal que `/vendeur` et `/vendeur/refusee` : une action produit
-     qui échoue redirige vers `/vendeur?erreur=…`, et `/vendeur` fait
-     suivre le message jusqu'ici quand la boutique n'est pas encore
+  /* Même canal que les autres écrans de l'espace : une action produit qui
+     échoue redirige vers `/vendeur/produits?erreur=…`, et cet écran-là
+     fait suivre le message jusqu'ici quand la boutique n'est pas encore
      validée. Sans cette lecture, le refus arrivait bien à destination et
-     n'y était affiché par personne. */
+     n'y était affiché par personne.
+
+     Le chemin a changé avec le passage à quatre onglets : la liste des
+     produits — d'où part chaque action — a quitté `/vendeur` pour
+     `/vendeur/produits`. Les deux écrans font suivre le message. */
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
