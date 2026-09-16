@@ -14,11 +14,17 @@ import { TopBar } from "@/components/ui/TopBar";
  * pas sur celui du parent pour ce dossier et ses enfants : c'est tout ce
  * qu'il fallait.
  *
- * Il reproduit la silhouette de « Mes produits » — en-tête de boutique,
- * deux cartes, lignes de produits — plutôt qu'un tourniquet centré : la
- * page ne saute pas quand les données arrivent, et l'attente paraît plus
- * courte parce qu'on voit déjà où les choses vont se placer. Pas de
- * ville ici : une boutique n'en change pas au fil de la navigation.
+ * Il reproduit la silhouette de l'ACCUEIL commerçant — salutation, trois
+ * cartes d'activité, quelques lignes — plutôt qu'un tourniquet centré :
+ * la page ne saute pas quand les données arrivent, et l'attente paraît
+ * plus courte parce qu'on voit déjà où les choses vont se placer.
+ *
+ * Il imitait « Mes produits » tant que cette liste vivait sur `/vendeur`.
+ * Depuis qu'elle a son propre onglet, c'est l'accueil qu'on voit en
+ * arrivant, et c'est donc lui qu'il faut annoncer. Ce même squelette sert
+ * les quatre onglets : viser celui où l'on atterrit est le meilleur
+ * compromis possible avec un seul fichier. Pas de ville ici : une
+ * boutique n'en change pas au fil de la navigation.
  */
 export default function LoadingSeller() {
   return (
@@ -33,28 +39,34 @@ export default function LoadingSeller() {
       />
 
       <ScreenBody>
-        <Section className="gap-3.5">
-          <div className="flex gap-3">
-            <Card className="flex flex-1 flex-col gap-2 p-3.5">
-              <Skeleton className="h-6 w-8" />
-              <Skeleton className="h-2.5 w-24" />
-            </Card>
-            <Card className="flex flex-1 flex-col gap-2 p-3.5">
-              <Skeleton className="h-5 w-5 rounded-md" />
-              <Skeleton className="h-2.5 w-20" />
-            </Card>
+        <Section className="gap-5">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-5 w-52" />
+            <Skeleton className="h-3 w-64" />
           </div>
 
-          <Skeleton className="h-3 w-24" />
+          <div className="flex flex-col gap-2.5">
+            <Skeleton className="h-3 w-24" />
+            <div className="flex gap-2.5">
+              {[0, 1, 2].map((i) => (
+                <Card key={i} className="flex flex-1 flex-col gap-2 p-3">
+                  <Skeleton className="h-4.5 w-4.5 rounded-md" />
+                  <Skeleton className="h-6 w-8" />
+                  <Skeleton className="h-2.5 w-full" />
+                </Card>
+              ))}
+            </div>
+          </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
+            <Skeleton className="h-3 w-32" />
             {[0, 1, 2].map((i) => (
-              <Card key={i} className="flex gap-3 p-3">
-                <Skeleton className="h-16 w-16 shrink-0 rounded-md" />
-                <div className="flex flex-1 flex-col justify-center gap-2">
-                  <Skeleton className="h-3 w-3/4" />
-                  <Skeleton className="h-3.5 w-1/3" />
+              <Card key={i} className="flex items-center gap-3 p-3.5">
+                <div className="flex flex-1 flex-col gap-2">
+                  <Skeleton className="h-3.5 w-1/2" />
+                  <Skeleton className="h-2.5 w-1/3" />
                 </div>
+                <Skeleton className="h-4 w-16 rounded-sm" />
               </Card>
             ))}
           </div>

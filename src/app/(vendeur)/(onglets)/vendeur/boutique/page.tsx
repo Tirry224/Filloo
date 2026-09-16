@@ -74,9 +74,13 @@ export default async function EditShopPage() {
 
   return (
     <>
+      {/* Plus de flèche retour : cet écran est un ONGLET depuis que la
+          barre en compte quatre, et un onglet est une destination, pas un
+          sous-écran. Une flèche qui renvoie « en arrière » vers un autre
+          onglet apprend au doigt un geste faux — on y revient ensuite par
+          la barre, et la flèche ne correspond plus à rien. */}
       <TopBar
         title="Ma boutique"
-        backHref="/vendeur"
         right={
           <button
             type="submit"

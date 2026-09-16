@@ -46,7 +46,7 @@ export default async function MerchantMessagesPage() {
             title="Aucune conversation"
             description="Vos clients vous écriront depuis vos produits. Publiez et soignez vos photos : c'est ce qui déclenche le premier message."
           >
-            <Button href="/vendeur">Voir ma boutique</Button>
+            <Button href="/vendeur/produits">Voir mes produits</Button>
           </EmptyState>
         ) : (
           <Section className="gap-0 pt-0.5">

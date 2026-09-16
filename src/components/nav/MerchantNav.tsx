@@ -2,16 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle, Store, User } from "lucide-react";
+import { House, MessageCircle, Package, Store } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * La barre d'onglets de l'espace COMMERÇANT — trois onglets, pas quatre.
+ * La barre d'onglets de l'espace COMMERÇANT — quatre onglets.
  *
- * « Accueil » et « Rechercher » n'existent pas ici, et ce n'est pas un
- * oubli : chercher des produits est un geste de client. Une personne qui
- * veut les deux crée son compte client lié et bascule explicitement
- * (`SwitchSpaceCard`) ; à tout instant un seul espace est actif.
+ * ELLE EN A LONGTEMPS EU TROIS, ET C'ÉTAIT TROP PEU
+ * « Ma boutique » mélangeait deux choses que le commerçant ne fait pas en
+ * même temps : consulter son activité (combien de messages, combien de
+ * produits en ligne) et TENIR son catalogue (ajouter, modifier, masquer).
+ * Le même écran servait de tableau de bord et de liste de produits, donc
+ * ni l'un ni l'autre correctement : les chiffres poussaient la liste vers
+ * le bas, et la liste noyait les chiffres.
+ *
+ * Le prototype (`design/`) tranchait déjà ce point avec quatre onglets —
+ * Accueil, Produits, Messages, Boutique. L'application n'avait jamais
+ * suivi. Ce découpage est repris ici, dans les couleurs et les composants
+ * de Makiti, pas dans ceux de la maquette.
+ *
+ * « Rechercher » reste absent, et ce n'est pas un oubli : chercher des
+ * produits est un geste de client. Une personne qui veut les deux crée
+ * son compte client lié et bascule explicitement (`SwitchSpaceCard`) ; à
+ * tout instant un seul espace est actif.
  *
  * TOUS LES LIENS RESTENT DANS `/vendeur`
  * C'est la propriété qui rend cette barre vérifiable d'un coup d'œil, et
@@ -26,15 +39,25 @@ import { cn } from "@/lib/cn";
  * La règle qui en découle : si un lien de cette barre ne commence pas par
  * `/vendeur`, c'est un bug, et il se voit sans lire le reste du fichier.
  */
+/* Les quatre `match` sont volontairement DISJOINTS : deux onglets allumés
+   en même temps, c'est une barre qui ment sur l'endroit où l'on est.
+   `/vendeur` est donc testé à l'identique, jamais en préfixe — sans quoi
+   « Accueil » s'allumerait sur tout l'espace. */
 const TABS = [
   {
-    label: "Ma boutique",
+    label: "Accueil",
     href: "/vendeur",
-    icon: Store,
-    /* `/vendeur/produits/...` allume bien cet onglet : gérer un produit,
-       c'est tenir sa boutique. `/vendeur/boutique` en est exclu, sinon
-       deux onglets s'allumeraient ensemble. */
-    match: (p: string) => p === "/vendeur" || p.startsWith("/vendeur/produits"),
+    icon: House,
+    match: (p: string) => p === "/vendeur",
+  },
+  {
+    label: "Produits",
+    href: "/vendeur/produits",
+    icon: Package,
+    /* Les écrans d'un produit — ajout, modification, feuille d'actions —
+       vivent tous sous `/vendeur/produits`, donc le préfixe suffit et
+       l'onglet reste allumé pendant qu'on travaille sur un produit. */
+    match: (p: string) => p.startsWith("/vendeur/produits"),
   },
   {
     label: "Messages",
@@ -43,9 +66,13 @@ const TABS = [
     match: (p: string) => p.startsWith("/vendeur/messages"),
   },
   {
-    label: "Compte",
+    label: "Boutique",
     href: "/vendeur/boutique",
-    icon: User,
+    icon: Store,
+    /* Nommé « Compte » auparavant, alors que l'écran édite la BOUTIQUE —
+       nom, ville, WhatsApp, description — et ne contient les réglages de
+       compte qu'en second. L'intitulé décrit maintenant ce qu'on y
+       trouve d'abord. */
     match: (p: string) => p.startsWith("/vendeur/boutique"),
   },
 ] as const;

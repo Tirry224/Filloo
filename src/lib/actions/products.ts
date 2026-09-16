@@ -118,7 +118,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  redirect("/vendeur");
+  redirect("/vendeur/produits");
 }
 
 /**
@@ -249,7 +249,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  redirect("/vendeur");
+  redirect("/vendeur/produits");
 }
 
 /**
@@ -257,10 +257,14 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
  * quand il y en a un. Les lignes de la feuille d'actions sont de vraies
  * `<form>` de composants serveur (pas de `useActionState`), pour continuer
  * à fonctionner sans JavaScript : l'URL est donc le seul canal qui
- * survive à la redirection. `/vendeur` affiche le message avec `Notice`.
+ * survive à la redirection. `/vendeur/produits` affiche le message avec
+ * `Notice` — c'est l'écran d'où part chaque action produit, donc celui où
+ * son refus doit revenir. Il pointait sur `/vendeur` tant que la liste y
+ * vivait ; depuis qu'elle a son onglet, y renvoyer ferait changer
+ * d'écran à chaque échec.
  */
 function backToSeller(errorMessage?: string): never {
-  redirect(errorMessage ? `/vendeur?erreur=${encodeURIComponent(errorMessage)}` : "/vendeur");
+  redirect(errorMessage ? `/vendeur/produits?erreur=${encodeURIComponent(errorMessage)}` : "/vendeur/produits");
 }
 
 /**
