@@ -8,7 +8,6 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
-import { UpdatePasswordForm } from "@/components/auth/UpdatePasswordForm";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { signOutAction } from "@/lib/actions/auth";
@@ -145,20 +144,19 @@ export default async function EditShopPage() {
             ))}
           </div>
 
-          {/* Le mot de passe appartient à la CONNEXION (`auth.users`), pas
-              au profil : une personne qui a ses deux comptes liés n'en a
-              qu'un seul, et c'est bien le même formulaire des deux côtés.
+          {/* Le mot de passe a quitté cet écran pour
+              `/vendeur/boutique/modifier`, où il est devenu une
+              modification du compte comme les autres.
 
-              Il ne vivait pourtant que sur `/compte/informations`, écran
-              réservé à un profil CLIENT — un commerçant sans compte client
-              lié était donc renvoyé ici par `clientSpaceFallback` et
-              n'avait plus aucun moyen de changer son mot de passe. Le
-              troisième trou de la même symétrie, après la bascule et la
-              suppression de compte : cet écran fait office de « compte »
-              côté commerçant (docs/ECRANS.md, écran 26), il doit porter ce
-              que « mon compte » porte. */}
-          <div className="my-1 h-px bg-line" />
-          <UpdatePasswordForm />
+              Il reste joignable par un commerçant SANS compte client lié,
+              et c'est ce qui compte : cette page fait office de « mon
+              compte » côté commerçant (docs/ECRANS.md, écran 26), et le
+              mot de passe appartient à la CONNEXION, pas au profil. Il ne
+              vivait longtemps que sur `/compte/informations`, réservé à un
+              profil client — un commerçant sans compte lié n'avait alors
+              aucun moyen de le changer. Le déplacer d'un écran de cet
+              espace à un autre ne rouvre pas ce trou ; l'enlever de
+              l'espace, si. */}
 
           {clientProfile ? (
             <SwitchSpaceCard

@@ -75,6 +75,64 @@ export function ShopEditForm({
         <Textarea id="description" name="description" rows={3} defaultValue={merchant.description ?? ""} />
       </Field>
 
+      {/* LE MOT DE PASSE VIT DANS CE FORMULAIRE, ET NON PLUS À CÔTÉ
+          Il avait sa propre `<form>` sur l'onglet `/vendeur/boutique`, avec
+          son propre bouton. Deux formulaires sur un même écran, c'est deux
+          « enregistrer » qui ne sauvegardent pas la même chose : on remplit
+          les deux, on appuie sur l'un, et la moitié du travail est perdue
+          sans que rien ne le dise. Changer de mot de passe est désormais
+          une modification du compte comme les autres, enregistrée par le
+          même geste que le reste. */}
+      <div className="my-1 h-px bg-line" />
+
+      <Field label="Nouveau mot de passe" htmlFor="newPassword" hint="Laissez vide pour garder le mot de passe actuel.">
+        <Input
+          id="newPassword"
+          name="newPassword"
+          type="password"
+          autoComplete="new-password"
+          placeholder="8 caractères minimum"
+        />
+      </Field>
+
+      {/* Même règle que l'inscription et la réinitialisation, portée par
+          `erreurNouveauMotDePasse` : une seule définition pour les trois
+          écrans, donc aucune chance qu'ils divergent le jour où la
+          longueur minimale changera. */}
+      <Field label="Confirmer le nouveau mot de passe" htmlFor="newPasswordConfirmation">
+        <Input
+          id="newPasswordConfirmation"
+          name="newPasswordConfirmation"
+          type="password"
+          autoComplete="new-password"
+          placeholder="Le même mot de passe"
+        />
+      </Field>
+
+      {/* LA CONFIRMATION, EN DERNIER ET TOUJOURS EXIGÉE
+          Elle garde l'enregistrement entier, pas seulement le mot de passe :
+          l'adresse et le numéro WhatsApp affichés ici sont ce qu'un client
+          lit avant de se déplacer. Quelqu'un qui emprunte un téléphone
+          déverrouillé quelques secondes pouvait les réécrire sans rien
+          connaître du compte. Ce champ est ce qui distingue « cette session
+          est ouverte » de « c'est bien la bonne personne, maintenant ».
+
+          `autoComplete="current-password"` pour que le gestionnaire de mots
+          de passe propose l'ANCIEN, pas d'en inventer un nouveau. */}
+      <Field
+        label="Mot de passe actuel"
+        htmlFor="currentPassword"
+        hint="Obligatoire : sans lui, rien n'est enregistré."
+      >
+        <Input
+          id="currentPassword"
+          name="currentPassword"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Votre mot de passe"
+        />
+      </Field>
+
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
     </form>
   );

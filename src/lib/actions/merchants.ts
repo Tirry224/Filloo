@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfile } from "@/lib/data/session";
+import { passwordIsValid } from "@/lib/supabase/verify";
+import { erreurNouveauMotDePasse } from "@/lib/password";
+import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 
 /** Écran 13 — création de la boutique, étape 2 de l'inscription commerçant.
@@ -83,14 +85,66 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const addressHint = String(formData.get("addressHint") ?? "").trim();
   const whatsappPhone = String(formData.get("whatsappPhone") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
 
   if (!shopName || !cityId) {
     return { error: "Le nom de la boutique et la ville sont obligatoires." };
   }
 
+  /* TOUT CE QUI PEUT ÊTRE REFUSÉ L'EST AVANT LA PREMIÈRE ÉCRITURE.
+     Ces deux systèmes — `auth.users` pour le mot de passe, `merchants`
+     pour la boutique — ne partagent aucune transaction : rien ne peut
+     annuler l'un si l'autre échoue. La seule protection possible est donc
+     de refuser TÔT, pour que l'étape qui écrit ne trouve plus de raison
+     d'échouer. Ce qui reste après ces contrôles ne tombe qu'en cas de
+     panne réseau, et ce cas-là est dit à l'écran (voir plus bas). */
+  if (!currentPassword) {
+    return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
+  }
+  /* Le champ est FACULTATIF — vide, on garde le mot de passe actuel —
+     mais dès qu'on y touche, la règle commune s'applique : longueur, et
+     les deux saisies qui correspondent. */
+  if (newPassword || newPasswordConfirmation) {
+    const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
+    if (erreurMotDePasse) return { error: erreurMotDePasse };
+  }
+
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return { error: "Vous devez être connecté en tant que commerçant." };
+
+  /* LA CONFIRMATION PAR MOT DE PASSE, ET CE QU'ELLE PROTÈGE VRAIMENT
+     Ces informations sont celles qu'un client lit avant de se déplacer :
+     l'adresse où l'on vous trouve et le numéro WhatsApp. Quelqu'un qui
+     emprunte un téléphone déverrouillé quelques secondes pouvait les
+     réécrire sans rien connaître du compte — et rediriger vers lui les
+     acheteurs d'une boutique qui n'est pas la sienne. Redemander le mot
+     de passe au moment d'écrire est ce qui distingue « cette session est
+     ouverte » de « c'est bien la bonne personne, maintenant ».
+
+     Supabase n'a pas d'appel « vérifie ce mot de passe » : la seule façon
+     de le savoir est de s'en servir pour se connecter. `passwordIsValid`
+     le fait avec un client JETABLE, qui n'écrit aucun cookie — voir
+     `src/lib/supabase/verify.ts` pour la raison, qui compte : le client de
+     session aurait pu abîmer la session en cours sur un simple échec, et
+     une faute de frappe qui déconnecte au milieu d'un formulaire à moitié
+     rempli serait pire que le défaut qu'on corrige. */
+  const user = await getSessionUser(supabase);
+  if (!user?.email) {
+    // Aucun compte du projet ne devrait être dans ce cas — l'inscription
+    // passe toujours par un email. On refuse plutôt que d'enregistrer sans
+    // avoir pu vérifier quoi que ce soit.
+    return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
+  }
+
+  if (!(await passwordIsValid(user.email, currentPassword))) {
+    // Message volontairement sec : il ne dit rien de plus que « ce n'est
+    // pas le bon ». Et il dit ce qui compte pour la personne — que rien
+    // n'a bougé — plutôt que de la laisser deviner ce qui a été gardé.
+    return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
+  }
 
   const { data, error } = await supabase
     .from("merchants")
@@ -110,6 +164,28 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   // commerçant qui vient de tout ressaisir.
   if (!data || data.length === 0) {
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
+  }
+
+  /* LE MOT DE PASSE EN DERNIER, ET L'ORDRE EST UN CHOIX
+     Les deux écritures ne sont pas atomiques ; il faut donc décider
+     laquelle risque de rester seule. La boutique passe d'abord parce
+     qu'elle est la raison d'être de cet écran : si le changement de mot
+     de passe échoue après elle, on peut le DIRE — « vos informations sont
+     enregistrées, le mot de passe n'a pas changé » — et la personne
+     réessaie juste ce point. L'ordre inverse laisserait quelqu'un avec un
+     nouveau mot de passe et un formulaire à ressaisir, sans savoir lequel
+     des deux a pris.
+
+     À ce stade le mot de passe actuel a déjà été vérifié : ce qui suit ne
+     peut plus échouer que sur une panne, jamais sur une saisie. */
+  if (newPassword) {
+    const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+    if (passwordError) {
+      return {
+        error:
+          "Vos informations sont enregistrées, mais le mot de passe n'a pas pu être changé. Réessayez ce seul point.",
+      };
+    }
   }
 
   /* Retour sur la CONSULTATION, pas sur l'accueil. C'est la règle que
