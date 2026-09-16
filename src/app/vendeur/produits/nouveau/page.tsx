@@ -21,6 +21,25 @@ import { getCategories } from "@/lib/data/reference";
  * formulaire ne reçoit que la réponse, pas la question. Un jour où une
  * quatrième valeur de `merchant_status` apparaîtra, il n'y aura qu'une
  * ligne à relire — celle-ci.
+ *
+ * UNE BOUTIQUE REFUSÉE N'EST PAS UNE BOUTIQUE EN ATTENTE
+ * `/vendeur`, `/vendeur/attente` et `/vendeur/refusee` s'aiguillent déjà
+ * mutuellement selon `status` ; cet écran était le seul à lire `status`
+ * sans en tirer de conséquence. Un commerçant REFUSÉ qui arrivait ici
+ * (adresse tapée, favori, lien d'un ancien écran) recevait donc le
+ * message destiné à l'attente — « publication disponible après
+ * validation » — qui lui annonce une validation en cours alors que sa
+ * boutique a été REFUSÉE, sans dire pourquoi ni comment repartir.
+ *
+ * On ne réécrit pas ce message ici : l'écran 21 dit déjà tout (le motif
+ * de `rejection_reason`, ce qu'il faut corriger, et les deux boutons
+ * « Corriger ma boutique » / « Renvoyer à la vérification »). Le
+ * dupliquer en écrirait une seconde version, qui divergerait. On envoie
+ * donc à l'écran qui sait, comme le fait `/vendeur` juste à côté.
+ *
+ * Effet de bord voulu : `canPublish === false` ne peut plus signifier
+ * qu'UNE chose, « en attente de validation », et le message du
+ * formulaire redevient exact au lieu d'être vrai à moitié.
  */
 export default async function NewProductPage() {
   const supabase = await createClient();
@@ -28,6 +47,7 @@ export default async function NewProductPage() {
   // attendant le résultat de la première pour lancer la seconde.
   const [merchant, categories] = await Promise.all([getMyMerchant(supabase), getCategories(supabase)]);
   if (!merchant) redirect("/inscription/boutique");
+  if (merchant.status === "rejected") redirect("/vendeur/refusee");
 
   return (
     <Screen>

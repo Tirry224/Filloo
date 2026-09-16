@@ -155,11 +155,16 @@ export function ProductForm(props: ProductFormProps) {
             </Button>
           </>
         ) : (
-          /* Boutique en attente (ou refusée) : le brouillon devient
-             l'action principale, puisque c'est la seule qui aboutit. La
-             phrase est au-dessus du bouton et non en bas de page : elle
-             répond à la question qu'on se pose au moment d'appuyer,
-             « pourquoi je ne peux pas publier ? ». */
+          /* Boutique en attente de validation, et seulement elle : une
+             boutique REFUSÉE n'arrive plus jusqu'ici, l'écran 24 l'envoie
+             sur `/vendeur/refusee`, qui lui dit le motif du refus et
+             comment repartir. Cette phrase peut donc parler d'attente
+             sans mentir.
+
+             Le brouillon devient l'action principale, puisque c'est la
+             seule qui aboutit. La phrase est au-dessus du bouton et non
+             en bas de page : elle répond à la question qu'on se pose au
+             moment d'appuyer, « pourquoi je ne peux pas publier ? ». */
           <>
             <p className="text-center text-xs text-ink-soft">
               Publication disponible après validation de votre boutique.
