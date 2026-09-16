@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles } from "@/lib/data/session";
 import { getThreadContext } from "@/lib/data/messages";
+import { notifyNewMessage } from "@/lib/notifications";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 
@@ -129,12 +131,20 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   const context = await getThreadContext(supabase, conversationId);
   if (!context) return { error: "Conversation introuvable." };
 
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    sender_id: context.myParticipantId,
-    body,
-    product_id: productId,
-  });
+  /* `.select("id")` n'est pas là pour vérifier l'écriture — un `insert`
+     refusé par le RLS lève une erreur, c'est la précision mesurée le
+     2026-09-13 — mais parce que la notification a besoin de l'identifiant
+     du message qui vient d'être créé. */
+  const { data: inserted, error } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: context.myParticipantId,
+      body,
+      product_id: productId,
+    })
+    .select("id")
+    .single();
   /* Les refus des triggers (P0001) sont déjà rédigés en français et se
      relaient tels quels — c'est le commentaire ci-dessus. Le refus du
      RLS, lui, ne l'est pas : il dit « new row violates row-level
@@ -154,6 +164,19 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
     }
     return { error: error.message };
   }
+
+  /* L'email part APRÈS la réponse, jamais pendant.
+     `after` (Next 16, stable depuis 15.1) s'exécute une fois la réponse
+     envoyée — y compris après le `redirect` ci-dessous, la documentation
+     le garantit — et Vercel maintient l'invocation ouverte le temps
+     qu'il finisse (`waitUntil`).
+
+     Attendre Resend AVANT de rendre la main ferait payer à l'expéditeur,
+     sur un réseau guinéen instable, l'aller-retour vers une API
+     étrangère : son message est déjà en base, il n'a aucune raison de
+     regarder un écran qui tourne. Et un Resend en panne retarderait ou
+     casserait l'envoi d'un message qui, lui, a parfaitement réussi. */
+  after(() => notifyNewMessage(inserted.id));
 
   redirect(`/messages/${conversationId}`);
 }
