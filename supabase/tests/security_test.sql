@@ -1313,5 +1313,103 @@ exception when others then
 end $$;
 reset role;
 
+
+-- =====================================================================
+-- 28. Valider une boutique d'un seul clic (0018)
+-- =====================================================================
+-- Une case à cocher posée sur une table d'administration est un confort,
+-- et « un confort administratif est le moment exact où l'on rouvre une
+-- faille » (section 5). Ces vérifications existent pour que ce confort
+-- ne devienne jamais un bouton d'auto-validation.
+
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('88888888-8888-8888-8888-888888888888', 'h@test.gn',
+   '{"role":"merchant","full_name":"Boutique H","phone":"620000008"}');
+insert into public.merchants (profile_id, shop_name, city_id)
+  select id, 'Boutique H', 1 from public.profiles where full_name = 'Boutique H';
+
+select pg_temp.check('une boutique neuve est en attente, case decochee',
+  (select status = 'pending' and valider = false
+     from public.merchants where shop_name = 'Boutique H'));
+
+-- 1. Le clic : valide, date posée, case redevenue décochée.
+update public.merchants set valider = true where shop_name = 'Boutique H';
+select pg_temp.check('cocher la case valide la boutique',
+  (select status from public.merchants where shop_name = 'Boutique H') = 'approved');
+-- La date est la moitié qu'on perd le plus facilement : le trigger de
+-- 0012 est déclaré `before update OF status`, donc une commande qui ne
+-- mentionne que `valider` ne le réveille pas. Mesuré avant d'écrire
+-- 0018 : sans sa propre pose de date, la boutique était validée SANS
+-- qu'on puisse dire quand. Ce test est ce qui empêche de « simplifier »
+-- 0018 en supprimant ces trois lignes.
+select pg_temp.check('cocher la case pose la date de validation',
+  (select approved_at is not null from public.merchants where shop_name = 'Boutique H'));
+select pg_temp.check('la case se decoche d''elle-meme',
+  (select valider = false from public.merchants where shop_name = 'Boutique H'));
+
+-- 2. Recocher ne doit pas réécrire une date de validation déjà posée :
+--    sinon l'ancienneté d'une boutique se perd au premier clic distrait.
+do $$
+declare d1 timestamptz;
+begin
+  select approved_at into d1 from public.merchants where shop_name = 'Boutique H';
+  perform pg_sleep(0.05);
+  update public.merchants set valider = true where shop_name = 'Boutique H';
+  if (select approved_at from public.merchants where shop_name = 'Boutique H') <> d1 then
+    raise exception 'ECHEC recocher a deplace la date de validation';
+  end if;
+  raise notice 'OK    recocher ne deplace pas la date de validation';
+end $$;
+
+-- 3. Une boutique refusée, validée par la case, perd son motif périmé —
+--    comme le ferait une validation écrite à la main (0012).
+update public.merchants set status = 'rejected', rejection_reason = 'Numero injoignable'
+ where shop_name = 'Boutique H';
+update public.merchants set valider = true where shop_name = 'Boutique H';
+select pg_temp.check('la case valide aussi une boutique refusee',
+  (select status from public.merchants where shop_name = 'Boutique H') = 'approved');
+select pg_temp.check('et efface le motif de refus perime',
+  (select rejection_reason is null from public.merchants where shop_name = 'Boutique H'));
+
+-- 4. LE test de cette section : la case n'est pas un bouton
+--    d'auto-validation. C'est la toute première faille trouvée par ce
+--    fichier, reprise sous une autre forme.
+select pg_temp.login('88888888-8888-8888-8888-888888888888');
+set role authenticated;
+do $$
+begin
+  update public.merchants set valider = true where shop_name = 'Boutique H';
+  raise exception 'ECHEC un commercant a coche sa propre case de validation';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant ne peut pas cocher sa case de validation';
+end $$;
+-- Et il garde ce qui lui revient : la restriction porte sur UNE colonne,
+-- pas sur sa boutique.
+update public.merchants set description = 'Vente de tissus'
+ where shop_name = 'Boutique H';
+reset role;
+select pg_temp.check('il modifie toujours sa propre description',
+  (select description from public.merchants where shop_name = 'Boutique H') = 'Vente de tissus');
+
+select pg_temp.login(null);
+set role anon;
+do $$
+begin
+  update public.merchants set valider = true where shop_name = 'Boutique H';
+  raise exception 'ECHEC un anonyme a coche une case de validation';
+exception when insufficient_privilege then
+  raise notice 'OK    un anonyme ne peut pas cocher une case de validation';
+end $$;
+reset role;
+
+-- 5. Décocher ne dévalide pas : retirer une boutique du catalogue est un
+--    autre geste, qui passe par `status` et exige un motif si c'est un
+--    refus. Une case qui ferait les deux serait un interrupteur, et un
+--    interrupteur se heurte par accident.
+update public.merchants set valider = false where shop_name = 'Boutique H';
+select pg_temp.check('decocher ne devalide pas la boutique',
+  (select status from public.merchants where shop_name = 'Boutique H') = 'approved');
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

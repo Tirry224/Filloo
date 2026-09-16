@@ -129,6 +129,12 @@ export type Database = {
           rejection_reason: string | null
           shop_name: string
           status: Database["public"]["Enums"]["merchant_status"]
+          /* Bouton d'administration (0018), jamais lu ni écrit par
+             l'application : la case se décoche d'elle-même, et la vérité
+             reste dans `status`. Ajoutée à la main comme le reste de ce
+             fichier — l'environnement de travail ne joint pas
+             *.supabase.co, il ne peut donc pas être régénéré ici. */
+          valider: boolean
           whatsapp_phone: string | null
         }
         Insert: {
@@ -142,6 +148,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Update: {
@@ -155,6 +162,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name?: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Relationships: [
