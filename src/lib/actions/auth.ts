@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, landingForSession } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
+import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -27,7 +28,10 @@ function translateAuthError(message: string): string {
     return "Email ou mot de passe incorrect.";
   }
   if (message.includes("Password should be at least")) {
-    return "8 caractères minimum pour le mot de passe.";
+    // Le chiffre vient de la même constante que nos propres contrôles :
+    // Supabase impose son minimum, nous le nôtre, et deux textes qui
+    // annoncent des longueurs différentes rendraient le refus incompréhensible.
+    return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
   }
   return message;
 }
@@ -41,13 +45,20 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   const phone = String(formData.get("phone") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
   if (!fullName || !phone || !email || !password) {
     return { error: "Tous les champs sont obligatoires." };
   }
-  if (password.length < 8) {
-    return { error: "8 caractères minimum pour le mot de passe." };
-  }
+  /* Le mot de passe se saisit DEUX fois. C'est le seul de tout le
+     parcours qu'on ne peut pas relire — il s'affiche en points — et
+     c'est aussi celui qui, mal tapé, enferme dehors : la personne ne
+     s'en aperçoit qu'à la connexion suivante, quand plus rien ne lui
+     rappelle ce qu'elle croyait avoir écrit. La faute de frappe coûte
+     alors une réinitialisation par email, sur un réseau où recevoir cet
+     email n'est pas acquis. */
+  const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
+  if (erreurMotDePasse) return { error: erreurMotDePasse };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -185,9 +196,14 @@ export async function requestPasswordResetAction(
  * une session "recovery" déjà active (échangée par /auth/confirm). */
 export async function updatePasswordAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8) {
-    return { error: "8 caractères minimum pour le mot de passe." };
-  }
+  const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
+
+  /* La double saisie compte DOUBLE ici : cet écran s'ouvre depuis un lien
+     reçu par email, et ce lien ne sert qu'une fois. Un mot de passe mal
+     tapé ici oblige à redemander un email, donc à refaire tout le trajet
+     — pour une frappe qu'on n'a jamais pu relire. */
+  const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
+  if (erreurMotDePasse) return { error: erreurMotDePasse };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });

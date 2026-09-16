@@ -137,6 +137,26 @@ export function SignupForm({
           <Field label="Mot de passe" htmlFor="password">
             <Input id="password" name="password" type="password" autoComplete="new-password" placeholder="8 caractères minimum" />
           </Field>
+
+          {/* La double saisie : c'est le seul champ du parcours qu'on ne
+              peut pas relire — il s'affiche en points — et celui qui, mal
+              tapé, enferme dehors. La personne ne s'en aperçoit qu'à la
+              connexion suivante, et la faute coûte alors une
+              réinitialisation par email, sur un réseau où recevoir cet
+              email n'est pas acquis.
+
+              La comparaison qui COMPTE est celle de `signUpAction`, côté
+              serveur : les formulaires de Makiti doivent fonctionner sans
+              JavaScript, et une requête forgée ne passe par aucun champ. */}
+          <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le : c'est le seul champ qu'on ne peut pas relire.">
+            <Input
+              id="passwordConfirmation"
+              name="passwordConfirmation"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Le même mot de passe"
+            />
+          </Field>
         </>
       ) : null}
 
