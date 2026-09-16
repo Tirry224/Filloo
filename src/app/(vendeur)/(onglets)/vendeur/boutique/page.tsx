@@ -1,14 +1,16 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, LogOut, ShoppingBag, Trash2 } from "lucide-react";
+import { FileText, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import { Avatar } from "@/components/ui/Avatar";
+import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList } from "@/components/ui/MenuList";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
-import { ShopEditForm } from "@/components/auth/ShopEditForm";
 import { UpdatePasswordForm } from "@/components/auth/UpdatePasswordForm";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
-import { getCities } from "@/lib/data/reference";
 import { signOutAction } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import type { Merchant } from "@/lib/types";
@@ -39,10 +41,13 @@ type MerchantRow = {
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  const [merchantProfile, clientProfile, cities] = await Promise.all([
+  /* La liste des villes n'est plus chargée ici : elle ne servait qu'au
+     menu déroulant du formulaire, parti sur `/vendeur/boutique/modifier`.
+     Une requête de moins sur l'écran qu'on ouvre le plus souvent — et le
+     projet se mesure sur un réseau guinéen (docs/PERFORMANCE.md). */
+  const [merchantProfile, clientProfile] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getMyProfile(supabase, "client"),
-    getCities(supabase),
   ]);
   /* `merchantProfile` ne peut pas être nul ici : `(vendeur)/layout.tsx`
      a déjà refusé l'entrée à une connexion sans profil commerçant, et
@@ -72,6 +77,18 @@ export default async function EditShopPage() {
     rejectionReason: row.rejection_reason,
   };
 
+  /* Les cinq informations de la boutique, dans l'ordre du formulaire qui
+     les modifie : on retrouve au même rang ce qu'on vient de changer.
+     Les champs vides affichent un tiret plutôt que rien — une ligne vide
+     laisse croire à un bug d'affichage, un tiret dit « pas renseigné ». */
+  const infos = [
+    { label: "Nom de la boutique", value: merchant.shopName },
+    { label: "Ville", value: merchant.city || "—" },
+    { label: "Où vous trouver", value: merchant.addressHint || "—" },
+    { label: "Numéro WhatsApp", value: merchant.whatsappPhone || "—" },
+    { label: "Description", value: merchant.description || "—" },
+  ];
+
   return (
     <>
       {/* Plus de flèche retour : cet écran est un ONGLET depuis que la
@@ -79,22 +96,54 @@ export default async function EditShopPage() {
           sous-écran. Une flèche qui renvoie « en arrière » vers un autre
           onglet apprend au doigt un geste faux — on y revient ensuite par
           la barre, et la flèche ne correspond plus à rien. */}
+      {/* « Modifier » plutôt qu'« Enregistrer ». Cet écran ne modifiait
+          rien la plupart du temps, et affichait pourtant en permanence le
+          bouton qui enregistre — un bouton qui, presque toujours, ne fait
+          rien. Pire : les champs étaient directement modifiables, donc un
+          doigt qui glisse sur « Ville » en faisant défiler changeait la
+          ville de la boutique sans que rien ne le dise.
+
+          Modifier est maintenant un geste qu'on DEMANDE, et qui s'ouvre
+          sur son propre écran — comme l'ajout d'un produit. */}
       <TopBar
         title="Ma boutique"
         right={
-          <button
-            type="submit"
-            form="shop-edit-form"
-            className="cursor-pointer text-base font-semibold text-accent"
+          <Link
+            href="/vendeur/boutique/modifier"
+            className="flex items-center gap-1 text-base font-semibold text-accent"
           >
-            Enregistrer
-          </button>
+            <Pencil size={16} strokeWidth={2.2} aria-hidden />
+            Modifier
+          </Link>
         }
       />
 
       <ScreenBody>
         <Section className="gap-5">
-          <ShopEditForm merchant={merchant} cityId={row.city_id} cities={cities} />
+          <div className="flex items-center gap-3.5">
+            <Avatar name={merchant.shopName} kind="shop" size={64} />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate font-display text-lg font-bold">{merchant.shopName}</span>
+              <span className="truncate text-sm text-ink-soft">{merchant.city}</span>
+            </div>
+          </div>
+
+          {/* Les informations se LISENT ici, elles ne s'y saisissent plus.
+              Un champ de saisie se lit moins bien qu'un texte : son cadre,
+              son curseur et son fond blanc disent « écris ici », pas
+              « voici ce que tu as ». */}
+          <div className="flex flex-col gap-2.5">
+            <SectionLabel>Informations</SectionLabel>
+            {infos.map(({ label, value }) => (
+              <Card key={label} className="flex flex-col gap-0.5 p-3.5">
+                <span className="text-2xs text-ink-soft">{label}</span>
+                {/* `whitespace-pre-line` garde les retours à la ligne d'une
+                    description saisie en plusieurs paragraphes — sans lui,
+                    tout se recollait en un bloc illisible. */}
+                <span className="whitespace-pre-line text-base font-semibold">{value}</span>
+              </Card>
+            ))}
+          </div>
 
           {/* Le mot de passe appartient à la CONNEXION (`auth.users`), pas
               au profil : une personne qui a ses deux comptes liés n'en a

@@ -112,5 +112,11 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  redirect("/vendeur");
+  /* Retour sur la CONSULTATION, pas sur l'accueil. C'est la règle que
+     l'écran d'édition pose : ses deux sorties — la flèche retour qui
+     annule, et cet enregistrement — mènent au même endroit, celui d'où
+     l'on vient. Renvoyer ailleurs obligerait à retrouver son écran pour
+     vérifier ce qu'on vient d'écrire, et c'est précisément le moment où
+     l'on veut le relire. */
+  redirect("/vendeur/boutique");
 }
