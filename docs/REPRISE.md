@@ -236,10 +236,22 @@ français.
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
 2026-09-11. `supabase/migrations/` — 18 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf. **Les 17 premières sont appliquées au projet
-Supabase**, vérifié dans `supabase_migrations.schema_migrations` le
-2026-09-15 ; `0018` est écrite et testée en local, PAS encore appliquée
-au projet — c'est le premier geste de la prochaine session :
+l'ordre sur un projet neuf, numérotés `0001`…`0017` puis `0020`.
+
+**Le trou `0018`/`0019` n'est pas une erreur, c'est une dette.** Le
+projet Supabase porte deux migrations appliquées dont le fichier n'a
+jamais été commité — `0018_approve_a_shop_with_one_click` et
+`0019_the_validation_switch_shows_its_state` (la case à cocher
+`merchants.valider`, miroir de `status` pour l'éditeur de table). Lues
+dans `supabase_migrations.schema_migrations` le 2026-09-16. Git ne peut
+donc PAS reconstruire le projet réel : une base neuve montée depuis ce
+dépôt n'aura pas la colonne `valider`. **Les récupérer dans le dépôt est
+la première tâche de la prochaine session.** `0020` a pris le numéro
+suivant plutôt que de leur voler le leur.
+
+**Les 18 fichiers du dépôt sont appliqués au projet Supabase**, vérifié
+dans `supabase_migrations.schema_migrations` — les 17 premiers le
+2026-09-15, `0020` le 2026-09-16 :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -290,7 +302,7 @@ au projet — c'est le premier geste de la prochaine session :
   (`0015`) n'a rien fait de mal et ses clients attendent une réponse.
   Elle exige en plus que l'appelant soit participant du fil : voir le
   piège correspondant en section 5.
-- `0018_sold_is_a_publication_too.sql` — **`sold` est un état
+- `0020_sold_is_a_publication_too.sql` — **`sold` est un état
   publiquement visible que rien ne gardait**. La policy « products:
   catalogue public » publie `status in ('active', 'sold')` depuis
   `0008`, mais `check_product_publishable` ne vérifiait que `'active'` :
@@ -306,7 +318,7 @@ au projet — c'est le premier geste de la prochaine session :
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 18 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 18 fichiers rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
