@@ -5,7 +5,7 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-15** (audit des parcours, puis audit du
+Dernière mise à jour : **2026-09-16** (audit des parcours, puis audit du
 parcours d'achat complet et son contre-audit — voir le journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
@@ -235,9 +235,9 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 17 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf. **Les 17 sont appliquées au projet Supabase**,
-vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
+2026-09-11. `supabase/migrations/` — 19 fichiers SQL, à exécuter dans
+l'ordre sur un projet neuf. **Les 19 sont appliquées au projet Supabase**,
+vérifié dans `supabase_migrations.schema_migrations` le 2026-09-16 :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -288,16 +288,27 @@ vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
   (`0015`) n'a rien fait de mal et ses clients attendent une réponse.
   Elle exige en plus que l'appelant soit participant du fil : voir le
   piège correspondant en section 5.
+- `0018_approve_a_shop_with_one_click.sql` — la colonne `merchants.valider`,
+  case à cocher d'administration pour valider une boutique d'un clic
+  depuis l'éditeur de table. **Appliquée à la base le 2026-09-16 sans
+  jamais avoir été commitée** : le fichier est un rattrapage, déposé le
+  jour même par la session qui a diagnostiqué la panne qu'elle causait.
+- `0019_the_validation_switch_shows_its_state.sql` — la case cesse
+  d'être un bouton qui s'efface et devient un **miroir** de `status` :
+  cocher valide et la case reste cochée, décocher remet en attente.
+  `sync_merchant_approval` remplace les deux triggers partiels (`before
+  update OF status` et `OF valider`) par un seul, sans liste de
+  colonnes, qui voit donc toutes les écritures.
 
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 17 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 19 migrations rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **96 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **108 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5). La
 quatrième, la fuite de `conversation_is_open`, a été trouvée par une
@@ -499,6 +510,26 @@ temps.
   accorde par défaut. Il faut révoquer la table entière puis ré-accorder
   colonne par colonne. C'est ce qui permettait à un commerçant de
   s'auto-valider.
+- **Une commande qui efface la preuve de son propre effet est une
+  commande cassée, même quand elle fonctionne.** La case « valider »
+  de `0018` se décochait dans la même écriture — « c'est un bouton, pas
+  un état ». À l'écran, après le clic, la grille affichait donc
+  exactement l'image d'un échec, et `status` avait changé deux colonnes
+  plus loin, hors du champ de vision. Le porteur du projet a conclu,
+  raisonnablement, que valider un marchand ne marchait pas. Le mécanisme
+  était juste ; c'est son RETOUR qui manquait.
+- **Un trigger `before update OF colonne` ne se réveille que si la
+  commande CITE cette colonne** — pas si un autre trigger la modifie.
+  C'est ce qui a forcé `0018` à recopier les effets de
+  `touch_merchant_approval`, et deux triggers partiels sur une même
+  décision sont deux occasions de diverger. `0019` n'en garde qu'un,
+  sans liste de colonnes.
+- **Une migration appliquée au tableau de bord et jamais commitée est
+  une base qu'on ne peut plus reconstruire.** `0018` a vécu une demi-
+  journée dans la seule base de production : le dépôt ignorait la
+  colonne, le trigger et la fonction que le porteur du projet essayait
+  d'utiliser. Le piège n'est pas nouveau (cinq migrations reconstituées
+  le 2026-09-11) — il s'est simplement reproduit.
 - **Le RLS filtre des lignes, jamais des colonnes.** Les deux questions
   se posent séparément à chaque table. C'est ce qui permettait à un
   participant de réécrire le message de son interlocuteur.
@@ -821,6 +852,31 @@ l'empreinte `md5(pg_get_functiondef())` de `conversation_is_open` et
 celles des trois policies concernées sont identiques en local et en
 production, aucun compte de ligne n'a bougé, et `execute` sur la fonction
 n'est accordée qu'à `authenticated`.
+
+### 2026-09-16 — valider un marchand se voit enfin
+
+- **Symptôme** : « je n'arrive toujours pas à modifier le statut d'un
+  marchand ». Diagnostic mené sur la vraie base avant toute
+  modification, ce qui a permis d'éliminer les suspects habituels.
+- **Ce qui n'était PAS en cause**, vérifié et non supposé : le RLS
+  (l'écriture passe en `service_role`, le rôle de l'éditeur de table,
+  comme en `postgres`), les policies, la contrainte de motif de refus,
+  et toute la chaîne côté commerçant (rejouée avec le vrai JWT :
+  `status = 'approved'` lui rend aussitôt `/vendeur`).
+- **La cause** : `0018`, appliquée le matin même et absente du dépôt,
+  faisait de `merchants.valider` un bouton qui se décochait tout seul —
+  aucun retour visible, donc l'image exacte d'un échec. Voir la section
+  5, où la leçon est écrite en toutes lettres.
+- **La correction** : `0018` est déposée telle qu'appliquée (la base
+  doit être reconstructible), et `0019` transforme la case en miroir de
+  `status`, avec un trigger unique qui voit toutes les écritures.
+- **Douze tests de sécurité de plus** (section 28), dont celui qui
+  compte vraiment : la case reste cochée après validation, et un
+  commerçant ne peut toujours pas la cocher lui-même.
+- **La boutique `TiirryShop` est passée en `approved`** dans la vraie
+  base, avec le geste corrigé — le point 5 de la section 1 (« sur quel
+  critère valider une boutique ? ») reste entier, et se pose maintenant
+  pour de vrai.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »

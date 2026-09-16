@@ -129,6 +129,7 @@ export type Database = {
           rejection_reason: string | null
           shop_name: string
           status: Database["public"]["Enums"]["merchant_status"]
+          valider: boolean
           whatsapp_phone: string | null
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name?: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Relationships: [

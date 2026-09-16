@@ -1313,5 +1313,110 @@ exception when others then
 end $$;
 reset role;
 
+-- =====================================================================
+-- 28. La case « valider » dit la vérité (0018, corrigé par 0019)
+-- =====================================================================
+-- Le 2026-09-16, valider une boutique semblait sans effet : 0018 faisait
+-- de `valider` un BOUTON qui se décochait dans la même écriture, donc la
+-- grille de Supabase affichait, après le clic, exactement l'image d'un
+-- échec. 0019 en fait un MIROIR de `status`.
+--
+-- Ces tests protègent les deux moitiés de la correction : que le geste
+-- FONCTIONNE et se VOIE, et qu'il reste hors de portée du commerçant —
+-- un bouton « valider » écrivable par son propriétaire, c'est
+-- l'auto-validation, la toute première faille de ce projet.
+
+-- On repart d'une boutique en attente, cochée par personne.
+update public.merchants set status = 'pending' where shop_name = 'Boutique G';
+
+select pg_temp.check('une boutique en attente a sa case decochee',
+  (select valider = false from public.merchants where shop_name = 'Boutique G'));
+
+-- Le geste de l'administrateur : une case, un clic.
+update public.merchants set valider = true where shop_name = 'Boutique G';
+
+select pg_temp.check('cocher la case valide la boutique',
+  (select status from public.merchants where shop_name = 'Boutique G') = 'approved');
+
+-- LE point de la correction : la case ne s'efface plus. Sans cette
+-- vérification, rien ne distingue une validation réussie d'un échec.
+select pg_temp.check('la case RESTE cochee apres validation',
+  (select valider from public.merchants where shop_name = 'Boutique G'));
+
+select pg_temp.check('cocher la case pose aussi la date de validation',
+  (select approved_at is not null from public.merchants where shop_name = 'Boutique G'));
+
+-- Décocher est le geste inverse, et il ne demande pas de motif : la
+-- boutique repart en attente, pas en refus.
+update public.merchants set valider = false where shop_name = 'Boutique G';
+
+select pg_temp.check('decocher remet la boutique en attente',
+  (select status from public.merchants where shop_name = 'Boutique G') = 'pending');
+
+-- Les deux colonnes ne peuvent pas se contredire : écrire `status`
+-- directement recoche la case, sans que personne y touche.
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+
+select pg_temp.check('ecrire status directement met la case a jour',
+  (select valider from public.merchants where shop_name = 'Boutique G'));
+
+-- Et une écriture qui ne concerne ni l'un ni l'autre ne dérègle rien :
+-- c'est le chemin qu'emprunte `updateMerchantAction` à chaque correction
+-- de boutique.
+update public.merchants set description = 'Description de test.' where shop_name = 'Boutique G';
+
+select pg_temp.check('une edition ordinaire ne touche ni la case ni le statut',
+  (select valider and status = 'approved' from public.merchants where shop_name = 'Boutique G'));
+
+-- Un refus décoche la case, sinon la grille annoncerait « validée » en
+-- face d'une boutique refusée.
+update public.merchants
+   set status = 'rejected', rejection_reason = 'Motif temporaire de test.'
+ where shop_name = 'Boutique G';
+
+select pg_temp.check('un refus decoche la case',
+  (select valider = false from public.merchants where shop_name = 'Boutique G'));
+
+-- Revalider depuis un refus efface le motif périmé, comme 0012 le
+-- faisait déjà par l'autre chemin.
+update public.merchants set valider = true where shop_name = 'Boutique G';
+
+select pg_temp.check('revalider par la case efface le motif de refus perime',
+  (select rejection_reason is null and status = 'approved'
+     from public.merchants where shop_name = 'Boutique G'));
+
+-- Et le point qui compte : la case est un outil d'ADMINISTRATION.
+update public.merchants set status = 'pending' where shop_name = 'Boutique G';
+
+select pg_temp.login('77777777-7777-7777-7777-777777777777');
+set role authenticated;
+
+do $$
+begin
+  update public.merchants set valider = true where shop_name = 'Boutique G';
+  raise exception 'ECHEC un commerçant a coché sa propre case « valider »';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant ne peut pas cocher sa propre case valider';
+end $$;
+
+-- Le chemin LÉGITIME, lui, doit continuer de fonctionner : le trigger de
+-- 0019 voit désormais TOUTES les écritures sur la table, y compris
+-- celles d'un commerçant qui corrige sa boutique. S'il les cassait, la
+-- correction aurait déplacé la panne au lieu de la résoudre.
+do $$
+begin
+  update public.merchants set shop_name = 'Boutique G' where shop_name = 'Boutique G';
+  raise notice 'OK    un commercant modifie toujours sa boutique';
+exception when others then
+  raise exception 'ECHEC le trigger de 0019 casse la modification de boutique : %', sqlerrm;
+end $$;
+
+reset role;
+
+select pg_temp.check('la boutique est restee en attente malgre la tentative',
+  (select status = 'pending' and valider = false
+     from public.merchants where shop_name = 'Boutique G'));
+
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
