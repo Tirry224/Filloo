@@ -159,7 +159,7 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 96 tests couvrent le SQL, zéro
+- **Aucun test automatisé côté front.** 114 tests couvrent le SQL, zéro
   couvre la couche applicative — là où se trouvaient les quatre bugs du
   2026-09-12. C'est le déséquilibre de fond du projet : la couche la
   mieux testée n'est pas celle qui casse. **Démontré une fois de plus le
@@ -235,9 +235,11 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 17 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf. **Les 17 sont appliquées au projet Supabase**,
-vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
+2026-09-11. `supabase/migrations/` — 18 fichiers SQL, à exécuter dans
+l'ordre sur un projet neuf. **Les 17 premières sont appliquées au projet
+Supabase**, vérifié dans `supabase_migrations.schema_migrations` le
+2026-09-15 ; `0018` est écrite et testée en local, PAS encore appliquée
+au projet — c'est le premier geste de la prochaine session :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -288,16 +290,28 @@ vérifié dans `supabase_migrations.schema_migrations` le 2026-09-15 :
   (`0015`) n'a rien fait de mal et ses clients attendent une réponse.
   Elle exige en plus que l'appelant soit participant du fil : voir le
   piège correspondant en section 5.
+- `0018_sold_is_a_publication_too.sql` — **`sold` est un état
+  publiquement visible que rien ne gardait**. La policy « products:
+  catalogue public » publie `status in ('active', 'sold')` depuis
+  `0008`, mais `check_product_publishable` ne vérifiait que `'active'` :
+  un commerçant pouvait faire passer un brouillon sans photo directement
+  à `'sold'` par un PATCH PostgREST, et le poser au catalogue sans
+  jamais satisfaire une condition de publication. Le contrôle garde
+  désormais l'**entrée** dans l'ensemble visible (`draft`/`hidden` →
+  `active`/`sold`, et toute création directe dans ces statuts) ; les
+  mouvements internes (`active` ↔ `sold`) et les sorties restent libres,
+  pour ne pas casser « Marquer vendu » sur un produit publié dont la
+  boutique a été refusée depuis.
 
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 17 migrations rejouent depuis une base vierge** — vérifié, pas
+**Les 18 migrations rejouent depuis une base vierge** — vérifié, pas
 supposé (`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **96 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **114 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5). La
 quatrième, la fuite de `conversation_is_open`, a été trouvée par une
@@ -810,7 +824,7 @@ travail des heures précédentes :
   `0017` (voir section 5).
 
 Ce que ce contre-audit dit du reste : les deux défauts étaient dans le
-code applicatif, celui que rien ne teste. Les 96 vérifications SQL, elles,
+code applicatif, celui que rien ne teste. Les vérifications SQL, elles,
 n'ont rien laissé passer — et l'une d'elles, ajoutée avant application, a
 attrapé la première version de `conversation_is_open` qui répondait à des
 tiers.

@@ -1313,5 +1313,209 @@ exception when others then
 end $$;
 reset role;
 
+
+-- =====================================================================
+-- 28. « Vendu » ne contourne pas le contrôle de publication (0018)
+-- =====================================================================
+-- La faille, en une phrase : la policy « products: catalogue public »
+-- publie `status in ('active', 'sold')`, mais le trigger
+-- `products_check_publishable` ne regardait que 'active'. Un commerçant
+-- a le droit d'écrire `status` sur ses propres produits — il lui
+-- suffisait donc d'un PATCH direct sur PostgREST pour faire passer un
+-- brouillon sans photo à 'sold' et le poser au catalogue, en sautant les
+-- deux conditions de publication.
+--
+-- Ces tests décrivent TOUTES les transitions, pas seulement celle qui a
+-- fuité : c'est la seule façon de vérifier que la correction ferme cette
+-- porte sans en fermer d'autres au passage. Le cas 9 est le plus
+-- important à ce titre — il tient le parcours 'rejected'.
+
+reset role;
+
+-- Trois boutiques, une par statut, avec leurs propres comptes : cette
+-- section ne dépend d'aucun état laissé par les sections précédentes, et
+-- n'en laisse aucun aux suivantes.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('88880000-0000-0000-0000-000000000001', 'pending@test.gn',  '{"role":"merchant","full_name":"Boutique P","phone":"620000101"}'),
+  ('88880000-0000-0000-0000-000000000002', 'rejected@test.gn', '{"role":"merchant","full_name":"Boutique R","phone":"620000102"}'),
+  ('88880000-0000-0000-0000-000000000003', 'approved@test.gn', '{"role":"merchant","full_name":"Boutique V","phone":"620000103"}');
+
+update public.profiles set id = auth_user_id
+ where auth_user_id in ('88880000-0000-0000-0000-000000000001',
+                        '88880000-0000-0000-0000-000000000002',
+                        '88880000-0000-0000-0000-000000000003');
+
+insert into public.merchants (id, profile_id, shop_name, city_id, status, rejection_reason) values
+  ('88881111-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000001', 'Boutique P', 1, 'pending',  null),
+  ('88881111-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000002', 'Boutique R', 1, 'rejected', 'Photos illisibles.'),
+  ('88881111-0000-0000-0000-000000000003', '88880000-0000-0000-0000-000000000003', 'Boutique V', 1, 'approved', null);
+
+select pg_temp.check('les trois boutiques de la section 28 ont le statut voulu',
+  (select count(*) from public.merchants
+    where id in ('88881111-0000-0000-0000-000000000001',
+                 '88881111-0000-0000-0000-000000000002',
+                 '88881111-0000-0000-0000-000000000003')
+      and status = case shop_name when 'Boutique P' then 'pending'
+                                  when 'Boutique R' then 'rejected'
+                                  else 'approved' end::public.merchant_status) = 3);
+
+-- Un brouillon chez chacune. Une photo pour P et R : sans elle, un refus
+-- ne prouverait rien — il pourrait venir de la photo manquante plutôt
+-- que de la boutique non validée, et les tests 1 à 4 diraient « OK »
+-- sans rien vérifier de ce qui nous intéresse ici.
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('88882222-0000-0000-0000-000000000001', '88881111-0000-0000-0000-000000000001', 1, 'Brouillon chez P', 50000, 'draft'),
+  ('88882222-0000-0000-0000-000000000002', '88881111-0000-0000-0000-000000000002', 1, 'Brouillon chez R', 50000, 'draft'),
+  ('88882222-0000-0000-0000-000000000003', '88881111-0000-0000-0000-000000000003', 1, 'Brouillon chez V', 50000, 'draft'),
+  ('88882222-0000-0000-0000-000000000004', '88881111-0000-0000-0000-000000000003', 1, 'Second chez V',    50000, 'draft'),
+  ('88882222-0000-0000-0000-000000000005', '88881111-0000-0000-0000-000000000003', 1, 'Sans photo chez V', 50000, 'draft');
+
+insert into public.product_images (product_id, storage_path, position) values
+  ('88882222-0000-0000-0000-000000000001', 'p/1.jpg', 0),
+  ('88882222-0000-0000-0000-000000000002', 'r/1.jpg', 0),
+  ('88882222-0000-0000-0000-000000000003', 'v/1.jpg', 0),
+  ('88882222-0000-0000-0000-000000000004', 'v/2.jpg', 0);
+
+-- Un refus attendu : la transition doit lever une exception ET laisser le
+-- produit là où il était. Vérifier le seul message ne suffirait pas —
+-- c'est le statut en base qui décide de ce que le public voit.
+create or replace function pg_temp.refus_attendu(label text, pid uuid, cible public.product_status)
+returns void language plpgsql as $$
+declare
+  v_avant public.product_status;
+  v_apres public.product_status;
+begin
+  select status into v_avant from public.products where id = pid;
+  begin
+    execute format('update public.products set status = %L where id = %L', cible, pid);
+    raise exception 'ECHEC % : la transition a été ACCEPTÉE', label;
+  exception when raise_exception then
+    if sqlerrm like 'ECHEC%' then raise; end if;
+    raise notice 'OK    % (refus : %)', label, sqlerrm;
+  end;
+  select status into v_apres from public.products where id = pid;
+  if v_apres is distinct from v_avant then
+    raise exception 'ECHEC % : le statut a changé malgré le refus (% → %)', label, v_avant, v_apres;
+  end if;
+end $$;
+
+create or replace function pg_temp.transition_attendue(label text, pid uuid, cible public.product_status)
+returns void language plpgsql as $$
+begin
+  execute format('update public.products set status = %L where id = %L', cible, pid);
+  if (select status from public.products where id = pid) <> cible then
+    raise exception 'ECHEC % : aucune ligne touchée (RLS ?)', label;
+  end if;
+  raise notice 'OK    %', label;
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise exception 'ECHEC % : transition refusée alors qu''elle est légitime (%)', label, sqlerrm;
+end $$;
+
+-- --- 1 & 2 : boutique en attente -------------------------------------
+select pg_temp.login('88880000-0000-0000-0000-000000000001');
+set role authenticated;
+select pg_temp.refus_attendu('pending + draft → active refusé', '88882222-0000-0000-0000-000000000001', 'active');
+select pg_temp.refus_attendu('pending + draft → sold refusé (LA FAILLE)', '88882222-0000-0000-0000-000000000001', 'sold');
+reset role;
+
+-- --- 3 & 4 : boutique refusée ----------------------------------------
+select pg_temp.login('88880000-0000-0000-0000-000000000002');
+set role authenticated;
+select pg_temp.refus_attendu('rejected + draft → active refusé', '88882222-0000-0000-0000-000000000002', 'active');
+select pg_temp.refus_attendu('rejected + draft → sold refusé (LA FAILLE)', '88882222-0000-0000-0000-000000000002', 'sold');
+reset role;
+
+-- --- 5, 6, 7 : boutique validée --------------------------------------
+select pg_temp.login('88880000-0000-0000-0000-000000000003');
+set role authenticated;
+
+-- 5. Le parcours normal : les conditions sont remplies, on publie.
+select pg_temp.transition_attendue('approved + draft (avec photo) → active accepté',
+  '88882222-0000-0000-0000-000000000003', 'active');
+
+-- 6. draft → sold direct. L'application ne propose pas ce chemin
+-- (« Marquer vendu » ne s'affiche que sur un produit publié), mais la
+-- base n'a aucune raison de le refuser QUAND les conditions sont
+-- remplies : le produit arrive au catalogue avec sa photo et sa boutique
+-- validée, exactement comme par 'active'. C'est le test suivant qui
+-- porte la garantie de sécurité.
+select pg_temp.transition_attendue('approved + draft (avec photo) → sold accepté',
+  '88882222-0000-0000-0000-000000000004', 'sold');
+
+-- Le cœur de 0018 : une boutique validée ne dispense PAS de la photo.
+-- Sans ce test, la correction pourrait se contenter de vérifier la
+-- boutique et laisser passer les vignettes vides.
+select pg_temp.refus_attendu('approved + draft SANS photo → sold refusé',
+  '88882222-0000-0000-0000-000000000005', 'sold');
+
+-- 7. Le geste quotidien du commerçant, inchangé.
+select pg_temp.transition_attendue('approved + active → sold accepté (comportement conservé)',
+  '88882222-0000-0000-0000-000000000003', 'sold');
+select pg_temp.transition_attendue('sold → active accepté (on reste dans l''ensemble visible)',
+  '88882222-0000-0000-0000-000000000003', 'active');
+
+-- Une création directe dans un statut public reste impossible : c'est
+-- par là qu'on referait le trou en une ligne.
+do $$
+begin
+  insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+    values ('88882222-0000-0000-0000-000000000006', '88881111-0000-0000-0000-000000000003',
+            1, 'Insert direct vendu', 50000, 'sold');
+  raise exception 'ECHEC un produit peut être CRÉÉ directement en sold';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    insert direct en sold refusé (%)', sqlerrm;
+end $$;
+
+-- Sortir du catalogue n'a jamais rien à prouver : masquer et remettre en
+-- brouillon restent libres, y compris sans photo.
+select pg_temp.transition_attendue('active → hidden accepté (sortie du catalogue)',
+  '88882222-0000-0000-0000-000000000003', 'hidden');
+select pg_temp.refus_attendu('hidden + boutique validée → sold repasse par le contrôle',
+  '88882222-0000-0000-0000-000000000005', 'sold');
+reset role;
+
+-- --- 8 : un produit vendu légitime reste au catalogue ----------------
+-- La décision de 0008 ne bouge pas. Si ce test tombait, 0018 aurait
+-- « sécurisé » le catalogue en faisant disparaître les produits vendus.
+select pg_temp.login('33333333-3333-3333-3333-333333333333');   -- Client C
+set role authenticated;
+select pg_temp.check('un produit vendu légitime reste visible du public',
+  exists (select 1 from public.products
+           where id = '88882222-0000-0000-0000-000000000004' and status = 'sold'));
+select pg_temp.check('sa photo reste visible elle aussi',
+  exists (select 1 from public.product_images
+           where product_id = '88882222-0000-0000-0000-000000000004'));
+select pg_temp.check('le brouillon passé en force reste invisible du public',
+  not exists (select 1 from public.products
+               where id = '88882222-0000-0000-0000-000000000001'));
+reset role;
+
+-- --- 9 : la correction ne casse pas le parcours 'rejected' -----------
+-- Le cas qui a écarté la correction la plus courte (`new.status in
+-- ('active','sold')`, sans regarder d'où l'on vient). Un produit publié
+-- dans les règles, dont la boutique est ensuite refusée : son commerçant
+-- doit pouvoir le marquer vendu. Il ne publie rien — le produit est déjà
+-- dans l'ensemble visible, et le RLS le masque de toute façon tant que
+-- la boutique n'est pas approuvée.
+reset role;
+update public.merchants set status = 'rejected', rejection_reason = 'Contrôle a posteriori.'
+ where id = '88881111-0000-0000-0000-000000000003';
+
+select pg_temp.login('88880000-0000-0000-0000-000000000003');
+set role authenticated;
+select pg_temp.transition_attendue('active → sold accepté même si la boutique a été refusée depuis',
+  '88882222-0000-0000-0000-000000000004', 'sold');
+-- Mais republier, elle, redevient impossible : on ENTRE au catalogue.
+select pg_temp.refus_attendu('rejected + hidden → active refusé',
+  '88882222-0000-0000-0000-000000000003', 'active');
+reset role;
+
+-- On rend la boutique V à son état d'origine : une section de test ne
+-- laisse pas derrière elle un décor que la suivante devra deviner.
+update public.merchants set status = 'approved', rejection_reason = null
+ where id = '88881111-0000-0000-0000-000000000003';
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

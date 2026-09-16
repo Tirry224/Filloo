@@ -44,10 +44,12 @@ function validateProductFields(fields: ReturnType<typeof readProductFields>): st
  * avant même que la ligne `products` ne soit créée.
  *
  * Insertion en deux temps, jamais en un seul : le trigger
- * `products_check_publishable` (0002) refuse `status = 'active'` tant
- * qu'aucune ligne `product_images` ne référence CE produit — impossible à
- * satisfaire dans le insert qui crée justement ce produit. On insère donc
- * toujours en `draft`, on rattache les photos, puis on publie si demandé.
+ * `products_check_publishable` (0002, élargi par 0018) refuse toute
+ * ENTRÉE au catalogue — `status = 'active'` comme `status = 'sold'` —
+ * tant qu'aucune ligne `product_images` ne référence CE produit, ce qui
+ * est impossible à satisfaire dans le insert qui crée justement ce
+ * produit. On insère donc toujours en `draft`, on rattache les photos,
+ * puis on publie si demandé.
  */
 export async function createProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const owner = await requireMerchantId();
@@ -269,7 +271,9 @@ function backToSeller(errorMessage?: string): never {
  * pas lu du tout :
  *
  * 1. **Une erreur remontée** (`error`) : c'est le cas de « Republier »
- *    quand la boutique n'est plus approuvée — le trigger
+ *    quand la boutique n'est plus approuvée, et depuis 0018 celui de
+ *    « Marquer vendu » sur un produit qui n'était pas déjà publié —
+ *    `sold` est un état public, il passe par la même porte. Le trigger
  *    `products_check_publishable` lève une exception, avec un message
  *    déjà écrit en français.
  * 2. **Aucune erreur, mais aucune ligne touchée** : quand le RLS filtre
