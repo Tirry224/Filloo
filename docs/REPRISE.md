@@ -5,8 +5,8 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-15** (audit des parcours, puis audit du
-parcours d'achat complet et son contre-audit — voir le journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-16** (le trou `0018`/`0019` rebouché —
+voir le journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -176,6 +176,21 @@ de `main` (voir points 10 et 11).
   transporte pas `next` non plus. Latent aujourd'hui : la confirmation
   est désactivée, vérifié en base le 2026-09-15 (`confirmation_sent_at`
   nul sur tous les comptes).
+- **Le dépôt et la production ne portent pas les mêmes commentaires
+  SQL.** Mesuré le 2026-09-16 sur `approve_merchant` (`0012`) :
+  l'empreinte `md5(pg_get_functiondef())` diffère entre un PostgreSQL
+  reconstruit et la production, et la SEULE différence est un
+  commentaire absent en base. Déjà constaté sur `0015` le 2026-09-15 :
+  c'est le mécanisme d'application qui retire les commentaires, pas une
+  divergence de logique — aucun effet sur le comportement. Ce qui se
+  perd est le raisonnement, et le dépôt en reste alors la seule copie
+  lisible. **À traiter en corrigeant le mécanisme une seule fois, jamais
+  en réécrivant une migration déjà appliquée** (règle de la section 4) :
+  poursuivre chaque écart de commentaire par une migration de plus
+  coûterait plus cher que le problème. Conséquence pratique à connaître
+  avant de s'en servir : une comparaison d'empreintes entre local et
+  production produit des faux positifs sur toute fonction commentée, et
+  ne prouve donc rien seule.
 - **Un test de quota accepte n'importe quelle erreur.** Dans
   `security_test.sql`, la boucle des 100 messages par jour affiche `OK`
   dans un `exception when others` sans vérifier le `sqlstate` : un refus
@@ -235,23 +250,22 @@ français.
 ### Base de données — écrite, testée, ET DÉPLOYÉE
 
 Projet Supabase `Makiti` (région eu-west-3), créé et migré le
-2026-09-11. `supabase/migrations/` — 18 fichiers SQL, à exécuter dans
-l'ordre sur un projet neuf, numérotés `0001`…`0017` puis `0020`.
+2026-09-11. `supabase/migrations/` — 20 fichiers SQL, à exécuter dans
+l'ordre sur un projet neuf, numérotés `0001`…`0020`, sans trou.
 
-**Le trou `0018`/`0019` n'est pas une erreur, c'est une dette.** Le
-projet Supabase porte deux migrations appliquées dont le fichier n'a
-jamais été commité — `0018_approve_a_shop_with_one_click` et
-`0019_the_validation_switch_shows_its_state` (la case à cocher
-`merchants.valider`, miroir de `status` pour l'éditeur de table). Lues
-dans `supabase_migrations.schema_migrations` le 2026-09-16. Git ne peut
-donc PAS reconstruire le projet réel : une base neuve montée depuis ce
-dépôt n'aura pas la colonne `valider`. **Les récupérer dans le dépôt est
-la première tâche de la prochaine session.** `0020` a pris le numéro
-suivant plutôt que de leur voler le leur.
+**Le trou `0018`/`0019` est comblé depuis le 2026-09-16.** Les deux
+migrations avaient été appliquées au tableau de bord sans que leur
+fichier soit commité ; leur SQL a été relu dans
+`supabase_migrations.schema_migrations` et recopié tel quel, sans une
+ligne de plus (commit `8270adb`). Git reconstruit donc à nouveau le
+projet réel — une base neuve montée depuis ce dépôt porte la colonne
+`valider`. `0020` avait pris le numéro suivant plutôt que de leur voler
+le leur : c'est ce qui rend la suite rejouable telle quelle aujourd'hui,
+et c'est la raison de garder cette habitude.
 
-**Les 18 fichiers du dépôt sont appliqués au projet Supabase**, vérifié
+**Les 20 fichiers du dépôt sont appliqués au projet Supabase**, vérifié
 dans `supabase_migrations.schema_migrations` — les 17 premiers le
-2026-09-15, `0020` le 2026-09-16 :
+2026-09-15, `0018`, `0019` et `0020` le 2026-09-16 :
 
 - `0001_schema.sql` — 9 tables : profiles, merchants, cities,
   categories, products, product_images, conversations, messages,
@@ -302,6 +316,20 @@ dans `supabase_migrations.schema_migrations` — les 17 premiers le
   (`0015`) n'a rien fait de mal et ses clients attendent une réponse.
   Elle exige en plus que l'appelant soit participant du fil : voir le
   piège correspondant en section 5.
+- `0018_approve_a_shop_with_one_click.sql` — une case à cocher
+  `merchants.valider`, pour valider une boutique d'un seul clic dans
+  l'éditeur de table : `status` est un énuméré, le changer demande
+  d'ouvrir une liste et de choisir. Seul le GESTE change — la vérité
+  reste dans `status`, et la colonne reste hors de la liste blanche
+  d'écriture, parce qu'un bouton « valider » accordé à un commerçant
+  est exactement l'auto-validation trouvée par les tout premiers tests.
+- `0019_the_validation_switch_shows_its_state.sql` — la case de `0018`
+  se décochait toujours, donc une boutique déjà validée l'affichait
+  vide : un bouton qui ment sur l'état qu'il commande.
+  `sync_merchant_approval` remplace les deux triggers précédents et fait
+  de `valider` un MIROIR de `status` — cocher valide, décocher remet en
+  attente. Un refus ne passe pas par là : il s'écrit sur `status` avec
+  son motif, que `0012` exige.
 - `0020_sold_is_a_publication_too.sql` — **`sold` est un état
   publiquement visible que rien ne gardait**. La policy « products:
   catalogue public » publie `status in ('active', 'sold')` depuis
@@ -318,8 +346,9 @@ dans `supabase_migrations.schema_migrations` — les 17 premiers le
 Chaque migration est écrite pour être lue : le raisonnement complet est
 dans le fichier, pas ici.
 
-**Les 18 fichiers rejouent depuis une base vierge** — vérifié, pas
-supposé (`supabase/tests/README.md` donne la commande). C'est la seule
+**Les 20 fichiers rejouent depuis une base vierge** — vérifié le
+2026-09-16, `0018` et `0019` comprises, pas supposé
+(`supabase/tests/README.md` donne la commande). C'est la seule
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
@@ -847,6 +876,31 @@ l'empreinte `md5(pg_get_functiondef())` de `conversation_is_open` et
 celles des trois policies concernées sont identiques en local et en
 production, aucun compte de ligne n'a bougé, et `execute` sur la fonction
 n'est accordée qu'à `authenticated`.
+
+### 2026-09-16 — le trou `0018`/`0019` rebouché
+Une seule tâche, à périmètre fermé : rendre au dépôt les deux migrations
+qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
+
+- **Le SQL réel relu avant d'écrire quoi que ce soit**, dans
+  `supabase_migrations.schema_migrations`, puis recopié tel quel dans
+  `0018_approve_a_shop_with_one_click.sql` et
+  `0019_the_validation_switch_shows_its_state.sql` (`8270adb`). Aucune
+  autre migration touchée, `0020` comprise : reconstituer n'est pas
+  réécrire.
+- **Reconstruction vérifiée, pas supposée** : 0001→0020 rejouées sur un
+  PostgreSQL vierge, les 114 vérifications de sécurité passent,
+  `tsc --noEmit` et `next build` aussi.
+- **Cohérence avec la production vérifiée sur ce qui compte** : la
+  colonne `valider`, le trigger unique `merchants_sync_approval` (les
+  deux triggers de `0012` et `0018` ont bien disparu), et les empreintes
+  de `sync_merchant_approval` et `reject_merchant`, identiques des deux
+  côtés.
+- **Un écart trouvé, volontairement non corrigé** : un commentaire de
+  `approve_merchant` (`0012`) manque en production. Le corriger
+  demanderait de rejouer une migration déjà appliquée, ce que la
+  section 4 interdit, et pour un gain nul sur le comportement. Noté en
+  dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
+  d'application qu'il faudra reprendre, pas ce symptôme.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »
