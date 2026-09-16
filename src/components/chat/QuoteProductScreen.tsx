@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { ChoiceRow } from "@/components/ui/ChoiceRow";
@@ -33,6 +33,19 @@ export async function QuoteProductScreen({
 
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
+
+  /* La même garde que `ThreadScreen`, pour la même raison : un fil a deux
+     côtés, `getThreadContext` sait lequel est le nôtre, et le chemin
+     emprunté doit correspondre à ce fait. Elle manquait ici — le fil
+     était gardé, ses trois feuilles ne l'étaient pas. Un commerçant
+     ouvrant `/messages/<id>/actions` obtenait donc cette feuille habillée
+     en client, dont le bouton de fermeture ne le ramenait dans son espace
+     qu'au coup d'après, par le rattrapage de `ThreadScreen`.
+
+     C'est exactement le motif que cette réorganisation corrigeait
+     ailleurs : la garde écrite sur un écran et oubliée sur ses voisins. */
+  const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
+  if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/citer`);
 
   const products = await getCitableProducts(supabase, context.merchantId);
 
