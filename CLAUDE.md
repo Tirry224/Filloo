@@ -1,5 +1,48 @@
 @AGENTS.md
 
+# Git : où le travail doit vivre
+
+Règle donnée par le porteur du projet le 2026-09-16, et qui ne se
+rediscute pas. Elle est écrite ICI et non dans `AGENTS.md` : ce
+fichier-là est régénéré en entier par `next dev` (voir ses marqueurs
+`BEGIN`/`END`), donc toute règle qu'on y ajouterait serait effacée à la
+prochaine commande.
+
+## Les deux branches, et rien d'autre
+
+- **`main` est la branche STABLE.** On n'y développe pas, on n'y pousse
+  pas — jamais sans autorisation explicite du porteur du projet, demandée
+  et obtenue pour cette fois-là.
+- **`claude/verify-main-branches-pe8bp4` est la branche de TRAVAIL
+  actuelle.** Tout développement y va, sans exception.
+- **Aucune autre branche ne se crée ni ne s'utilise** pour une tâche de
+  ce projet sans autorisation explicite.
+- **Aucune branche ne se supprime ni ne se fusionne** sans autorisation
+  explicite, y compris celles qui paraissent mortes.
+
+## Le réflexe, avant chaque tâche
+
+**Vérifier la branche active — `git branch --show-current` — AVANT la
+première modification, pas au moment de committer.** Se découvrir sur la
+mauvaise branche après dix fichiers touchés oblige à déplacer des
+commits, c'est-à-dire à faire de la chirurgie Git au lieu du travail
+demandé.
+
+Si la branche active n'est pas la branche de travail : y basculer d'abord,
+et le dire dans le compte rendu.
+
+## Pourquoi cette règle existe
+
+Le travail de ce projet s'est retrouvé éparpillé sur huit branches, dont
+quatre mortes et deux qui portaient chacune leur propre version des
+migrations `0018` et `0019`. Retrouver ce qui était réellement dans
+`main` a demandé une comparaison branche par branche, et deux correctifs
+applicatifs y manquaient encore.
+
+La dispersion ne vient jamais d'une grande décision : elle vient d'une
+tâche commencée sans regarder où l'on était. C'est ce coup d'œil, et lui
+seul, que cette règle impose.
+
 # Comment me répondre
 
 Règle donnée par le porteur du projet le 2026-09-13, et qui ne se
