@@ -56,47 +56,100 @@ affichables telles quelles dans `/styleguide`.
 
 ---
 
-## 3. Pages principales et pages secondaires
+## 3. Deux espaces, puis deux habillages
 
-La distinction se traduit par des **groupes de routes** — des dossiers entre
+Le découpage se fait par **groupes de routes** — des dossiers entre
 parenthèses, qui regroupent des pages sous un layout commun **sans apparaître
-dans l'adresse**. `(principal)/page.tsx` répond toujours à `/`.
+dans l'adresse**. `(client)/(onglets)/page.tsx` répond toujours à `/`.
 
-| Groupe | Ce que c'est | Layout | Écrans |
+Ce document décrivait auparavant un découpage par HABILLAGE
+(`(principal)`, `(secondaire)`, `(flux)`, `(etat)`). L'intention était juste —
+« la barre est déclarée une fois par groupe, l'oublier devient impossible » —
+mais il n'a jamais été implémenté : les 38 fichiers de page sont restés à
+plat pendant tout le développement, chaque écran rendant sa propre barre.
+Le résultat était exactement celui que ce paragraphe promettait d'éviter, en
+pire : la barre se choisissait par une prop `space` dont la valeur par défaut
+était « client », donc tout écran qui l'oubliait servait silencieusement la
+navigation de l'autre espace.
+
+**Le premier critère de découpage est le RÔLE, pas l'habillage.** C'est la
+correction du 2026-09-16, et la raison tient en une phrase : l'habillage est
+une question de confort, le rôle est une frontière de sécurité. Un groupe qui
+sépare « pages principales » de « pages secondaires » ne donne aucun endroit
+où écrire « personne n'entre ici sans profil commerçant ». Un groupe par
+espace, si.
+
+| Groupe | Ce que c'est | Garde | Habillage |
 |---|---|---|---|
-| `(principal)` | Les destinations de la barre du bas. On y arrive sans venir de nulle part. | Barre de navigation basse, pas de flèche retour | Fil d'accueil, Recherche, Messages, Mon compte, Mes produits |
-| `(secondaire)` | Ce qu'on atteint **depuis** une page principale. On en revient. | Flèche retour, pas de barre du bas | Fiche produit, Boutique publique, Galerie, Discussion, Signaler, Actions produit, Mes informations, Modifier la boutique |
-| `(flux)` | Une suite d'étapes qu'on termine ou qu'on abandonne. | Plein écran, sans navigation — on ne s'échappe pas d'un formulaire par erreur | Inscription (rôle, boutique), Connexion, Mot de passe oublié, Compte requis, Ajouter un produit |
-| `(etat)` | Écrans qui remplacent l'application au lieu de s'y ajouter. | Nu | Compte suspendu, Boutique en attente, Boutique refusée |
-| `(atelier)` | Pages de travail, **supprimées avant le lancement**. | Aucun | `/ecrans`, `/styleguide` |
-
-Ce découpage a une conséquence concrète : `BottomNav` et `TopBar` cessent
-d'être répétés dans les 33 fichiers de page. Ils sont déclarés **une fois par
-groupe**, dans le `layout.tsx` du groupe. Chaque page perd trois à six lignes,
-et l'oubli de la barre du bas sur un écran devient impossible.
-
-Un sous-écran peut poser son propre `layout.tsx` s'il a besoin d'autre chose
-que son groupe — la galerie photo, par exemple, est noire et plein écran.
+| `(client)/(onglets)` | Destinations client : on y arrive sans venir de nulle part. | Aucune — le catalogue est **public** | `Screen` + `ClientNav` |
+| `(client)/(plein-ecran)` | Ce qu'on ouvre **depuis** un écran client, et d'où l'on revient. | Aucune ; `/compte` et `/messages` se gardent eux-mêmes | Chaque écran rend son cadre |
+| `(vendeur)` | La frontière de l'espace commerçant. **Ne dessine rien.** | `requireMerchantSpace` | — |
+| `(vendeur)/(onglets)` | Destinations commerçant. | héritée | `Screen` + `MerchantNav` |
+| `(vendeur)/(plein-ecran)` | Feuilles d'actions et formulaires produit : on les ouvre par-dessus la boutique. | héritée | Chaque écran rend son cadre |
+| racine | Authentification et atelier — ni client, ni commerçant. | — | Chaque écran rend son cadre |
 
 ```
 src/app/
-  layout.tsx                    ← racine : polices, tokens, <html lang="fr">
-  (principal)/
-    layout.tsx                  ← BottomNav
-    page.tsx                    → /
-    recherche/page.tsx          → /recherche
-    messages/page.tsx           → /messages
-    compte/page.tsx             → /compte
-  (secondaire)/
-    layout.tsx                  ← TopBar avec retour
-    produit/[id]/page.tsx       → /produit/42
-    boutique/[id]/page.tsx      → /boutique/7
-  (flux)/
-    layout.tsx                  ← plein écran
-    inscription/page.tsx        → /inscription
-  (etat)/
-  (atelier)/
+  layout.tsx                          ← racine : polices, tokens, <html lang="fr">
+  connexion/ inscription/ …           ← authentification : aucun espace
+  (client)/
+    (onglets)/
+      layout.tsx                      ← Screen + ClientNav
+      page.tsx                        → /
+      recherche/page.tsx              → /recherche
+      messages/page.tsx               → /messages
+      compte/page.tsx                 → /compte
+      boutique/[id]/page.tsx          → /boutique/7
+    (plein-ecran)/
+      produit/[id]/page.tsx           → /produit/42
+      messages/[id]/page.tsx          → /messages/xxx
+  (vendeur)/
+    layout.tsx                        ← LA GARDE : requireMerchantSpace
+    (onglets)/
+      layout.tsx                      ← Screen + MerchantNav
+      vendeur/page.tsx                → /vendeur
+      vendeur/messages/page.tsx       → /vendeur/messages
+      vendeur/boutique/page.tsx       → /vendeur/boutique
+    (plein-ecran)/
+      vendeur/produits/…              → /vendeur/produits/…
+      vendeur/messages/[id]/page.tsx  → /vendeur/messages/xxx
 ```
+
+### Ce qui se partage, et ce qui ne se partage pas
+
+Un fil de discussion se dessine **pareil des deux côtés**. Le dupliquer
+créerait deux versions qui divergeraient au premier correctif. Il vit donc
+dans `src/components/chat/ThreadScreen.tsx`, monté par **deux routes
+distinctes** qui lui imposent chacune leur espace :
+
+```tsx
+// (vendeur)/(plein-ecran)/vendeur/messages/[id]/page.tsx
+return <ThreadScreen espace="merchant" {...props} />;
+```
+
+La règle générale : **ce qui se partage se partage en composant, jamais en
+route.** Une route partagée est une route ambiguë, et c'est exactement ce
+qu'était `/messages?vue=commercant` — un chemin qui rendait deux écrans
+différents selon une query string, donc un espace qui changeait sous les
+pieds de la personne au premier lien qui oubliait le paramètre.
+
+### Les trois contrôles, et pourquoi ils ne font pas double emploi
+
+| Où | Question | Coût |
+|---|---|---|
+| `src/middleware.ts` (bord) | Y a-t-il une session ? | Lecture de cookie, aucune requête |
+| `(vendeur)/layout.tsx` (serveur) | Cette session a-t-elle un profil commerçant actif ? | Une requête, une seule fois |
+| RLS (base) | Cette requête a-t-elle le droit de lire cette ligne ? | — |
+
+Les deux premiers protègent le **parcours**, le troisième protège les
+**données**. Aucun ne remplace les autres : sans le RLS, un appel direct à
+l'API Supabase contourne tout ; sans le layout, un client authentifié atteint
+la feuille d'actions d'un produit — vide grâce au RLS, mais habillée en
+commerçant.
+
+`npm run espaces` vérifie que cette séparation tient, et il est fait pour
+échouer : la retirer du layout, importer la barre de l'autre espace ou
+réintroduire `?vue=` le font sortir en code 1.
 
 ---
 

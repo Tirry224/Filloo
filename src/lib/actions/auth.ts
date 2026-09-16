@@ -113,20 +113,35 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: translateAuthError(error.message) };
 
-  /* Jamais `/` en dur : une connexion qui n'a qu'un compte commerçant
-     atterrissait sur le fil client, avec la barre d'onglets du client —
-     ce que `design/README.md` interdit explicitement. Voir
-     `landingForSession`.
+  /* Où atterrir, et la règle a dû être précisée quand le middleware s'est
+     mis à poser `?next=` lui-même.
 
-     `landingForSession` garde donc le dernier mot quand il ne vaut pas « / » :
-     une connexion qui n'a QUE un compte commerçant n'a rien à faire sur
-     un écran client, quelle que soit l'adresse demandée — c'est la
-     décision 8 de docs/SPEC.md, et un paramètre d'URL ne la défait pas.
-     Dans tous les autres cas, on reprend là où la personne avait été
-     interrompue. */
+     Jamais `/` en dur : une connexion qui n'a qu'un compte commerçant
+     atterrissait sur le fil client, avec la barre d'onglets du client —
+     ce que `design/README.md` interdit explicitement (décision 8 de
+     docs/SPEC.md). `landingForSession` tranche ce cas.
+
+     LA VERSION PRÉCÉDENTE IGNORAIT `next` DÈS QUE L'ATTERRISSAGE N'ÉTAIT
+     PAS « / ». C'était juste tant que `?next=` ne venait que de l'écran
+     16 (« contacter ce vendeur »), donc toujours d'un écran client. Le
+     middleware refusant désormais `/vendeur/*` aux visiteurs anonymes,
+     `next` peut valoir `/vendeur/messages` — et l'ancienne règle jetait
+     précisément la destination qu'elle aurait dû servir : un commerçant
+     ouvrant un lien vers un de ses fils se connectait et atterrissait sur
+     `/vendeur`, en ayant perdu ce qu'il venait lire.
+
+     La règle exacte est donc : on suit `next` s'il appartient à l'espace
+     où cette connexion a le droit d'être. Une connexion commerçant-seul
+     ne suit `next` que sous `/vendeur` ; toute autre connexion le suit
+     partout, son espace client étant légitime. Un paramètre d'URL ne
+     défait toujours pas la décision 8 — il ne peut plus que choisir une
+     destination À L'INTÉRIEUR de l'espace autorisé. */
   const landing = await landingForSession(supabase);
   const next = safeNextPath(formData.get("next"));
-  redirect(next && landing === "/" ? next : landing);
+  const espaceCommercantSeul = landing === "/vendeur";
+  const nextAutorise =
+    next && (!espaceCommercantSeul || next === "/vendeur" || next.startsWith("/vendeur/"));
+  redirect(nextAutorise ? next : landing);
 }
 
 /** Déconnexion. Utilisée depuis /compte et /vendeur/boutique. */

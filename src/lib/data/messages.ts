@@ -5,7 +5,7 @@ import { productImageUrl } from "@/lib/storage";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatMessageTime } from "@/lib/format";
-import type { Space } from "@/lib/space";
+import type { Espace } from "@/lib/espace";
 
 type MessageRow = {
   id: string;
@@ -301,7 +301,7 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
  */
 export async function countUnreadMessages(
   supabase: SupabaseClient<Database>,
-  space: Space,
+  space: Espace,
 ): Promise<number> {
   const profile = await getMyProfile(supabase, space === "merchant" ? "merchant" : "client");
   if (!profile) return 0;

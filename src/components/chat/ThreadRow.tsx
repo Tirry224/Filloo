@@ -9,12 +9,17 @@ import type { Thread } from "@/lib/types";
  *
  * Elle rappelle le produit sous le nom : un fil unique par personne n'est
  * lisible que si le commerçant voit de quoi il s'agit sans l'ouvrir.
+ *
+ * `basePath` plutôt qu'un `/messages/` en dur : cette ligne sert les deux
+ * messageries, et celle du commerçant vit sous `/vendeur/messages`. Le
+ * chemin écrit en dur ici renvoyait un commerçant dans l'espace client
+ * dès qu'il touchait un de ses fils — la liste était bonne, le lien non.
  */
-export function ThreadRow({ thread }: { thread: Thread }) {
+export function ThreadRow({ thread, basePath }: { thread: Thread; basePath: string }) {
   const unread = thread.unreadCount > 0;
   return (
     <Link
-      href={`/messages/${thread.id}`}
+      href={`${basePath}/${thread.id}`}
       className="flex items-start gap-3 border-b border-line py-3.5"
     >
       <Avatar name={thread.peerName} kind={thread.peerKind} />

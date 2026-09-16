@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { refusEspaceClient, refusEspaceCommercant } from "@/lib/data/espace-decision";
 import { cache } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
@@ -171,4 +173,69 @@ export async function getMyProfile(
 ): Promise<SessionProfile | null> {
   const profiles = await getMyProfiles(supabase);
   return profiles.find((p) => p.role === role) ?? null;
+}
+
+/**
+ * La garde de l'espace COMMERÇANT. Appelée par `(vendeur)/layout.tsx`, et
+ * par lui seul : c'est tout l'intérêt.
+ *
+ * CE QU'ELLE REMPLACE
+ * Avant, chaque écran de `/vendeur` refaisait ce contrôle à la main. Sept
+ * écrans, sept copies d'une même décision de sécurité — et la huitième
+ * manquait : `/vendeur/produits/[id]/actions` n'en avait AUCUNE. Elle ne
+ * tenait que par le RLS, qui protège bien les DONNÉES mais ne dit rien de
+ * la navigation : un client authentifié qui tapait cette URL obtenait la
+ * feuille d'actions d'un produit, vide de son contenu mais habillée en
+ * commerçant. Une garde qu'on recopie est une garde qu'on oubliera.
+ *
+ * Elle vit dans un layout parce qu'un layout est le seul endroit qu'une
+ * route enfant ne peut pas contourner : ajouter demain un écran sous
+ * `/vendeur/` le met derrière cette garde sans que personne n'y pense.
+ *
+ * CE QU'ELLE NE FAIT PAS, VOLONTAIREMENT
+ * Elle ne regarde pas `merchants.status`. `/vendeur/attente` et
+ * `/vendeur/refusee` sont DANS cet espace et doivent rester joignables —
+ * ce sont les écrans qui expliquent à une boutique non validée où elle en
+ * est. L'aiguillage par statut reste dans `/vendeur/page.tsx`, qui est le
+ * seul à avoir besoin de le faire.
+ *
+ * Elle ne vérifie pas non plus l'existence de la BOUTIQUE : avoir un
+ * profil commerçant sans boutique est un état normal (entre l'inscription
+ * et le formulaire de création), et c'est `/vendeur/page.tsx` qui envoie
+ * alors sur `/inscription/boutique`.
+ */
+export async function requireMerchantSpace(
+  supabase: SupabaseClient<Database>,
+): Promise<SessionProfile> {
+  const profiles = await getMyProfiles(supabase);
+
+  // La décision vit dans `espace-decision.ts`, où elle se teste sans base
+  // ni contexte Next — voir `scripts/verifier-gardes.mjs`. Ici ne reste
+  // que le trajet : lire les profils, appliquer, rediriger.
+  const refus = refusEspaceCommercant(profiles);
+  if (refus) redirect(refus);
+
+  return profiles.find((p) => p.role === "merchant")!;
+}
+
+/**
+ * La garde symétrique, pour l'espace CLIENT authentifié (`/compte`,
+ * `/messages`). Le catalogue public — `/`, `/recherche`, `/produit`,
+ * `/boutique` — n'est PAS derrière elle : il est lisible sans compte, et
+ * c'est une décision du projet, pas un oubli.
+ *
+ * Elle reprend `clientSpaceFallback`, qui savait déjà distinguer « nul
+ * n'est connecté » de « connecté, mais sans compte client » ; elle lui
+ * ajoute seulement le contrôle de suspension, que les deux écrans
+ * appelants faisaient chacun de leur côté.
+ */
+export async function requireClientSpace(
+  supabase: SupabaseClient<Database>,
+): Promise<SessionProfile> {
+  const profiles = await getMyProfiles(supabase);
+
+  const refus = refusEspaceClient(profiles);
+  if (refus) redirect(refus);
+
+  return profiles.find((p) => p.role === "client")!;
 }

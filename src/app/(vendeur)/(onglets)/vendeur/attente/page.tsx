@@ -1,0 +1,86 @@
+import { redirect } from "next/navigation";
+import { Clock, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
+import { ScreenBody, Section } from "@/components/ui/Screen";
+import { StepList } from "@/components/ui/StepList";
+import { TopBar, Wordmark } from "@/components/ui/TopBar";
+import { createClient } from "@/lib/supabase/server";
+import { getMyMerchant } from "@/lib/data/merchants";
+
+/**
+ * Écran 20 — boutique en cours de vérification.
+ *
+ * L'écran donne une TÂCHE au lieu de faire patienter. Un commerçant qui
+ * attend 48 heures devant une page inerte ne revient pas ; un commerçant
+ * qui a préparé quatre brouillons a déjà investi quelque chose.
+ */
+export default async function PendingShopPage({
+  searchParams,
+}: {
+  /* Même canal que `/vendeur` et `/vendeur/refusee` : une action produit
+     qui échoue redirige vers `/vendeur?erreur=…`, et `/vendeur` fait
+     suivre le message jusqu'ici quand la boutique n'est pas encore
+     validée. Sans cette lecture, le refus arrivait bien à destination et
+     n'y était affiché par personne. */
+  searchParams: Promise<{ erreur?: string }>;
+}) {
+  const { erreur } = await searchParams;
+  const supabase = await createClient();
+  /* La suspension n'est plus vérifiée ici : `(vendeur)/layout.tsx` la
+     traite pour TOUT l'espace, via `requireMerchantSpace`. Les quatre
+     copies de cette garde — une par écran, plus une manquante sur la
+     feuille d'actions produit — étaient le défaut que le découpage en
+     groupes de routes vient corriger. */
+
+  const merchant = await getMyMerchant(supabase);
+  if (!merchant) redirect("/inscription/boutique");
+  if (merchant.status === "approved") redirect("/vendeur");
+  if (merchant.status === "rejected") redirect("/vendeur/refusee");
+
+  return (
+    <>
+      <TopBar title={<Wordmark />} right={<Badge tone="warn">En attente</Badge>} />
+
+      <ScreenBody>
+        {erreur ? <Notice>{erreur}</Notice> : null}
+        <Section className="gap-5 py-6">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex size-14 items-center justify-center rounded-xl bg-accent-soft text-accent">
+              <Clock size={28} strokeWidth={1.8} aria-hidden />
+            </div>
+            <h1 className="text-2xl font-bold">Votre boutique est en cours de vérification</h1>
+            <p className="text-base leading-relaxed text-ink-soft">
+              Nous vérifions les informations de <b className="text-ink">{merchant.shopName}</b> sous
+              48 heures. Vous recevrez un email dès qu&apos;elle sera validée.
+            </p>
+          </div>
+
+          <Card padded>
+            <StepList
+              steps={[
+                { label: "Informations de la boutique", state: "done" },
+                { label: "Vérification par notre équipe", state: "current" },
+                { label: "Publication de vos produits", state: "todo" },
+              ]}
+            />
+          </Card>
+
+          <div className="flex flex-col gap-2 rounded-xl bg-success-soft p-4">
+            <span className="text-base font-bold">Ne perdez pas de temps</span>
+            <p className="text-sm leading-normal text-success-ink">
+              Préparez vos produits dès maintenant. Ils resteront en brouillon et seront publiés
+              en un clic dès la validation.
+            </p>
+          </div>
+
+          <Button icon={Plus} href="/vendeur/produits/nouveau">
+            Préparer un produit
+          </Button>
+        </Section>
+      </ScreenBody>
+    </>
+  );
+}

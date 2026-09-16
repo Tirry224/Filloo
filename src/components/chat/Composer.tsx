@@ -15,10 +15,15 @@ import type { ActionState } from "@/lib/actions/auth";
  */
 export function Composer({
   conversationId,
+  basePath,
   citingProductId,
   disabled = false,
 }: {
   conversationId: string;
+  /** Racine de la messagerie de l'espace courant (`/messages` ou
+   *  `/vendeur/messages`) : sans elle, « citer un produit » faisait
+   *  sortir le commerçant de son espace au milieu d'une réponse. */
+  basePath: string;
   citingProductId?: string;
   disabled?: boolean;
 }) {
@@ -31,7 +36,7 @@ export function Composer({
         <input type="hidden" name="conversationId" value={conversationId} />
         {citingProductId ? <input type="hidden" name="productId" value={citingProductId} /> : null}
         <Link
-          href={`/messages/${conversationId}/citer`}
+          href={`${basePath}/${conversationId}/citer`}
           aria-label="Joindre un produit"
           className="flex size-tap shrink-0 items-center justify-center rounded-full border border-line text-ink-soft"
         >

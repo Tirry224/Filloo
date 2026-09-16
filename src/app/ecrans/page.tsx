@@ -97,9 +97,13 @@ function screenGroups(ids: ScreenIds): {
     {
       title: "Messagerie",
       screens: [
-        ["27", "Messages — commerçant", "/messages"],
-        ["28", "Messages — client", "/messages?vue=client"],
-        ["29", "Messages — vide", "/messages?vue=vide"],
+        /* Deux adresses, plus deux vues d'une seule. `?vue=` n'existe
+           plus : la messagerie du commerçant vit sous `/vendeur`, celle
+           du client à la racine. L'écran 29 (« vide ») n'a plus d'URL
+           propre — il n'en a jamais eu une vraie : c'était l'état des
+           deux autres quand la liste est vide, pas un troisième écran. */
+        ["27", "Messages — commerçant", "/vendeur/messages"],
+        ["28", "Messages — client", "/messages"],
         ["30", "Fil de discussion", ids.conversation && `/messages/${ids.conversation}`, MANQUE_FIL],
         ["31", "Citer un produit", ids.conversation && `/messages/${ids.conversation}/citer`, MANQUE_FIL],
         ["32", "Actions conversation", ids.conversation && `/messages/${ids.conversation}/actions`, MANQUE_FIL],

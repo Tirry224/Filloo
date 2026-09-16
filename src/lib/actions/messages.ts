@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfiles } from "@/lib/data/session";
+import { getMyProfiles, landingForSession } from "@/lib/data/session";
 import { getThreadContext } from "@/lib/data/messages";
+import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
@@ -15,14 +16,28 @@ import type { Database } from "@/lib/database.types";
  * feuille d'actions (écran 32) sont de vraies `<form>` de composants
  * serveur, sans `useActionState` : elles fonctionnent donc sans
  * JavaScript, et l'URL est le seul canal qui survive à la redirection.
- * `/messages/[id]` affiche le message avec `Notice`.
+ * Le fil affiche ensuite le message avec `Notice`.
+ *
+ * `iAmMerchant` vient de `getThreadContext`, que chaque appelant a déjà
+ * interrogé. Sans lui, cette fonction renvoyait toujours sur `/messages` :
+ * un commerçant qui bloquait quelqu'un depuis `/vendeur/messages/[id]`
+ * ressortait donc dans l'espace CLIENT. La garde de `ThreadScreen` le
+ * rattraperait — elle renvoie chaque fil vers son espace réel — mais au
+ * prix d'une redirection de plus, et surtout d'une sortie d'espace
+ * visible à l'écran. Une action ne fait pas changer d'espace.
  */
-function backToThread(conversationId: string, errorMessage?: string, successMessage?: string): never {
+function backToThread(
+  conversationId: string,
+  iAmMerchant: boolean,
+  errorMessage?: string,
+  successMessage?: string,
+): never {
   const params = new URLSearchParams();
   if (errorMessage) params.set("erreur", errorMessage);
   if (successMessage) params.set("info", successMessage);
   const query = params.toString();
-  redirect(`/messages/${conversationId}${query ? `?${query}` : ""}`);
+  const base = messagesBase(iAmMerchant ? "merchant" : "client");
+  redirect(`${base}/${conversationId}${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -178,7 +193,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
      casserait l'envoi d'un message qui, lui, a parfaitement réussi. */
   after(() => notifyNewMessage(inserted.id));
 
-  redirect(`/messages/${conversationId}`);
+  backToThread(conversationId, context.iAmMerchant);
 }
 
 /** Bloquer mon interlocuteur — écran 32. Je ne peux désigner que MOI-MÊME
@@ -187,11 +202,19 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
  * silence dans l'absolu ». */
 export async function blockPeerAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
-  if (!conversationId) redirect("/messages");
+  /* Formulaire malformé : aucun fil, donc aucun espace à déduire. On
+     renvoie sur l'écran d'ouverture de la connexion — `/vendeur` pour un
+     compte commerçant seul, `/` sinon — plutôt que sur `/messages`, qui
+     aurait fait sortir un commerçant de son espace sur une erreur dont il
+     n'est pas responsable. */
+  if (!conversationId) redirect(await landingForSession(await createClient()));
 
   const supabase = await createClient();
   const context = await getThreadContext(supabase, conversationId);
-  if (!context) backToThread(conversationId, "Conversation introuvable.");
+  // Pas de contexte : le fil n'existe pas ou ne nous concerne pas. On ne
+  // peut donc pas déduire l'espace — l'espace client est le seul repli
+  // possible, et la garde de `ThreadScreen` corrigera si besoin.
+  if (!context) backToThread(conversationId, false, "Conversation introuvable.");
 
   const { data, error } = await supabase
     .from("conversations")
@@ -204,9 +227,9 @@ export async function blockPeerAction(formData: FormData) {
   // « Bloquer » est exactement le genre d'action qu'il ne faut pas croire
   // faite sans preuve — quelqu'un compte dessus pour ne plus être
   // contacté.
-  if (error) backToThread(conversationId, error.message);
-  if (!data || data.length === 0) backToThread(conversationId, "Blocage impossible. Réessayez.");
-  backToThread(conversationId);
+  if (error) backToThread(conversationId, context.iAmMerchant, error.message);
+  if (!data || data.length === 0) backToThread(conversationId, context.iAmMerchant, "Blocage impossible. Réessayez.");
+  backToThread(conversationId, context.iAmMerchant);
 }
 
 /**
@@ -215,7 +238,7 @@ export async function blockPeerAction(formData: FormData) {
  * La maquette `design/SignalerConversation.dc.html` prévoit bien une
  * feuille de motifs, avec sa propre liste : on ne signale pas une
  * personne pour « photo trompeuse ». Le motif arrive donc de
- * `/messages/[id]/signaler`, jamais d'un libellé figé — un signalement
+ * la feuille « signaler » du fil, jamais d'un libellé figé — un signalement
  * sans motif oblige l'équipe à relire tout le fil pour deviner le
  * reproche, ce qui revient à ne pas traiter le signalement.
  *
@@ -227,12 +250,15 @@ export async function reportConversationAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
   const details = String(formData.get("details") ?? "").trim();
-  if (!conversationId) redirect("/messages");
-  if (!reason) backToThread(conversationId, "Choisissez un motif de signalement.");
+  if (!conversationId) redirect(await landingForSession(await createClient()));
 
   const supabase = await createClient();
   const context = await getThreadContext(supabase, conversationId);
-  if (!context) backToThread(conversationId, "Conversation introuvable.");
+  if (!context) backToThread(conversationId, false, "Conversation introuvable.");
+
+  // Contrôle du motif APRÈS la lecture du contexte, et pas avant : sans
+  // le contexte, ce refus ne savait pas dans quel espace renvoyer.
+  if (!reason) backToThread(conversationId, context.iAmMerchant, "Choisissez un motif de signalement.");
 
   const { data, error } = await supabase
     .from("reports")
@@ -260,11 +286,11 @@ export async function reportConversationAction(formData: FormData) {
   // (vérifié de la même façon). Aucun trigger du projet ne le fait
   // aujourd'hui, mais une écriture qui sait ce qu'elle a écrit ne dépend
   // pas de cette promesse.
-  if (error) backToThread(conversationId, error.message);
+  if (error) backToThread(conversationId, context.iAmMerchant, error.message);
   if (!data || data.length === 0) {
-    backToThread(conversationId, "Signalement impossible. Reconnectez-vous, puis réessayez.");
+    backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous, puis réessayez.");
   }
-  backToThread(conversationId, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
+  backToThread(conversationId, context.iAmMerchant, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
 }
 
 /** Signaler un produit — écran 10. N'importe lequel de mes profils actifs

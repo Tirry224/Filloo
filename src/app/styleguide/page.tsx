@@ -233,7 +233,7 @@ export default function StyleguidePage() {
           </div>
           <Card className="px-3">
             {threads.slice(0, 2).map((t) => (
-              <ThreadRow key={t.id} thread={t} />
+              <ThreadRow key={t.id} thread={t} basePath="/messages" />
             ))}
           </Card>
         </Block>

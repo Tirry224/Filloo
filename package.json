@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "poids": "node scripts/poids.mjs",
     "parcours": "node scripts/parcours.mjs",
-    "classes": "node scripts/verifier-classes.mjs"
+    "classes": "node scripts/verifier-classes.mjs",
+    "espaces": "node scripts/verifier-espaces.mjs",
+    "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
