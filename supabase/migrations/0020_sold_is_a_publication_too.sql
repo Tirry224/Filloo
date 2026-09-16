@@ -1,6 +1,9 @@
 -- =====================================================================
 -- 0020 — « Vendu » est une publication, et passe par la même porte
 -- =====================================================================
+-- Trouvé le 2026-09-16 par un audit du contrôle de publication, puis
+-- reproduit en base avant d'être corrigé.
+--
 -- Pourquoi 0020 et pas 0018 : le projet Supabase porte déjà
 -- `0018_approve_a_shop_with_one_click` et
 -- `0019_the_validation_switch_shows_its_state` (lues dans
@@ -9,8 +12,6 @@
 -- délibéré : il marque leur place plutôt que de leur voler leur numéro,
 -- ce qui rendrait la suite Git irrejouable sur le projet réel. Les
 -- récupérer dans le dépôt est la tâche suivante, pas celle-ci.
--- Trouvé le 2026-09-16 par un audit du contrôle de publication, puis
--- reproduit en base avant d'être corrigé.
 --
 -- LE PROBLÈME
 -- Deux endroits décrivent la même notion — « ce produit est au
