@@ -46,8 +46,21 @@ export default async function SellerPage({
 
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
-  if (merchant.status === "pending") redirect("/vendeur/attente");
-  if (merchant.status === "rejected") redirect("/vendeur/refusee");
+
+  /* Le message d'erreur SUIT la redirection. Sans ces deux lignes, il
+     mourait ici : une action produit qui échoue revient toujours sur
+     `/vendeur?erreur=…` (voir `backToSeller`), et `/vendeur` renvoyait
+     aussitôt une boutique non validée vers son écran de statut — en
+     laissant le paramètre derrière lui. Le refus de la base était donc
+     correct, expliqué, et invisible : l'action semblait n'avoir rien
+     fait.
+
+     Les deux écrans de destination savent déjà l'afficher avec `Notice`,
+     exactement comme `/vendeur` : rien de neuf n'est inventé ici, on
+     cesse seulement de perdre le message en chemin. */
+  const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
+  if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
+  if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
 
   const catalogue = await getMerchantProducts(supabase, merchant);
   const published = catalogue.filter((p) => p.status === "active").length;

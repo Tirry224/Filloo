@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { StepList } from "@/components/ui/StepList";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
@@ -19,7 +20,17 @@ import { countUnreadMessages } from "@/lib/data/messages";
  * attend 48 heures devant une page inerte ne revient pas ; un commerçant
  * qui a préparé quatre brouillons a déjà investi quelque chose.
  */
-export default async function PendingShopPage() {
+export default async function PendingShopPage({
+  searchParams,
+}: {
+  /* Même canal que `/vendeur` et `/vendeur/refusee` : une action produit
+     qui échoue redirige vers `/vendeur?erreur=…`, et `/vendeur` fait
+     suivre le message jusqu'ici quand la boutique n'est pas encore
+     validée. Sans cette lecture, le refus arrivait bien à destination et
+     n'y était affiché par personne. */
+  searchParams: Promise<{ erreur?: string }>;
+}) {
+  const { erreur } = await searchParams;
   const supabase = await createClient();
   // Même garde que /vendeur et /vendeur/boutique : la suspension vit sur
   // `profiles` et frappe les deux rôles. Sans elle, ces deux écrans
@@ -40,6 +51,7 @@ export default async function PendingShopPage() {
       <TopBar title={<Wordmark />} right={<Badge tone="warn">En attente</Badge>} />
 
       <ScreenBody>
+        {erreur ? <Notice>{erreur}</Notice> : null}
         <Section className="gap-5 py-6">
           <div className="flex flex-col gap-2.5">
             <div className="flex size-14 items-center justify-center rounded-xl bg-accent-soft text-accent">
