@@ -11,6 +11,14 @@
  * Ces types décrivent la base (snake_case). Les composants, eux, parlent
  * les types du domaine de `types.ts` (camelCase). La traduction entre les
  * deux se fait à un seul endroit : `data.ts`.
+ *
+ * Régénéré le 2026-09-16, après la réconciliation de 0018/0019/0020. Ce
+ * passage a fait apparaître trois écarts que le fichier précédent
+ * taisait, et ils disent tous la même chose — le fichier avait cessé
+ * d'être régénéré :
+ *   - `merchants.valider`, la colonne créée par 0018 ;
+ *   - `approve_merchant` et `reject_merchant`, les fonctions de 0012 ;
+ *   - les `SetofOptions`, que la version de PostgREST déployée renvoie.
  */
 
 export type Json =
@@ -129,6 +137,7 @@ export type Database = {
           rejection_reason: string | null
           shop_name: string
           status: Database["public"]["Enums"]["merchant_status"]
+          valider: boolean
           whatsapp_phone: string | null
         }
         Insert: {
@@ -142,6 +151,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Update: {
@@ -155,6 +165,7 @@ export type Database = {
           rejection_reason?: string | null
           shop_name?: string
           status?: Database["public"]["Enums"]["merchant_status"]
+          valider?: boolean
           whatsapp_phone?: string | null
         }
         Relationships: [
@@ -411,27 +422,84 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      /* Ajoutée à la main, avec 0017, pour la même raison que
-         `resubmit_my_merchant` plus bas : ce fichier est engendré depuis
-         la base, et l'environnement de travail ne joint pas
-         *.supabase.co. Elle répond « ce fil accepte-t-il encore des
-         messages ? » — faux dès que la boutique en face est suspendue. */
+      approve_merchant: {
+        Args: { p_shop_name: string }
+        Returns: {
+          address_hint: string | null
+          approved_at: string | null
+          city_id: number
+          created_at: string
+          description: string | null
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          shop_name: string
+          status: Database["public"]["Enums"]["merchant_status"]
+          valider: boolean
+          whatsapp_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "merchants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
+      merchant_is_public: { Args: { mid: string }; Returns: boolean }
       my_merchant_id: { Args: never; Returns: string }
       my_profile_id: {
         Args: { want_role: Database["public"]["Enums"]["user_role"] }
         Returns: string
       }
       owns_profile: { Args: { pid: string }; Returns: boolean }
-      /* Ajoutée à la main, avec 0015 : ce fichier est engendré depuis la
-         base, et l'environnement de travail ne joint pas *.supabase.co
-         (docs/REPRISE.md) — il ne peut donc pas être régénéré ici. La
-         signature est celle du fichier de migration, à recopier telle
-         quelle à la prochaine régénération. */
+      reject_merchant: {
+        Args: { p_reason: string; p_shop_name: string }
+        Returns: {
+          address_hint: string | null
+          approved_at: string | null
+          city_id: number
+          created_at: string
+          description: string | null
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          shop_name: string
+          status: Database["public"]["Enums"]["merchant_status"]
+          valider: boolean
+          whatsapp_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "merchants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resubmit_my_merchant: {
         Args: never
-        Returns: Database["public"]["Tables"]["merchants"]["Row"]
+        Returns: {
+          address_hint: string | null
+          approved_at: string | null
+          city_id: number
+          created_at: string
+          description: string | null
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          shop_name: string
+          status: Database["public"]["Enums"]["merchant_status"]
+          valider: boolean
+          whatsapp_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "merchants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       search_products: {
         Args: {
