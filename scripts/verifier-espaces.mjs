@@ -174,7 +174,29 @@ for (const f of fichiers(espaceClient)) {
 }
 
 // ---------------------------------------------------------------------
-// 7. Les mécanismes remplacés ne reviennent pas.
+// 7. Un composant de fil qui reçoit `espace` porte sa garde.
+// ---------------------------------------------------------------------
+// Ces composants sont montés par DEUX routes, une par espace. Le chemin
+// emprunté est donc une affirmation — « je suis le côté client de ce
+// fil » — et `getThreadContext` sait si elle est vraie. Sans confronter
+// les deux, un commerçant qui ouvre l'adresse client obtient l'écran
+// habillé en client.
+//
+// La règle existe parce que l'oubli s'est produit : `ThreadScreen`
+// portait cette garde, ses trois feuilles sœurs ne l'avaient pas. C'est
+// le même motif que les sept gardes recopiées de `/vendeur` dont la
+// huitième manquait — une protection écrite à la main sur N écrans
+// finit toujours par manquer sur le N+1.
+for (const f of fichiers(join(SRC, "components/chat"))) {
+  const c = code(lire(f));
+  if (!/\bespace: Espace\b/.test(c)) continue;
+  if (!c.includes("espaceReel")) {
+    rate("messagerie", court(f), "reçoit `espace` mais ne vérifie pas qu'il correspond au côté réel du fil");
+  }
+}
+
+// ---------------------------------------------------------------------
+// 8. Les mécanismes remplacés ne reviennent pas.
 // ---------------------------------------------------------------------
 for (const mort of ["src/components/ui/BottomNav.tsx", "src/lib/space.ts"]) {
   if (existsSync(join(RACINE, mort))) {
