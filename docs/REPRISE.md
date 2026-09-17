@@ -5,16 +5,18 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-16** (le trou `0018`/`0019` rebouché —
-voir le journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-17** (les notifications de décisions,
+la suspension symétrique et le SMTP de production — voir le journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
 ne reprend rien.
 
-**État en une phrase :** l'application est complète et branchée sur la
-vraie base, elle est en ligne, et il lui manque les emails pour pouvoir
-être ouverte à de vrais commerçants.
+**État en une phrase :** l'application est complète, branchée sur la
+vraie base, en ligne, et ses emails partent enfin — ce qui la sépare
+d'un vrai commerçant n'est plus du code mais trois choses à constater :
+`CRON_SECRET`, un email réellement reçu, et le parcours fait une fois
+sur un vrai téléphone.
 
 ---
 
@@ -22,34 +24,26 @@ vraie base, elle est en ligne, et il lui manque les emails pour pouvoir
 
 ### Bloquant pour un lancement
 
-**1. Les emails (Resend).** Ce point s'est réduit à UNE manipulation.
+**1. Les emails (Resend).** Ce point n'est plus bloquant : il ne reste
+qu'une variable et une vérification.
 
-- **Notification de nouveau message** — *faite, et branchée* :
-  `src/lib/notifications.ts`, appelée depuis `after()` par
-  `sendMessageAction`. `RESEND_API_KEY` et `EMAIL_FROM` sont posées sur
-  Vercel depuis le 2026-09-17. **Reste à CONSTATER un envoi réel** dans
-  une vraie boîte : tant que le domaine de `EMAIL_FROM` n'est pas vérifié
-  chez Resend, seul le propriétaire du compte Resend reçoit quoi que ce
-  soit.
-- **Décisions d'administration** — *faites le 2026-09-17* : boutique
-  validée, boutique refusée, compte suspendu. Migration `0021` (file
-  `notifications` + triggers), `src/lib/notifications-decisions.ts`
-  (balayage + les trois textes), `/api/notifications` et `vercel.json`.
-  **Reste à poser `CRON_SECRET` sur Vercel** et à vérifier la fréquence
-  réelle du cron : l'offre Hobby ne déclenche qu'une fois par jour.
-- **Emails d'authentification** — **LE SEUL VRAI RESTE, et il n'est pas
-  du code.** Le lien de réinitialisation part du serveur Auth de
-  Supabase, avec le SMTP configuré dans le tableau de bord Supabase —
-  `RESEND_API_KEY` sur Vercel n'y change RIEN, c'est le piège de ce
-  point. Tant que ce SMTP est celui de démonstration de Supabase
-  (« quelques envois par heure, pas pour la production », leur propre
-  documentation), `/mot-de-passe-oublie` promet noir sur blanc « vous
-  recevrez un lien » sans pouvoir le tenir. **Un écran qui promet ce que
-  le système ne tient pas est un bug, pas une approximation.**
-- *Le compteur de non-lus, lui, est fait de bout en bout depuis le
-  2026-09-15* : `messages.read_at` (`0001`), RLS restreinte à cette seule
-  colonne (`0002`), `countUnreadMessages` par espace, les deux barres
-  d'onglets qui le portent.
+- **Notification de nouveau message** — code fait, Resend branché sur
+  Vercel. *Reste à CONSTATER un envoi réel* dans une vraie boîte.
+- **Décisions d'administration** (validée, refusée, suspendu) — `0021`,
+  `src/lib/notifications-decisions.ts`, `/api/notifications`,
+  `vercel.json`. **Reste `CRON_SECRET` sur Vercel**, sans laquelle la
+  route refuse tout, et la vérification de la fréquence réelle du cron.
+- **Emails d'authentification** — *FAIT le 2026-09-17* : le SMTP de
+  Resend est branché dans Supabase et fonctionne. C'était le dernier
+  vrai verrou : sans lui, le premier commerçant qui oubliait son mot de
+  passe était enfermé dehors définitivement.
+- **Confirmation d'inscription** — décidée (SPEC décision 1), le code la
+  gère déjà (`needsConfirmation`), et elle est **activable maintenant**
+  que le SMTP fonctionne. Pas avant : activée sans SMTP, elle bloque
+  toute inscription.
+- *Le compteur de non-lus est fait de bout en bout depuis le
+  2026-09-15* : `read_at` (`0001`), RLS restreinte à cette colonne
+  (`0002`), `countUnreadMessages` par espace, les deux barres d'onglets.
 
 **2. Le texte des conditions d'utilisation.** La ligne existe dans deux
 écrans (`/compte`, `/vendeur/boutique`) mais ne mène nulle part : il
@@ -915,6 +909,29 @@ qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
   section 4 interdit, et pour un gain nul sur le comportement. Noté en
   dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
   d'application qu'il faudra reprendre, pas ce symptôme.
+
+### 2026-09-17 (fin) — le SMTP posé, et les documents remis à l'heure
+- **Le SMTP Resend est branché dans Supabase et fonctionne** (rapporté
+  par le porteur du projet) : mot de passe oublié et confirmation
+  d'inscription partent enfin par un service de production. C'était le
+  dernier vrai verrou du point 1, et le plus coûteux — un commerçant
+  recruté à la main puis enfermé dehors par un mot de passe oublié est un
+  commerçant perdu, sans recours.
+- **`README.md` et ce fichier remis à l'heure**, parce qu'ils avaient
+  divergé en une seule journée : trois cases d'avancement, la section
+  « emails d'authentification », la consigne d'installation qui disait
+  encore de DÉSACTIVER la confirmation d'email, et le compte de tests
+  figé à 61 alors qu'il y en a 153.
+- **Une affirmation de ma part corrigée** : j'avais donné « l'offre Hobby
+  ne déclenche les crons qu'une fois par jour » pour un fait. La
+  documentation Vercel accessible ne le confirme pas. Le README dit
+  maintenant d'aller LIRE « Next run » dans le tableau de bord, et donne
+  les deux sorties si la fréquence ne convient pas (plan supérieur, ou
+  `pg_cron` + `pg_net` côté Supabase, disponibles et non installés).
+- **Et une confusion que j'avais causée** : la limite éventuelle porte
+  sur le DÉLAI, jamais sur le nombre d'emails — chaque passage vide toute
+  la file. Dix boutiques validées dans la journée font dix emails, pas
+  un.
 
 ### 2026-09-17 (suite) — cinq décisions tranchées, deux fichiers en moins de questions
 - **Le porteur du projet a répondu aux cinq questions ouvertes** : email

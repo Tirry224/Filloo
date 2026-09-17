@@ -27,7 +27,12 @@ conclut hors de l'application.
       sur Vercel — reste à constater un envoi réel dans une vraie boîte)
 - [x] Notification par email des décisions d'administration : boutique
       validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
-- [ ] SMTP Resend côté Supabase, pour les emails de mot de passe oublié
+- [x] SMTP Resend côté Supabase — mot de passe oublié et confirmation
+      d'inscription partent par Resend depuis le 2026-09-17
+- [ ] `CRON_SECRET` sur Vercel, sans laquelle `/api/notifications` refuse
+      tout et aucune décision d'administration n'est annoncée
+- [ ] Confirmation d'email à ACTIVER côté Supabase (décidée, le code la
+      gère déjà) — possible maintenant que le SMTP fonctionne
 - [ ] Conditions d'utilisation — la ligne existe, le texte manque
 
 ## Tests
@@ -83,8 +88,10 @@ Pour changer l'apparence de l'application, voir
 2. Dans **SQL Editor**, exécuter les fichiers de `supabase/migrations/`
    **dans l'ordre numérique**, un par un. Lire les commentaires en même
    temps : ils expliquent chaque décision.
-3. Dans **Authentication → Providers**, garder `Email` activé et désactiver
-   la confirmation par email pendant le développement.
+3. Dans **Authentication → Providers**, garder `Email` activé. La
+   confirmation par email est **décidée et à activer** (SPEC décision 1) —
+   mais seulement une fois le SMTP de production posé : activée avant,
+   plus personne ne peut s'inscrire, puisque personne ne recevra le lien.
 4. Vérifier dans **Database → Tables** que chaque table affiche bien
    « RLS enabled ». Si une seule ne l'est pas, ses données sont publiques.
 
@@ -148,11 +155,15 @@ CRON_SECRET=<une chaîne longue et aléatoire>
   en-tête `Authorization: Bearer …`. **Sans elle, `/api/notifications`
   refuse tout le monde** : une adresse qui lit `auth.users` et envoie des
   emails ne s'ouvre pas au public par accident.
-- La planification vit dans `vercel.json` (`*/10 * * * *`). **Attention
-  au plan Vercel** : l'offre Hobby ne déclenche les crons qu'**une fois
-  par jour**, quelle que soit l'expression écrite ici. Sur Hobby, un
-  commerçant validé serait donc prévenu jusqu'à 24 h plus tard — à
-  vérifier avant de compter dessus.
+- La planification vit dans `vercel.json` (`*/10 * * * *`). **Vérifier la
+  fréquence RÉELLE dans le tableau de bord Vercel** (« Next run ») : selon
+  le plan, Vercel peut réécrire cette expression et ne déclencher qu'une
+  fois par jour, ce qui ferait attendre un commerçant validé jusqu'à 24 h.
+  Ce n'est pas le NOMBRE d'emails qui serait limité — chaque passage vide
+  toute la file — mais le DÉLAI.
+- Si la fréquence ne convient pas, deux sorties sans changer une ligne de
+  ce dépôt : passer au plan supérieur, ou planifier l'appel depuis
+  Supabase avec `pg_cron` + `pg_net` (disponibles, non installés).
 
 Ce qui coince se voit en une requête, et c'est tout l'intérêt d'être
 passé par une file plutôt que par un webhook :
@@ -164,22 +175,23 @@ select kind, profile_id, attempts, last_error, created_at
  order by created_at;
 ```
 
-### Emails d'authentification (à configurer chez Supabase)
+### Emails d'authentification (Supabase → SMTP)
 
-**`RESEND_API_KEY` sur Vercel ne les concerne pas.** Le lien de
-réinitialisation de mot de passe est envoyé par le serveur Auth de
-Supabase, pas par ce code : il part avec le SMTP configuré dans
-**Supabase → Project Settings → Authentication → SMTP**. Tant que ce
-SMTP n'est pas celui de Resend, `/mot-de-passe-oublie` promet un lien que
-le serveur de démonstration de Supabase ne garantit pas (quelques envois
-par heure, d'après leur propre documentation).
+**Ils ne passent PAS par `RESEND_API_KEY`.** Mot de passe oublié et
+confirmation d'inscription sont envoyés par le serveur Auth de Supabase,
+avec le SMTP configuré dans **Authentication → Emails → SMTP Settings**.
+C'est de la configuration, pas du code : rien dans ce dépôt ne les
+envoie.
 
-**Les emails d'authentification ne passent PAS par là** — mot de passe
-oublié, confirmation d'inscription. Ils sont envoyés par Supabase Auth,
-et se configurent dans le tableau de bord Supabase
-(**Authentication → Emails → SMTP Settings**), en y branchant les
-identifiants SMTP de Resend. C'est une configuration, pas du code : rien
-dans ce dépôt ne les enverra.
+**Fait le 2026-09-17** : le SMTP de Resend y est branché et fonctionne.
+Avant ça, `/mot-de-passe-oublie` promettait « vous recevrez un lien »
+en dépendant du serveur de démonstration de Supabase, que leur propre
+documentation donne pour non destiné à la production.
+
+Les valeurs, si c'est à refaire : hôte `smtp.resend.com`, port `465`
+(`587` en repli), utilisateur `resend`, mot de passe la clé `re_…`,
+expéditeur identique à `EMAIL_FROM` — dont le domaine doit être vérifié
+chez Resend.
 
 ### Sur Vercel — à faire avant le premier déploiement
 
