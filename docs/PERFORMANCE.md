@@ -217,7 +217,7 @@ tomber le socle de 169 Ko à environ 5 Ko. La tentation est réelle. Mais :
 - ce socle est payé **une fois** puis mis en cache, alors que les photos se
   paient à **chaque** écran — c'est donc R1, pas le framework, qui décide de
   la facture mensuelle de tes utilisateurs ;
-- les 33 écrans sont écrits en React ; les réécrire coûterait des semaines
+- les 35 écrans sont écrits en React ; les réécrire coûterait des semaines
   qui ne produiraient aucune fonctionnalité.
 
 **Le déclencheur qui rouvrirait la question :** si, après avoir appliqué R1 à

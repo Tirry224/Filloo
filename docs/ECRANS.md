@@ -1,4 +1,4 @@
-# Inventaire des écrans — 33
+# Inventaire des écrans — 35
 
 Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 écran à coder, et chaque case cochée est du travail réellement terminé.
@@ -32,29 +32,41 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 18 | Mes informations | Modification, suppression du compte |
 | 19 | Compte suspendu | Motif + recours |
 
-## Commerçant — 7
+## Commerçant — 9
 
-| # | Écran | Note |
-|---|-------|------|
-| 20 | Boutique en attente | Prépare ses brouillons pendant ce temps |
-| 21 | Boutique refusée | Motif + correction possible |
-| 22 | Mes produits | Deux chiffres : publiés, messages non lus |
-| 23 | Mes produits — vide | Premier produit |
-| 24 | Ajouter / modifier un produit | 1 à 3 photos, prix, négociable |
-| 25 | Actions produit | Vendu, modifier, masquer, supprimer |
-| 26 | Modifier ma boutique | Revalidation si nom ou ville change ; fait aussi office de « compte » côté commerçant (bascule vers le client lié, déconnexion) |
+Quatre onglets depuis le 2026-09-16 (`Accueil · Produits · Messages ·
+Boutique`), comme le prototype le prévoyait. `/vendeur` portait jusque-là
+les chiffres ET la liste des produits : les cartes repoussaient le
+catalogue vers le bas, et un catalogue un peu long noyait les chiffres.
+
+| # | Écran | Route | Note |
+|---|-------|-------|------|
+| 20 | Boutique en attente | `/vendeur/attente` | Prépare ses brouillons pendant ce temps |
+| 21 | Boutique refusée | `/vendeur/refusee` | Motif + correction possible |
+| 22 | Mes produits | `/vendeur/produits` | La liste seule ; « Ajouter » en tête de barre, pas en pied de page où il recouvrait le dernier produit |
+| 22b | Accueil commerçant | `/vendeur` | Salutation, trois chiffres, trois dernières demandes. Le troisième chiffre n'est PAS les « vues boutique » du prototype : aucune table ne les compte, on affiche la somme de `products.contact_count` (clients distincts ayant posé une question) |
+| 23 | Mes produits — vide | `/vendeur/produits` | Premier produit. L'appel à l'action reste aussi sur l'accueil : trois zéros ne disent pas quoi faire |
+| 24 | Ajouter / modifier un produit | `/vendeur/produits/nouveau`, `…/[id]/modifier` | 1 à 3 photos, prix, négociable. « Publier » n'apparaît qu'à une boutique validée (`canPublish`) |
+| 25 | Actions produit | `/vendeur/produits/[id]/actions` | Publier un brouillon, vendu, modifier, masquer, supprimer. Les lignes suivent le statut réel du produit |
+| 26 | Ma boutique | `/vendeur/boutique` | **Consultation.** Les informations se lisent, elles ne s'y saisissent plus. Fait office de « compte » côté commerçant (bascule vers le client lié, suppression, déconnexion) |
+| 26b | Modifier ma boutique | `/vendeur/boutique/modifier` | Plein écran. Le mot de passe s'y change aussi. **Enregistrer exige le mot de passe actuel** — sans lui, rien ne bouge. La flèche retour EST le bouton annuler ; les deux sorties mènent à l'écran 26. Aucune revalidation de la boutique : changer le nom ou la ville ne déclenche RIEN (voir `updateMerchantAction`, et la contradiction encore ouverte dans REPRISE) |
 
 ## Messagerie — 6
 
-| # | Écran | Note |
-|---|-------|------|
-| 27 | Messages — commerçant | Fils par client |
-| 28 | Messages — client | Fils par boutique |
-| 29 | Messages — vide | |
-| 30 | Fil de discussion | Produits cités, produit vendu grisé |
-| 31 | Citer un produit | Rend viable « un fil par client » |
-| 32 | Actions conversation | Signaler, bloquer |
-| 32b | Signaler une conversation | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
+Deux arbres de routes depuis le 2026-09-16, un par espace. Le paramètre
+`?vue=commercant` n'existe plus : un même chemin ne peut plus rendre deux
+écrans différents. Le fil et ses feuilles sont un composant partagé,
+monté par deux routes qui lui imposent chacune leur espace.
+
+| # | Écran | Route client | Route commerçant | Note |
+|---|-------|--------------|------------------|------|
+| 27 | Messages — commerçant | — | `/vendeur/messages` | Fils par client |
+| 28 | Messages — client | `/messages` | — | Fils par boutique |
+| 29 | Messages — vide | les deux | les deux | Pas une route : l'état vide des écrans 27 et 28, avec un texte propre à chaque espace |
+| 30 | Fil de discussion | `/messages/[id]` | `/vendeur/messages/[id]` | Produits cités, produit vendu grisé. Un fil ouvert depuis le mauvais espace renvoie vers le bon |
+| 31 | Citer un produit | `…/[id]/citer` | `…/[id]/citer` | Rend viable « un fil par client » |
+| 32 | Actions conversation | `…/[id]/actions` | `…/[id]/actions` | Signaler, bloquer |
+| 32b | Signaler une conversation | `…/[id]/signaler` | `…/[id]/signaler` | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
 
 ## Transverse — 1
 

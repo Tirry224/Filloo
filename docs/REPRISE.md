@@ -5,8 +5,9 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-16** (le trou `0018`/`0019` rebouché —
-voir le journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-16** (les deux espaces séparés, l'espace
+commerçant à quatre onglets — voir le journal). Réécrit de zéro le
+2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -34,12 +35,14 @@ distincts, un seul fournisseur :
   n'autorise l'écriture QUE de cette colonne (`0002`),
   `src/lib/data/messages.ts` calcule `unreadCount` depuis la vraie
   base, `ThreadRow` l'affiche par fil, et ouvrir un fil marque ses
-  messages comme lus (`src/app/messages/[id]/page.tsx`). **Le badge
-  global de la barre d'onglets est fait depuis le 2026-09-15** :
-  `countUnreadMessages` (`src/lib/data/messages.ts`) le compte PAR ESPACE,
-  `BottomNav` le porte, et « Mes produits » affiche enfin son second
-  chiffre. Reste donc le seul vrai manque de ce point : l'email, qui
-  prévient quand personne ne regarde l'écran.
+  messages comme lus (`src/components/chat/ThreadScreen.tsx`, monté par
+  les deux espaces). **Le badge global de la barre d'onglets est fait
+  depuis le 2026-09-15** : `countUnreadMessages`
+  (`src/lib/data/messages.ts`) le compte PAR ESPACE, les deux layouts
+  `(onglets)` le passent à `ClientNav` ou `MerchantNav`, et l'accueil
+  commerçant en fait un de ses trois chiffres. Reste donc le seul vrai
+  manque de ce point : l'email, qui prévient quand personne ne regarde
+  l'écran.
 - **Emails d'authentification** — réinitialisation de mot de passe, et
   confirmation d'inscription si elle est réactivée.
   `/mot-de-passe-oublie` promet noir sur blanc « vous recevrez un
@@ -159,10 +162,13 @@ de `main` (voir points 10 et 11).
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Aucun test automatisé côté front.** 114 tests couvrent le SQL, zéro
-  couvre la couche applicative — là où se trouvaient les quatre bugs du
-  2026-09-12. C'est le déséquilibre de fond du projet : la couche la
-  mieux testée n'est pas celle qui casse. **Démontré une fois de plus le
+- **Presque aucun test automatisé côté front.** 138 vérifications couvrent
+  le SQL ; la couche applicative — là où se trouvaient les quatre bugs du
+  2026-09-12 — n'en a que deux, et toutes deux sur la NAVIGATION
+  (`npm run espaces`, `npm run gardes`, ajoutés le 2026-09-16). Rien ne
+  couvre les actions serveur, les formulaires, ni le rendu. C'est le
+  déséquilibre de fond du projet : la couche la mieux testée n'est pas
+  celle qui casse. **Démontré une fois de plus le
   2026-09-15** : le contournement de `safeNextPath` par une tabulation
   vivait précisément là, et les quinze cas qui l'ont trouvé ont été
   exécutés depuis `/tmp` — ils ne sont pas dans le dépôt. Le même défaut
@@ -219,6 +225,37 @@ de `main` (voir points 10 et 11).
   qu'il a posé. Le filtre reste manuel — `?ville=` gagne toujours.
 - **`/inscription/boutique` hérite du squelette de chargement client** et
   affiche donc brièvement « Conakry » pendant l'inscription commerçant.
+- **Aucun parcours AUTHENTIFIÉ n'a tourné contre la vraie base depuis le
+  2026-09-16.** Les environnements de développement de ces sessions
+  n'atteignent pas Supabase (politique réseau : « Host not in
+  allowlist »). Tout le travail de séparation des espaces, la refonte de
+  l'espace commerçant et la confirmation par mot de passe sont vérifiés
+  statiquement, par table de vérité, par tests SQL locaux ou en visiteur
+  anonyme — jamais en se connectant. **`npm run parcours` n'a pas été
+  lancé** : il crée comptes, produits et photos, et le seul Supabase
+  joignable est la PRODUCTION. Un projet Supabase de test réglerait les
+  deux problèmes d'un coup.
+- **La vérification du mot de passe actuel n'a jamais été exercée.**
+  `src/lib/supabase/verify.ts` est écrit, relu et typé, mais son seul
+  appel réel se fera en production. À tester en premier au prochain accès
+  à une base joignable.
+- **Le refus au bord ne couvre pas la panne à l'étage du dessous.** Mesuré
+  le 2026-09-16 : avec Supabase injoignable et un jeton d'accès déjà
+  expiré, `@supabase/ssr` abandonne la session de son côté, et le layout
+  reçoit un honnête « pas de session ». Le middleware distingue bien panne
+  et absence de session ; cet étage-là, non. Peut-être insoluble — c'est
+  la bibliothèque qui décide. À confronter à une base joignable avant
+  d'en conclure quoi que ce soit.
+- **`/compte/informations` (client) n'exige pas le mot de passe actuel**,
+  contrairement à `/vendeur/boutique/modifier`. C'est la même connexion et
+  la même symétrie que le projet a déjà eu à corriger trois fois (bascule,
+  suppression de compte, mot de passe). Volontairement non traité : le
+  porteur du projet a demandé l'écran commerçant, et corriger la moitié
+  d'une symétrie sans le dire est précisément ce que la section 5
+  reproche.
+- **La section 28 des tests de sécurité s'intitule « (0018) »** alors que
+  c'est `0020` qui ferme la faille qu'elle couvre. Cosmétique, mais
+  trompeur pour qui cherche la migration responsable.
 
 ---
 
@@ -243,7 +280,7 @@ français.
 
 ### Spécification
 `docs/SPEC.md` — 18 décisions tranchées et figées.
-`docs/ECRANS.md` — inventaire des 33 écrans.
+`docs/ECRANS.md` — inventaire des 35 écrans.
 `docs/ARCHITECTURE.md` — organisation du code.
 `docs/PERFORMANCE.md` — budgets de poids et méthode de mesure.
 
@@ -352,7 +389,7 @@ dans le fichier, pas ici.
 propriété qui compte pour une suite de migrations, et celle qui casse le
 plus discrètement.
 
-`supabase/tests/` — **114 vérifications de sécurité**, rejouables sur un
+`supabase/tests/` — **138 vérifications de sécurité**, rejouables sur un
 PostgreSQL local. Elles vérifient que les actions **interdites**
 échouent, et ont déjà trouvé **trois vraies failles** (section 5). La
 quatrième, la fuite de `conversation_is_open`, a été trouvée par une
@@ -414,8 +451,17 @@ du porteur du projet, vérifiés par les tests 17 à 19 de
 
 ### Front-end
 
-Next.js 16, React 19, TypeScript, Tailwind 4. **31 routes, 39
+Next.js 16, React 19, TypeScript, Tailwind 4. **40 routes, 47
 composants.**
+
+**Deux espaces séparés par l'arborescence** depuis le 2026-09-16, et
+c'est la refonte structurante de ce projet. `src/app/` porte deux groupes
+de routes — `(client)` et `(vendeur)` — chacun subdivisé en `(onglets)`
+et `(plein-ecran)`. `(vendeur)/layout.tsx` ne dessine rien : il porte LA
+garde de l'espace, qu'aucune route enfant ne peut contourner. Les barres
+de navigation (`ClientNav`, `MerchantNav`) sont rendues par les layouts,
+jamais par un écran — qui ne peut donc plus se tromper de barre, faute de
+pouvoir la demander. Voir `docs/ARCHITECTURE.md`, section 3.
 
 - `src/styles/` — tokens (couleurs, typographie, rayons, **vocabulaire
   d'espacements nommés**) et un README expliquant comment modifier
@@ -424,8 +470,11 @@ composants.**
 - `src/components/` — `ui/` sans métier, `product/`, `chat/`, `auth/`.
 - `src/lib/supabase/` — **un client par requête** : `server.ts`
   (composants serveur), `client.ts` (navigateur), `middleware.ts`
-  (rafraîchit la session à chaque requête). Un seul client global serait
-  une faille : deux visiteurs partageraient la même session.
+  (rafraîchit la session et refuse les espaces privés aux visiteurs
+  anonymes), `admin.ts` (`service_role`), `verify.ts` (client JETABLE,
+  sans cookies, qui vérifie un mot de passe sans pouvoir abîmer la
+  session en cours). Un seul client global serait une faille : deux
+  visiteurs partageraient la même session.
 - `src/lib/data/` — lecture : `products.ts`, `merchants.ts`,
   `reference.ts`, `session.ts`, `messages.ts`. Seul endroit qui connaît
   la forme de la base ; traduit vers les types de `src/lib/types.ts`.
@@ -437,7 +486,13 @@ composants.**
 
 **Authentification : faite.** Inscription client et commerçant,
 connexion, déconnexion, mot de passe oublié, réinitialisation, comptes
-liés.
+liés. Tout mot de passe qu'on CRÉE se saisit deux fois — la règle vit une
+seule fois, dans `src/lib/password.ts`, et la comparaison est faite côté
+serveur (les formulaires doivent marcher sans JavaScript, et une requête
+forgée ne passe par aucun champ). Enregistrer ses informations de
+boutique exige en plus le mot de passe ACTUEL : l'adresse et le numéro
+WhatsApp sont ce qu'un client lit avant de se déplacer, et un téléphone
+déverrouillé quelques secondes suffisait à les détourner.
 
 **Toute l'application est branchée sur la vraie base**, en lecture ET en
 écriture : catalogue public, espace vendeur, messagerie, compte,
@@ -476,9 +531,18 @@ qu'on y pousse part en ligne.**
 npm install && npm run dev     # nécessite .env.local — voir README
 npm run typecheck && npm run build
 npm run classes                # classes Tailwind fantômes
+npm run espaces                # les espaces client/commerçant restent séparés
+npm run gardes                 # table de vérité : qui entre dans quel espace
 npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
-npm run parcours               # mesure d'un parcours
+npm run parcours               # mesure d'un parcours (navigateur + vraie base)
 ```
+
+`espaces` et `gardes` sont nés le 2026-09-16 avec la séparation des deux
+espaces. Ils protègent un PARCOURS, pas des données : ni `tsc`, ni
+`next build`, ni les tests SQL ne signalent qu'un écran client vient
+d'importer la barre du commerçant. Les deux ont été éprouvés par
+mutation — chaque règle cassée volontairement pour vérifier qu'elle
+échoue.
 
 ---
 
@@ -536,9 +600,25 @@ npm run parcours               # mesure d'un parcours
   dans la même session**, et toute migration commitée est appliquée dans
   la même session. Les deux sens produisent le même écart : un dépôt qui
   décrit une base qui n'existe pas (ou plus).
-- **Relancer les 74 tests après TOUTE modification de policy.** C'est
+- **Relancer les 138 tests après TOUTE modification de policy.** C'est
   ainsi que trois failles ont été trouvées, et aucune ne produisait
-  d'erreur.
+  d'erreur. Le compte est passé de 74 à 114, puis à 138 le 2026-09-16
+  quand la colonne `valider` a enfin été couverte.
+- **Un test qui ne peut pas échouer ne prouve rien.** Chaque garde
+  ajoutée depuis le 2026-09-16 a été vérifiée par MUTATION : on casse
+  volontairement ce qu'elle protège, et on regarde le script sortir en
+  code 1. Sans `0019`, la suite SQL s'arrête sur « une boutique creee
+  approuvee a sa case cochee » ; sans `0020`, sur « pending + draft →
+  sold refusé ». Les huit règles de `npm run espaces` et la table de
+  `npm run gardes` ont subi le même traitement.
+- **Deux branches, et rien d'autre** (règle du 2026-09-16, écrite dans
+  `CLAUDE.md`). `main` stable, `claude/verify-main-branches-pe8bp4` de
+  travail ; on n'en crée, n'en supprime ni n'en fusionne aucune autre
+  sans autorisation explicite, et **on vérifie la branche active AVANT la
+  première modification**, pas au moment de committer. Née de la même
+  session : le travail a commencé sur `main` par inattention, et il a
+  fallu déplacer cinq commits. Écrite dans `CLAUDE.md` et non dans
+  `AGENTS.md`, que `next dev` régénère en entier.
 
 ---
 
@@ -677,6 +757,16 @@ temps.
   dernier. Le commerçant voyait donc deux onglets qui n'existent pas
   chez lui. Le correctif n'était pas un meilleur paramètre : c'étaient
   deux listes.
+  **Et deux listes ne suffisaient pas non plus** (2026-09-16) : la prop
+  `space` qui choisissait entre elles valait « client » PAR DÉFAUT, donc
+  tout écran qui oubliait de la passer servait silencieusement la barre
+  de l'autre espace — cinq des onze écrans concernés. Le correctif final
+  n'était pas une troisième version de la prop : c'était de la supprimer,
+  en faisant rendre la barre par le LAYOUT de chaque espace. Un écran ne
+  peut plus se tromper de barre parce qu'il n'a plus aucun moyen de la
+  demander. La leçon générale : quand un défaut revient une deuxième fois
+  sous une autre forme, c'est que la correction précédente traitait le
+  symptôme.
 - **Un correctif peut créer un défaut ailleurs.** Router un commerçant
   vers `/vendeur` a rendu son onglet « Accueil » MORT : on le touchait,
   on revenait au même écran. Un onglet qui ne fait rien est pire qu'un
@@ -901,6 +991,96 @@ qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
   section 4 interdit, et pour un gain nul sur le comportement. Noté en
   dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
   d'application qu'il faudra reprendre, pas ce symptôme.
+
+### 2026-09-16 (suite) — les deux espaces séparés pour de bon
+La journée la plus structurante depuis la base. Point de départ : une
+question du porteur du projet — « vérifie que `main` contient toute la
+logique des autres branches ».
+
+- **L'audit a trouvé ce qu'il cherchait, et autre chose.** Trois branches
+  sur huit étaient déjà dans `main`, deux périmées, et une —
+  `makiti-merchant-status-fix` — portait **cinq correctifs applicatifs
+  absents** : le message d'erreur perdu en redirigeant, un brouillon sans
+  chemin vers la publication, « Marquer comme vendu » offert à un
+  brouillon, une boutique refusée traitée comme en attente, « Publier »
+  proposé à qui ne peut pas publier. Tous rapatriés (`3941a65`).
+- **Une contre-vérité écartée au passage.** La branche décrivait la faille
+  `draft → sold` comme ouverte ; `0020` l'avait déjà fermée EN BASE. Le
+  commentaire a été réécrit plutôt qu'importé tel quel — et il porte
+  maintenant la distinction qui manquait : retirer une ligne d'une feuille
+  d'actions ne ferme rien, seul le trigger arrête une requête forgée.
+- **`database.types.ts` régénéré** (`e497410`) : trois écarts, pas un.
+  `merchants.valider`, les fonctions `approve_merchant`/`reject_merchant`
+  de `0012`, et les `SetofOptions` de PostgREST. Le fichier avait cessé
+  d'être régénéré bien avant `0018`.
+- **`0018`/`0019` enfin testées** (`f40c204`) : 24 vérifications autour
+  d'un seul invariant — `valider = (status = 'approved')` après CHAQUE
+  écriture — attaqué par la case, par `status`, par les deux en conflit,
+  et par une écriture qui ne parle ni de l'une ni de l'autre. La suite
+  passe de 114 à 138. Vérifié par MUTATION : sans `0019`, elle s'arrête.
+
+**Puis la refonte de la navigation**, demandée après coup, et qui a
+révélé un défaut d'architecture, pas de style :
+
+- **L'espace actif était porté par une query string.**
+  `/messages?vue=commercant` : un même chemin rendait deux écrans
+  différents, donc un favori, un lien
+  partagé ou un retour arrière pouvait changer d'espace sous les pieds de
+  la personne. `src/lib/space.ts` existait pour empêcher ce paramètre de
+  se perdre — c'était la preuve du problème, pas sa solution.
+- **La navigation était une PROP à valeur par défaut « client ».** Six
+  écrans passaient `space="merchant"` ; tous les autres servaient la barre
+  du client sans l'avoir décidé.
+- **Aucun contrôle de rôle nulle part.** Le middleware ne faisait que
+  rafraîchir un cookie, et chaque écran `/vendeur` refaisait sa garde à la
+  main — sept copies, et **une manquante** sur la feuille d'actions
+  produit, qui ne tenait que par le RLS.
+- **Corrigé par l'arborescence** (`2116be5`) : groupes `(client)` et
+  `(vendeur)`, une garde unique dans un layout qu'aucune route enfant ne
+  contourne, deux barres rendues par les layouts, et
+  `/vendeur/messages`. Ce qui se partage — un fil se dessine pareil des
+  deux côtés — se partage en COMPOSANT, jamais en route.
+- **Un défaut introduit puis corrigé en cours de route.** Le refus au bord
+  confondait d'abord « pas de session » et « base injoignable » —
+  exactement la faute que `getSessionUser` avait déjà corrigée ici. Une
+  coupure réseau passagère aurait déconnecté tout le monde en apparence.
+  Trouvé en lisant le journal du serveur, pas en relisant le code.
+- **`docs/ARCHITECTURE.md` décrivait déjà ce découpage**, jamais
+  implémenté. Le document est repris sur ce qui existe, et sur pourquoi le
+  premier critère est le RÔLE et non l'habillage : l'habillage est un
+  confort, le rôle est une frontière de sécurité.
+
+**Enfin l'espace commerçant, aligné sur le prototype :**
+
+- **Quatre onglets** (`5538846`) — `Accueil · Produits · Messages ·
+  Boutique`. `/vendeur` portait les chiffres ET la liste ; les deux s'y
+  gênaient. Un chiffre du prototype n'a PAS été repris : « vues
+  boutique », qu'aucune table ne compte. On affiche à la place la somme de
+  `products.contact_count`. Inventer un chiffre sur trois ferait d'un
+  tableau de bord une image.
+- **Consultation et modification séparées** (`d62ecd4`) — les champs
+  étaient directement modifiables, donc un doigt qui glisse sur « Ville »
+  en faisant défiler changeait la ville de la boutique sans que rien ne le
+  dise.
+- **Le mot de passe, deux fois et confirmé** (`e74719c`, `38c907b`) — toute
+  création se saisit deux fois, et enregistrer sa boutique exige le mot de
+  passe actuel. La vérification passe par un client JETABLE
+  (`src/lib/supabase/verify.ts`) : le client de session aurait pu abîmer la
+  session sur un simple échec, et une faute de frappe qui déconnecte au
+  milieu d'un formulaire serait pire que le défaut corrigé.
+
+**Ce que cette journée n'a PAS pu vérifier, et c'est la réserve la plus
+importante :** Supabase est injoignable depuis l'environnement de
+développement de ces sessions (politique réseau). Aucun parcours
+AUTHENTIFIÉ n'a tourné contre la vraie base. Tout ce qui précède est
+vérifié statiquement, par table de vérité, par tests SQL sur un PostgreSQL
+local, ou en visiteur anonyme. La vérification du mot de passe actuel, en
+particulier, n'a jamais tourné pour de bon.
+
+**Une règle Git est entrée dans `CLAUDE.md`** (`3bd6a45`) après que ce
+travail a commencé sur `main` par inattention et qu'il a fallu déplacer
+cinq commits : deux branches et rien d'autre, et la branche active se
+vérifie AVANT la première modification.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »

@@ -84,8 +84,8 @@ espace, si.
 | `(client)/(onglets)` | Destinations client : on y arrive sans venir de nulle part. | Aucune — le catalogue est **public** | `Screen` + `ClientNav` |
 | `(client)/(plein-ecran)` | Ce qu'on ouvre **depuis** un écran client, et d'où l'on revient. | Aucune ; `/compte` et `/messages` se gardent eux-mêmes | Chaque écran rend son cadre |
 | `(vendeur)` | La frontière de l'espace commerçant. **Ne dessine rien.** | `requireMerchantSpace` | — |
-| `(vendeur)/(onglets)` | Destinations commerçant. | héritée | `Screen` + `MerchantNav` |
-| `(vendeur)/(plein-ecran)` | Feuilles d'actions et formulaires produit : on les ouvre par-dessus la boutique. | héritée | Chaque écran rend son cadre |
+| `(vendeur)/(onglets)` | Les quatre destinations commerçant : Accueil, Produits, Messages, Boutique. | héritée | `Screen` + `MerchantNav` |
+| `(vendeur)/(plein-ecran)` | Feuilles d'actions et formulaires — produit, fil, édition de la boutique : on les ouvre par-dessus, on les ferme. | héritée | Chaque écran rend son cadre |
 | racine | Authentification et atelier — ni client, ni commerçant. | — | Chaque écran rend son cadre |
 
 ```
@@ -106,13 +106,16 @@ src/app/
   (vendeur)/
     layout.tsx                        ← LA GARDE : requireMerchantSpace
     (onglets)/
-      layout.tsx                      ← Screen + MerchantNav
-      vendeur/page.tsx                → /vendeur
-      vendeur/messages/page.tsx       → /vendeur/messages
-      vendeur/boutique/page.tsx       → /vendeur/boutique
+      layout.tsx                      ← Screen + MerchantNav (4 onglets)
+      vendeur/page.tsx                → /vendeur          · Accueil
+      vendeur/produits/page.tsx       → /vendeur/produits · Produits
+      vendeur/messages/page.tsx       → /vendeur/messages · Messages
+      vendeur/boutique/page.tsx       → /vendeur/boutique · Boutique
     (plein-ecran)/
-      vendeur/produits/…              → /vendeur/produits/…
-      vendeur/messages/[id]/page.tsx  → /vendeur/messages/xxx
+      vendeur/produits/nouveau/…      → formulaires produit
+      vendeur/produits/[id]/…         → modifier, feuille d'actions
+      vendeur/boutique/modifier/…     → l'édition, séparée de sa lecture
+      vendeur/messages/[id]/…         → le fil et ses trois feuilles
 ```
 
 ### Ce qui se partage, et ce qui ne se partage pas
@@ -148,8 +151,17 @@ la feuille d'actions d'un produit — vide grâce au RLS, mais habillée en
 commerçant.
 
 `npm run espaces` vérifie que cette séparation tient, et il est fait pour
-échouer : la retirer du layout, importer la barre de l'autre espace ou
-réintroduire `?vue=` le font sortir en code 1.
+échouer : retirer la garde du layout, importer la barre de l'autre espace,
+réintroduire `?vue=`, ou monter un composant de fil sans sa garde d'espace
+le font sortir en code 1. Chacune de ses huit règles a été éprouvée par
+mutation — cassée volontairement pour vérifier qu'elle échoue.
+
+`npm run gardes` complète le tableau par l'autre bout : une table de
+vérité de treize cas — anonyme, client seul, commerçant seul, comptes
+liés, chaque cas suspendu — qui dit pour chacun s'il entre et, sinon, où
+il part. Elle exerce `src/lib/data/espace-decision.ts`, où la DÉCISION est
+isolée de la base et de `redirect()` précisément pour être testable sans
+l'une ni l'autre.
 
 ---
 
@@ -435,12 +447,22 @@ Avant de considérer un écran comme fait :
 
 ---
 
-## 11. Ordre de migration proposé
+## 11. Ordre de migration
 
-Rien n'est migré à ce stade. Quand la convention sera validée :
+**L'étape 1 est faite depuis le 2026-09-16** — et elle a été faite pour
+une raison qui n'était pas celle prévue ici. Ce document la présentait
+comme un rangement ; c'est une demande de séparation des espaces
+client/commerçant qui l'a déclenchée, parce qu'aucune des deux barres de
+navigation n'avait d'endroit où vivre. Un rangement qu'on repousse
+indéfiniment finit par être imposé par un défaut.
 
-1. **Les groupes de routes et leurs layouts.** Déplacement de fichiers, sans
-   changement d'adresse. `BottomNav` et `TopBar` remontent dans les layouts.
+Les étapes 2 et suivantes restent des propositions, non engagées.
+
+1. ~~**Les groupes de routes et leurs layouts.**~~ **Fait.** Déplacement
+   de fichiers, sans changement d'adresse sauf `/vendeur/messages`. La
+   barre du bas est remontée dans les layouts `(onglets)` ; `TopBar`, lui,
+   est resté dans les pages — chacune a son titre, son bouton d'action et
+   parfois sa flèche retour, donc il n'y avait rien à factoriser.
 2. **Le fil d'accueil** — la page la plus mal découpée, et celle qui sert de
    modèle aux autres.
 3. **La fiche produit** — le premier écran à sections vraiment indépendantes :
@@ -461,7 +483,7 @@ répétition mécanique.
 ## 12. Ce que ce document ne change pas
 
 La pile est déjà celle qui est visée : **Next.js 16, React 19, TypeScript,
-Tailwind 4, Supabase, Vercel**. Les 33 écrans existent. Les migrations SQL et
+Tailwind 4, Supabase, Vercel**. Les 35 écrans existent. Les migrations SQL et
 leurs 34 tests de sécurité existent. Les tokens de `src/styles/` et la
 direction visuelle « A — Marché » ne bougent pas. Les fichiers de `design/`
 restent ce qu'ils sont : la maquette source, jamais du code exécuté.

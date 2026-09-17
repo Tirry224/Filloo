@@ -17,7 +17,7 @@ conclut hors de l'application.
 - [x] Budgets de performance mesurés (`npm run poids`, voir `docs/PERFORMANCE.md`)
 - [x] Projet Supabase créé et migrations exécutées
 - [x] Design system et bibliothèque de composants (`src/styles/`, `src/components/`)
-- [x] Les 33 écrans
+- [x] Les 35 écrans
 - [x] Branchement sur la vraie base, en lecture ET en écriture : catalogue
       public, espace vendeur, messagerie, compte et suppression de compte
 - [x] Authentification (inscription, connexion, comptes liés)
@@ -40,7 +40,7 @@ npm install
 npm run dev
 ```
 
-**`/ecrans`** liste les 33 écrans avec un lien vers chacun, et dit ce
+**`/ecrans`** liste les 35 écrans avec un lien vers chacun, et dit ce
 qu'il faut créer en base quand un lien a besoin d'un enregistrement qui
 n'existe pas encore. C'est le point d'entrée pour tout relire.
 
