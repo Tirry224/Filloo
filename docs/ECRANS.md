@@ -1,4 +1,4 @@
-# Inventaire des écrans — 35
+# Inventaire des écrans — 36
 
 Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 écran à coder, et chaque case cochée est du travail réellement terminé.
@@ -68,10 +68,11 @@ monté par deux routes qui lui imposent chacune leur espace.
 | 32 | Actions conversation | `…/[id]/actions` | `…/[id]/actions` | Signaler, bloquer |
 | 32b | Signaler une conversation | `…/[id]/signaler` | `…/[id]/signaler` | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
 
-## Transverse — 1
+## Transverse — 2
 
 | # | Écran | Note |
 |---|-------|------|
+| 34 | Conditions d'utilisation | `/conditions`. Texte fourni par le porteur du projet le 2026-09-17, reproduit mot pour mot. À la RACINE, pas dans un espace : elle se rejoint depuis `/compte` et `/vendeur/boutique`, et la ranger dans l'un aurait fait traverser la frontière à l'autre. Sa flèche retour suit `?retour=`, filtré par `safeNextPath` |
 | 33 | Page introuvable (404) | Ajouté après coup : l'inventaire des 32 écrans supposait que l'utilisateur ne se trompe jamais d'adresse. Un lien partagé sur WhatsApp qui traîne, un produit retiré, une faute de frappe — ça arrive, et Next affiche sinon sa propre page en anglais sans aucun moyen de repartir. |
 
 ## Ce que cet inventaire a révélé

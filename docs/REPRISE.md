@@ -52,15 +52,28 @@ distincts, un seul fournisseur :
   promet ce que le système ne tient pas est un bug, pas une
   approximation.**
 
-**2. Le texte des conditions d'utilisation.** La ligne existe dans deux
-écrans (`/compte`, `/vendeur/boutique`) mais ne mène nulle part : il
-manque le TEXTE, pas le code. Makiti est un intermédiaire technique, non
-une partie à la vente — à écrire avant le premier litige, pas pendant.
-*Le 2026-09-15, la ligne a au moins cessé d'être un BOUTON mort* : un
-`MenuItem` sans `href` ni action rend désormais une ligne d'information
-(« Bientôt ») au lieu d'un bouton qu'on touche sans effet. Le texte, lui,
-reste entièrement à écrire — il ne s'invente pas depuis une session de
-code.
+**2. ~~Le texte des conditions d'utilisation.~~ FAIT le 2026-09-17.** Le
+porteur du projet a fourni le texte — 25 articles — et il est en ligne à
+`/conditions`, reproduit MOT POUR MOT : un document juridique ne se
+reformule pas pour l'affichage, une phrase « améliorée » par une session
+de code est une phrase que personne n'a validée et qui engage pourtant.
+Les deux lignes de menu (`/compte`, `/vendeur/boutique`) y mènent enfin,
+après être passées de bouton mort (avant le 2026-09-15) à ligne
+d'information (« Bientôt »).
+
+**Deux promesses restent ouvertes DANS ce texte**, et ce sont les seules
+choses qu'il annonce sans qu'elles existent :
+
+- **L'article 19 renvoie à « la Politique de confidentialité de
+  Makiti »**, qui n'est écrite nulle part. C'est exactement le défaut que
+  ce projet nomme ailleurs — un écran qui promet ce que le système ne
+  tient pas — et il est ici dans un document qui engage juridiquement.
+  Elle doit être écrite, comme les conditions l'ont été : elle ne
+  s'invente pas depuis une session de code.
+- **L'article 24 renvoie au « moyen de contact indiqué sur la
+  plateforme »**, et aucun écran n'en indique un. Un utilisateur à qui on
+  demande de signaler un problème doit savoir à qui. Une adresse email
+  suffirait pour lever ce point.
 
 ### Commencé le 2026-09-12, pas fini
 
@@ -280,7 +293,7 @@ français.
 
 ### Spécification
 `docs/SPEC.md` — 18 décisions tranchées et figées.
-`docs/ECRANS.md` — inventaire des 35 écrans.
+`docs/ECRANS.md` — inventaire des 36 écrans.
 `docs/ARCHITECTURE.md` — organisation du code.
 `docs/PERFORMANCE.md` — budgets de poids et méthode de mesure.
 
@@ -451,7 +464,7 @@ du porteur du projet, vérifiés par les tests 17 à 19 de
 
 ### Front-end
 
-Next.js 16, React 19, TypeScript, Tailwind 4. **40 routes, 47
+Next.js 16, React 19, TypeScript, Tailwind 4. **41 routes, 47
 composants.**
 
 **Deux espaces séparés par l'arborescence** depuis le 2026-09-16, et

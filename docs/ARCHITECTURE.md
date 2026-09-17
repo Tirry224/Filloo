@@ -483,7 +483,7 @@ répétition mécanique.
 ## 12. Ce que ce document ne change pas
 
 La pile est déjà celle qui est visée : **Next.js 16, React 19, TypeScript,
-Tailwind 4, Supabase, Vercel**. Les 35 écrans existent. Les migrations SQL et
+Tailwind 4, Supabase, Vercel**. Les 36 écrans existent. Les migrations SQL et
 leurs 34 tests de sécurité existent. Les tokens de `src/styles/` et la
 direction visuelle « A — Marché » ne bougent pas. Les fichiers de `design/`
 restent ce qu'ils sont : la maquette source, jamais du code exécuté.

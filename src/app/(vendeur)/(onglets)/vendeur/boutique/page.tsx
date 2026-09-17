@@ -187,7 +187,16 @@ export default async function EditShopPage() {
           )}
 
           <MenuList>
-            <MenuItem icon={FileText} label="Conditions d'utilisation" value="Bientôt" />
+            {/* `?retour=` porte le chemin de CET écran jusqu'aux conditions,
+                qui vivent à la racine et se rejoignent depuis les deux
+                espaces. Sans lui, leur flèche retour renverrait tout le
+                monde au même endroit — et ferait donc sortir un commerçant
+                de son espace pour avoir lu un texte de loi. */}
+            <MenuItem
+              icon={FileText}
+              label="Conditions d'utilisation"
+              href="/conditions?retour=/vendeur/boutique"
+            />
           </MenuList>
 
           {/* La suppression de compte n'était atteignable QUE depuis

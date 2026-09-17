@@ -116,6 +116,7 @@ function screenGroups(ids: ScreenIds): {
       title: "Transverse",
       screens: [
         ["33", "Page introuvable", "/adresse-qui-nexiste-pas"],
+        ["34", "Conditions d'utilisation", "/conditions"],
         ["—", "Design system", "/styleguide"],
       ],
     },
