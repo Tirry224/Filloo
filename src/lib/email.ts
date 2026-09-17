@@ -117,3 +117,48 @@ export function escapeHtml(raw: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
+/**
+ * L'enveloppe HTML commune à tous les emails de Makiti.
+ *
+ * POURQUOI ELLE EXISTE : il y a quatre emails (nouveau message, boutique
+ * validée, boutique refusée, compte suspendu) et il y en aura d'autres.
+ * Quatre copies du même `<!doctype html>` divergent au premier
+ * changement de couleur — et un email qui ne ressemble pas aux autres
+ * emails du même domaine ressemble surtout à une tentative
+ * d'hameçonnage.
+ *
+ * Volontairement pauvre : une `div`, pas de feuille de style externe,
+ * pas d'image, pas de police à télécharger. C'est ce que les clients
+ * mail rendent tous de la même façon, et ça reste lisible sur un
+ * téléphone d'entrée de gamme et sur un forfait compté.
+ *
+ * `content` est du HTML DÉJÀ ÉCHAPPÉ : cette fonction ne peut pas savoir
+ * ce qui vient d'un humain et ce qui vient de nous. C'est à l'appelant
+ * de passer par `escapeHtml`.
+ */
+export function emailShell(content: string): string {
+  return `<!doctype html>
+<html lang="fr">
+  <body style="margin:0;padding:24px;background:#faf6f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#2b2320;">
+    <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e6ddd2;border-radius:12px;padding:24px;">
+${content}
+    </div>
+  </body>
+</html>`;
+}
+
+/** Le bouton d'action, toujours doublé par l'adresse en clair dans la
+ * version texte : un client mail sur trois n'affiche pas les liens
+ * stylés, et un email dont on ne peut pas sortir ne sert à rien. */
+export function emailButton(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:#c1613a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">${escapeHtml(label)}</a>`;
+}
+
+/** Le pied de page, qui dit POURQUOI cet email arrive. Un email
+ * transactionnel sans cette phrase est signalé comme indésirable par
+ * des gens qui ne se souviennent pas s'être inscrits — et c'est le
+ * domaine entier qui le paie ensuite. */
+export function emailFooter(reason: string): string {
+  return `<p style="margin:24px 0 0;color:#6b5d52;font-size:13px;">${escapeHtml(reason)}</p>`;
+}

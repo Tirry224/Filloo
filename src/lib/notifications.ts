@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { escapeHtml, sendEmail } from "@/lib/email";
+import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/lib/email";
 
 /**
  * Prévenir par email la personne qui vient de recevoir un message.
@@ -192,23 +192,17 @@ function composeNewMessageEmail(input: {
     `Répondre : ${link}`,
   ].join("\n\n");
 
-  /* HTML volontairement pauvre : une table, pas de feuille de style
-     externe, pas d'image. C'est ce que les clients mail rendent tous de
-     la même façon, et ça reste lisible sur un téléphone d'entrée de
-     gamme. Tout ce qui vient d'un humain passe par `escapeHtml`. */
-  const html = `<!doctype html>
-<html lang="fr">
-  <body style="margin:0;padding:24px;background:#faf6f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#2b2320;">
-    <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e6ddd2;border-radius:12px;padding:24px;">
-      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.recipientName)},</p>
+  /* L'enveloppe est celle de `emailShell` — la même pour les quatre
+     emails du projet. Un email transactionnel qui ne ressemble pas aux
+     autres emails du même domaine ressemble surtout à une tentative
+     d'hameçonnage. Tout ce qui vient d'un humain passe par
+     `escapeHtml`. */
+  const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.recipientName)},</p>
       <p style="margin:0 0 16px;"><strong>${escapeHtml(input.senderName)}</strong> vous a envoyé un message sur Makiti.</p>
       ${about ? `<p style="margin:0 0 16px;color:#6b5d52;font-size:14px;">${escapeHtml(about)}</p>` : ""}
       <blockquote style="margin:0 0 24px;padding:12px 16px;background:#faf6f0;border-left:3px solid #c1613a;white-space:pre-wrap;">${escapeHtml(excerpt)}</blockquote>
-      <a href="${escapeHtml(link)}" style="display:inline-block;background:#c1613a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Répondre</a>
-      <p style="margin:24px 0 0;color:#6b5d52;font-size:13px;">Vous recevez cet email parce que vous avez un compte Makiti et qu'un message vous attend.</p>
-    </div>
-  </body>
-</html>`;
+      ${emailButton(link, "Répondre")}
+      ${emailFooter("Vous recevez cet email parce que vous avez un compte Makiti et qu'un message vous attend.")}`);
 
   return { to: input.to, subject, text, html };
 }

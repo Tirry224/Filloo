@@ -12,6 +12,12 @@
  * les types du domaine de `types.ts` (camelCase). La traduction entre les
  * deux se fait à un seul endroit : `data.ts`.
  *
+ * Régénéré le 2026-09-17, après l'application de `0021` : la table
+ * `notifications` et l'énuméré `notification_kind` viennent donc bien de
+ * la base déployée, et non d'une main. Ce passage-là n'a fait apparaître
+ * AUCUN écart — le fichier était à jour, ce qui n'était encore jamais
+ * arrivé au moment d'une régénération.
+ *
  * Régénéré le 2026-09-16, après la réconciliation de 0018/0019/0020. Ce
  * passage a fait apparaître trois écarts que le fichier précédent
  * taisait, et ils disent tous la même chose — le fichier avait cessé
@@ -231,6 +237,44 @@ export type Database = {
           {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error: string | null
+          profile_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          profile_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          profile_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -531,6 +575,10 @@ export type Database = {
     }
     Enums: {
       merchant_status: "pending" | "approved" | "rejected"
+      notification_kind:
+        | "merchant_approved"
+        | "merchant_rejected"
+        | "profile_suspended"
       product_status: "draft" | "active" | "sold" | "hidden"
       report_target: "product" | "conversation" | "merchant"
       user_role: "client" | "merchant"
@@ -662,6 +710,11 @@ export const Constants = {
   public: {
     Enums: {
       merchant_status: ["pending", "approved", "rejected"],
+      notification_kind: [
+        "merchant_approved",
+        "merchant_rejected",
+        "profile_suspended",
+      ],
       product_status: ["draft", "active", "sold", "hidden"],
       report_target: ["product", "conversation", "merchant"],
       user_role: ["client", "merchant"],

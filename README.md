@@ -23,8 +23,11 @@ conclut hors de l'application.
 - [x] Authentification (inscription, connexion, comptes liés)
 - [x] Déploiement Vercel — `main` est la branche de production
 - [ ] Parcours complet des écrans dans un navigateur (commencé le 12/09)
-- [ ] Notification par email des nouveaux messages (le seul point
-      bloquant pour un lancement)
+- [x] Notification par email des nouveaux messages (code + Resend branché
+      sur Vercel — reste à constater un envoi réel dans une vraie boîte)
+- [x] Notification par email des décisions d'administration : boutique
+      validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
+- [ ] SMTP Resend côté Supabase, pour les emails de mot de passe oublié
 - [ ] Conditions d'utilisation — la ligne existe, le texte manque
 
 ## Tests
@@ -128,6 +131,48 @@ personnes qui s'écrivent dix fois de suite produisent un seul email ;
 le suivant ne repart qu'une fois le fil ouvert. Un rappel de plus
 n'apprendrait rien à quelqu'un qui n'est pas revenu, et c'est ainsi
 qu'on finit en courrier indésirable.
+
+### Décisions d'administration (Vercel Cron)
+
+Trois décisions se prennent dans le tableau de bord Supabase et ne
+déclenchent AUCUN code de l'application : valider une boutique, la
+refuser, suspendre un compte. La migration `0021` les fait noter en base
+par des triggers, dans la table `notifications`, et un balayage
+périodique vide cette file en envoyant les emails.
+
+```
+CRON_SECRET=<une chaîne longue et aléatoire>
+```
+
+- `CRON_SECRET` — Vercel la joint automatiquement aux appels du cron, en
+  en-tête `Authorization: Bearer …`. **Sans elle, `/api/notifications`
+  refuse tout le monde** : une adresse qui lit `auth.users` et envoie des
+  emails ne s'ouvre pas au public par accident.
+- La planification vit dans `vercel.json` (`*/10 * * * *`). **Attention
+  au plan Vercel** : l'offre Hobby ne déclenche les crons qu'**une fois
+  par jour**, quelle que soit l'expression écrite ici. Sur Hobby, un
+  commerçant validé serait donc prévenu jusqu'à 24 h plus tard — à
+  vérifier avant de compter dessus.
+
+Ce qui coince se voit en une requête, et c'est tout l'intérêt d'être
+passé par une file plutôt que par un webhook :
+
+```sql
+select kind, profile_id, attempts, last_error, created_at
+  from notifications
+ where sent_at is null
+ order by created_at;
+```
+
+### Emails d'authentification (à configurer chez Supabase)
+
+**`RESEND_API_KEY` sur Vercel ne les concerne pas.** Le lien de
+réinitialisation de mot de passe est envoyé par le serveur Auth de
+Supabase, pas par ce code : il part avec le SMTP configuré dans
+**Supabase → Project Settings → Authentication → SMTP**. Tant que ce
+SMTP n'est pas celui de Resend, `/mot-de-passe-oublie` promet un lien que
+le serveur de démonstration de Supabase ne garantit pas (quelques envois
+par heure, d'après leur propre documentation).
 
 **Les emails d'authentification ne passent PAS par là** — mot de passe
 oublié, confirmation d'inscription. Ils sont envoyés par Supabase Auth,

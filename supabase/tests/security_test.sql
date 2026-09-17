@@ -1794,5 +1794,147 @@ select pg_temp.check('la boutique visee est restee telle quelle',
 -- mentionner `valider`. Si le miroir devait se fêler quelque part, c'est
 -- ici qu'on le verrait.
 select pg_temp.miroir_intact('sur toutes les boutiques du fichier');
+
+
+-- =====================================================================
+-- 30. Une décision d'administration entre dans la file (0021)
+-- =====================================================================
+-- Trois décisions doivent laisser une trace à envoyer par email, et la
+-- file qui les porte ne doit être visible de personne. Les deux moitiés
+-- comptent : une file muette ne prévient personne, une file lisible est
+-- la liste de ce que l'administration a décidé sur chaque compte.
+
+-- Deux boutiques neuves, pour partir d'une file propre et ne rien
+-- déduire de ce que les 29 sections précédentes ont pu déclencher.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('bbbb0000-0000-0000-0000-000000000001', 'notif1@test.gn', '{"role":"merchant","full_name":"Notif 1","phone":"620000031"}'),
+  ('bbbb0000-0000-0000-0000-000000000002', 'notif2@test.gn', '{"role":"merchant","full_name":"Notif 2","phone":"620000032"}');
+
+update public.profiles set id = auth_user_id
+ where auth_user_id in ('bbbb0000-0000-0000-0000-000000000001',
+                        'bbbb0000-0000-0000-0000-000000000002');
+
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('bbbb1111-0000-0000-0000-000000000001', 'bbbb0000-0000-0000-0000-000000000001', 'Boutique Notif 1', 1),
+  ('bbbb1111-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-000000000002', 'Boutique Notif 2', 1);
+
+delete from public.notifications
+ where profile_id in ('bbbb0000-0000-0000-0000-000000000001',
+                      'bbbb0000-0000-0000-0000-000000000002');
+
+-- --- 1 : LE TEST QUI COMPTE — valider EN COCHANT remplit la file -----
+-- C'est le piège de 0018, pris par l'autre bout. Un trigger déclaré
+-- `after update OF status` n'aurait PAS été réveillé ici : la commande
+-- ci-dessous ne mentionne que `valider`, et c'est `sync_merchant_approval`
+-- (0019) qui pose `status` ensuite. La boutique serait passée à
+-- 'approved' et la file serait restée vide — un commerçant validé que
+-- personne n'aurait jamais prévenu, sans la moindre erreur nulle part.
+update public.merchants set valider = true
+ where id = 'bbbb1111-0000-0000-0000-000000000001';
+
+select pg_temp.check('cocher la case remplit la file de notifications',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000001'
+      and kind = 'merchant_approved') = 1);
+
+-- --- 2 : une validation déjà acquise ne se renotifie pas -------------
+-- Une édition ordinaire réécrit `valider` à sa valeur courante. Sans le
+-- `is distinct from`, chaque modification de description aurait produit
+-- un email « votre boutique est en ligne ».
+update public.merchants set description = 'Tissus et accessoires.'
+ where id = 'bbbb1111-0000-0000-0000-000000000001';
+
+select pg_temp.check('editer une boutique deja validee ne renotifie rien',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000001') = 1);
+
+-- --- 3 : un refus entre dans la file, avec son motif à côté ----------
+update public.merchants
+   set status = 'rejected', rejection_reason = 'Photo de devanture illisible.'
+ where id = 'bbbb1111-0000-0000-0000-000000000002';
+
+select pg_temp.check('un refus remplit la file de notifications',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000002'
+      and kind = 'merchant_rejected') = 1);
+
+-- --- 4 : un RENVOI de boutique ne notifie rien (0015) ----------------
+-- 'rejected' → 'pending' est une demande, pas un verdict. Notifier ici
+-- reviendrait à écrire au commerçant pour lui annoncer ce qu'il vient
+-- lui-même de faire.
+-- Par la fonction de 0015, jamais par un UPDATE direct : `authenticated`
+-- n'a pas ce privilège sur `merchants`, et c'est bien le but.
+select pg_temp.login('bbbb0000-0000-0000-0000-000000000002');
+set role authenticated;
+select public.resubmit_my_merchant();
+reset role;
+
+select pg_temp.check('renvoyer sa boutique ne remplit pas la file',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000002') = 1);
+
+-- --- 5 : une suspension entre dans la file ---------------------------
+update public.profiles set is_suspended = true, suspended_at = now()
+ where id = 'bbbb0000-0000-0000-0000-000000000002';
+
+select pg_temp.check('une suspension remplit la file de notifications',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000002'
+      and kind = 'profile_suspended') = 1);
+
+-- --- 6 : un rétablissement ne notifie rien ---------------------------
+update public.profiles set is_suspended = false, suspended_at = null
+ where id = 'bbbb0000-0000-0000-0000-000000000002';
+
+select pg_temp.check('lever une suspension ne remplit pas la file',
+  (select count(*) from public.notifications
+    where profile_id = 'bbbb0000-0000-0000-0000-000000000002'
+      and kind = 'profile_suspended') = 1);
+
+-- --- 7 : LE TEST QUI COMPTE — la file n'est lisible par personne -----
+-- Elle dit, ligne par ligne, quel compte a été suspendu et quelle
+-- boutique a été refusée. C'est exactement ce qu'un concurrent ou un
+-- curieux aimerait lire. RLS activée sans aucune policy suffit déjà à
+-- tout refuser ; le `revoke` de 0021 est redondant EXPRÈS, et ce test
+-- est ce qui prouve que la protection tient sans dépendre d'un effet de
+-- bord — la leçon de 0002 partie 4.
+select pg_temp.login('bbbb0000-0000-0000-0000-000000000001');
+set role authenticated;
+
+do $$
+begin
+  perform count(*) from public.notifications;
+  raise exception 'ECHEC un commerçant a lu la file de notifications';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant ne peut pas lire la file de notifications';
+end $$;
+
+-- --- 8 : et il ne peut rien y écrire non plus ------------------------
+-- Une file inscriptible, c'est un envoi d'email offert à qui veut : il
+-- suffirait d'y déposer une ligne visant le profil de son choix.
+do $$
+begin
+  insert into public.notifications (kind, profile_id)
+  values ('merchant_approved', 'bbbb0000-0000-0000-0000-000000000001');
+  raise exception 'ECHEC un commerçant a inséré dans la file de notifications';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant ne peut pas ecrire dans la file de notifications';
+end $$;
+
+reset role;
+
+-- --- 9 : un visiteur non connecté non plus ---------------------------
+set role anon;
+
+do $$
+begin
+  perform count(*) from public.notifications;
+  raise exception 'ECHEC un anonyme a lu la file de notifications';
+exception when insufficient_privilege then
+  raise notice 'OK    un anonyme ne peut pas lire la file de notifications';
+end $$;
+
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

@@ -22,32 +22,34 @@ vraie base, elle est en ligne, et il lui manque les emails pour pouvoir
 
 ### Bloquant pour un lancement
 
-**1. Les emails (Resend).** C'est le seul vrai verrou. Deux besoins
-distincts, un seul fournisseur :
+**1. Les emails (Resend).** Ce point s'est réduit à UNE manipulation.
 
-- **Notification de nouveau message par email.** Sans elle, la
-  messagerie est une boîte aux lettres que personne ne relève : un
-  commerçant qui n'est jamais prévenu ne revient pas, et le produit
-  entier repose sur cette messagerie.
-  *Vérifié le 2026-09-13 — le compteur de non-lus, lui, est déjà fait
-  de bout en bout* : `messages.read_at` existe (`0001`), le RLS
-  n'autorise l'écriture QUE de cette colonne (`0002`),
-  `src/lib/data/messages.ts` calcule `unreadCount` depuis la vraie
-  base, `ThreadRow` l'affiche par fil, et ouvrir un fil marque ses
-  messages comme lus (`src/app/messages/[id]/page.tsx`). **Le badge
-  global de la barre d'onglets est fait depuis le 2026-09-15** :
-  `countUnreadMessages` (`src/lib/data/messages.ts`) le compte PAR ESPACE,
-  `BottomNav` le porte, et « Mes produits » affiche enfin son second
-  chiffre. Reste donc le seul vrai manque de ce point : l'email, qui
-  prévient quand personne ne regarde l'écran.
-- **Emails d'authentification** — réinitialisation de mot de passe, et
-  confirmation d'inscription si elle est réactivée.
-  `/mot-de-passe-oublie` promet noir sur blanc « vous recevrez un
-  lien » ; cette promesse dépend aujourd'hui du serveur mail intégré de
-  Supabase, que leur propre documentation déclare non destiné à la
-  production (quelques envois par heure, au mieux). **Un écran qui
-  promet ce que le système ne tient pas est un bug, pas une
-  approximation.**
+- **Notification de nouveau message** — *faite, et branchée* :
+  `src/lib/notifications.ts`, appelée depuis `after()` par
+  `sendMessageAction`. `RESEND_API_KEY` et `EMAIL_FROM` sont posées sur
+  Vercel depuis le 2026-09-17. **Reste à CONSTATER un envoi réel** dans
+  une vraie boîte : tant que le domaine de `EMAIL_FROM` n'est pas vérifié
+  chez Resend, seul le propriétaire du compte Resend reçoit quoi que ce
+  soit.
+- **Décisions d'administration** — *faites le 2026-09-17* : boutique
+  validée, boutique refusée, compte suspendu. Migration `0021` (file
+  `notifications` + triggers), `src/lib/notifications-decisions.ts`
+  (balayage + les trois textes), `/api/notifications` et `vercel.json`.
+  **Reste à poser `CRON_SECRET` sur Vercel** et à vérifier la fréquence
+  réelle du cron : l'offre Hobby ne déclenche qu'une fois par jour.
+- **Emails d'authentification** — **LE SEUL VRAI RESTE, et il n'est pas
+  du code.** Le lien de réinitialisation part du serveur Auth de
+  Supabase, avec le SMTP configuré dans le tableau de bord Supabase —
+  `RESEND_API_KEY` sur Vercel n'y change RIEN, c'est le piège de ce
+  point. Tant que ce SMTP est celui de démonstration de Supabase
+  (« quelques envois par heure, pas pour la production », leur propre
+  documentation), `/mot-de-passe-oublie` promet noir sur blanc « vous
+  recevrez un lien » sans pouvoir le tenir. **Un écran qui promet ce que
+  le système ne tient pas est un bug, pas une approximation.**
+- *Le compteur de non-lus, lui, est fait de bout en bout depuis le
+  2026-09-15* : `messages.read_at` (`0001`), RLS restreinte à cette seule
+  colonne (`0002`), `countUnreadMessages` par espace, les deux barres
+  d'onglets qui le portent.
 
 **2. Le texte des conditions d'utilisation.** La ligne existe dans deux
 écrans (`/compte`, `/vendeur/boutique`) mais ne mène nulle part : il
@@ -131,9 +133,12 @@ bout. Le rendre symétrique tient en une condition de plus dans
 
 ### Non bloquant
 
-**9. Temps réel de la messagerie.** Le fil se recharge à la navigation,
-pas à l'arrivée d'un message pendant qu'on le lit. Supabase Realtime
-reste à brancher. Assumé comme non bloquant : une marketplace de mise en
+**9. Temps réel de la messagerie.** *À moitié fait, et la moitié faite
+n'était plus écrite ici* : `RealtimeThread` est monté par `ThreadScreen`
+sur la migration `0014`, donc un message reçu PENDANT qu'on lit le fil
+s'affiche. Ce qui ne bouge toujours pas en direct : la liste
+`/messages` et le badge de la barre d'onglets, qui attendent une
+navigation. Assumé comme non bloquant : une marketplace de mise en
 relation n'est pas une messagerie instantanée.
 
 **10. Recherche v2** — quatre états d'écran, filtres, recherches
@@ -901,6 +906,63 @@ qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
   section 4 interdit, et pour un gain nul sur le comportement. Noté en
   dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
   d'application qu'il faudra reprendre, pas ce symptôme.
+
+### 2026-09-17 — les décisions d'administration savent enfin se dire
+- **Le constat qui a lancé la journée** : trois décisions se prennent
+  dans l'éditeur de table Supabase — valider, refuser, suspendre — et
+  AUCUNE n'était annoncée. Un commerçant validé l'apprenait en rouvrant
+  l'application de lui-même, c'est-à-dire souvent jamais, après t'avoir
+  attendu 48 heures. C'était le trou le plus cher du produit, et il
+  n'était écrit nulle part.
+- **`0021` : une file d'attente en base**, remplie par deux triggers,
+  vidée par `/api/notifications` (Vercel Cron, `vercel.json`). Le choix
+  contre `pg_net` est argumenté dans la migration : un webhook n'a qu'une
+  chance et son échec est invisible, une ligne qui reste se voit en une
+  requête et le balayage suivant la reprend.
+- **Le piège de `0018`, repris par l'autre bout** : les triggers sont
+  déclarés `after update` tout court, PAS `after update of status`. La
+  validation se fait en cochant `valider`, donc la commande ne mentionne
+  jamais `status` — un trigger filtré sur cette colonne ne se serait
+  jamais réveillé, la boutique serait passée à 'approved' et la file
+  serait restée vide, sans la moindre erreur nulle part. La section 30
+  des tests existe précisément pour que ce silence-là échoue bruyamment.
+- **Neuf vérifications de plus** (138 → 147), dont deux qui comptent : la
+  file n'est lisible par personne — elle dit ligne par ligne quel compte
+  a été suspendu et quelle boutique refusée — et cocher la case remplit
+  bien la file.
+- **Une enveloppe HTML commune** (`emailShell`, `emailButton`,
+  `emailFooter` dans `email.ts`), et les quatre emails y sont passés, le
+  plus ancien compris. Quatre copies du même `<!doctype html>` divergent
+  au premier changement de couleur, et un email qui ne ressemble pas aux
+  autres emails du même domaine ressemble surtout à de l'hameçonnage.
+- **`0021` est APPLIQUÉE en production** (projet `bfmsruzyrgbndbueikcb`),
+  et vérifiée sur la base déployée : RLS active, zéro policy, zéro
+  privilège restant pour `anon` et `authenticated`, les deux triggers en
+  place, la file vide.
+- **`database.types.ts` régénéré depuis la base déployée**, et pas
+  seulement complété : le fichier avait d'abord été édité à la main
+  faute de pouvoir joindre `*.supabase.co` depuis l'environnement de
+  travail, puis comparé octet par octet à la vraie sortie de
+  `gen types` une fois `0021` appliquée. **Aucun écart** — mais c'est la
+  comparaison qui le dit, pas la confiance.
+- **Ce qui a été CORRIGÉ dans ce fichier, et qui est la vraie leçon du
+  jour** : le point 1 annonçait l'email de message comme « le seul vrai
+  verrou » alors qu'il était écrit et mergé depuis le 2026-09-16, et le
+  point 9 donnait le temps réel comme « à brancher » alors que
+  `RealtimeThread` tourne depuis `0014`. Un fichier de reprise qui
+  retarde envoie la session suivante refaire ce qui est fait — exactement
+  ce que sa réécriture du 13 devait empêcher.
+- **Ce qui reste, et qui n'est pas du code** : le SMTP Resend côté
+  Supabase (les emails d'authentification ne passent PAS par
+  `RESEND_API_KEY`), `CRON_SECRET` sur Vercel, et la fréquence réelle du
+  cron sur l'offre Hobby — une fois par jour, quelle que soit
+  l'expression écrite dans `vercel.json`. Ces deux derniers points n'ont
+  pas pu être vérifiés d'ici : le compte Vercel ne répond pas aux outils
+  de cette session.
+- **Les tests SQL ne se lancent JAMAIS contre la production** : leur
+  première instruction est `truncate auth.users cascade`. Ils tournent
+  sur un PostgreSQL local, migrations rejouées depuis zéro — c'est ce
+  qui a été fait, 147 vérifications au vert.
 
 ### 2026-09-13 — le fichier de reprise, puis les écritures aveugles
 Aucun changement de code. Ce fichier réécrit de zéro : « ce qui reste »
