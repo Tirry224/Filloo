@@ -74,9 +74,11 @@ export function MenuItem({
      défaut déjà rencontré avec l'onglet « Accueil » mort du commerçant
      (docs/REPRISE.md, section 5).
 
-     Le texte des conditions n'existe pas encore (étape 2 de
-     docs/REPRISE.md) ; il ne s'invente pas ici. En attendant, la ligne dit
-     ce qu'elle est — présente, pas encore ouverte — au lieu de promettre
-     un écran qui n'existe pas. */
+     C'est « Conditions d'utilisation » qui avait révélé ce défaut, le
+     temps que son texte existe ; depuis le 2026-09-17 elle porte un
+     `href` et redevient un vrai lien. Cette branche reste, parce que la
+     règle qu'elle défend ne dépendait pas de ce cas : une ligne sans
+     destination ni action doit se présenter comme une information, pas
+     comme un bouton mort. */
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }

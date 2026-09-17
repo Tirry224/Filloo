@@ -76,7 +76,7 @@ export default async function AccountPage() {
           )}
 
           <MenuList>
-            <MenuItem icon={FileText} label="Conditions d'utilisation" value="Bientôt" />
+            <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
           </MenuList>
 
           <MenuList>

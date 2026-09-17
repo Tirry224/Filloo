@@ -45,15 +45,20 @@ qu'une variable et une vérification.
   2026-09-15* : `read_at` (`0001`), RLS restreinte à cette colonne
   (`0002`), `countUnreadMessages` par espace, les deux barres d'onglets.
 
-**2. Le texte des conditions d'utilisation.** La ligne existe dans deux
-écrans (`/compte`, `/vendeur/boutique`) mais ne mène nulle part : il
-manque le TEXTE, pas le code. Makiti est un intermédiaire technique, non
-une partie à la vente — à écrire avant le premier litige, pas pendant.
-*Le 2026-09-15, la ligne a au moins cessé d'être un BOUTON mort* : un
-`MenuItem` sans `href` ni action rend désormais une ligne d'information
-(« Bientôt ») au lieu d'un bouton qu'on touche sans effet. Le texte, lui,
-reste entièrement à écrire — il ne s'invente pas depuis une session de
-code.
+**2. Le texte des conditions d'utilisation** — *FAIT le 2026-09-17*. Le
+porteur du projet a fourni le texte (25 articles) ; il vit dans
+`src/content/conditions.ts`, séparé de l'écran qui l'affiche pour se
+relire et se corriger sans traverser du JSX. Écran 34, monté par deux
+routes : `/conditions` (publique) et `/vendeur/conditions`. Les deux
+lignes de menu, qui affichaient « Bientôt » depuis le 2026-09-15, sont
+redevenues de vrais liens.
+
+*Ce qui reste autour, et qui n'est pas ce texte* : l'article 19 renvoie à
+une **Politique de confidentialité** qui n'existe pas encore, et
+l'article 24 à un **moyen de contact indiqué sur la plateforme** qui
+n'est indiqué nulle part. Deux promesses écrites noir sur blanc dans un
+texte qui engage la plateforme — c'est exactement le défaut que ce texte
+venait réparer, déplacé d'un cran.
 
 ### Commencé le 2026-09-12, pas fini
 
@@ -909,6 +914,41 @@ qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
   section 4 interdit, et pour un gain nul sur le comportement. Noté en
   dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
   d'application qu'il faudra reprendre, pas ce symptôme.
+
+### 2026-09-17 (soir) — les conditions d'utilisation existent enfin
+- **Le porteur du projet a fourni le texte**, 25 articles. Il était le
+  point 2 de « bloquant pour un lancement » depuis la réécriture du 13,
+  et c'est la seule chose de cette liste qui ne pouvait pas s'inventer
+  depuis une session de code.
+- **Il vit dans `src/content/conditions.ts`**, en données et non en JSX :
+  un texte juridique se relit et se corrige, et personne n'a envie de
+  traverser du balisage pour changer une phrase. Même raison que
+  `composeNewMessageEmail`.
+- **Une seule chose a été modifiée du texte d'origine : les apostrophes**,
+  uniformisées en ’ parce que la source mélangeait les deux formes. Aucun
+  mot, aucune clause, aucun ordre — ce texte engage la responsabilité du
+  porteur du projet, donc il ne s'améliore pas en passant par moi.
+- **Écran 34, deux routes, un composant** : `/conditions` et
+  `/vendeur/conditions`. Le texte est identique, le lien de RETOUR ne
+  l'est pas — un commerçant qui lit les conditions depuis sa boutique ne
+  doit pas revenir dans son espace d'acheteur. Même découpage que
+  `ThreadScreen`, pour le même défaut.
+- **`/conditions` reste publique** : l'article 25 dit qu'on accepte ces
+  Conditions en créant un compte, donc les cacher derrière une
+  inscription reviendrait à faire accepter un texte qu'on ne peut pas
+  lire avant.
+- **DEUX PROMESSES DU TEXTE NE SONT PAS TENUES, et il faut les traiter** :
+  l'article 19 renvoie à une Politique de confidentialité inexistante,
+  l'article 24 à un « moyen de contact indiqué sur la plateforme » qui
+  n'est indiqué nulle part. Un texte qui renvoie à des documents absents
+  est le même défaut qu'un bouton mort, en pire — il est opposable.
+- **Une régression trouvée au passage, sans rapport** : `npm run poids`
+  signale **deux polices, 60 Ko, budget 40 Ko dépassé**, alors que
+  `docs/PERFORMANCE.md` décision R4 tranche « une seule police » et
+  annonce 19,7 Ko tenus. `src/app/layout.tsx` charge Bricolage Grotesque
+  ET Figtree. Ce n'est pas de ce travail-ci, et ce n'est corrigé par
+  personne : laisser tomber une des deux est une décision d'apparence,
+  pas une correction technique.
 
 ### 2026-09-17 (fin) — le SMTP posé, et les documents remis à l'heure
 - **Le SMTP Resend est branché dans Supabase et fonctionne** (rapporté

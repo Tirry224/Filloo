@@ -1,4 +1,4 @@
-# Inventaire des écrans — 33
+# Inventaire des écrans — 34
 
 Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 écran à coder, et chaque case cochée est du travail réellement terminé.
@@ -56,10 +56,11 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 32 | Actions conversation | Signaler, bloquer |
 | 32b | Signaler une conversation | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
 
-## Transverse — 1
+## Transverse — 2
 
 | # | Écran | Note |
 |---|-------|------|
+| 34 | Conditions d'utilisation | Ajouté le 2026-09-17, quand le texte a enfin existé. Un composant, DEUX routes — `/conditions` (publique, comme le catalogue) et `/vendeur/conditions` (dans l'espace commerçant) — parce que le texte est le même des deux côtés mais que le lien de retour ne l'est pas. |
 | 33 | Page introuvable (404) | Ajouté après coup : l'inventaire des 32 écrans supposait que l'utilisateur ne se trompe jamais d'adresse. Un lien partagé sur WhatsApp qui traîne, un produit retiré, une faute de frappe — ça arrive, et Next affiche sinon sa propre page en anglais sans aucun moyen de repartir. |
 
 ## Ce que cet inventaire a révélé

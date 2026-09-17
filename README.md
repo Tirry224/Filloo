@@ -33,7 +33,9 @@ conclut hors de l'application.
       tout et aucune décision d'administration n'est annoncée
 - [ ] Confirmation d'email à ACTIVER côté Supabase (décidée, le code la
       gère déjà) — possible maintenant que le SMTP fonctionne
-- [ ] Conditions d'utilisation — la ligne existe, le texte manque
+- [x] Conditions d'utilisation — texte fourni le 2026-09-17, écran 34
+      (`/conditions` et `/vendeur/conditions`), les deux lignes de menu
+      mènent enfin quelque part
 
 ## Tests
 

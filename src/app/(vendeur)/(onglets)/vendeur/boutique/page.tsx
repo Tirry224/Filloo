@@ -136,7 +136,7 @@ export default async function EditShopPage() {
           )}
 
           <MenuList>
-            <MenuItem icon={FileText} label="Conditions d'utilisation" value="Bientôt" />
+            <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
           </MenuList>
 
           {/* La suppression de compte n'était atteignable QUE depuis
