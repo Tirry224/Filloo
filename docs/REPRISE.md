@@ -93,26 +93,6 @@ un formulaire qui échoue.
 
 ### Décisions à prendre — ce n'est pas du code
 
-**5. Sur quel critère concret une boutique est-elle validée ?** La
-mécanique est prête depuis la migration `0012` : changer
-`merchants.status` suffit. Mais sans critère écrit, tu approuveras tout
-en y passant du temps — c'est-à-dire une validation manuelle qui coûte
-sans filtrer. Un numéro qui répond ? Une photo de la devanture ? Une
-rencontre ?
-
-**6. Confirmation d'email : oui ou non ?**
-*Pour* : l'email est à la fois identifiant de connexion ET canal de
-notification, donc sans confirmation quelqu'un peut s'inscrire avec
-l'adresse d'un tiers, qui recevra les messages d'un inconnu.
-*Contre* : une friction de plus, sur un marché où il faut déjà arracher
-les vingt premiers commerçants.
-À savoir avant de trancher : **aucun écran « vérifiez votre boîte mail »
-n'existe dans la maquette** — la réactiver demande d'en dessiner un.
-
-**7. Catalogue de lancement : 8 catégories ou 10 ?** La base en a 10.
-`kind-thompson` en proposait 8. C'est une décision produit, à trancher
-avant de la traduire en migration.
-
 **8. Le parcours vers le compte lié.** Pas un bug, une observation de
 terrain : le porteur du projet lui-même, en testant, a créé DEUX
 CONNEXIONS distinctes au lieu d'un second profil lié sur la même
@@ -121,15 +101,44 @@ personne DÉJÀ connectée — ce qui n'est pas le réflexe de quelqu'un qui
 veut « aussi vendre ». Si le porteur du projet se trompe, l'utilisateur
 se trompera.
 
-**15. Écrire à un CLIENT suspendu : faut-il l'interdire aussi ?** La
-décision du 2026-09-15 porte sur la boutique suspendue, et `0017`
-l'applique à la lettre. L'audit du lendemain a mesuré le cas miroir : un
-client suspendu ne peut plus écrire, mais le commerçant, lui, peut
-toujours lui répondre — dans le vide, puisque l'autre ne pourra pas
-réagir. C'est exactement le défaut que `0017` a fermé, pris par l'autre
-bout. Le rendre symétrique tient en une condition de plus dans
-`conversation_is_open` ; l'assumer tient en une phrase dans
-`docs/SPEC.md`. Ce qui n'est pas tenable, c'est de ne pas choisir.
+**Les libellés des 10 catégories et la liste des villes.** Le NOMBRE est
+tranché (10, décision 3 de SPEC), les mots ne le sont pas — et ils se
+voient sur le premier écran de l'application.
+
+### Tranchées le 2026-09-17 — ne pas les rediscuter
+
+Elles sont écrites dans `docs/SPEC.md`, qui fait foi ; elles sont
+rappelées ici seulement pour que la session suivante ne les rouvre pas.
+
+**5. Le critère de validation d'une boutique : un APPEL.** Le porteur du
+projet téléphone au commerçant et confirme de vive voix. Ça ne passe pas
+à l'échelle, et c'est voulu tant qu'on vise la densité avant le volume.
+
+**6. Confirmation d'email : OUI.** Et la crainte notée ici était
+exagérée : le code la gère DÉJÀ de bout en bout — `signUpAction` renvoie
+`needsConfirmation` quand Supabase ne rend pas de session, et
+`SignupForm` affiche « Vérifiez votre email… ». Ce n'est donc pas un
+écran à dessiner mais une case à cocher côté Supabase. **Dans cet ordre,
+et pas l'inverse : le SMTP de production D'ABORD.** Activée avant,
+la confirmation rend l'inscription impossible pour tout le monde,
+puisque personne ne recevra jamais le lien.
+
+**7. Dix catégories.** La base en porte déjà 10 : la décision ne coûte
+aucune migration, seulement les libellés à arrêter (voir ci-dessus).
+
+**15. Écrire à un client suspendu : INTERDIT, comme dans l'autre sens.**
+`0022` ajoute la condition manquante à `conversation_is_open` — les deux
+côtés du fil doivent être actifs. Les fils restent LISIBLES. Le texte du
+fil gelé a dû devenir triple : un commerçant en règle dont le client
+venait d'être suspendu lisait « votre compte ne permet plus d'écrire »,
+c'est-à-dire une accusation fausse sur un écran où il n'a personne à qui
+répondre.
+
+**L'email de refus d'une boutique : OUI.** Il est parti avec `0021`. La
+question que j'avais posée — un refus par email appelle une réponse, et
+il n'y a pas de canal pour la recevoir — est tranchée en l'assumant :
+l'email invite explicitement à répondre, donc la boîte de `EMAIL_FROM`
+doit être relevée par un humain.
 
 ### Non bloquant
 
@@ -906,6 +915,42 @@ qui n'existaient qu'en base. Audit d'abord, reconstruction ensuite.
   section 4 interdit, et pour un gain nul sur le comportement. Noté en
   dette (section 1) plutôt que fermé à chaud — c'est le mécanisme
   d'application qu'il faudra reprendre, pas ce symptôme.
+
+### 2026-09-17 (suite) — cinq décisions tranchées, deux fichiers en moins de questions
+- **Le porteur du projet a répondu aux cinq questions ouvertes** : email
+  de refus oui, confirmation d'email à l'inscription oui, interdiction de
+  communiquer avec un compte suspendu dans les deux sens, 10 catégories,
+  et le critère de validation est un APPEL téléphonique qu'il passe
+  lui-même.
+- **`0022` rend la suspension symétrique** : `conversation_is_open`
+  exigeait que le côté BOUTIQUE soit actif, elle exige maintenant les
+  deux. La policy d'envoi n'a pas été touchée — elle appelle déjà cette
+  fonction, qui porte toute la règle.
+- **Le défaut d'écran trouvé en écrivant la migration, et qui vaut plus
+  que la migration** : le texte du fil gelé n'avait que deux branches, et
+  la branche « commerçant » disait « Votre compte ne permet plus
+  d'écrire ». Après `0022`, ce commerçant peut être parfaitement en
+  règle et voir son fil gelé parce que SON CLIENT est suspendu — il
+  lisait donc une accusation fausse, sur un écran où il n'a personne à
+  qui répondre. Trois branches maintenant, et `iAmSuspended` dans
+  `ThreadContext` pour les distinguer. Une règle de base qui produit un
+  écran qui ment n'est pas une règle appliquée.
+- **Six vérifications de plus (147 → 153)**, dont le cas miroir complet :
+  le commerçant écrit tant que le client est actif, ne peut plus dès
+  qu'il est suspendu, lit toujours le fil, et réécrit dès qu'il est
+  rétabli. Vérifié en OMETTANT réellement `0022` : la suite tombe sur
+  « client suspendu : le fil est ferme a l'ecriture ».
+- **La crainte notée au point 6 était fausse, et je l'ai corrigée plutôt
+  que recopiée** : ce fichier disait qu'aucun écran « vérifiez votre
+  boîte mail » n'existait et qu'il faudrait en dessiner un. Le code le
+  gère depuis toujours — `signUpAction` renvoie `needsConfirmation`,
+  `SignupForm` l'affiche. La confirmation d'email se réduit donc à une
+  case à cocher côté Supabase, APRÈS le SMTP de production.
+- **`0022` n'est PAS appliquée en production, et c'est l'inverse de
+  `0021`** : là-bas la table devait exister avant le code, ici le code
+  doit partir avant la règle. Entre la migration et le déploiement, un
+  commerçant dont le client vient d'être suspendu lirait l'ancien texte,
+  c'est-à-dire l'accusation fausse. Code d'abord, migration ensuite.
 
 ### 2026-09-17 — les décisions d'administration savent enfin se dire
 - **Le constat qui a lancé la journée** : trois décisions se prennent

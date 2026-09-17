@@ -200,16 +200,28 @@ export async function ThreadScreen({
         ) : null}
 
         {frozen ? (
-          /* Le texte ne dit pas « suspendue » : la sanction d'un
-             commerçant ne se publie pas à ses clients (même raison que
-             `merchant_is_public`, 0013, qui confond volontairement
-             refusée, en attente et suspendue). Il dit ce qui est vrai et
-             utile — la boutique ne peut plus répondre, et ce qui a été
-             échangé reste là. */
+          /* TROIS textes, et pas deux, depuis que `0022` gèle le fil dans
+             les deux sens : il faut d'abord savoir DE QUI vient la
+             sanction.
+
+             Ma propre suspension se dit franchement — c'est la mienne,
+             `/compte/suspendu` me l'annonce déjà, et un email aussi
+             depuis `0021`. Celle d'en face, jamais : la sanction d'un
+             tiers ne se publie pas (même raison que `merchant_is_public`,
+             0013, qui confond volontairement refusée, en attente et
+             suspendue). On dit alors ce qui est vrai et utile — l'autre
+             n'est plus joignable, et ce qui a été échangé reste là.
+
+             Sans ce tri, le commerçant en règle dont le client vient
+             d'être suspendu lisait « votre compte ne permet plus
+             d'écrire » : une accusation fausse, sur un écran où il n'a
+             personne à qui répondre. */
           <p className="py-2 text-center text-sm text-ink-soft">
-            {context.iAmMerchant
+            {context.iAmSuspended
               ? "Votre compte ne permet plus d'écrire. Vos conversations restent consultables."
-              : "Cette boutique n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."}
+              : context.iAmMerchant
+                ? "Cette personne n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."
+                : "Cette boutique n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."}
           </p>
         ) : blockedByPeer ? (
           <p className="py-2 text-center text-sm text-ink-soft">Vous ne pouvez plus écrire dans ce fil.</p>

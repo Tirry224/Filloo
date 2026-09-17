@@ -1936,5 +1936,115 @@ end $$;
 
 reset role;
 
+
+
+-- =====================================================================
+-- 31. Un CLIENT suspendu gèle aussi son fil (0022)
+-- =====================================================================
+-- Décision du porteur du projet, 2026-09-17 : on ne communique pas avec
+-- un compte suspendu, quel que soit le côté du fil où il se trouve.
+-- La section 26 a prouvé le cas de la BOUTIQUE suspendue ; celle-ci
+-- prouve le cas miroir, qui est resté ouvert de 0017 au 2026-09-17 — un
+-- client suspendu ne pouvait plus écrire, mais le commerçant, lui,
+-- continuait de lui répondre dans le vide.
+
+reset role;
+-- On repart d'un fil parfaitement ouvert : ni boutique suspendue (26),
+-- ni client suspendu, ni blocage (27). Sans cette remise à plat, un
+-- « fermé » ci-dessous ne prouverait rien — il pourrait venir de
+-- n'importe laquelle des sections précédentes.
+update public.profiles set is_suspended = false where full_name = 'Boutique G';
+update public.profiles set is_suspended = false where id = '44444444-4444-4444-4444-444444444444';
+update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+update public.conversations c set blocked_by = null
+  from public.merchants m
+ where m.id = c.merchant_id
+   and m.shop_name = 'Boutique G'
+   and c.client_id = '44444444-4444-4444-4444-444444444444';
+
+-- (a) LE CAS NORMAL D'ABORD — sans lui, un gel généralisé passerait
+--     pour un succès, et c'est la leçon de la section 26.
+select pg_temp.login('77777777-7777-7777-7777-777777777777');
+set role authenticated;
+
+select pg_temp.check('client actif : le commercant peut ecrire',
+  public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+
+insert into public.messages (conversation_id, sender_id, body)
+  select c.id, m.profile_id, 'Oui, c''est disponible.'
+    from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and m.shop_name = 'Boutique G';
+
+select pg_temp.check('client actif : la reponse du commercant est passee',
+  (select count(*) from public.messages msg
+     join public.conversations c on c.id = msg.conversation_id
+     join public.merchants m on m.id = c.merchant_id
+    where m.shop_name = 'Boutique G'
+      and msg.body = 'Oui, c''est disponible.') = 1);
+
+reset role;
+
+-- On suspend le CLIENT, et rien d'autre : la boutique reste approuvée et
+-- active, l'historique reste entier.
+update public.profiles set is_suspended = true, suspended_at = now()
+ where id = '44444444-4444-4444-4444-444444444444';
+
+-- (b) LE TEST QUI COMPTE — le commerçant ne peut plus répondre.
+select pg_temp.login('77777777-7777-7777-7777-777777777777');
+set role authenticated;
+
+select pg_temp.check('client suspendu : le fil est ferme a l''ecriture',
+  not public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+
+do $$
+declare v_conv uuid; v_sender uuid;
+begin
+  select c.id, m.profile_id into v_conv, v_sender
+    from public.conversations c
+    join public.merchants m on m.id = c.merchant_id
+   where c.client_id = '44444444-4444-4444-4444-444444444444'
+     and m.shop_name = 'Boutique G';
+  insert into public.messages (conversation_id, sender_id, body)
+    values (v_conv, v_sender, 'Vous etes toujours interesse ?');
+  raise exception 'ECHEC un commerçant a ecrit a un client suspendu';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant ne peut pas ecrire a un client suspendu';
+end $$;
+
+-- (c) Et le fil reste LISIBLE : lecture seule, jamais suppression —
+--     c'est la moitié de la décision qu'on oublie toujours de tester.
+select pg_temp.check('client suspendu : le fil reste lisible par le commercant',
+  (select count(*) from public.messages msg
+     join public.conversations c on c.id = msg.conversation_id
+     join public.merchants m on m.id = c.merchant_id
+    where m.shop_name = 'Boutique G') >= 2);
+
+reset role;
+
+-- (d) Rétablir le client rouvre le fil. Une sanction qui ne se lève pas
+--     est une suppression déguisée.
+update public.profiles set is_suspended = false, suspended_at = null
+ where id = '44444444-4444-4444-4444-444444444444';
+
+select pg_temp.login('77777777-7777-7777-7777-777777777777');
+set role authenticated;
+select pg_temp.check('client retabli : le fil se rouvre a l''ecriture',
+  public.conversation_is_open(
+    (select c.id from public.conversations c
+       join public.merchants m on m.id = c.merchant_id
+      where c.client_id = '44444444-4444-4444-4444-444444444444'
+        and m.shop_name = 'Boutique G')));
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

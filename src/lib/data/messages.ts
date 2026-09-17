@@ -139,11 +139,20 @@ export type ThreadContext = {
   blockedBy: string | null;
   /** L'identifiant public de la boutique, pour "Voir sa fiche" côté client. */
   merchantPublicId: string;
-  /** `false` quand la boutique du fil a un compte suspendu ou supprimé :
-   * le fil passe alors en LECTURE SEULE (0017). Ni le client ni le
-   * commerçant ne peuvent plus y écrire, mais tout l'historique reste
-   * affiché — c'est la décision du 2026-09-15. */
+  /** `false` quand L'UN DES DEUX comptes du fil — le mien compris — est
+   * suspendu ou supprimé : le fil passe alors en LECTURE SEULE (0017
+   * pour le côté boutique, 0022 pour le côté client). Plus personne n'y
+   * écrit, mais tout l'historique reste affiché — c'est la décision du
+   * 2026-09-15, étendue le 2026-09-17. */
   isOpen: boolean;
+  /** `true` quand c'est MON compte qui est suspendu. Sert uniquement à
+   * choisir le texte du fil gelé : « votre compte » quand la sanction est
+   * la mienne, « cette personne / cette boutique » quand elle est en
+   * face. Sans cette distinction, un commerçant parfaitement en règle
+   * dont le client vient d'être suspendu lisait « votre compte ne permet
+   * plus d'écrire » — une accusation fausse, sur un écran qu'il ne peut
+   * pas contester. */
+  iAmSuspended: boolean;
 };
 
 /** Résout un fil pour la connexion active : qui je suis dedans, qui est en
@@ -210,6 +219,13 @@ export async function getThreadContext(
   const merchantProfile = await getMyProfile(supabase, "merchant");
   const iAmMerchant = merchantProfile?.id === data.merchants.profile_id;
 
+  /* Le profil par lequel JE participe à ce fil, pour savoir si la
+     suspension qui le gèle est la mienne. `getMyProfiles` est mis en
+     cache pour la durée de la requête et `getMyProfile` vient d'être
+     appelé juste au-dessus : cette ligne ne coûte pas un aller-retour de
+     plus. */
+  const myProfile = iAmMerchant ? merchantProfile : await getMyProfile(supabase, "client");
+
   return {
     conversationId: data.id,
     peerName: iAmMerchant ? (data.profiles?.full_name ?? "") : data.merchants.shop_name,
@@ -220,6 +236,7 @@ export async function getThreadContext(
     iAmMerchant,
     blockedBy: data.blocked_by,
     isOpen: isOpen === true,
+    iAmSuspended: myProfile?.isSuspended === true,
   };
 }
 

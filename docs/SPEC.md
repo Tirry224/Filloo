@@ -13,9 +13,9 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 
 | # | Sujet | Décision |
 |---|-------|----------|
-| 1 | Authentification | Email + mot de passe. Téléphone obligatoire mais **non vérifié** (pas de SMS, pas de coût). |
+| 1 | Authentification | Email + mot de passe. Téléphone obligatoire mais **non vérifié** (pas de SMS, pas de coût). **Confirmation d'email OBLIGATOIRE** (décision du 2026-09-17) : l'email est à la fois identifiant de connexion et canal de notification, donc sans confirmation quelqu'un peut s'inscrire avec l'adresse d'un tiers, qui recevra ses messages. La friction est assumée. **Ne s'active qu'une fois le SMTP de production posé côté Supabase** — activée avant, elle rend l'inscription impossible pour tout le monde. |
 | 2 | Navigation | Catalogue **libre sans compte**. Compte obligatoire uniquement pour envoyer un message. |
-| 3 | Catégories | Liste **fixe** de 10 catégories, gérée par l'administrateur. |
+| 3 | Catégories | Liste **fixe** de 10 catégories, gérée par l'administrateur. **Confirmé le 2026-09-17 : 10, et non 8** — la base en porte déjà 10, donc cette décision ne coûte aucune migration. |
 | 4 | Classement du fil | Pas de notation. Tri : *à la une* (manuel) → *populaires* (nb de conversations) → *récents*. |
 | 5 | Notification commerçant | v1 : badge de non-lus + email. Push web reporté en v2. |
 | 5b | Structure des fils | **Un seul fil par couple (client, boutique).** Chaque message référence le produit dont il parle ; le premier message d'un fil en porte obligatoirement un. |
@@ -24,12 +24,12 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 | 8 | Rôles | **Comptes liés** : une personne peut avoir un compte client **et** un compte commerçant derrière **une seule connexion** (email + mot de passe), avec bascule rapide depuis l'app, sans se reconnecter. **Jamais les deux mélangés sur un même écran** : à tout instant on est soit client, soit commerçant. Chaque profil a son propre historique et sa propre modération — suspendre le compte client ne gèle pas la boutique. Le second compte se crée depuis l'application, sans repasser par l'inscription. Révise l'ancienne règle « un compte = un seul rôle, modifiable à la main par l'admin ». |
 | 9 | Ville | Filtre **manuel** choisi par le client. Jamais de filtrage automatique. |
 | 10 | Disponibilité | Binaire (disponible / vendu). **Pas de gestion de stock.** |
-| 11 | Validation commerçant | Manuelle, via le tableau de bord Supabase. Aucune page admin en v1. |
+| 11 | Validation commerçant | Manuelle, via le tableau de bord Supabase. Aucune page admin en v1. **Critère arrêté le 2026-09-17 : le porteur du projet APPELLE le commerçant et confirme de vive voix.** Un numéro qui répond et une personne qui assume sa boutique, c'est tout le filtre — il ne passe pas à l'échelle, et c'est voulu tant qu'on vise la densité avant le volume (décision 7). |
 | 12 | Commerçant en attente | Voit un message d'attente, peut préparer sa boutique et ses produits en **brouillon**. |
 | 13 | Abus | Bouton « signaler » + suspension de compte + deux quotas : 20 boutiques contactées/jour et 100 messages/jour par compte. |
 | 14 | Recherche | Sur le titre, la description et le nom de la boutique. Insensible aux accents. |
 | 15 | Photos | 1 minimum, 3 maximum. Compression avant envoi. Coûts assumés par le porteur du projet. |
-| 16 | Litige | Suspension du compte vendeur. |
+| 16 | Litige | Suspension du compte vendeur. **Une suspension gèle les fils DANS LES DEUX SENS** (décision du 2026-09-17, migration `0022`) : on ne communique pas avec un compte suspendu, qu'il soit client ou boutique. Les fils restent entièrement LISIBLES — lecture seule, jamais suppression. |
 | 17 | Monétisation | Aucune en v1 (choix assumé). |
 | 18 | Hébergement | Vercel, sous-domaine `.vercel.app`. |
 
@@ -72,6 +72,12 @@ produit à la une.
 
 ## 5. Questions encore ouvertes
 
-- Sur quel **critère concret** un commerçant est-il approuvé ?
-- Liste définitive des **10 catégories** et des **villes**.
+- Liste définitive des **10 catégories** et des **villes** — le NOMBRE est
+  tranché (10), les libellés ne le sont pas.
 - Conditions générales d'utilisation à rédiger avant la mise en ligne.
+
+*Tranchées le 2026-09-17, et donc sorties d'ici : le critère de
+validation (décision 11), le nombre de catégories (décision 3), la
+confirmation d'email (décision 1) et la symétrie de la suspension
+(décision 16). Une question qui reste écrite après avoir été tranchée se
+rediscute à la session suivante.*
