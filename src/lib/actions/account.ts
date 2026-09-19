@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser, getMyProfile } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
+import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 
 /** Mes informations — écran 18. `full_name`, `phone` et `city_id` sont
  * modifiables par un utilisateur (liste blanche de colonnes,
@@ -19,6 +20,8 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   const cityIdRaw = String(formData.get("cityId") ?? "").trim();
   const cityId = cityIdRaw ? Number(cityIdRaw) : null;
   if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
+  const erreurNumero = erreurTelephone(phone, true);
+  if (erreurNumero) return { error: erreurNumero };
   if (cityIdRaw && (!cityId || Number.isNaN(cityId))) return { error: "Ville invalide." };
 
   const supabase = await createClient();
@@ -27,7 +30,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
 
   const { data, error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, phone, city_id: cityId })
+    .update({ full_name: fullName, phone: nettoyerTelephone(phone), city_id: cityId })
     .eq("id", profile.id)
     .select("id");
   if (error) return { error: error.message };

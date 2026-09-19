@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, landingForSession } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
+import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -50,6 +51,12 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (!fullName || !phone || !email || !password) {
     return { error: "Tous les champs sont obligatoires." };
   }
+  /* Le numéro est vérifié AVANT la création du compte : corrigé après
+     coup, il l'est dans « Mes informations », un écran que personne ne
+     rouvre spontanément. Un compte créé avec un numéro injoignable le
+     reste. */
+  const erreurNumero = erreurTelephone(phone, true);
+  if (erreurNumero) return { error: erreurNumero };
   /* Le mot de passe se saisit DEUX fois. C'est le seul de tout le
      parcours qu'on ne peut pas relire — il s'affiche en points — et
      c'est aussi celui qui, mal tapé, enferme dehors : la personne ne
@@ -64,7 +71,7 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { role, full_name: fullName, phone } },
+    options: { data: { role, full_name: fullName, phone: nettoyerTelephone(phone) } },
   });
   if (error) return { error: translateAuthError(error.message) };
 
@@ -94,6 +101,8 @@ export async function createLinkedProfileAction(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   if (!fullName || !phone) return { error: "Tous les champs sont obligatoires." };
+  const erreurNumero = erreurTelephone(phone, true);
+  if (erreurNumero) return { error: erreurNumero };
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
@@ -101,7 +110,7 @@ export async function createLinkedProfileAction(
 
   const { error } = await supabase
     .from("profiles")
-    .insert({ auth_user_id: user.id, role, full_name: fullName, phone });
+    .insert({ auth_user_id: user.id, role, full_name: fullName, phone: nettoyerTelephone(phone) });
   if (error) {
     if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
     return { error: error.message };

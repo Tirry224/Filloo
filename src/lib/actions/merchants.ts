@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { erreurNouveauMotDePasse } from "@/lib/password";
+import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 
@@ -21,6 +22,12 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   if (!shopName || !cityId) {
     return { error: "Le nom de la boutique et la ville sont obligatoires." };
   }
+  /* Le WhatsApp n'est PAS obligatoire — tous les commerçants n'en ont
+     pas — mais s'il est renseigné il doit être joignable : un numéro
+     à sept chiffres affiché sous une boutique est pire que pas de
+     numéro du tout, parce que le client croit avoir un recours. */
+  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
+  if (erreurWhatsapp) return { error: erreurWhatsapp };
 
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");
@@ -31,7 +38,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
     shop_name: shopName,
     city_id: cityId,
     address_hint: addressHint || null,
-    whatsapp_phone: whatsappPhone || null,
+    whatsapp_phone: nettoyerTelephone(whatsappPhone) || null,
     description: description || null,
   });
   if (error) {
@@ -92,6 +99,8 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   if (!shopName || !cityId) {
     return { error: "Le nom de la boutique et la ville sont obligatoires." };
   }
+  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
+  if (erreurWhatsapp) return { error: erreurWhatsapp };
 
   /* TOUT CE QUI PEUT ÊTRE REFUSÉ L'EST AVANT LA PREMIÈRE ÉCRITURE.
      Ces deux systèmes — `auth.users` pour le mot de passe, `merchants`
@@ -152,7 +161,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
       shop_name: shopName,
       city_id: cityId,
       address_hint: addressHint || null,
-      whatsapp_phone: whatsappPhone || null,
+      whatsapp_phone: nettoyerTelephone(whatsappPhone) || null,
       description: description || null,
     })
     .eq("profile_id", merchantProfile.id)
