@@ -734,6 +734,30 @@ temps.
   du 2026-09-13 et l'ordre actuel — ce qui reste d'abord, le journal à
   la fin.
 
+### Sauvés de `claude/kind-thompson-khl111` avant sa fermeture
+
+Ces trois leçons ont été payées par la v1 du projet, le 2026-09-11.
+Elles ne vivaient que dans le `CLAUDE.md` de cette branche, que `main`
+n'a jamais eu.
+
+- **Un formulaire qui accepte puis oublie est pire qu'un bouton mort :
+  il ment.** La v1 a annoncé « toutes les actions branchées » alors que
+  RIEN n'était enregistré — publier un produit renvoyait sur une liste
+  où il n'apparaissait pas. Tant qu'une action n'a pas d'effet visible à
+  l'écran suivant, elle n'est pas faite.
+- **Un test qui vérifie une redirection ne vérifie rien.** Les 19
+  vérifications de la v1 passaient toutes : elles regardaient où l'on
+  ATTERRIT après un envoi, jamais ce que l'écran d'après MONTRE. Une
+  batterie de tests doit relire l'écran suivant, pas l'URL suivante.
+- **Un service worker mal retiré SURVIT à son application.** Le jour où
+  le chantier R6 de `docs/PERFORMANCE.md` commencera, prévoir dès le
+  premier jour comment le désinstaller — sinon des téléphones resteront
+  servis par une version morte de Makiti, sans aucun moyen de les
+  rattraper. Sa place dans l'ordre était déjà tranchée par la v1 :
+  APRÈS le branchement de Supabase, parce qu'un service worker écrit
+  contre des données de démonstration serait à refaire ; seul le cache
+  de la coquille, qui ne dépend d'aucune donnée, pourrait passer avant.
+
 ---
 
 ## 6. Journal — quoi, et pourquoi à ce moment-là
@@ -1182,7 +1206,15 @@ restent à regarder sur un vrai téléphone.
   « hors périmètre » (7 familles), la validation du numéro guinéen
   (`^6\d{8}$`), le bandeau « Pas de connexion », les filtres en puces
   avec compte par option, la pagination `?n=` et l'avertissement sur la
-  désinstallation d'un service worker. **Cette branche reste ouverte.**
+  désinstallation d'un service worker. **Trois de ces idées ont été
+  reprises le 2026-09-19** — la validation du numéro
+  (`src/lib/telephone.ts`), le bandeau hors ligne
+  (`src/components/ui/OfflineBanner.tsx`) et les trois leçons de la
+  section 5. **La table « hors périmètre » a été écartée par le porteur
+  du projet**, l'état vide de la recherche restant tel quel. Restent
+  non repris : les filtres en puces avec compte par option et la
+  pagination `?n=`, qui demanderaient une réécriture de la recherche et
+  non une reprise.
 - **`claude/verify-main-branches-pe8bp4` (7 commits) : rapatriée et
   fermée.** Cinq commits rejoués sur `main` par `cherry-pick -x`, deux
   abandonnés, puis la branche supprimée sur autorisation du porteur du
