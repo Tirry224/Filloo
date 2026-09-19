@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { FileText, LogOut, MessageCircle, Store, User } from "lucide-react";
+import { FileText, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { MenuItem, MenuList } from "@/components/ui/MenuList";
+import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
@@ -76,6 +77,16 @@ export default async function AccountPage() {
           )}
 
           <MenuList>
+            {/* Le mot de passe ne s'affiche ICI que si cette connexion n'a
+                PAS de compte commerçant. Avec les deux, il vit sur l'écran
+                boutique : c'est la même connexion et donc le même mot de
+                passe, et l'offrir des deux côtés laisserait croire qu'il y
+                en a deux à tenir à jour. */}
+            {merchant ? null : (
+              <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
+                <ChangePasswordForm />
+              </MenuPanel>
+            )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
           </MenuList>
 

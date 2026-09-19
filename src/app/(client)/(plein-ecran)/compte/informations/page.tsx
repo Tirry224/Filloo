@@ -5,7 +5,6 @@ import { Field, Input } from "@/components/ui/Field";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProfileForm } from "@/components/auth/ProfileForm";
-import { UpdatePasswordForm } from "@/components/auth/UpdatePasswordForm";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
@@ -57,10 +56,6 @@ export default async function ProfilePage() {
           >
             <Input id="email" type="email" defaultValue={user.email ?? ""} disabled />
           </Field>
-
-          <div className="my-1 h-px bg-line" />
-
-          <UpdatePasswordForm />
 
           <Link
             href="/compte/informations/supprimer"

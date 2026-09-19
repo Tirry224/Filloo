@@ -7,6 +7,7 @@ import { getSessionUser, landingForSession } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
+import { passwordIsValid } from "@/lib/supabase/verify";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -221,4 +222,57 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   // Même aiguillage qu'après une connexion : changer son mot de passe
   // n'est pas une raison d'atterrir dans l'espace de quelqu'un d'autre.
   redirect(await landingForSession(supabase));
+}
+
+/**
+ * Changer son mot de passe depuis son compte, en le CONNAISSANT.
+ *
+ * POURQUOI UNE ACTION DE PLUS, ET PAS `updatePasswordAction`
+ * Celle du dessus sert la réinitialisation par email : la personne a
+ * justement OUBLIÉ son mot de passe, lui en redemander un serait absurde.
+ * Ce qui l'autorise là-bas, c'est le lien reçu dans sa boîte. Ici, aucun
+ * email n'a été envoyé : la seule preuve disponible est le mot de passe
+ * actuel. Deux preuves différentes, donc deux actions — les fondre en une
+ * obligerait à rendre le contrôle facultatif, c'est-à-dire à ne plus en
+ * avoir.
+ *
+ * CE QUE ÇA EMPÊCHE
+ * Un téléphone déverrouillé emprunté trente secondes. Sans ce contrôle,
+ * changer le mot de passe de quelqu'un ferme définitivement la porte
+ * derrière soi : le vrai propriétaire ne peut plus entrer, et la
+ * réinitialisation par email ne le sauve que s'il a encore accès à cette
+ * boîte.
+ */
+export async function changeMyPasswordAction(
+  _prevState: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
+
+  /* L'ordre des contrôles suit le coût pour la personne : la forme du
+     nouveau mot de passe d'abord, qui ne coûte rien à vérifier, le mot de
+     passe actuel ensuite, qui demande un aller-retour à Supabase. Refuser
+     tôt ce qui se refuse sans réseau. */
+  const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
+  if (erreurMotDePasse) return { error: erreurMotDePasse };
+
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user?.email) return { error: "Vous devez être connecté." };
+
+  if (!currentPassword) return { error: "Entrez votre mot de passe actuel." };
+  if (!(await passwordIsValid(user.email, currentPassword))) {
+    return { error: "Mot de passe actuel incorrect." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: translateAuthError(error.message) };
+
+  /* Pas de redirection : le formulaire vit dans un panneau posé sur
+     l'écran de compte, et renvoyer ailleurs donnerait l'impression d'avoir
+     perdu sa place. On rend un succès, le panneau le dit, la personne
+     referme. */
+  return { sent: true };
 }

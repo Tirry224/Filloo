@@ -1274,6 +1274,30 @@ restent à regarder sur un vrai téléphone.
   pas « est-ce un filtre ? » mais « la personne sait-elle déjà ce qu'elle
   cherche ? ».
 
+### 2026-09-19 (suite) — le mot de passe sort des « informations »
+
+- **Enregistrer ses informations de compte exige désormais le mot de
+  passe actuel**, côté client comme côté commerçant : le nom et le
+  téléphone d'un client sont ce par quoi un commerçant le rappelle après
+  une commande, et un téléphone emprunté trente secondes suffisait à les
+  réécrire.
+- **Le CHANGEMENT de mot de passe a quitté les écrans d'informations** :
+  il vit dans un panneau ouvert depuis la liste de réglages, à côté de
+  « Conditions d'utilisation », avec trois champs (actuel, nouveau,
+  confirmation) et un bouton « OK ».
+- **Une seule place, jamais deux** : le panneau est sur l'écran
+  commerçant quand la connexion a un compte commerçant, sur l'écran
+  client sinon. C'est la même connexion et donc le même mot de passe —
+  l'offrir des deux côtés laisserait croire qu'il y en a deux à tenir.
+- **La ligne n'a PAS de chevron**, contrairement aux autres de la liste :
+  le chevron promet un départ, et ici on ne part pas. Annoncer un
+  changement d'écran qui n'a pas lieu casse aussi le bouton « retour ».
+- **`updatePasswordAction` n'a pas été touchée** : elle sert la
+  réinitialisation par email, où la personne a justement OUBLIÉ son mot
+  de passe. Deux preuves différentes — un lien reçu, ou le mot de passe
+  actuel — donc deux actions ; les fondre obligerait à rendre le contrôle
+  facultatif, c'est-à-dire à ne plus en avoir.
+
 ---
 
 ## 7. Le vrai risque

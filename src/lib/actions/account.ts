@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser, getMyProfile } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
+import { passwordIsValid } from "@/lib/supabase/verify";
 
 /** Mes informations — écran 18. `full_name`, `phone` et `city_id` sont
  * modifiables par un utilisateur (liste blanche de colonnes,
@@ -22,11 +23,33 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
   const erreurNumero = erreurTelephone(phone, true);
   if (erreurNumero) return { error: erreurNumero };
+
+  /* Le mot de passe actuel est exigé pour ÉCRIRE, exactement comme pour
+     une boutique : ce nom et ce téléphone sont ce par quoi un commerçant
+     rappelle un client après une commande, et les réécrire depuis un
+     téléphone emprunté détournerait ces rappels. */
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  if (!currentPassword) {
+    return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
+  }
   if (cityIdRaw && (!cityId || Number.isNaN(cityId))) return { error: "Ville invalide." };
 
   const supabase = await createClient();
   const profile = await getMyProfile(supabase, "client");
   if (!profile) return { error: "Vous devez être connecté." };
+
+  /* Vérifié AVANT la première écriture : ce qui peut être refusé doit
+     l'être pendant que rien n'a encore bougé. `passwordIsValid` utilise un
+     client Supabase jetable, qui n'écrit aucun cookie — une faute de
+     frappe ne peut donc pas déconnecter quelqu'un au milieu de son
+     formulaire (voir `src/lib/supabase/verify.ts`). */
+  const user = await getSessionUser(supabase);
+  if (!user?.email) {
+    return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
+  }
+  if (!(await passwordIsValid(user.email, currentPassword))) {
+    return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
+  }
 
   const { data, error } = await supabase
     .from("profiles")

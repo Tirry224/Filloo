@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import { FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
-import { MenuItem, MenuList } from "@/components/ui/MenuList";
+import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
@@ -187,6 +188,15 @@ export default async function EditShopPage() {
           )}
 
           <MenuList>
+            {/* Le mot de passe se change ICI, et non dans « Modifier ma
+                boutique » : ce sont deux choses différentes. Les
+                informations de la boutique, un client les LIT avant de se
+                déplacer ; le mot de passe n'appartient qu'à la connexion,
+                et c'est le même pour le compte client lié quand il existe
+                — d'où sa place unique, sur l'espace commerçant. */}
+            <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
+              <ChangePasswordForm />
+            </MenuPanel>
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
           </MenuList>
 

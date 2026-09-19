@@ -82,3 +82,54 @@ export function MenuItem({
      comme un bouton mort. */
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }
+
+/**
+ * Une ligne de réglage qui n'emmène nulle part : elle OUVRE un panneau.
+ *
+ * POURQUOI PAS DE CHEVRON
+ * Dans cette liste, le chevron promet un départ — « tu vas changer
+ * d'écran ». Ici on ne part pas : un panneau remonte du bas et l'écran
+ * reste dessous. Mettre le chevron quand même, c'est annoncer un geste
+ * qui n'aura pas lieu, et le bouton « retour » du téléphone ne ramènera
+ * pas là où la personne croit.
+ *
+ * POURQUOI UN PANNEAU ET PAS UNE PAGE
+ * Changer son mot de passe est un aller-retour de quelques secondes,
+ * après lequel on veut se retrouver exactement où l'on était. Une page
+ * dédiée ferait sortir de l'écran de compte pour y revenir — et
+ * `docs/ECRANS.md` compterait un écran de plus pour trois champs.
+ *
+ * Même mécanique que les panneaux de filtre : un `<details>`, donc il
+ * s'ouvre sans JavaScript, et `data-panneau` le fait refermer par
+ * `ClosePanels` quand on touche à côté.
+ */
+export function MenuPanel({
+  icon: Icon,
+  label,
+  title,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  /** Le titre du panneau ouvert — la ligne n'est plus visible à ce moment-là. */
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details data-panneau>
+      <summary className="flex h-tap cursor-pointer list-none items-center gap-3.5 border-b border-line text-base text-ink last:border-b-0 [&::-webkit-details-marker]:hidden">
+        <Icon size={20} strokeWidth={1.8} aria-hidden className="shrink-0" />
+        <span className="flex-1">{label}</span>
+      </summary>
+
+      {/* `fixed` : la carte qui contient cette liste a ses propres marges
+          et son propre arrondi ; un panneau posé dedans en hériterait.
+          `z-20` pour passer devant la barre de navigation du bas, qui ne
+          déclare aucun plan. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[85vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
+        <p className="shrink-0 px-4.5 pt-3.5 pb-1 text-base font-bold">{title}</p>
+        <div className="overflow-y-auto px-4.5 pt-3 pb-5">{children}</div>
+      </div>
+    </details>
+  );
+}
