@@ -152,6 +152,28 @@ export async function deleteAccountAction() {
     if (anonError) throw anonError;
   }
 
+  /* LES APPAREILS PARTENT AVEC LE COMPTE, ET IL FAUT L'ÉCRIRE ICI.
+     La migration `0023` compte sur `on delete cascade` depuis
+     `auth.users` — ce qui serait vrai si on SUPPRIMAIT la connexion. On
+     la BANNIT (voir juste en dessous), précisément pour garder les fils
+     de discussion lisibles par l'autre partie : la ligne `auth.users`
+     survit, donc la cascade ne se déclenche jamais et les abonnements
+     restaient en base indéfiniment.
+
+     Ce ne sont pas des lignes inertes : un abonnement push porte un
+     identifiant d'appareil et l'empreinte de son navigateur. Les garder
+     après « supprimer mon compte » contredit ce que ce bouton promet.
+
+     Aucun push ne partait pour autant — `notifyNewMessage` s'arrête sur
+     `is_deleted` — mais compter sur la retenue de l'appelant pour
+     protéger une donnée, c'est exactement ce que le reste du projet
+     refuse de faire. */
+  const { error: pushError } = await admin
+    .from("push_subscriptions")
+    .delete()
+    .eq("auth_user_id", user.id);
+  if (pushError) throw pushError;
+
   // ~100 ans : Supabase n'a pas de "bannissement permanent" dédié, une
   // durée trop longue pour expirer en pratique en tient lieu.
   const { error: banError } = await admin.auth.admin.updateUserById(user.id, { ban_duration: "876000h" });
