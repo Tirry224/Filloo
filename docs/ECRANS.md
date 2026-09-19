@@ -10,7 +10,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 1 | Fil d'accueil | À la une, populaires, récents |
 | 2 | Fil — ville sans produit | État vide, propose de changer de ville |
 | 3 | Fil — chargement | Squelette, jamais d'écran blanc |
-| 4 | Fil — hors ligne | Bandeau + produits déjà consultés |
+| 4 | Fil — hors ligne | Le BANDEAU existe depuis le 2026-09-19 (`src/components/ui/OfflineBanner.tsx`, posé dans le layout racine) ; les produits déjà consultés attendent le service worker (`docs/PERFORMANCE.md`, règle R6). L'écran n'est donc qu'à moitié fait, et son texte ne promet rien de plus que ce qui existe. |
 | 5 | Recherche & filtres | Ville, catégorie, tri |
 | 6 | Recherche — aucun résultat | Propose d'élargir la zone |
 | 7 | Fiche produit | Photos, prix, négociable, boutique |

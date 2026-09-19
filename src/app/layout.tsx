@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "@/styles/index.css";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 
 /**
  * Next héberge les polices lui-même : le navigateur ne contacte jamais
@@ -38,7 +39,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+      {/* Le bandeau est posé DANS le layout racine, avant tout le reste :
+          une coupure de réseau ne choisit pas sa page, et le répéter dans
+          chaque espace serait une garde de plus à oublier. Il ne rend rien
+          tant que la connexion tient, donc il ne coûte rien au cas
+          normal. */}
+      <body>
+        <OfflineBanner />
+        {children}
+      </body>
     </html>
   );
 }
