@@ -217,15 +217,13 @@
   /* ═══ OMBRES ════════════════════════════════════════════════════════
      Makiti se dessine avec des BORDURES, pas des ombres : c'est plus net
      sur un écran bon marché, plus lisible en plein soleil, et moins lourd
-     à afficher. Deux ombres existent, et toutes deux servent à détacher
-     quelque chose qui FLOTTE au-dessus du contenu : une bordure seule ne
-     suffit plus à dire lequel des deux plans est devant. */
+     à afficher. Une seule ombre existe, pour détacher du fond ce qui
+     remonte depuis le bas de l'écran : une feuille modale, ou le panneau
+     d'un filtre. Un `--shadow-panel` orienté vers le bas a existé une
+     demi-journée, le temps que les panneaux s'ouvrent sous leur puce ;
+     ils s'ouvrent désormais par le bas, et l'ombre de la feuille suffit. */
 
   --shadow-*: initial;
   --shadow-sheet: 0 -8px 32px oklch(0.245 0.018 60 / 0.14);
-  /* Le panneau d'un filtre descend, la feuille modale monte : l'ombre
-     part donc vers le bas, et reste plus courte parce que le panneau
-     flotte de quelques pixels, pas au-dessus de tout l'écran. */
-  --shadow-panel: 0 8px 24px oklch(0.245 0.018 60 / 0.16);
   --shadow-focus: 0 0 0 3px oklch(0.55 0.15 42 / 0.28);
 }

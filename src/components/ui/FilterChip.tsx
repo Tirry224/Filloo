@@ -32,14 +32,17 @@ export type FilterOption = {
  * réduire, et impose deux navigations (aller, revenir) là où un panneau
  * n'en demande aucune.
  *
- * POURQUOI LE PANNEAU FLOTTE, ET CE QUE ÇA IMPOSE À SON PARENT
- * Il est en `absolute` : il recouvre le haut des résultats sans pousser
- * quoi que ce soit, et il est volontairement étroit et plafonné en hauteur
- * pour qu'on continue de voir la liste derrière. La contrepartie, apprise
- * à l'écran par la v1 du projet : un parent en `overflow-x: auto` le
- * DÉCOUPERAIT, parce que rogner horizontalement rogne aussi verticalement.
- * La rangée qui contient ces puces passe donc à la ligne (`flex-wrap`) au
- * lieu de défiler. Si un jour elle redéfile, ce panneau se coupera.
+ * POURQUOI LE PANNEAU S'OUVRE EN BAS, ET NON SOUS SA PUCE
+ * Il l'a d'abord fait, en `absolute`, et c'était intenable : la rangée de
+ * puces doit pouvoir défiler horizontalement quand les filtres ne tiennent
+ * pas sur une ligne, or un parent en `overflow-x: auto` DÉCOUPE ce qui
+ * dépasse — rogner horizontalement rogne aussi verticalement. Le panneau
+ * est donc en `fixed`, ce qu'aucun débordement ne coupe, et se place en bas
+ * de l'écran comme les feuilles de l'app (`Sheet`) : près du pouce, sur la
+ * moitié basse, les résultats restant visibles au-dessus.
+ *
+ * Détaché de sa puce, il doit dire ce qu'il filtre : d'où le titre, que
+ * `Sheet` affiche pour la même raison.
  *
  * FERMER EN TOUCHANT AILLEURS
  * Un `<details>` ne se referme nativement que par sa propre étiquette.
@@ -55,11 +58,14 @@ export type FilterOption = {
  * pour trois filtres.
  */
 export function FilterChip({
+  title,
   label,
   selected = false,
   icon: Icon,
   options,
 }: {
+  /** Le nom du filtre — « Ville », « Catégorie » — affiché en tête du panneau. */
+  title: string;
   /** Ce que la puce affiche fermée : la valeur courante, pas le nom du filtre. */
   label: string;
   /** Foncée quand le filtre s'écarte de sa valeur par défaut. */
@@ -68,13 +74,13 @@ export function FilterChip({
   options: FilterOption[];
 }) {
   return (
-    <details data-panneau className="group relative">
+    <details data-panneau className="group">
       <summary
         className={cn(
           /* `list-none` et le pseudo-élément WebKit retirent le triangle
              par défaut, qui n'existe pas dans le design system. Le chevron
              le remplace, et lui tourne à l'ouverture. */
-          "inline-flex cursor-pointer list-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden",
+          "inline-flex shrink-0 cursor-pointer list-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden",
           selected ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink",
         )}
       >
@@ -83,20 +89,30 @@ export function FilterChip({
         <ChevronDown size={15} strokeWidth={2} className="group-open:rotate-180" aria-hidden />
       </summary>
 
-      {/* `max-h` en `vh` et non en pixels : la liste des villes peut
-          grandir, et un panneau plus haut que l'écran ne se referme plus
-          du pouce. Il défile à l'intérieur, l'écran ne bouge pas. */}
-      <div className="absolute left-0 top-full z-10 mt-2 max-h-[55vh] w-60 max-w-[85vw] overflow-y-auto rounded-2xl border border-line bg-surface p-1 shadow-panel">
-        {options.map((option) => (
-          <Link
-            key={option.href}
-            href={option.href}
-            className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm"
-          >
-            <span className={option.selected ? "font-semibold text-accent" : "text-ink"}>{option.label}</span>
-            {option.selected ? <Check size={17} strokeWidth={2.4} className="shrink-0 text-accent" aria-hidden /> : null}
-          </Link>
-        ))}
+      {/* `fixed` et non `absolute` : c'est ce qui le rend insensible au
+          débordement de la rangée de puces. `max-h` en `vh` et non en
+          pixels, parce que la liste des villes peut grandir et qu'un
+          panneau plus haut que l'écran ne se referme plus du pouce — il
+          défile à l'intérieur, l'écran ne bouge pas.
+
+          `z-20` : la barre de navigation du bas n'a pas de plan déclaré,
+          donc elle passerait devant sans ça. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[55vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
+        <p className="shrink-0 px-4.5 pt-3.5 pb-2 text-sm font-bold">{title}</p>
+        <div className="overflow-y-auto px-2.5 pb-5">
+          {options.map((option) => (
+            <Link
+              key={option.href}
+              href={option.href}
+              className="flex items-center justify-between gap-3 rounded-xl px-2 py-3 text-base"
+            >
+              <span className={option.selected ? "font-semibold text-accent" : "text-ink"}>{option.label}</span>
+              {option.selected ? (
+                <Check size={18} strokeWidth={2.4} className="shrink-0 text-accent" aria-hidden />
+              ) : null}
+            </Link>
+          ))}
+        </div>
       </div>
     </details>
   );

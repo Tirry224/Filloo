@@ -1248,13 +1248,16 @@ restent à regarder sur un vrai téléphone.
   derrière.
 - **Aucun JavaScript : c'est un `<details>`**, donc le panneau s'ouvre
   avant même que le socle JS soit chargé (`docs/PERFORMANCE.md`, R3).
-- **Une contrainte à ne pas casser** : la rangée de puces passe à la ligne
-  et ne défile PAS horizontalement — un parent en `overflow-x: auto`
-  découperait les panneaux, parce que rogner horizontalement rogne aussi
-  verticalement.
-- **Un token d'ombre ajouté** (`--shadow-panel`) : Makiti se dessine avec
-  des bordures, mais un élément qui flotte a besoin de dire lequel des
-  deux plans est devant.
+- **Les panneaux s'ouvrent EN BAS de l'écran, pas sous leur puce.** Ils
+  l'ont d'abord fait en `absolute`, et c'était intenable : la rangée de
+  puces doit pouvoir défiler horizontalement, or un parent en
+  `overflow-x: auto` découpe ce qui dépasse — rogner horizontalement
+  rogne aussi verticalement. En `fixed`, rien ne les coupe.
+- **Détaché de sa puce, un panneau doit dire ce qu'il filtre** : d'où son
+  titre, exactement comme les feuilles `Sheet` en portent un.
+- **Un `--shadow-panel` a existé une demi-journée** et a été retiré :
+  l'ombre de la feuille (`--shadow-sheet`, orientée vers le haut) est la
+  bonne dès lors que le panneau remonte du bas.
 - **Décisions du porteur du projet** : pas de filtre neuf/occasion (la
   colonne n'existe pas et c'est une décision produit), pas de compteur par
   option pour l'instant (chacun coûterait une requête d'agrégat, et

@@ -165,18 +165,20 @@ export default async function SearchPage({
               {activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}
             </p>
 
-            {/* Les trois filtres s'ouvrent PAR-DESSUS les résultats, chacun
-                dans son panneau, au lieu d'envoyer sur une page qui les
-                cache. On voit ce qu'on filtre pendant qu'on filtre, et
-                aucune navigation n'est nécessaire pour revenir.
+            {/* Les trois filtres s'ouvrent PAR-DESSUS les résultats, au
+                lieu d'envoyer sur une page qui les cache. On voit ce qu'on
+                filtre pendant qu'on filtre, et aucune navigation n'est
+                nécessaire pour revenir.
 
-                La rangée passe à la ligne (`flex-wrap`) et ne défile PAS :
-                un parent en `overflow-x: auto` découperait les panneaux,
-                parce que rogner horizontalement rogne aussi verticalement.
-                C'est écrit ici parce que la contrainte porte sur ce
-                conteneur, pas sur les puces. */}
-            <div className="flex flex-wrap items-center gap-2">
+                La rangée tient sur UNE ligne et défile au doigt : une
+                rangée qui se replie fait sauter les résultats de deux
+                lignes vers le bas dès qu'on ajoutera un quatrième filtre.
+                C'est possible parce que les panneaux sont en `fixed` et
+                s'ouvrent en bas de l'écran — un panneau ancré sous sa
+                puce serait découpé par ce débordement. */}
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
               <FilterChip
+                title="Ville"
                 label={ville}
                 selected={ville !== defaultVille}
                 icon={MapPin}
@@ -187,6 +189,7 @@ export default async function SearchPage({
                 }))}
               />
               <FilterChip
+                title="Catégorie"
                 label={categorie === "Tout" ? "Catégorie" : categorie}
                 selected={categorie !== "Tout"}
                 icon={SlidersHorizontal}
@@ -200,6 +203,7 @@ export default async function SearchPage({
                 ]}
               />
               <FilterChip
+                title="Trier par"
                 label={tri === "populaire" ? "Populaires" : "Récents"}
                 icon={ArrowUpDown}
                 options={[
