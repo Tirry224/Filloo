@@ -1164,6 +1164,18 @@ restent à regarder sur un vrai téléphone.
   sont dans `main` depuis le 2026-09-13, et ses fichiers « uniques » sont
   des ancêtres de ce que `main` a réécrit (dont un `BottomNav` supprimé
   exprès parce qu'il affichait la mauvaise barre sur six écrans).
+- **Décision du porteur du projet, le 2026-09-19 : `profile-city-edit`
+  est à SUPPRIMER**, rien n'en étant repris. Contre-vérification faite
+  avant de trancher : ses 26 fichiers au chemin inconnu de `main` sont
+  les 25 routes à plat que `main` a réorganisées en groupes de routes,
+  plus un `BottomNav.tsx` que `main` a supprimé exprès. Son journal n'est
+  pas recopié non plus : `main` raconte déjà la consolidation du
+  2026-09-11 et l'épisode de la branche par défaut GitHub, deux fois.
+- **La suppression elle-même n'a pas pu être exécutée depuis une session
+  Claude** : le proxy réseau renvoie HTTP 403 sur toute suppression de
+  branche distante, alors que les pushs de commits passent. À faire
+  depuis l'onglet « Branches » de GitHub — pour `profile-city-edit` comme
+  pour `verify-main-branches`, dont le contenu utile est déjà dans `main`.
 - **`claude/kind-thompson-khl111` (18 commits) : la v1 du projet**, sur
   des données en mémoire et sans Supabase. Son code ne se recolle pas,
   mais six idées y restent vivantes et ABSENTES de `main` : la table
