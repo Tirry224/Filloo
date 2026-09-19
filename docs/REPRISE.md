@@ -1259,16 +1259,17 @@ restent à regarder sur un vrai téléphone.
   colonne n'existe pas et c'est une décision produit), pas de compteur par
   option pour l'instant (chacun coûterait une requête d'agrégat, et
   afficherait 0 ou 1 sur un catalogue encore vide).
-- **Le fil d'accueil suit le même principe** : sa rangée de catégories
-  défilait au doigt — dix puces dont on ne voyait que trois, sans rien
-  qui annonce les autres — et tient désormais dans le même panneau.
-  C'était la dernière rangée qui défilait horizontalement dans l'app.
-- **Ce que ça change, et qu'il faut regarder sur un vrai téléphone** :
-  les catégories ne s'offrent plus au regard, il faut ouvrir le panneau
-  pour les voir. Elles restent affichées en grille sur l'écran de
-  recherche au repos, donc elles ne disparaissent pas du produit — mais
-  si le fil d'accueil perd des clics vers les catégories, c'est là qu'il
-  faudra revenir.
+- **Le fil d'accueil a été converti au panneau, puis REMIS EN ARRIÈRE le
+  même jour** : sa rangée de catégories redéfile au doigt, comme avant.
+  Décision du porteur du projet après l'avoir vue à l'écran.
+- **La raison vaut d'être retenue** : sur le fil d'accueil, les
+  catégories ne FILTRENT pas d'abord, elles MONTRENT ce qu'on peut
+  chercher. Les replier dans un panneau supprime la seule invitation à
+  parcourir qu'a un visiteur qui ne sait pas encore ce qu'il veut. Sur
+  l'écran de recherche, l'intention existe déjà : replier y est un gain.
+- **Le même composant n'est donc pas bon partout** — la question n'est
+  pas « est-ce un filtre ? » mais « la personne sait-elle déjà ce qu'elle
+  cherche ? ».
 
 ---
 

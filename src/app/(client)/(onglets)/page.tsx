@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { MapPin, SlidersHorizontal } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
-import { FilterChip } from "@/components/ui/FilterChip";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
@@ -82,12 +81,6 @@ export default async function HomePage({
 
   const triHref = (valeur: string) =>
     `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
-
-  /* Le tri n'est PAS reporté : changer de catégorie depuis le fil remet
-     l'ordre par défaut, comme avant le panneau. Le reporter serait un
-     changement de comportement déguisé en refonte d'affichage. */
-  const categorieHref = (nom: string) =>
-    `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(nom)}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
 
   return (
@@ -99,34 +92,20 @@ export default async function HomePage({
 
       <ScreenBody>
         <Section className="gap-3 pb-1">
-          {/* La rangée de catégories défilait au doigt : dix puces dont on
-              ne voyait que trois, et rien ne disait qu'il y en avait
-              d'autres derrière le bord de l'écran. Elles tiennent
-              maintenant dans un panneau qui s'ouvre par-dessus le fil —
-              la liste entière d'un coup d'œil, et les produits restent
-              visibles derrière.
-
-              Ce conteneur ne doit PAS reprendre `overflow-x-auto` : il
-              découperait le panneau, parce que rogner horizontalement
-              rogne aussi verticalement. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterChip
-              label={categorie === "Tout" ? "Toutes catégories" : categorie}
-              selected={categorie !== "Tout"}
-              icon={SlidersHorizontal}
-              options={[
-                {
-                  label: "Toutes catégories",
-                  href: categorieHref("Tout"),
-                  selected: categorie === "Tout",
-                },
-                ...categories.map((c) => ({
-                  label: c.name,
-                  href: categorieHref(c.name),
-                  selected: c.name === categorie,
-                })),
-              ]}
-            />
+          {/* `overflow-x-auto` : la rangée de catégories défile au doigt
+              plutôt que de passer à la ligne et de manger l'écran. */}
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
+            <Link href={`/?ville=${encodeURIComponent(ville)}&categorie=Tout`}>
+              <Chip selected={categorie === "Tout"}>Tout</Chip>
+            </Link>
+            {categories.map((c) => (
+              <Link
+                key={c.id}
+                href={`/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(c.name)}`}
+              >
+                <Chip selected={c.name === categorie}>{c.name}</Chip>
+              </Link>
+            ))}
           </div>
         </Section>
 
