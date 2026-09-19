@@ -1362,6 +1362,44 @@ restent à regarder sur un vrai téléphone.
   volontaire et sans danger — ce cas ne se produit qu'après un premier
   abonnement, donc pas avant l'étape 5.
 
+### 2026-09-19 (nuit) — les notifications push, de bout en bout
+
+- **Étape 5 — l'interrupteur existe** (`src/components/push/PushToggle.tsx`),
+  dans un panneau « Notifications » de l'écran de compte. Il distingue
+  trois états au lieu d'un bouton muet : navigateur qui ne gère pas
+  (avec la marche à suivre sur iPhone), permission refusée (le navigateur
+  ne redemandera JAMAIS, seul le réglage du site rouvre), et le cas
+  normal.
+- **La permission ne se demande QUE sur un tap délibéré** : demandée au
+  chargement, elle reçoit un « non » réflexe, et Chrome ne repose plus la
+  question — la personne est perdue pour les notifications, sans avoir
+  compris ce qu'on lui proposait.
+- **Étape 6 — le bouton de test reste dans l'application.** Il vérifie la
+  chaîne entière (permission, abonnement, clés, service de push, service
+  worker) sans deuxième compte ni deuxième téléphone. Le jour où un
+  commerçant dira « je ne reçois rien », il répond en trois secondes.
+- **Étape 7 — branché sur les vrais messages.** `notifyNewMessage()`
+  envoie maintenant le push PUIS l'email. Les deux canaux s'allument
+  indépendamment, mais partagent la règle anti-spam existante (« un seul
+  avertissement par fil tant qu'il n'est pas lu »), qui n'est écrite
+  qu'une fois.
+- **Un défaut corrigé en chemin** : l'adresse email était cherchée AVANT
+  le push, donc un compte sans adresse lisible aurait supprimé aussi la
+  notification push. Un canal ne doit jamais tomber à cause de la
+  configuration d'un autre.
+- **Le push NE RECOPIE PAS le message**, l'email si. Un push s'affiche sur
+  un écran verrouillé que n'importe qui à côté peut lire ; l'email demande
+  de déverrouiller son téléphone. Deux expositions, deux contenus.
+- **Les abonnements morts se suppriment tout seuls** : 404 et 410 sont les
+  deux seules réponses qui veulent dire « cet appareil n'existe plus », et
+  la ligne part immédiatement. Tout le reste (429, 500, réseau) est
+  passager et se réessaiera au message suivant.
+- **CE QUI RESTE, ET C'EST TOUT CE QUI COMPTE MAINTENANT** : constater sur
+  de vrais téléphones. L'installation depuis Android, l'installation
+  depuis un iPhone (sans quoi aucun push n'arrive sur iOS), et une
+  notification réellement reçue écran éteint. Rien de tout cela ne peut se
+  vérifier depuis une session de code.
+
 ---
 
 ## 7. Le vrai risque

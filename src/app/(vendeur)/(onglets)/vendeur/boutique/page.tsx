@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import { BellRing, FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { PushToggle } from "@/components/push/PushToggle";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
@@ -194,6 +195,12 @@ export default async function EditShopPage() {
                 déplacer ; le mot de passe n'appartient qu'à la connexion,
                 et c'est le même pour le compte client lié quand il existe
                 — d'où sa place unique, sur l'espace commerçant. */}
+            {/* Les notifications comptent DOUBLE ici : un commerçant qui
+                répond quatre heures après a perdu le client, et c'est le
+                seul canal qui arrive sur un écran verrouillé. */}
+            <MenuPanel icon={BellRing} label="Notifications" title="Notifications sur cet appareil">
+              <PushToggle />
+            </MenuPanel>
             <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
               <ChangePasswordForm />
             </MenuPanel>

@@ -28,7 +28,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 14 | Connexion | |
 | 15 | Mot de passe oublié | |
 | 16 | Compte requis | Déclenché par « Contacter le vendeur » |
-| 17 | Mon compte | Carte de bascule vers le compte commerçant lié, jamais un item de menu comme les autres |
+| 17 | Mon compte | Carte de bascule vers le compte commerçant lié, jamais un item de menu comme les autres. Porte aussi les panneaux « Notifications » et « Modifier mon mot de passe », mais SEULEMENT si la connexion n'a pas de compte commerçant — sinon ils vivent sur l'écran 26. |
 | 18 | Mes informations | Modification, suppression du compte. Depuis le 2026-09-19, enregistrer exige le mot de passe actuel, et le CHANGEMENT de mot de passe n'est plus sur cet écran : il vit dans un panneau de l'écran 17 (ou 26 si la connexion a un compte commerçant). |
 | 19 | Compte suspendu | Motif + recours |
 
@@ -43,7 +43,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 23 | Mes produits — vide | Premier produit |
 | 24 | Ajouter / modifier un produit | 1 à 3 photos, prix, négociable |
 | 25 | Actions produit | Vendu, modifier, masquer, supprimer |
-| 26 | Ma boutique | Écran de CONSULTATION : on y lit ses informations et on y trouve le compte (bascule vers le client lié, déconnexion). |
+| 26 | Ma boutique | Écran de CONSULTATION : on y lit ses informations et on y trouve le compte (bascule vers le client lié, déconnexion), le panneau « Notifications » et celui du mot de passe. |
 | 26b | Modifier ma boutique | Écran plein écran, atteint par un geste explicite. Revalidation si le nom ou la ville change, et le mot de passe actuel est redemandé — l'adresse et le numéro WhatsApp sont ce qu'un client lit AVANT de se déplacer. Le CHANGEMENT de mot de passe n'est plus ici : il vit dans un panneau de l'écran 26 depuis le 2026-09-19. |
 
 ## Messagerie — 6

@@ -179,6 +179,10 @@ sécurité.
 - Toute page doit rester lisible si une image n'arrive pas.
 - L'**écran 4 (fil hors ligne)**, maquetté mais jamais codé, devient
   prioritaire : il montre les produits déjà consultés.
+- **Fait en partie le 2026-09-19** : un service worker existe
+  (`public/sw.js`), mais il ne sert QU'aux notifications push et ne met
+  RIEN en cache. La mise en cache décrite ci-dessous reste entière à
+  faire — et quand elle se fera, elle se greffera sur ce fichier-là.
 - Un service worker qui garde la coquille de l'application et les fiches
   déjà vues est le meilleur gain pour les visites répétées. Reporté après le
   branchement Supabase : c'est un vrai chantier, et il ne sert à rien tant

@@ -176,10 +176,15 @@ CRON_SECRET=<une chaîne longue et aléatoire>
 
 ## Notifications push (en cours de construction)
 
-Étapes 1 à 4 faites le 2026-09-19 : l'application est installable, le
-service worker existe, les clés sont posées et la table des abonnements
-est écrite. **Rien n'est encore envoyé** — il manque l'interrupteur
-d'abonnement et l'envoi côté serveur (étapes 5 à 7).
+Faites de bout en bout le 2026-09-19. Un commerçant active les
+notifications depuis « Ma boutique » → « Notifications », et reçoit une
+alerte sur son écran verrouillé dès qu'un message arrive. L'email
+continue de partir dans tous les cas : il rattrape un iPhone non
+installé, une permission refusée, un téléphone changé.
+
+**Ce qui reste à CONSTATER sur de vrais téléphones** : l'installation
+depuis Android, l'installation depuis un iPhone, et une notification
+réellement reçue écran éteint.
 
 ```
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=<déjà dans .env, publique par nature>
@@ -200,6 +205,11 @@ VAPID_PRIVATE_KEY=<Vercel uniquement, jamais ici>
   qu'à recevoir les notifications. Pour le désinstaller partout, vider ce
   fichier et déployer ; pour un seul téléphone, ouvrir l'app avec
   `?sw=off`.
+- **Le bouton « M'envoyer une notification test »** reste dans
+  l'application après la mise au point : le jour où un commerçant dira
+  « je ne reçois rien », il répond en trois secondes.
+- **Le push ne recopie JAMAIS le message**, contrairement à l'email : il
+  s'affiche sur un écran verrouillé que n'importe qui à côté peut lire.
 
 Ce qui coince se voit en une requête, et c'est tout l'intérêt d'être
 passé par une file plutôt que par un webhook :

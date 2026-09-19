@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/lib/email";
+import { sendPushToUser } from "@/lib/push";
 
 /**
- * Prévenir par email la personne qui vient de recevoir un message.
+ * Prévenir la personne qui vient de recevoir un message — par
+ * notification push ET par email.
  *
  * C'est le point 1 de `docs/REPRISE.md` : sans cet email, la messagerie
  * est une boîte aux lettres que personne ne relève. Un commerçant qui
@@ -26,22 +28,30 @@ import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/l
  */
 export async function notifyNewMessage(messageId: string): Promise<void> {
   try {
-    /* Le service n'est pas branché — l'état normal tant que la clé Resend
-       n'est pas posée. On s'arrête AVANT les requêtes ci-dessous : une
-       fonctionnalité éteinte ne doit rien coûter à l'envoi d'un message,
-       et surtout pas quatre allers-retours en base par message. */
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) return;
+    /* DEUX CANAUX, DEUX CONFIGURATIONS, UNE SEULE RÈGLE D'ENVOI.
+       L'email et le push s'allument indépendamment : chacun peut être
+       éteint sans empêcher l'autre. Ce qu'ils PARTAGENT, c'est tout ce
+       qui suit — qui prévenir, et la règle anti-spam. La dupliquer dans
+       deux fonctions, c'est se garantir qu'un jour l'une enverra ce que
+       l'autre retient. */
+    const emailPret = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+    const pushPret = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
     /* Sans adresse de site, le lien de l'email serait relatif — donc mort
        dans une boîte mail. Un email qui annonce un message et ne permet
        pas d'y aller est pire que pas d'email : il fait ouvrir, chercher,
-       et abandonner. Signalé, lui, parce que c'est une configuration à
-       moitié faite et non un service volontairement éteint. */
+       et abandonner. Le push, lui, n'en a pas besoin : son lien est
+       relatif et s'ouvre dans l'application, jamais dans une boîte mail. */
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
-    if (!siteUrl) {
-      console.error("[email] NEXT_PUBLIC_SITE_URL absente : notification non envoyée.");
-      return;
+    if (emailPret && !siteUrl) {
+      console.error("[email] NEXT_PUBLIC_SITE_URL absente : email non envoyé.");
     }
+    const emailPossible = emailPret && Boolean(siteUrl);
+
+    /* On s'arrête AVANT les requêtes ci-dessous si RIEN ne peut partir :
+       une fonctionnalité éteinte ne doit pas coûter quatre allers-retours
+       en base par message envoyé. */
+    if (!emailPossible && !pushPret) return;
 
     const admin = createAdminClient();
 
@@ -121,6 +131,40 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
        c'est la décision du 2026-09-15. */
     if (recipient.is_deleted) return;
 
+
+    /* LE PUSH D'ABORD, ET L'ORDRE N'EST PAS INDIFFÉRENT.
+       C'est lui qui arrive en quelques secondes sur un écran verrouillé ;
+       l'email met le temps qu'il met. Le faire partir avant évite qu'une
+       lenteur de Resend retarde la seule alerte que la personne verra
+       vraiment. Il ne lève jamais (voir `src/lib/push.ts`), donc il ne
+       peut pas empêcher l'email qui suit.
+
+       CE QU'IL NE DIT PAS : le corps du message. Un push s'affiche sur un
+       écran verrouillé, que n'importe qui à côté peut lire. L'email
+       recopie l'extrait, lui, parce qu'il faut déverrouiller son téléphone
+       et ouvrir sa boîte pour le voir. Deux niveaux d'exposition, deux
+       contenus. */
+    if (pushPret) {
+      await sendPushToUser(recipient.auth_user_id, {
+        titre: senderName,
+        corps: message.products?.title
+          ? `Nouveau message à propos de : ${message.products.title}`
+          : "Vous avez un nouveau message.",
+        url: `/messages/${message.conversation_id}`,
+        /* Un `tag` par CONVERSATION : deux messages du même fil
+           remplacent la notification précédente au lieu d'en empiler
+           dix. */
+        tag: `conversation-${message.conversation_id}`,
+      });
+    }
+
+    if (!emailPossible) return;
+
+    /* L'ADRESSE EMAIL N'EST CHERCHÉE QU'ICI, ET C'EST UNE CORRECTION.
+       Elle l'était avant le push, donc un compte sans adresse lisible —
+       ou une panne de `auth.admin` — supprimait AUSSI la notification
+       push, qui n'en a pourtant aucun besoin. Un canal ne doit jamais
+       tomber à cause de la configuration d'un autre. */
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
       recipient.auth_user_id,
     );

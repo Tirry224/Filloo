@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { FileText, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
+import { BellRing, FileText, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { PushToggle } from "@/components/push/PushToggle";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
@@ -83,9 +84,18 @@ export default async function AccountPage() {
                 passe, et l'offrir des deux côtés laisserait croire qu'il y
                 en a deux à tenir à jour. */}
             {merchant ? null : (
-              <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
-                <ChangePasswordForm />
-              </MenuPanel>
+              <>
+                {/* Même règle que le mot de passe : l'abonnement push
+                    appartient à la CONNEXION, pas au profil. Avec un
+                    compte commerçant, il vit sur l'écran boutique — sinon
+                    deux interrupteurs commanderaient le même appareil. */}
+                <MenuPanel icon={BellRing} label="Notifications" title="Notifications sur cet appareil">
+                  <PushToggle />
+                </MenuPanel>
+                <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
+                  <ChangePasswordForm />
+                </MenuPanel>
+              </>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
           </MenuList>
