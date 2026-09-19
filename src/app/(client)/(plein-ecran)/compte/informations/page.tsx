@@ -17,7 +17,7 @@ import { getCities } from "@/lib/data/reference";
  * La ville, elle, est branchée sur `profiles.city_id`
  * (0010_client_profile_city.sql) : un client peut désormais choisir sa
  * ville de résidence, indépendamment de la ville de navigation du fil
- * (`/recherche/ville`, un simple paramètre d'URL, pas une donnée de
+ * (le filtre `?ville=` de la recherche, un simple paramètre d'URL, pas une donnée de
  * profil).
  */
 export default async function ProfilePage() {

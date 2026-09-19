@@ -1,6 +1,6 @@
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpDown, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
+import { FilterChip } from "@/components/ui/FilterChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
@@ -41,8 +41,8 @@ export default async function SearchPage({
 
      La ville de départ est désormais résolue au même endroit pour les deux
      écrans (`getDefaultCityName`). Changer de ville reste possible et
-     manuel : `?ville=` gagne toujours, la feuille `/recherche/ville` ne
-     bouge pas. */
+     manuel : `?ville=` gagne toujours, et se choisit maintenant dans le
+     panneau de la puce « ville » plutôt que sur une page à part. */
   const defaultVille = await getDefaultCityName(supabase, cities);
   const ville = villeParam ?? defaultVille;
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
@@ -77,6 +77,21 @@ export default async function SearchPage({
   // un filtre qu'on n'a pas posé reviendrait à déplacer quelqu'un de chez
   // lui pour lui rendre service.
   const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
+
+  /* Une seule fonction construit TOUTES les URL de filtre. Les recopier à
+     la main, c'est la certitude qu'un jour l'une d'elles oubliera de
+     reporter `q` — et effacer la recherche de quelqu'un parce qu'il a
+     changé de ville est le genre de défaut qu'on ne remarque qu'en
+     production. */
+  const lien = (modifs: { ville?: string; categorie?: string; tri?: string }) => {
+    const params = new URLSearchParams({
+      q,
+      ville: modifs.ville ?? ville,
+      categorie: modifs.categorie ?? categorie,
+      tri: modifs.tri ?? tri,
+    });
+    return `/recherche?${params.toString()}`;
+  };
 
   return (
     <>
@@ -142,59 +157,56 @@ export default async function SearchPage({
                 lancée, elle mérite d'être retenue. */}
             <RecentSearches q={q} show={false} />
 
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-ink-soft">
-                <b className="text-ink">
-                  {results.length} produit{results.length > 1 ? "s" : ""}
-                </b>{" "}
-                trouvé{results.length > 1 ? "s" : ""}
-              </p>
-              <Chip
-                href={`/recherche/filtres?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}`}
-                selected={activeFilterCount > 0}
-                icon={SlidersHorizontal}
-              >
-                Filtres{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
-              </Chip>
-            </div>
+            <p className="text-sm text-ink-soft">
+              <b className="text-ink">
+                {results.length} produit{results.length > 1 ? "s" : ""}
+              </b>{" "}
+              trouvé{results.length > 1 ? "s" : ""}
+              {activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}
+            </p>
 
-            {/* Les filtres actifs restent visibles : un résultat vide sans
-                filtre affiché est incompréhensible — on croit le catalogue
-                vide alors qu'on a simplement trop filtré. La catégorie ne
-                s'affiche plus en rangée complète (dix puces à faire défiler) :
-                elle se choisit dans la feuille « Filtres », et seule celle
-                retenue apparaît ici, avec de quoi la retirer d'un tap. Ville
-                ouvre sa propre feuille ; Récents/Populaires sont deux puces
-                mutuellement exclusives, un choix binaire n'a pas besoin d'une
-                feuille pour se faire. */}
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
-              <Chip
-                href={`/recherche/ville?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`}
-                selected
-              >
-                {ville}
-              </Chip>
-              <Chip
-                href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=recent`}
-                selected={tri !== "populaire"}
-              >
-                Récents
-              </Chip>
-              <Chip
-                href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=populaire`}
-                selected={tri === "populaire"}
-              >
-                Populaires
-              </Chip>
-              {categorie !== "Tout" ? (
-                <Chip
-                  href={`/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(ville)}&categorie=Tout&tri=${encodeURIComponent(tri)}`}
-                  selected
-                  icon={X}
-                >
-                  {categorie}
-                </Chip>
-              ) : null}
+            {/* Les trois filtres s'ouvrent PAR-DESSUS les résultats, chacun
+                dans son panneau, au lieu d'envoyer sur une page qui les
+                cache. On voit ce qu'on filtre pendant qu'on filtre, et
+                aucune navigation n'est nécessaire pour revenir.
+
+                La rangée passe à la ligne (`flex-wrap`) et ne défile PAS :
+                un parent en `overflow-x: auto` découperait les panneaux,
+                parce que rogner horizontalement rogne aussi verticalement.
+                C'est écrit ici parce que la contrainte porte sur ce
+                conteneur, pas sur les puces. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterChip
+                label={ville}
+                selected={ville !== defaultVille}
+                icon={MapPin}
+                options={cities.map((c) => ({
+                  label: c.name,
+                  href: lien({ ville: c.name }),
+                  selected: c.name === ville,
+                }))}
+              />
+              <FilterChip
+                label={categorie === "Tout" ? "Catégorie" : categorie}
+                selected={categorie !== "Tout"}
+                icon={SlidersHorizontal}
+                options={[
+                  { label: "Toutes catégories", href: lien({ categorie: "Tout" }), selected: categorie === "Tout" },
+                  ...categories.map((c) => ({
+                    label: c.name,
+                    href: lien({ categorie: c.name }),
+                    selected: c.name === categorie,
+                  })),
+                ]}
+              />
+              <FilterChip
+                label={tri === "populaire" ? "Populaires" : "Récents"}
+                icon={ArrowUpDown}
+                options={[
+                  { label: "Récents", href: lien({ tri: "recent" }), selected: tri !== "populaire" },
+                  { label: "Populaires", href: lien({ tri: "populaire" }), selected: tri === "populaire" },
+                ]}
+              />
             </div>
 
             {results.length === 0 ? (

@@ -1237,6 +1237,29 @@ restent à regarder sur un vrai téléphone.
   `README.md` annonçaient 33 ou 34 écrans là où `/ecrans` en liste 36
   depuis ce rapatriement.
 
+### 2026-09-19 (fin) — les filtres s'ouvrent au-dessus des résultats
+
+- **Les deux pages de filtres ont été supprimées** (`/recherche/filtres`
+  et `/recherche/ville`) : une page entière cachait exactement ce qu'on
+  essayait de filtrer, et imposait deux navigations pour un choix.
+- **Les trois filtres — ville, catégorie, tri — s'ouvrent maintenant dans
+  un panneau flottant** (`src/components/ui/FilterChip.tsx`), étroit et
+  plafonné à 55 % de la hauteur, pour qu'on continue de voir la liste
+  derrière.
+- **Aucun JavaScript : c'est un `<details>`**, donc le panneau s'ouvre
+  avant même que le socle JS soit chargé (`docs/PERFORMANCE.md`, R3).
+- **Une contrainte à ne pas casser** : la rangée de puces passe à la ligne
+  et ne défile PAS horizontalement — un parent en `overflow-x: auto`
+  découperait les panneaux, parce que rogner horizontalement rogne aussi
+  verticalement.
+- **Un token d'ombre ajouté** (`--shadow-panel`) : Makiti se dessine avec
+  des bordures, mais un élément qui flotte a besoin de dire lequel des
+  deux plans est devant.
+- **Décisions du porteur du projet** : pas de filtre neuf/occasion (la
+  colonne n'existe pas et c'est une décision produit), pas de compteur par
+  option pour l'instant (chacun coûterait une requête d'agrégat, et
+  afficherait 0 ou 1 sur un catalogue encore vide).
+
 ---
 
 ## 7. Le vrai risque
