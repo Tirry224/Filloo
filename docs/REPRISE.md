@@ -1328,6 +1328,38 @@ restent à regarder sur un vrai téléphone.
   aucun des deux n'a besoin d'être imbriqué dans l'autre. Natif, ancien,
   et ça évite de dupliquer le formulaire ou d'écrire du JavaScript.
 
+### 2026-09-19 (fin de journée) — les fondations du push
+
+- **Décision du porteur du projet** : commencer par les commerçants, sur
+  « nouveau message » seulement, avec un service worker SANS cache.
+- **Étape 1 — l'application est installable** : `src/app/manifest.ts`,
+  icônes 192/512 plein cadre (`public/icons/`) et `apple-touch-icon`.
+  Sans cela, iOS n'autorise aucun push : Safari le réserve aux
+  applications ajoutées à l'écran d'accueil.
+- **Étape 2 — les clés VAPID sont posées** : la publique dans `.env`
+  (versionné, elle part de toute façon au navigateur), la privée dans
+  Vercel uniquement, en variable « sensible ».
+- **Étape 3 — le service worker existe** (`public/sw.js`) et ne fait QUE
+  trois choses : afficher un push, ouvrir la bonne conversation au clic,
+  se réabonner quand le service de push révoque l'abonnement. **Aucune
+  mise en cache**, et les trois façons de le désinstaller sont écrites en
+  tête du fichier, avant d'en avoir besoin.
+- **Étape 4 — la table `push_subscriptions` est écrite** (migration
+  `0023`), avec son RLS et quatre tests SQL : on ne s'abonne qu'en son
+  nom, on ne voit pas l'appareil d'un autre, on ne le supprime pas, et un
+  même appareil ne s'enregistre qu'une fois.
+- **La table porte des APPAREILS, pas des personnes** : elle est rattachée
+  à `auth_user_id` et non à `profile_id`, parce qu'une connexion peut
+  avoir deux profils mais n'a qu'un téléphone.
+- **CE QUI RESTE AVANT QUE QUOI QUE CE SOIT ARRIVE** : exécuter `0023`
+  dans Supabase, regénérer `src/lib/database.types.ts`, puis les étapes 5
+  (interrupteur d'abonnement), 6 (envoi de test) et 7 (branchement sur
+  `notifyNewMessage`).
+- **Une référence en avance dans `public/sw.js`** : le réabonnement
+  appelle `/api/push/abonnement`, qui n'existe pas encore. C'est
+  volontaire et sans danger — ce cas ne se produit qu'après un premier
+  abonnement, donc pas avant l'étape 5.
+
 ---
 
 ## 7. Le vrai risque

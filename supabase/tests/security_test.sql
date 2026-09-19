@@ -2046,5 +2046,72 @@ select pg_temp.check('client retabli : le fil se rouvre a l''ecriture',
         and m.shop_name = 'Boutique G')));
 reset role;
 
+
+-- =====================================================================
+-- Abonnements push : un appareil n'appartient qu'à une connexion (0023)
+-- =====================================================================
+-- Ces trois valeurs — endpoint, p256dh, auth_secret — forment ensemble le
+-- droit d'écrire sur l'écran verrouillé de quelqu'un. Les voir, c'est
+-- pouvoir lui envoyer une notification au nom de Makiti ; les écrire au
+-- nom d'un autre, c'est détourner les siennes.
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+
+insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+values ('11111111-1111-1111-1111-111111111111',
+        'https://push.example/abonne-1', 'cle-p256dh-1', 'cle-auth-1');
+
+select pg_temp.check('j''abonne mon propre appareil',
+  (select count(*) = 1 from public.push_subscriptions
+    where endpoint = 'https://push.example/abonne-1'));
+
+-- (a) S'abonner au nom de quelqu'un d'autre : refusé par `with check`.
+do $$
+begin
+  insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+  values ('44444444-4444-4444-4444-444444444444',
+          'https://push.example/vole', 'x', 'y');
+  raise exception 'ECHEC un abonnement a pu etre cree au nom d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    abonnement au nom d''un autre refuse (RLS)';
+end $$;
+
+reset role;
+
+-- (b) L'appareil d'un autre reste invisible. On l'insère hors RLS, puis
+--     on regarde ce que la personne voit : rien.
+insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+values ('44444444-4444-4444-4444-444444444444',
+        'https://push.example/appareil-du-voisin', 'p', 'a');
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+select pg_temp.check('l''appareil d''un autre est invisible',
+  (select count(*) = 0 from public.push_subscriptions
+    where endpoint = 'https://push.example/appareil-du-voisin'));
+
+-- (c) Et il ne se supprime pas non plus : une ligne qu'on ne voit pas
+--     n'est pas une ligne qu'on peut effacer.
+delete from public.push_subscriptions
+ where endpoint = 'https://push.example/appareil-du-voisin';
+reset role;
+select pg_temp.check('l''appareil d''un autre survit a une tentative de suppression',
+  (select count(*) = 1 from public.push_subscriptions
+    where endpoint = 'https://push.example/appareil-du-voisin'));
+
+-- (d) Le même appareil qui se réabonne REMPLACE sa ligne. Sans cette
+--     contrainte, une personne recevrait deux fois chaque notification.
+do $$
+begin
+  insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+  values ('11111111-1111-1111-1111-111111111111',
+          'https://push.example/abonne-1', 'autre', 'autre');
+  raise exception 'ECHEC un endpoint a pu etre enregistre deux fois';
+exception when unique_violation then
+  raise notice 'OK    un endpoint ne s''enregistre qu''une fois';
+end $$;
+
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

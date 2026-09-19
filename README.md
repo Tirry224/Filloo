@@ -174,6 +174,34 @@ CRON_SECRET=<une chaîne longue et aléatoire>
   l'appel depuis Supabase avec `pg_cron` + `pg_net` (disponibles, non
   installés). La route ne change dans aucun des trois cas.
 
+## Notifications push (en cours de construction)
+
+Étapes 1 à 4 faites le 2026-09-19 : l'application est installable, le
+service worker existe, les clés sont posées et la table des abonnements
+est écrite. **Rien n'est encore envoyé** — il manque l'interrupteur
+d'abonnement et l'envoi côté serveur (étapes 5 à 7).
+
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<déjà dans .env, publique par nature>
+VAPID_PRIVATE_KEY=<Vercel uniquement, jamais ici>
+```
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — le navigateur la reçoit de toute
+  façon : c'est elle qu'il envoie au service de push pour créer un
+  abonnement. Elle vit donc dans `.env`, versionné.
+- `VAPID_PRIVATE_KEY` — **posée dans Vercel, à ne jamais recopier ici.**
+  Quiconque l'obtient peut notifier tous les abonnés au nom de Makiti.
+- **La migration `0023` reste À EXÉCUTER** dans Supabase : sans elle, la
+  table `push_subscriptions` n'existe pas et l'étape 5 ne peut pas
+  commencer.
+- **Sur iPhone, le push n'existe que si l'application a été « ajoutée à
+  l'écran d'accueil »** — Safari ne l'autorise pas autrement. Sur Android,
+  le navigateur suffit.
+- **Le service worker ne met RIEN en cache** (`public/sw.js`) : il ne sert
+  qu'à recevoir les notifications. Pour le désinstaller partout, vider ce
+  fichier et déployer ; pour un seul téléphone, ouvrir l'app avec
+  `?sw=off`.
+
 Ce qui coince se voit en une requête, et c'est tout l'intérêt d'être
 passé par une file plutôt que par un webhook :
 
