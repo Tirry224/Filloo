@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { PushInvite } from "@/components/push/PushInvite";
 import { PushToggle } from "@/components/push/PushToggle";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section } from "@/components/ui/Screen";
@@ -187,6 +188,15 @@ export default async function EditShopPage() {
               <MenuItem icon={ShoppingBag} label="Créer mon compte client" href="/inscription" />
             </MenuList>
           )}
+
+          {/* L'invitation est posée AVANT la liste de réglages, parce que
+              c'est tout le problème qu'elle corrige : l'interrupteur
+              existait depuis le premier jour, replié dans le panneau
+              « Notifications » ci-dessous, et il fallait savoir qu'il
+              était là pour l'y trouver. Elle disparaît dès que cet
+              appareil est abonné — ou si la permission a déjà été
+              refusée, auquel cas il n'y a plus rien à proposer. */}
+          <PushInvite raison="Un client qui n'obtient pas de réponse écrit à la boutique suivante. C'est le seul canal qui vous prévient sur un écran verrouillé, application fermée." />
 
           <MenuList>
             {/* Le mot de passe se change ICI, et non dans « Modifier ma

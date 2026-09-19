@@ -3,6 +3,7 @@ import { BellRing, FileText, KeyRound, LogOut, MessageCircle, Store, User } from
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { PushInvite } from "@/components/push/PushInvite";
 import { PushToggle } from "@/components/push/PushToggle";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
@@ -75,6 +76,15 @@ export default async function AccountPage() {
             <MenuList>
               <MenuItem icon={Store} label="Créer mon compte vendeur" href="/inscription" />
             </MenuList>
+          )}
+
+          {/* Même règle d'emplacement que l'interrupteur juste en dessous :
+              l'abonnement appartient à la CONNEXION, donc avec un compte
+              commerçant l'invitation vit sur l'écran boutique et nulle
+              part ailleurs. Deux invitations pour un seul appareil
+              laisseraient croire à deux réglages distincts. */}
+          {merchant ? null : (
+            <PushInvite raison="Un vendeur peut répondre à votre question quelques heures plus tard. C'est le seul canal qui vous prévient sans ouvrir l'application." />
           )}
 
           <MenuList>
