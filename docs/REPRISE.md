@@ -1259,6 +1259,16 @@ restent à regarder sur un vrai téléphone.
   colonne n'existe pas et c'est une décision produit), pas de compteur par
   option pour l'instant (chacun coûterait une requête d'agrégat, et
   afficherait 0 ou 1 sur un catalogue encore vide).
+- **Le fil d'accueil suit le même principe** : sa rangée de catégories
+  défilait au doigt — dix puces dont on ne voyait que trois, sans rien
+  qui annonce les autres — et tient désormais dans le même panneau.
+  C'était la dernière rangée qui défilait horizontalement dans l'app.
+- **Ce que ça change, et qu'il faut regarder sur un vrai téléphone** :
+  les catégories ne s'offrent plus au regard, il faut ouvrir le panneau
+  pour les voir. Elles restent affichées en grille sur l'écran de
+  recherche au repos, donc elles ne disparaissent pas du produit — mais
+  si le fil d'accueil perd des clics vers les catégories, c'est là qu'il
+  faudra revenir.
 
 ---
 
