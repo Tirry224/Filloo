@@ -19,6 +19,12 @@ import type { Database } from "@/lib/database.types";
  * pose une question, reçoit oui ou non, et disparaît. La session de la
  * personne ne peut donc pas être abîmée par le résultat, quel qu'il soit.
  *
+ * Cette dernière phrase a été FAUSSE pendant trois jours : le code
+ * appelait `signOut()` après vérification, et cet appel est GLOBAL chez
+ * Supabase — il révoquait la session du navigateur. Voir le commentaire
+ * qui suit l'appel, plus bas : « ne rien faire » était la bonne
+ * réponse.
+ *
  * CE QU'IL N'EST PAS
  * Ce n'est pas une autorisation. Il répond « ce mot de passe ouvre bien ce
  * compte », rien de plus : c'est à l'appelant de vérifier d'abord QUI est
@@ -43,14 +49,25 @@ export async function passwordIsValid(email: string, password: string): Promise<
 
   const { data, error } = await jetable.auth.signInWithPassword({ email, password });
 
-  /* On referme derrière soi. `persistSession: false` fait déjà que rien
-     n'est écrit nulle part, mais le jeton obtenu reste valable côté
-     Supabase jusqu'à son expiration : le révoquer tout de suite évite de
-     laisser traîner une session que personne n'utilisera. Son échec ne
-     change rien au résultat, d'où le `catch` silencieux. */
-  if (data?.session) {
-    await jetable.auth.signOut().catch(() => {});
-  }
+  /* ON NE DÉCONNECTE PAS. LA VERSION PRÉCÉDENTE LE FAISAIT, ET C'ÉTAIT LE
+     BUG : `signOut()` sans argument vaut `scope: "global"` chez Supabase,
+     c'est-à-dire « révoque TOUS les jetons de cet utilisateur, partout ».
+     Le client jetable révoquait donc aussi la session du NAVIGATEUR de la
+     personne — qui se retrouvait déconnectée à chaque enregistrement
+     d'informations et à chaque changement de mot de passe. Constaté à
+     l'usage le 2026-09-19.
+
+     L'intention d'origine — ne pas laisser traîner un jeton que personne
+     n'utilisera — était bonne, mais l'outil ne sait pas faire ça : le
+     client anonyme n'a aucun moyen de révoquer UNE session précise.
+     `scope: "local"` ne ferait qu'effacer un stockage qui n'existe pas
+     ici (`persistSession: false`), donc l'appeler serait du théâtre.
+
+     Ce qui reste, et ce que ça coûte : le jeton obtenu par cette
+     vérification vit jusqu'à son expiration, sans être écrit nulle part
+     ni renvoyé à personne. C'est le même risque qu'une connexion normale
+     dont on ferme l'onglet — et infiniment moins coûteux que déconnecter
+     quelqu'un qui vient de prouver son identité. */
 
   return !error && Boolean(data?.session);
 }

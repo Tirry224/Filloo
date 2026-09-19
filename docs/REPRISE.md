@@ -734,6 +734,23 @@ temps.
   du 2026-09-13 et l'ordre actuel — ce qui reste d'abord, le journal à
   la fin.
 
+### Sur Supabase Auth
+
+- **`signOut()` sans argument est GLOBAL** : il révoque TOUS les jetons de
+  l'utilisateur, sur tous ses appareils, pas seulement ceux du client qui
+  appelle. `src/lib/supabase/verify.ts` le faisait après avoir vérifié un
+  mot de passe — avec un client pourtant « jetable » — et déconnectait
+  donc la personne du navigateur à chaque enregistrement. Le bug a vécu
+  trois jours et n'était visible qu'à l'usage : aucun test, aucun type,
+  aucun build ne pouvait l'attraper.
+- **La leçon générale** : un client Supabase « isolé » ne l'est que pour
+  ce qu'il STOCKE. Tout ce qu'il demande au serveur porte sur le compte
+  entier. L'isolation locale ne dit rien de la portée distante.
+- **Le client anonyme ne sait pas révoquer UNE session** : ni
+  `scope: "local"` (qui n'efface qu'un stockage) ni rien d'autre. Un jeton
+  obtenu pour vérifier un mot de passe vit donc jusqu'à son expiration —
+  c'est le prix, et il est bien moindre que déconnecter quelqu'un.
+
 ### Sauvés de `claude/kind-thompson-khl111` avant sa fermeture
 
 Ces trois leçons ont été payées par la v1 du projet, le 2026-09-11.
