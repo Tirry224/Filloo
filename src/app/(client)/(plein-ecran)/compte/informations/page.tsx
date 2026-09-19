@@ -5,6 +5,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProfileForm } from "@/components/auth/ProfileForm";
+import { ConfirmPasswordSave } from "@/components/auth/ConfirmPasswordSave";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
@@ -33,11 +34,7 @@ export default async function ProfilePage() {
       <TopBar
         title="Mes informations"
         backHref="/compte"
-        right={
-          <button type="submit" form="profile-form" className="cursor-pointer text-base font-semibold text-accent">
-            Enregistrer
-          </button>
-        }
+        right={<ConfirmPasswordSave formId="profile-form" />}
       />
       <ScreenBody>
         <Section className="gap-4">

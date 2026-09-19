@@ -8,6 +8,7 @@ import { getMyProfile } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
 import type { Database } from "@/lib/database.types";
 import type { Merchant } from "@/lib/types";
+import { ConfirmPasswordSave } from "@/components/auth/ConfirmPasswordSave";
 
 type MerchantRow = {
   id: string;
@@ -89,13 +90,10 @@ export default async function EditShopPage() {
         title="Modifier ma boutique"
         backHref="/vendeur/boutique"
         right={
-          <button
-            type="submit"
-            form="shop-edit-form"
-            className="cursor-pointer text-base font-semibold text-accent"
-          >
-            Enregistrer
-          </button>
+          <ConfirmPasswordSave
+            formId="shop-edit-form"
+            hint="Sans lui, rien n'est enregistré. Il n'est pas modifié ici."
+          />
         }
       />
 

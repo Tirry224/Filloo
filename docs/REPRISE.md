@@ -1297,6 +1297,19 @@ restent à regarder sur un vrai téléphone.
   de passe. Deux preuves différentes — un lien reçu, ou le mot de passe
   actuel — donc deux actions ; les fondre obligerait à rendre le contrôle
   facultatif, c'est-à-dire à ne plus en avoir.
+- **La CONFIRMATION par mot de passe est passée en panneau elle aussi**,
+  sur les deux écrans d'édition : « Enregistrer » dans la barre du haut
+  n'enregistre plus, il OUVRE un panneau où le mot de passe se tape, et
+  le seul bouton qui envoie le formulaire est celui du panneau.
+- **Deux défauts que ça corrige** : on remplissait le champ avant même
+  d'avoir décidé d'enregistrer, et sur un écran qui défile, le bouton de
+  la barre restait à portée de pouce alors que le champ qu'il exige
+  était deux écrans plus bas — le refus arrivait sans qu'on voie de quoi
+  il parlait.
+- **Le champ rejoint son formulaire par l'attribut `form` du HTML** : il
+  vit dans la barre du haut, le formulaire dans le corps de l'écran, et
+  aucun des deux n'a besoin d'être imbriqué dans l'autre. Natif, ancien,
+  et ça évite de dupliquer le formulaire ou d'écrire du JavaScript.
 
 ---
 

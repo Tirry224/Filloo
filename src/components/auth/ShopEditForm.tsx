@@ -75,40 +75,18 @@ export function ShopEditForm({
         <Textarea id="description" name="description" rows={3} defaultValue={merchant.description ?? ""} />
       </Field>
 
-      {/* LE MOT DE PASSE N'EST PLUS ICI
-          Il a vécu dans ce formulaire, pour éviter deux « enregistrer »
-          sur un même écran qui ne sauvegardent pas la même chose. Il vit
-          désormais dans un panneau de l'onglet `/vendeur/boutique`, et le
-          piège des deux boutons ne revient pas : ce panneau est seul sur
-          son écran, et cet écran-ci n'a plus de champ de mot de passe à
-          part celui qui CONFIRME. Ce sont deux choses différentes —
-          l'adresse et le numéro WhatsApp sont publics et lus par un
-          client, le mot de passe n'appartient qu'à la connexion. */}
-      <div className="my-1 h-px bg-line" />
+      {/* AUCUN CHAMP DE MOT DE PASSE DANS CE FORMULAIRE, ET DEUX RAISONS
+          Le CHANGEMENT de mot de passe vit dans un panneau de l'onglet
+          `/vendeur/boutique` : il n'appartient qu'à la connexion, alors
+          que l'adresse et le numéro WhatsApp d'ici sont publics et lus
+          par un client avant qu'il se déplace.
 
-      {/* LA CONFIRMATION, EN DERNIER ET TOUJOURS EXIGÉE
-          Elle garde l'enregistrement entier, pas seulement le mot de passe :
-          l'adresse et le numéro WhatsApp affichés ici sont ce qu'un client
-          lit avant de se déplacer. Quelqu'un qui emprunte un téléphone
-          déverrouillé quelques secondes pouvait les réécrire sans rien
-          connaître du compte. Ce champ est ce qui distingue « cette session
-          est ouverte » de « c'est bien la bonne personne, maintenant ».
-
-          `autoComplete="current-password"` pour que le gestionnaire de mots
-          de passe propose l'ANCIEN, pas d'en inventer un nouveau. */}
-      <Field
-        label="Mot de passe actuel"
-        htmlFor="currentPassword"
-        hint="Obligatoire : sans lui, rien n'est enregistré."
-      >
-        <Input
-          id="currentPassword"
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Votre mot de passe"
-        />
-      </Field>
+          La CONFIRMATION par mot de passe, elle, est toujours exigée pour
+          enregistrer — c'est ce qui distingue « cette session est
+          ouverte » de « c'est bien la bonne personne, maintenant » — mais
+          elle se demande au moment du geste, dans le panneau de
+          `ConfirmPasswordSave`, dont le champ porte `form="shop-edit-form"`
+          pour rejoindre ce formulaire sans y être imbriqué. */}
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
     </form>

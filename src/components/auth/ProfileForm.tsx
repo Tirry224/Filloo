@@ -49,33 +49,15 @@ export function ProfileForm({
           ))}
         </Select>
       </Field>
-      {/* LA CONFIRMATION PAR MOT DE PASSE, ET CE QU'ELLE PROTÈGE
+      {/* LA CONFIRMATION PAR MOT DE PASSE N'EST PAS DANS CE FORMULAIRE
           Le nom et le téléphone d'un compte client sont ce par quoi un
-          commerçant le rappelle après une commande. Quelqu'un qui emprunte
-          un téléphone déverrouillé quelques secondes pouvait les réécrire
-          sans rien connaître du compte, et détourner vers lui les rappels
-          destinés à quelqu'un d'autre. Redemander le mot de passe au
-          moment d'écrire distingue « cette session est ouverte » de
-          « c'est bien la bonne personne, maintenant ».
-
-          Même geste que l'enregistrement d'une boutique : le parcours est
-          le même des deux côtés, donc personne n'a deux habitudes à
-          prendre. */}
-      <div className="my-1 h-px bg-line" />
-
-      <Field
-        label="Mot de passe actuel"
-        htmlFor="currentPassword"
-        hint="Il confirme que c'est bien vous. Il n'est pas modifié ici."
-      >
-        <Input
-          id="currentPassword"
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Votre mot de passe"
-        />
-      </Field>
+          commerçant le rappelle après une commande : les réécrire depuis
+          un téléphone emprunté détournerait ces rappels. Le mot de passe
+          actuel est donc exigé pour écrire — mais il se demande AU MOMENT
+          d'enregistrer, dans le panneau de `ConfirmPasswordSave`, et non
+          en bas d'une liste de champs qu'on remplit avant même d'avoir
+          décidé. Le champ y porte `form="profile-form"`, ce qui le relie
+          à ce formulaire sans y être imbriqué. */}
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
     </form>
