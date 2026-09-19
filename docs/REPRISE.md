@@ -5,8 +5,9 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-19** (le cron ramené à une fois par
-jour, parce que l'offre Vercel est passée en Hobby — voir le journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-19** (les notifications push finies —
+les six points qui restaient — et six défauts trouvés en relisant le code,
+notés au journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -1399,6 +1400,99 @@ restent à regarder sur un vrai téléphone.
   depuis un iPhone (sans quoi aucun push n'arrive sur iOS), et une
   notification réellement reçue écran éteint. Rien de tout cela ne peut se
   vérifier depuis une session de code.
+
+---
+
+### 2026-09-19 (nuit, suite) — le push fini, et ce que la lecture du code a trouvé
+
+- **Les six points qui restaient sur le push sont écrits**, et ils ne
+  venaient pas du journal : ils viennent d'une relecture du code lui-même,
+  demandée après que deux comptes rendus successifs se sont contredits sur
+  l'état du projet.
+- **Le push annonce maintenant les décisions d'administration**
+  (`notifications-decisions.ts`), et c'est le point qui compte : le cron ne
+  passe qu'une fois par jour, donc un commerçant validé attendait jusqu'à
+  24 h un email qu'il devait penser à aller chercher.
+- **Un refus et une suspension ne s'annoncent PAS en clair sur un écran
+  verrouillé** : le push dit qu'une décision attend, l'email — qui exige de
+  déverrouiller son téléphone — dit laquelle et pourquoi. Une validation,
+  elle, s'annonce en clair : c'est une bonne nouvelle et elle appelle un
+  geste immédiat.
+- **Les deux canaux sont indépendants ici aussi** : `drainNotifications`
+  s'allume avec Resend OU avec les clés VAPID, et `composeFor` ne va plus
+  chercher l'adresse email quand aucun email ne doit partir — la même
+  correction que celle déjà faite dans `notifyNewMessage`.
+- **`sendPushToUser` rend le nombre d'appareils atteints** au lieu de
+  `void`. Sans ce chiffre, une décision annoncée par push seul serait
+  marquée « envoyée » même si personne n'avait d'appareil abonné, ce qui la
+  perdrait définitivement.
+- **Le push seul se réessaie, l'email seul aussi, et jamais les deux à la
+  fois** : quand un email doit suivre, le push ne part qu'au premier
+  passage (sinon une adresse invalide ferait sonner le téléphone cinq fois
+  pour une seule décision) ; quand il est le seul canal, il EST ce qu'on
+  réessaie. Ce défaut-là était dans la première version de ce travail, et
+  il a été trouvé en relisant le diff, pas en l'exécutant.
+- **L'interrupteur ne peut plus rester muet** : `serviceWorker.ready` est
+  une promesse qui ne se rejette JAMAIS, donc un service worker non
+  enregistré faisait un bouton sans effet, sans message. Elle est bornée à
+  10 secondes, et l'échec se dit.
+- **Une invitation propose enfin les notifications** (`PushInvite`), posée
+  sur l'écran boutique et sur l'écran compte, selon la même règle
+  d'emplacement unique que l'interrupteur : l'abonnement appartient à la
+  CONNEXION, pas au profil. Elle disparaît dès que l'appareil est abonné ou
+  si la permission a déjà été refusée.
+- **La séquence d'abonnement vit désormais dans `usePushAbonnement`**,
+  partagée par l'interrupteur et l'invitation : deux commandes du même
+  abonnement ne peuvent pas diverger si elles lisent le même code.
+- **Les appareils partent avec le compte** : `0023` compte sur un
+  `on delete cascade` depuis `auth.users`, mais `deleteAccountAction`
+  BANNIT au lieu de supprimer — la cascade ne se déclenchait donc jamais et
+  les abonnements restaient en base indéfiniment. La suppression est
+  maintenant explicite. **Le commentaire de la migration `0023` reste
+  faux** : on ne réécrit pas une migration déjà appliquée (règle de la
+  section 4), c'est donc noté ici.
+- **Le réabonnement ne laisse plus de ligne fantôme** : `sw.js` envoie
+  l'ancien `endpoint` avec le nouveau, et la route le supprime APRÈS avoir
+  écrit le nouveau. Auparavant, chaque notification partait deux fois pour
+  un seul appareil jusqu'au premier 404/410.
+- **`NEXT_PUBLIC_SITE_URL` absente se dit maintenant dans les journaux** :
+  le sujet VAPID retombait en silence sur `https://makiti.app`, un domaine
+  qui n'appartient pas au projet.
+- **Vérifié avant de pousser** : `typecheck`, `build`, `gardes` (13 cas),
+  `espaces` (108 fichiers) et `classes` (141 fichiers) passent. `poids`
+  dépasse toujours sur les polices (60 > 40 Ko) et sur `/conditions`
+  (12,1 > 12 Ko) — **mesuré identique AVANT ces changements**, donc
+  préexistant.
+
+### CE QUE LA LECTURE DU CODE A TROUVÉ, ET QUI N'EST PAS DU PUSH
+
+Ces défauts sont réels, aucun n'est bloquant, et aucun n'est corrigé : ils
+sont écrits ici pour ne pas être retrouvés deux fois.
+
+- **`countProductsElsewhere` affiche un chiffre faux** : elle demande
+  `p_limit: 500` alors que `search_products` plafonne à
+  `least(coalesce(p_limit,24), 50)`. L'écran de recherche vide annonce donc
+  au maximum « 50 produits ailleurs », quel que soit le vrai nombre.
+- **Supprimer un produit abandonne ses photos pour toujours** :
+  `deleteProductAction` supprime la ligne, la cascade de `0001` efface
+  `product_images` — qui portait les chemins — donc plus rien ne permet de
+  retrouver les fichiers dans le stockage. `updateProductAction` fait
+  pourtant ce ménage avec soin.
+- **Publier un produit est impossible sans JavaScript** : `PhotoPicker`
+  téléverse depuis le navigateur et `check_product_publishable` (0002, 3.2)
+  exige au moins une photo. Le geste central du commerçant est donc
+  JS-seul, pas « à moitié fait ».
+- **Un échec partiel de création de produit est sans issue** : le
+  `productId` est figé dans un `useState`, donc le réessai bute sur un
+  `duplicate key` brut, en anglais.
+- **Aucune interface d'administration n'existe** : valider, refuser,
+  suspendre et lire les signalements se font tous à la main dans Supabase,
+  alors que `reportConversationAction` promet « notre équipe va lire cette
+  conversation ».
+- **`NEXT_PUBLIC_SITE_URL` est un second `CRON_SECRET`** : sans elle, AUCUN
+  email ne part (`notifications.ts` se contente d'un `console.error`). Elle
+  n'est pas dans le `.env` versionné et ne figurait dans aucune liste de
+  blocages.
 
 ---
 
