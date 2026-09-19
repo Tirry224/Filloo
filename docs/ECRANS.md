@@ -1,4 +1,4 @@
-# Inventaire des écrans — 34
+# Inventaire des écrans — 36
 
 Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 écran à coder, et chaque case cochée est du travail réellement terminé.
@@ -32,17 +32,19 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 18 | Mes informations | Modification, suppression du compte |
 | 19 | Compte suspendu | Motif + recours |
 
-## Commerçant — 7
+## Commerçant — 9
 
 | # | Écran | Note |
 |---|-------|------|
 | 20 | Boutique en attente | Prépare ses brouillons pendant ce temps |
 | 21 | Boutique refusée | Motif + correction possible |
-| 22 | Mes produits | Deux chiffres : publiés, messages non lus |
+| 22 | Mes produits | La liste seule, sur `/vendeur/produits` : séparée de l'accueil le 2026-09-16, parce que mêler un tableau de bord et une liste obligeait à faire défiler le premier pour atteindre la seconde. |
+| 22b | Accueil commerçant | Le tableau de bord de l'espace, sur `/vendeur` : les deux chiffres (publiés, messages non lus) et les raccourcis. |
 | 23 | Mes produits — vide | Premier produit |
 | 24 | Ajouter / modifier un produit | 1 à 3 photos, prix, négociable |
 | 25 | Actions produit | Vendu, modifier, masquer, supprimer |
-| 26 | Modifier ma boutique | Revalidation si nom ou ville change ; fait aussi office de « compte » côté commerçant (bascule vers le client lié, déconnexion) |
+| 26 | Ma boutique | Écran de CONSULTATION : on y lit ses informations et on y trouve le compte (bascule vers le client lié, déconnexion). |
+| 26b | Modifier ma boutique | Écran plein écran, atteint par un geste explicite. Revalidation si le nom ou la ville change, et le mot de passe actuel est redemandé — l'adresse et le numéro WhatsApp sont ce qu'un client lit AVANT de se déplacer. |
 
 ## Messagerie — 6
 

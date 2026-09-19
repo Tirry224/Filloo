@@ -1154,6 +1154,45 @@ restent à regarder sur un vrai téléphone.
   qu'elles contiennent réellement reste à faire avant toute fusion ou
   suppression.
 
+### 2026-09-19 (suite) — cinq chantiers rapatriés, une branche fermée
+
+- **Trois branches ont été inventoriées fichier par fichier** avant toute
+  décision, parce qu'une branche qu'on supprime sans l'avoir lue emporte
+  ce qu'elle était seule à contenir.
+- **`claude/profile-city-edit-5cxvjb` (36 commits) : rien d'unique.** Ses
+  deux chantiers annoncés — ville de résidence, suppression de compte —
+  sont dans `main` depuis le 2026-09-13, et ses fichiers « uniques » sont
+  des ancêtres de ce que `main` a réécrit (dont un `BottomNav` supprimé
+  exprès parce qu'il affichait la mauvaise barre sur six écrans).
+- **`claude/kind-thompson-khl111` (18 commits) : la v1 du projet**, sur
+  des données en mémoire et sans Supabase. Son code ne se recolle pas,
+  mais six idées y restent vivantes et ABSENTES de `main` : la table
+  « hors périmètre » (7 familles), la validation du numéro guinéen
+  (`^6\d{8}$`), le bandeau « Pas de connexion », les filtres en puces
+  avec compte par option, la pagination `?n=` et l'avertissement sur la
+  désinstallation d'un service worker. **Cette branche reste ouverte.**
+- **`claude/verify-main-branches-pe8bp4` (7 commits) : rapatriée et
+  fermée.** Cinq commits rejoués sur `main` par `cherry-pick -x`, deux
+  abandonnés, puis la branche supprimée sur autorisation du porteur du
+  projet.
+- **Ce qui est arrivé dans `main` par ce rapatriement** : les gardes
+  d'espace sur les trois feuilles du fil (+ une règle dans
+  `scripts/verifier-espaces.mjs`), l'espace marchand à quatre onglets,
+  la séparation consultation/édition de la boutique, la double saisie du
+  mot de passe (`src/lib/password.ts`), et le mot de passe actuel exigé
+  pour enregistrer la boutique (`src/lib/supabase/verify.ts`).
+- **Ce qui a été abandonné, et pourquoi** : sa page de conditions
+  d'utilisation, parce que `main` a le même texte dans une meilleure
+  forme (texte isolé du JSX, une route par espace) ; et sa
+  documentation, antérieure de trois jours à celle de `main`.
+- **Vérifications passées avant le push** : `typecheck`, `build`,
+  `espaces` (99 fichiers), `gardes` (13 cas) et `classes` (129 fichiers),
+  tous verts — c'est la contrepartie exigée par `CLAUDE.md` depuis que
+  `main` est la seule branche.
+- **Deux inexactitudes corrigées au passage** : `docs/ECRANS.md` et le
+  `README.md` annonçaient 33 ou 34 écrans là où `/ecrans` en liste 36
+  depuis ce rapatriement.
+
 ---
 
 ## 7. Le vrai risque
