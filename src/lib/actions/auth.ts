@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionUser, landingForSession } from "@/lib/data/session";
+import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
@@ -91,27 +91,56 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
-/** Créer le SECOND compte lié (écran 12, en étant déjà connecté) : pas de
+/**
+ * Créer le SECOND compte lié (écran 12, en étant déjà connecté) : pas de
  * mot de passe à saisir, c'est la même connexion — juste un nouveau profil
- * (policy "profiles: je cree mon second compte", 0002). */
+ * (policy "profiles: je cree mon second compte", 0002).
+ *
+ * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT.
+ * Ils appartiennent à la connexion, pas au rôle : les redemander revenait
+ * à proposer d'en donner d'autres, et c'est ainsi que les deux profils
+ * d'une même personne se mettaient à diverger dès leur deuxième jour.
+ * L'écran les affiche désormais, il ne les édite pas ; ils se corrigent
+ * dans « Mes informations », des deux côtés.
+ *
+ * ET C'EST AUSSI UNE QUESTION DE SÉCURITÉ. La première version de cette
+ * correction propageait les valeurs SAISIES ICI vers le profil existant —
+ * ce qui aurait ouvert un contournement propre de la confirmation par mot
+ * de passe : un téléphone déverrouillé emprunté trente secondes, un
+ * second compte créé, et le nom comme le numéro du profil d'origine
+ * étaient réécrits sans rien connaître du compte. Or c'est exactement ce
+ * que `updateProfileAction` exige un mot de passe pour empêcher.
+ * Recopier ce qui est DÉJÀ en base ne peut rien réécrire.
+ */
 export async function createLinkedProfileAction(
   _prevState: ActionState | null,
   formData: FormData,
 ): Promise<ActionState> {
   const role = formData.get("role") === "merchant" ? "merchant" : "client";
-  const fullName = String(formData.get("fullName") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  if (!fullName || !phone) return { error: "Tous les champs sont obligatoires." };
-  const erreurNumero = erreurTelephone(phone, true);
-  if (erreurNumero) return { error: erreurNumero };
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) return { error: "Vous devez être connecté." };
 
+  /* L'identité vient du profil existant, jamais du formulaire. S'il n'y
+     en a pas, c'est qu'on n'est pas dans le cas « second compte » —
+     `/inscription` aurait affiché le mode `new` — et il n'y a rien à
+     recopier. */
+  const profiles = await getMyProfiles(supabase);
+  const existant = profiles.find((p) => !p.isDeleted);
+  if (!existant) return { error: "Aucun compte à lier. Reconnectez-vous, puis réessayez." };
+
   const { error } = await supabase
     .from("profiles")
-    .insert({ auth_user_id: user.id, role, full_name: fullName, phone: nettoyerTelephone(phone) });
+    .insert({
+      auth_user_id: user.id,
+      role,
+      full_name: existant.fullName,
+      /* Déjà normalisé au moment où il a été écrit : le repasser par
+         `nettoyerTelephone` ne changerait rien, et laisserait croire que
+         cette valeur vient d'être saisie. */
+      phone: existant.phone,
+    });
   if (error) {
     if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
     return { error: error.message };

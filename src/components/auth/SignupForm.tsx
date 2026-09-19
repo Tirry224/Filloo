@@ -112,21 +112,49 @@ export function SignupForm({
         ) : null}
       </div>
 
-      <Field label="Nom complet" htmlFor="fullName">
-        <Input id="fullName" name="fullName" autoComplete="name" placeholder="Mariama Diallo" defaultValue={defaultFullName} />
-      </Field>
+      {/* EN MODE LIÉ, L'IDENTITÉ S'AFFICHE ET NE SE SAISIT PLUS.
+          Le nom et le téléphone appartiennent à la CONNEXION, pas au
+          rôle : les redemander ici revenait à proposer d'en donner
+          d'autres, et c'est ainsi que les deux profils d'une même
+          personne se mettaient à diverger dès leur création. Les champs
+          étaient pré-remplis, ce qui masquait le piège plutôt que de le
+          retirer.
 
-      <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">
-        <Input
-          id="phone"
-          name="phone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="620 00 00 00"
-          defaultValue={defaultPhone}
-        />
-      </Field>
+          Ils ne sont pas non plus envoyés au serveur :
+          `createLinkedProfileAction` recopie ce qui est DÉJÀ en base.
+          Accepter ces valeurs-là depuis le formulaire aurait ouvert un
+          contournement de la confirmation par mot de passe — créer un
+          second compte pour réécrire le nom et le numéro du premier, sur
+          un téléphone emprunté. */}
+      {mode === "linked" ? (
+        <div className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-3.5 py-3">
+          <span className="text-2xs text-ink-soft">Ce compte sera créé à votre nom</span>
+          <span className="text-base font-semibold">{defaultFullName}</span>
+          <span className="text-sm text-ink-soft">{defaultPhone}</span>
+          <span className="mt-1 text-xs leading-normal text-ink-soft">
+            Pour les modifier, passez par « Mes informations » : le changement vaudra pour vos
+            deux comptes.
+          </span>
+        </div>
+      ) : (
+        <>
+          <Field label="Nom complet" htmlFor="fullName">
+            <Input id="fullName" name="fullName" autoComplete="name" placeholder="Mariama Diallo" defaultValue={defaultFullName} />
+          </Field>
+
+          <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="620 00 00 00"
+              defaultValue={defaultPhone}
+            />
+          </Field>
+        </>
+      )}
 
       {mode === "new" ? (
         <>
