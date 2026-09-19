@@ -41,12 +41,18 @@ export type FilterOption = {
  * La rangée qui contient ces puces passe donc à la ligne (`flex-wrap`) au
  * lieu de défiler. Si un jour elle redéfile, ce panneau se coupera.
  *
- * CE QU'IL NE FAIT PAS
- * Il ne se referme pas quand on touche ailleurs : ça demanderait du
- * JavaScript. Ce n'est pas gênant ici parce que chaque option est un lien
- * — choisir recharge la page, et le panneau repart fermé. Il n'y a donc
- * aucun bouton « Appliquer » : un brouillon de filtres serait un état de
- * plus à gérer, pour trois filtres.
+ * FERMER EN TOUCHANT AILLEURS
+ * Un `<details>` ne se referme nativement que par sa propre étiquette.
+ * C'est déroutant : sur un téléphone, on touche à côté d'une pop-up pour
+ * la fermer. L'attribut `data-panneau` signale ce panneau à
+ * `ClosePanels`, posé une fois dans le layout racine, qui le referme au
+ * tap extérieur et sur Échap. C'est une AMÉLIORATION, pas une dépendance :
+ * sans JavaScript, la puce ouvre et ferme toujours son panneau.
+ *
+ * PAS DE BOUTON « APPLIQUER »
+ * Chaque option est un lien : choisir recharge la page, et le panneau
+ * repart fermé. Un brouillon de filtres serait un état de plus à gérer,
+ * pour trois filtres.
  */
 export function FilterChip({
   label,
@@ -62,7 +68,7 @@ export function FilterChip({
   options: FilterOption[];
 }) {
   return (
-    <details className="group relative">
+    <details data-panneau className="group relative">
       <summary
         className={cn(
           /* `list-none` et le pseudo-élément WebKit retirent le triangle

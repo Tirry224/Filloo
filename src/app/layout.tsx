@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "@/styles/index.css";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { ClosePanels } from "@/components/ui/ClosePanels";
 
 /**
  * Next héberge les polices lui-même : le navigateur ne contacte jamais
@@ -47,6 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <OfflineBanner />
         {children}
+        {/* Un seul écouteur pour tous les panneaux de filtre de l'app :
+            les refermer au tap extérieur est un confort, jamais une
+            condition de leur fonctionnement. */}
+        <ClosePanels />
       </body>
     </html>
   );
