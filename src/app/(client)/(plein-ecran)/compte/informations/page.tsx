@@ -1,68 +1,15 @@
-import { redirect } from "next/navigation";
-import { Trash2 } from "lucide-react";
-import Link from "next/link";
-import { Field, Input } from "@/components/ui/Field";
-import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
-import { TopBar } from "@/components/ui/TopBar";
-import { ProfileForm } from "@/components/auth/ProfileForm";
-import { ConfirmPasswordSave } from "@/components/auth/ConfirmPasswordSave";
-import { createClient } from "@/lib/supabase/server";
-import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
-import { getCities } from "@/lib/data/reference";
+import { InformationsScreen } from "@/components/auth/InformationsScreen";
 
 /**
- * Mes informations — écran 18. Un champ de la maquette n'a pas de colonne
- * réelle : le mot de passe affiché en clair (Supabase ne le rend jamais
- * lisible, avec raison) — retiré plutôt que simulé avec une fausse valeur.
- * La ville, elle, est branchée sur `profiles.city_id`
- * (0010_client_profile_city.sql) : un client peut désormais choisir sa
- * ville de résidence, indépendamment de la ville de navigation du fil
- * (le filtre `?ville=` de la recherche, un simple paramètre d'URL, pas une donnée de
- * profil).
+ * Montage CLIENT de « Mes informations ». Le fichier ne contient que ce
+ * montage, comme les deux montages des conditions d'utilisation : les
+ * champs sont partagés, le chemin de retour ne l'est pas.
+ *
+ * La ville de résidence n'apparaît que sur ce montage-ci : elle vit dans
+ * `profiles.city_id` (migration `0010`) et n'a de sens que pour un
+ * client. La ville d'un commerçant est celle de sa BOUTIQUE, elle est
+ * dans `merchants.city_id` et se modifie sur `/vendeur/boutique/modifier`.
  */
-export default async function ProfilePage() {
-  const supabase = await createClient();
-  const [profile, user, cities] = await Promise.all([
-    getMyProfile(supabase, "client"),
-    getSessionUser(supabase),
-    getCities(supabase),
-  ]);
-  if (!profile || !user) redirect(await clientSpaceFallback(supabase));
-
-  return (
-    <Screen>
-      <TopBar
-        title="Mes informations"
-        backHref="/compte"
-        right={<ConfirmPasswordSave formId="profile-form" />}
-      />
-      <ScreenBody>
-        <Section className="gap-4">
-          <ProfileForm
-            id="profile-form"
-            fullName={profile.fullName}
-            phone={profile.phone}
-            cityId={profile.cityId}
-            cities={cities}
-          />
-
-          <Field
-            label="Email"
-            htmlFor="email"
-            hint="L'email sert à vous connecter. Contactez-nous pour le changer."
-          >
-            <Input id="email" type="email" defaultValue={user.email ?? ""} disabled />
-          </Field>
-
-          <Link
-            href="/compte/informations/supprimer"
-            className="mt-1 flex cursor-pointer items-center gap-2.5 text-base font-semibold text-danger"
-          >
-            <Trash2 size={19} strokeWidth={2} aria-hidden />
-            Supprimer mon compte
-          </Link>
-        </Section>
-      </ScreenBody>
-    </Screen>
-  );
+export default function ClientProfilePage() {
+  return <InformationsScreen espace="client" />;
 }

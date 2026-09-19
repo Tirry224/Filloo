@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import { BellRing, FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
@@ -199,6 +199,15 @@ export default async function EditShopPage() {
           <PushInvite raison="Un client qui n'obtient pas de réponse écrit à la boutique suivante. C'est le seul canal qui vous prévient sur un écran verrouillé, application fermée." />
 
           <MenuList>
+            {/* « Mes informations » — le nom et le téléphone de la
+                PERSONNE, à ne pas confondre avec « Modifier » en haut de
+                cet écran, qui porte sur la BOUTIQUE. Cet écran n'existait
+                que côté client : un commerçant sans compte lié ne pouvait
+                donc jamais corriger son propre numéro, celui-là même par
+                lequel on l'appelle pour valider sa boutique. Troisième
+                fois que ce trou se rebouche, après le mot de passe et la
+                suppression de compte. */}
+            <MenuItem icon={User} label="Mes informations" href="/vendeur/informations" />
             {/* Le mot de passe se change ICI, et non dans « Modifier ma
                 boutique » : ce sont deux choses différentes. Les
                 informations de la boutique, un client les LIT avant de se

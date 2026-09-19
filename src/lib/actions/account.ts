@@ -3,22 +3,62 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getSessionUser, getMyProfile } from "@/lib/data/session";
+import { getSessionUser, getMyProfiles } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 
-/** Mes informations — écran 18. `full_name`, `phone` et `city_id` sont
- * modifiables par un utilisateur (liste blanche de colonnes,
- * 0002_rules_and_security.sql partie 4, complétée par
- * 0010_client_profile_city.sql) : seul l'email de la maquette n'a pas de
- * colonne réelle — voir docs/REPRISE.md. `city_id` reste facultatif :
- * contrairement au nom et au téléphone, ce n'est pas une information
- * obligatoire pour utiliser l'app. */
+/**
+ * Mes informations — écran 18, monté par les deux espaces.
+ *
+ * `full_name`, `phone` et `city_id` sont modifiables par un utilisateur
+ * (liste blanche de colonnes, 0002_rules_and_security.sql partie 4,
+ * complétée par 0010_client_profile_city.sql) : seul l'email de la
+ * maquette n'a pas de colonne réelle — voir docs/REPRISE.md.
+ *
+ * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE
+ * C'est la décision du porteur du projet, et c'est la troisième fois que
+ * ce projet la prend : le mot de passe (`ChangePasswordForm`) et
+ * l'abonnement push (`0023`) ont déjà été rangés du côté de la connexion,
+ * avec les mêmes mots. Une personne a un nom et un numéro ; ce qui change
+ * selon le rôle, c'est l'identité PUBLIQUE de la boutique —
+ * `merchants.shop_name` et `merchants.whatsapp_phone` — qui existe pour
+ * ça et se modifie ailleurs.
+ *
+ * CE QUE ÇA CORRIGE, ET QUI A ÉTÉ CONSTATÉ À L'USAGE
+ * `profiles` porte ces colonnes PAR RÔLE (`unique (auth_user_id, role)`),
+ * donc une connexion à deux comptes en détient deux copies. Cette action
+ * n'écrivait que sur le profil client : quelqu'un qui corrigeait son
+ * numéro le corrigeait à moitié, et l'autre moitié gardait indéfiniment
+ * ce qui avait été tapé à l'inscription — y compris le numéro par lequel
+ * on rappelle un commerçant pour valider sa boutique.
+ *
+ * AUCUNE MIGRATION N'A ÉTÉ NÉCESSAIRE : la policy « profiles: je modifie
+ * mon profil » (0002, resserrée par 0006) est portée par
+ * `auth_user_id = auth.uid()`, pas par un identifiant de profil. Elle
+ * autorisait donc déjà cette écriture — c'est le code applicatif qui se
+ * limitait tout seul.
+ *
+ * LA VILLE, ELLE, NE SE PROPAGE PAS. `profiles.city_id` est la ville de
+ * RÉSIDENCE d'un client (0010) ; celle d'un commerçant est la ville de sa
+ * boutique et vit dans `merchants.city_id`. Les recopier l'une sur
+ * l'autre confondrait « où j'habite » et « où l'on me trouve ». */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
-  const cityIdRaw = String(formData.get("cityId") ?? "").trim();
+  /* PRÉSENTE ET VIDE, OU ABSENTE : ce ne sont PAS la même chose, et les
+     confondre effaçait une donnée.
+     Le montage commerçant ne rend pas le menu des villes — la ville d'un
+     commerçant est celle de sa boutique — donc `cityId` n'arrive pas du
+     tout dans son formulaire. Traité comme « vide », il remettait la
+     ville de résidence du compte client à NULL : corriger son nom depuis
+     l'espace commerçant effaçait en silence une information saisie
+     ailleurs.
+     `FormData.get` rend `null` pour un champ ABSENT et `""` pour un champ
+     présent laissé sur « Non renseignée ». On lit donc les deux. */
+  const cityBrut = formData.get("cityId");
+  const villeFournie = cityBrut !== null;
+  const cityIdRaw = String(cityBrut ?? "").trim();
   const cityId = cityIdRaw ? Number(cityIdRaw) : null;
   if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
   const erreurNumero = erreurTelephone(phone, true);
@@ -35,8 +75,13 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (cityIdRaw && (!cityId || Number.isNaN(cityId))) return { error: "Ville invalide." };
 
   const supabase = await createClient();
-  const profile = await getMyProfile(supabase, "client");
-  if (!profile) return { error: "Vous devez être connecté." };
+  const profiles = await getMyProfiles(supabase);
+  /* Neutre au rôle, comme l'écran de suppression depuis le 2026-09-13 :
+     un commerçant sans compte client lié doit pouvoir corriger son nom,
+     et il ne le pouvait pas tant que cette ligne exigeait un profil
+     client. */
+  const clientProfile = profiles.find((p) => p.role === "client");
+  if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
 
   /* Vérifié AVANT la première écriture : ce qui peut être refusé doit
      l'être pendant que rien n'a encore bougé. `passwordIsValid` utilise un
@@ -51,13 +96,18 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
   }
 
+  /* TOUS les profils de la connexion, désignés par `auth_user_id` et non
+     par un identifiant de profil : c'est ce filtre-là qui fait que la
+     correction ne s'arrête plus à un seul rôle. Le RLS borne de toute
+     façon l'écriture aux lignes de la personne connectée, donc ce `.eq`
+     dit ce qu'on veut écrire, il ne fait pas office de serrure. */
   const { data, error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, phone: nettoyerTelephone(phone), city_id: cityId })
-    .eq("id", profile.id)
+    .update({ full_name: fullName, phone: nettoyerTelephone(phone) })
+    .eq("auth_user_id", user.id)
     .select("id");
   if (error) return { error: error.message };
-  // Le `using` de la policy filtre des LIGNES : s'il écarte celle-ci, la
+  // Le `using` de la policy filtre des LIGNES : s'il écarte celles-ci, la
   // réponse est un succès portant zéro ligne, pas une erreur. Sans cette
   // vérification, un profil suspendu voyait ses modifications acceptées à
   // l'écran et perdues en base.
@@ -65,7 +115,31 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  redirect("/compte");
+  /* La ville part dans une SECONDE écriture, et seulement si le
+     formulaire l'a réellement portée ET qu'un profil client existe pour
+     la recevoir. La joindre à celle du dessus l'aurait recopiée sur le
+     profil commerçant, où elle ne veut rien dire — et où elle aurait fini
+     par contredire la ville de la boutique. */
+  if (villeFournie && clientProfile) {
+    const { error: villeError } = await supabase
+      .from("profiles")
+      .update({ city_id: cityId })
+      .eq("id", clientProfile.id);
+    /* Une ville qui ne s'enregistre pas alors que le nom l'a fait est le
+       seul cas où cette action réussit à moitié. On le DIT plutôt que de
+       rendre un succès : la personne relirait son écran et n'y verrait
+       pas la ville qu'elle vient de choisir, sans savoir pourquoi. */
+    if (villeError) {
+      return { error: "Nom et téléphone enregistrés, mais pas la ville. Réessayez." };
+    }
+  }
+
+  /* L'espace vient du formulaire, donc du navigateur : on ne lui laisse
+     choisir QU'ENTRE deux chemins internes écrits ici. Tout ce qui n'est
+     pas exactement « merchant » ramène côté client — c'est la même
+     prudence que `safeNextPath`, en plus simple puisqu'il n'y a que deux
+     réponses possibles et qu'aucune ne vient de l'URL. */
+  redirect(formData.get("espace") === "merchant" ? "/vendeur/boutique" : "/compte");
 }
 
 /**

@@ -94,6 +94,7 @@ function screenGroups(ids: ScreenIds): {
         ["25", "Actions produit", ids.produit && `/vendeur/produits/${ids.produit}/actions`, MANQUE_PRODUIT],
         ["26", "Ma boutique", "/vendeur/boutique"],
         ["26b", "Modifier ma boutique", "/vendeur/boutique/modifier"],
+        ["18b", "Mes informations (commerçant)", "/vendeur/informations"],
       ],
     },
     {

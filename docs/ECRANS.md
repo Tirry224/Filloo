@@ -29,7 +29,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 | 15 | Mot de passe oublié | |
 | 16 | Compte requis | Déclenché par « Contacter le vendeur » |
 | 17 | Mon compte | Carte de bascule vers le compte commerçant lié, jamais un item de menu comme les autres. Porte aussi les panneaux « Notifications » et « Modifier mon mot de passe », mais SEULEMENT si la connexion n'a pas de compte commerçant — sinon ils vivent sur l'écran 26. |
-| 18 | Mes informations | Modification, suppression du compte. Depuis le 2026-09-19, enregistrer exige le mot de passe actuel, et le CHANGEMENT de mot de passe n'est plus sur cet écran : il vit dans un panneau de l'écran 17 (ou 26 si la connexion a un compte commerçant). |
+| 18 | Mes informations | Modification, suppression du compte. Depuis le 2026-09-19, enregistrer exige le mot de passe actuel, et le CHANGEMENT de mot de passe n'est plus sur cet écran : il vit dans un panneau de l'écran 17 (ou 26 si la connexion a un compte commerçant). Un composant, DEUX routes depuis le 2026-09-19 — `/compte/informations` et `/vendeur/informations` — comme l'écran 34 : le nom et le téléphone appartiennent à la CONNEXION, donc un commerçant sans compte client doit pouvoir les corriger. La ville de résidence n'apparaît que sur le montage client ; celle du commerçant est la ville de sa boutique (écran 26). |
 | 19 | Compte suspendu | Motif + recours |
 
 ## Commerçant — 9
