@@ -123,10 +123,21 @@ self.addEventListener("pushsubscriptionchange", (evenement) => {
         userVisibleOnly: true,
         applicationServerKey: cle,
       });
+      /* L'ANCIEN `endpoint` PART AVEC LE NOUVEAU. Sans lui, le serveur
+         n'a aucun moyen de faire le lien entre les deux : `endpoint` est
+         la clé unique de la table (`0023`), donc un réabonnement créait
+         une deuxième ligne pour le même téléphone et l'ancienne restait.
+         Elle finissait par disparaître — au premier envoi, le service de
+         push répond 404 ou 410 et `sendPushToUser` la supprime — mais en
+         attendant, chaque notification partait deux fois pour un seul
+         appareil. */
       await fetch("/api/push/abonnement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ abonnement: nouvelle.toJSON() }),
+        body: JSON.stringify({
+          abonnement: nouvelle.toJSON(),
+          ancienEndpoint: ancienne.endpoint || null,
+        }),
       });
     })(),
   );

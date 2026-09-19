@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { savePushSubscriptionAction } from "@/lib/actions/push";
+import { deletePushSubscriptionAction, savePushSubscriptionAction } from "@/lib/actions/push";
 
 /**
  * Le réabonnement automatique, appelé par `public/sw.js`.
@@ -25,7 +25,7 @@ import { savePushSubscriptionAction } from "@/lib/actions/push";
  * même en connaissant son identifiant.
  */
 export async function POST(request: Request) {
-  let corps: { abonnement?: unknown };
+  let corps: { abonnement?: unknown; ancienEndpoint?: unknown };
   try {
     corps = await request.json();
   } catch {
@@ -48,6 +48,21 @@ export async function POST(request: Request) {
      silence. */
   if (resultat.error) {
     return NextResponse.json({ erreur: resultat.error }, { status: 403 });
+  }
+
+  /* L'ancienne ligne part APRÈS que la nouvelle est écrite, jamais avant.
+     L'ordre inverse laisserait, si la requête se coupe entre les deux, un
+     téléphone abonné côté navigateur et inconnu de la base : il ne
+     recevrait plus rien, et rien dans l'application ne permettrait de
+     s'en apercevoir.
+
+     Un échec ici ne fait pas échouer l'appel : la nouvelle ligne est
+     posée, donc les notifications arrivent. L'ancienne sera supprimée au
+     premier envoi, sur le 404 ou le 410 du service de push. */
+  const ancienEndpoint = typeof corps.ancienEndpoint === "string" ? corps.ancienEndpoint : "";
+  if (ancienEndpoint && ancienEndpoint !== abonnement.endpoint) {
+    const oubli = await deletePushSubscriptionAction(ancienEndpoint);
+    if (oubli.error) console.error(`[push] ancien abonnement non supprimé : ${oubli.error}`);
   }
 
   return NextResponse.json({ enregistre: true });
