@@ -1143,6 +1143,16 @@ restent à regarder sur un vrai téléphone.
 - **Une correction à ma charge** : le document affirmait que Vercel
   « peut réécrire cette expression ». C'était faux, et l'erreur a coûté
   un blocage de déploiement — il refuse le déploiement entier.
+- **Et une règle Git révisée dans la foulée** (`CLAUDE.md`) : `main`
+  devient la branche de travail ET la branche déployée, parce que la
+  branche intermédiaire que la règle du 16/09 désignait avait disparu en
+  laissant 7 commits jamais fusionnés — une consigne qui pointe une
+  branche morte égare au lieu de protéger.
+- **Ce qui reste éparpillé, et n'a PAS été touché** : trois branches
+  distantes portent 61 commits absents de `main` (`profile-city-edit`
+  36, `kind-thompson` 18, `verify-main-branches` 7). Un inventaire de ce
+  qu'elles contiennent réellement reste à faire avant toute fusion ou
+  suppression.
 
 ---
 
