@@ -1351,10 +1351,12 @@ restent à regarder sur un vrai téléphone.
 - **La table porte des APPAREILS, pas des personnes** : elle est rattachée
   à `auth_user_id` et non à `profile_id`, parce qu'une connexion peut
   avoir deux profils mais n'a qu'un téléphone.
-- **CE QUI RESTE AVANT QUE QUOI QUE CE SOIT ARRIVE** : exécuter `0023`
-  dans Supabase, regénérer `src/lib/database.types.ts`, puis les étapes 5
-  (interrupteur d'abonnement), 6 (envoi de test) et 7 (branchement sur
-  `notifyNewMessage`).
+- **`0023` est EXÉCUTÉE dans la vraie base** (2026-09-19) : table créée,
+  RLS actif, quatre policies en place — vérifié par requête, et les
+  advisors de sécurité Supabase ne signalent rien sur elle.
+  `src/lib/database.types.ts` connaît la table.
+- **CE QUI RESTE** : les étapes 5 (interrupteur d'abonnement), 6 (envoi
+  de test) et 7 (branchement sur `notifyNewMessage`).
 - **Une référence en avance dans `public/sw.js`** : le réabonnement
   appelle `/api/push/abonnement`, qui n'existe pas encore. C'est
   volontaire et sans danger — ce cas ne se produit qu'après un premier

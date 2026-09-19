@@ -423,6 +423,39 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_secret: string
+          auth_user_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth_secret: string
+          auth_user_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth_secret?: string
+          auth_user_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string

@@ -191,9 +191,8 @@ VAPID_PRIVATE_KEY=<Vercel uniquement, jamais ici>
   abonnement. Elle vit donc dans `.env`, versionné.
 - `VAPID_PRIVATE_KEY` — **posée dans Vercel, à ne jamais recopier ici.**
   Quiconque l'obtient peut notifier tous les abonnés au nom de Makiti.
-- **La migration `0023` reste À EXÉCUTER** dans Supabase : sans elle, la
-  table `push_subscriptions` n'existe pas et l'étape 5 ne peut pas
-  commencer.
+- **La migration `0023` est exécutée** (2026-09-19) : la table
+  `push_subscriptions` existe, avec son RLS et ses quatre policies.
 - **Sur iPhone, le push n'existe que si l'application a été « ajoutée à
   l'écran d'accueil »** — Safari ne l'autorise pas autrement. Sur Android,
   le navigateur suffit.
