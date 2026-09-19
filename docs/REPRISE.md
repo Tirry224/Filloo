@@ -5,8 +5,8 @@ Il dit **ce qui reste**, **ce qui est fait**, **ce qui est déjà tranché**
 (pour ne pas le rediscuter) et **ce qui a déjà fait mal** (pour ne pas le
 refaire).
 
-Dernière mise à jour : **2026-09-17** (les notifications de décisions,
-la suspension symétrique et le SMTP de production — voir le journal). Réécrit de zéro le 2026-09-13, parce
+Dernière mise à jour : **2026-09-19** (le cron ramené à une fois par
+jour, parce que l'offre Vercel est passée en Hobby — voir le journal). Réécrit de zéro le 2026-09-13, parce
 que le plan était devenu illisible : quatre cinquièmes du document
 racontaient le passé, et « ce qui reste » vivait en section 3, après 330
 lignes d'archéologie de branches. Un fichier de reprise qu'on ne lit plus
@@ -32,7 +32,11 @@ qu'une variable et une vérification.
 - **Décisions d'administration** (validée, refusée, suspendu) — `0021`,
   `src/lib/notifications-decisions.ts`, `/api/notifications`,
   `vercel.json`. **Reste `CRON_SECRET` sur Vercel**, sans laquelle la
-  route refuse tout, et la vérification de la fréquence réelle du cron.
+  route refuse tout. La fréquence, elle, est tranchée par l'offre : une
+  fois par jour à 7 h UTC depuis le passage en Hobby, donc **jusqu'à 24 h
+  entre une validation faite dans Supabase et l'email reçu**. À décider :
+  vivre avec ce délai, ou sortir la planification de Vercel (voir le
+  journal du 2026-09-19).
 - **Emails d'authentification** — *FAIT le 2026-09-17* : le SMTP de
   Resend est branché dans Supabase et fonctionne. C'était le dernier
   vrai verrou : sans lui, le premier commerçant qui oubliait son mot de
@@ -1109,6 +1113,36 @@ rendu, la largeur, les redirections et le comportement base injoignable ;
 elle ne peut pas voir un écran portant de vraies données. La messagerie
 entre deux comptes, l'envoi d'une photo et le refus d'une boutique
 restent à regarder sur un vrai téléphone.
+
+### 2026-09-19 — le cron rendu compatible avec l'offre Hobby
+
+- **Le symptôme : plus AUCUN déploiement ne passait**, y compris ceux qui
+  ne touchaient ni au cron ni aux emails. C'est le point important à
+  retenir : une planification invalide ne casse pas seulement le cron,
+  elle ferme la porte à tout le projet.
+- **La cause : `vercel.json` demandait `*/10 * * * *`**, soit 144
+  passages par jour, alors que l'offre venait de passer de payante à
+  Hobby — un plan qui ne déclenche un cron qu'une fois par jour. Vercel
+  ne réécrit pas l'expression en silence : il refuse.
+- **Le correctif : `0 7 * * *`**, une seule ligne, choisie parce qu'elle
+  est la fréquence maximale que l'offre accepte et que 7 h UTC = 7 h à
+  Conakry, donc la file part avant la journée de travail.
+- **Ce que ça coûte, et il faut le dire franchement : le délai.** Une
+  boutique validée à 8 h attendra son email jusqu'au lendemain matin.
+  Le NOMBRE d'emails n'a jamais été en cause — chaque passage vide toute
+  la file.
+- **Aucun code applicatif n'a bougé**, et c'est exactement ce que la file
+  en base achetait : `/api/notifications` se moque de savoir qui l'appelle
+  et à quel rythme, donc changer de planificateur ne demandera pas de
+  relire une ligne de TypeScript.
+- **Ce qui reste ouvert, à trancher par le porteur du projet** : accepter
+  les 24 h ; ou appeler la route depuis une action GitHub programmée
+  (gratuite, toutes les 15 min, au prix de deux secrets à poser dans le
+  dépôt et d'un deuxième endroit où lire les journaux) ; ou la planifier
+  depuis Supabase avec `pg_cron` + `pg_net` ; ou repasser au plan payant.
+- **Une correction à ma charge** : le document affirmait que Vercel
+  « peut réécrire cette expression ». C'était faux, et l'erreur a coûté
+  un blocage de déploiement — il refuse le déploiement entier.
 
 ---
 

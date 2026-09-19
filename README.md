@@ -157,15 +157,22 @@ CRON_SECRET=<une chaîne longue et aléatoire>
   en-tête `Authorization: Bearer …`. **Sans elle, `/api/notifications`
   refuse tout le monde** : une adresse qui lit `auth.users` et envoie des
   emails ne s'ouvre pas au public par accident.
-- La planification vit dans `vercel.json` (`*/10 * * * *`). **Vérifier la
-  fréquence RÉELLE dans le tableau de bord Vercel** (« Next run ») : selon
-  le plan, Vercel peut réécrire cette expression et ne déclencher qu'une
-  fois par jour, ce qui ferait attendre un commerçant validé jusqu'à 24 h.
-  Ce n'est pas le NOMBRE d'emails qui serait limité — chaque passage vide
-  toute la file — mais le DÉLAI.
-- Si la fréquence ne convient pas, deux sorties sans changer une ligne de
-  ce dépôt : passer au plan supérieur, ou planifier l'appel depuis
-  Supabase avec `pg_cron` + `pg_net` (disponibles, non installés).
+- La planification vit dans `vercel.json` (`0 7 * * *`, soit une fois par
+  jour à 7 h UTC). **Cette expression est dictée par l'offre, pas par le
+  besoin** : sur le plan Hobby, Vercel REFUSE le déploiement d'un projet
+  dont un cron tourne plus d'une fois par jour — la planification
+  `*/10 * * * *` qui vivait ici bloquait donc TOUS les déploiements, y
+  compris ceux qui ne touchaient pas au cron.
+- **Conséquence à connaître : un commerçant validé attend jusqu'à 24 h son
+  email.** Ce n'est pas le NOMBRE d'emails qui est limité — chaque passage
+  vide toute la file, dix validations dans la journée font dix emails —
+  mais le DÉLAI entre la décision prise dans Supabase et sa notification.
+- Trois sorties si ce délai ne convient pas : repasser au plan payant et
+  remettre `*/10 * * * *` ; appeler `/api/notifications` depuis un
+  planificateur externe gratuit (une action GitHub programmée, avec
+  `CRON_SECRET` et l'URL de production en secrets du dépôt) ; ou planifier
+  l'appel depuis Supabase avec `pg_cron` + `pg_net` (disponibles, non
+  installés). La route ne change dans aucun des trois cas.
 
 Ce qui coince se voit en une requête, et c'est tout l'intérêt d'être
 passé par une file plutôt que par un webhook :
