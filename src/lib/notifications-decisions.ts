@@ -7,11 +7,22 @@ import {
   sendEmail,
   type EmailOutcome,
 } from "@/lib/email";
+import { sendPushToUser, type ContenuPush } from "@/lib/push";
 
 /**
- * Annoncer par email les trois décisions qui se prennent dans le tableau
- * de bord Supabase : boutique validée, boutique refusée, compte
- * suspendu.
+ * Annoncer — par notification ET par email — les trois décisions qui se
+ * prennent dans le tableau de bord Supabase : boutique validée, boutique
+ * refusée, compte suspendu.
+ *
+ * POURQUOI LE PUSH COMPTE DOUBLE ICI
+ * Le cron ne passe qu'une fois par jour depuis le passage en offre Hobby
+ * (`vercel.json`) : entre la case cochée dans Supabase et l'email reçu,
+ * il peut s'écouler 24 heures. C'est long pour n'importe quelle nouvelle,
+ * et c'est interminable pour la seule qu'un commerçant attend vraiment —
+ * savoir si sa boutique est acceptée. Le push ne raccourcit pas ce délai,
+ * il ne part pas plus tôt que le balayage ; ce qu'il change, c'est que la
+ * nouvelle arrive sur un écran verrouillé au lieu d'attendre que la
+ * personne pense à ouvrir sa boîte mail.
  *
  * CE FICHIER EST LE PENDANT DE `notifications.ts`, ET IL EST DIFFÉRENT
  * EXPRÈS. Là-bas, une action serveur vient d'écrire un message : elle
@@ -44,11 +55,15 @@ const TAILLE_DU_LOT = 20;
 const TENTATIVES_MAX = 5;
 
 export type DrainReport = {
-  /** `false` quand Resend n'est pas branché : l'état normal tant que les
-   *  variables ne sont pas posées, et surtout PAS une panne. */
+  /** `false` quand AUCUN canal n'est branché — ni Resend, ni les clés
+   *  VAPID : l'état normal tant que les variables ne sont pas posées, et
+   *  surtout PAS une panne. */
   configuree: boolean;
   lues: number;
   envoyees: number;
+  /** Décisions pour lesquelles au moins un appareil a été prévenu. Compté
+   *  à part des emails : les deux canaux ne réussissent pas ensemble. */
+  poussees: number;
   /** Rien à envoyer, définitivement : compte supprimé, ou décision déjà
    *  reprise avant le passage du balayage. */
   abandonnees: number;
@@ -56,14 +71,32 @@ export type DrainReport = {
 };
 
 export async function drainNotifications(): Promise<DrainReport> {
-  const vide: DrainReport = { configuree: true, lues: 0, envoyees: 0, abandonnees: 0, echouees: 0 };
+  const vide: DrainReport = {
+    configuree: true,
+    lues: 0,
+    envoyees: 0,
+    poussees: 0,
+    abandonnees: 0,
+    echouees: 0,
+  };
+
+  /* DEUX CANAUX, DEUX CONFIGURATIONS, ET AUCUN QUI DÉPENDE DE L'AUTRE.
+     C'est la règle déjà écrite dans `notifyNewMessage`, appliquée ici :
+     l'email s'allume avec Resend, le push avec les clés VAPID, et l'un
+     éteint ne doit pas emporter l'autre. L'email a besoin de `siteUrl`
+     en plus — ses liens sont lus dans une boîte mail, donc absolus ;
+     ceux du push sont relatifs et s'ouvrent dans l'application. */
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+  const emailPossible = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && siteUrl);
+  const pushPret = Boolean(
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
+  );
 
   /* Même garde qu'ailleurs, et au même endroit : AVANT la moindre
      requête. Un service éteint ne doit rien coûter — surtout pas six
-     allers-retours en base toutes les dix minutes pour découvrir qu'on
-     n'enverra rien. */
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
-  if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM || !siteUrl) {
+     allers-retours en base par passage pour découvrir qu'on n'enverra
+     rien. */
+  if (!emailPossible && !pushPret) {
     return { ...vide, configuree: false };
   }
 
@@ -87,7 +120,12 @@ export async function drainNotifications(): Promise<DrainReport> {
      notifications parfaitement valides. Un lot de vingt envois
      séquentiels tient de toute façon dans une invocation. */
   for (const ligne of waiting ?? []) {
-    const composed = await composeFor(admin, ligne.kind, ligne.profile_id, siteUrl);
+    const composed = await composeFor(
+      admin,
+      ligne.kind,
+      ligne.profile_id,
+      emailPossible ? siteUrl : null,
+    );
 
     if (composed.kind === "abandon") {
       await marquerTraitee(admin, ligne.id, composed.raison);
@@ -97,6 +135,45 @@ export async function drainNotifications(): Promise<DrainReport> {
     if (composed.kind === "echec") {
       await marquerEchouee(admin, ligne.id, ligne.attempts, composed.raison);
       rapport.echouees += 1;
+      continue;
+    }
+
+    /* LE PUSH D'ABORD, ET UNE SEULE FOIS — SAUF S'IL EST SEUL.
+       D'abord, pour la même raison que dans `notifyNewMessage` : il
+       arrive en quelques secondes sur un écran verrouillé, l'email met
+       le temps qu'il met.
+
+       Une seule fois quand un email doit suivre, parce qu'ici —
+       contrairement à l'envoi d'un message — la ligne est REJOUÉE tant
+       que cet email n'est pas parti. Sans cette condition, une adresse
+       invalide ferait sonner le téléphone à chaque passage du balayage,
+       jusqu'à cinq fois, pour une décision unique. Le `tag` regroupe
+       l'affichage, il n'empêche pas le téléphone de vibrer.
+
+       Mais quand le push est le SEUL canal, il est lui-même ce qu'on
+       réessaie : le borner au premier passage condamnerait la décision
+       de quelqu'un qui n'avait aucun appareil abonné ce jour-là à
+       échouer quatre fois de plus sans qu'on retente jamais rien. */
+    let atteints = 0;
+    if (pushPret && (ligne.attempts === 0 || !composed.email)) {
+      atteints = await sendPushToUser(composed.authUserId, composed.push);
+      if (atteints > 0) rapport.poussees += 1;
+    }
+
+    if (!composed.email) {
+      /* PUSH SEUL : Resend n'est pas branché. La décision est annoncée
+         si — et seulement si — un appareil l'a reçue. Marquer « envoyée »
+         une décision que personne n'a reçue la perdrait pour de bon,
+         puisque rien ne relit une ligne marquée ; la laisser en échec la
+         garde visible (`select * from notifications where sent_at is
+         null`) et la fait cesser d'elle-même au bout de cinq tentatives. */
+      if (atteints > 0) {
+        await marquerTraitee(admin, ligne.id, "annoncée par notification seule : email non configuré");
+        rapport.envoyees += 1;
+      } else {
+        await marquerEchouee(admin, ligne.id, ligne.attempts, "aucun canal disponible : email non configuré, aucun appareil abonné");
+        rapport.echouees += 1;
+      }
       continue;
     }
 
@@ -116,17 +193,67 @@ export async function drainNotifications(): Promise<DrainReport> {
 type Admin = ReturnType<typeof createAdminClient>;
 
 type Composition =
-  | { kind: "email"; email: { to: string; subject: string; text: string; html: string } }
+  | {
+      kind: "envoi";
+      /** L'appareil appartient à la CONNEXION, pas au profil (migration
+       *  `0023`) : c'est donc `auth_user_id` qui désigne les téléphones à
+       *  prévenir, jamais `profile_id`. */
+      authUserId: string;
+      /** `null` quand Resend n'est pas branché : le push part quand même. */
+      email: { to: string; subject: string; text: string; html: string } | null;
+      push: ContenuPush;
+    }
   /** Il n'y a plus rien à envoyer, et il n'y en aura plus jamais. */
   | { kind: "abandon"; raison: string }
   /** L'envoi n'a pas pu être préparé cette fois-ci — à réessayer. */
   | { kind: "echec"; raison: string };
 
+/**
+ * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS, ET POURQUOI.
+ *
+ * Une notification s'affiche sur un écran verrouillé, que n'importe qui à
+ * côté peut lire — c'est la raison pour laquelle `notifyNewMessage` ne
+ * recopie jamais le corps d'un message. La même règle appliquée ici
+ * change le texte de deux des trois décisions :
+ *
+ *   - « votre boutique est validée » s'annonce en clair : c'est une bonne
+ *     nouvelle, et c'est le moment où le commerçant doit ouvrir
+ *     l'application pour publier ses brouillons ;
+ *   - un REFUS et une SUSPENSION ne s'annoncent pas en clair. Les lire
+ *     par-dessus l'épaule de quelqu'un, dans un marché, c'est l'humilier
+ *     pour un motif que lui seul devrait connaître. Le push dit qu'une
+ *     décision attend, l'email — qui demande de déverrouiller son
+ *     téléphone — porte laquelle et pourquoi.
+ */
+const PUSH_PAR_DECISION = {
+  merchant_approved: (shopName: string): ContenuPush => ({
+    titre: "Makiti",
+    corps: `Votre boutique « ${shopName} » est validée. Publiez vos produits.`,
+    url: "/vendeur",
+    tag: "decision-boutique",
+  }),
+  merchant_rejected: (): ContenuPush => ({
+    titre: "Makiti",
+    corps: "Une décision concernant votre boutique vous attend.",
+    url: "/vendeur/refusee",
+    tag: "decision-boutique",
+  }),
+  profile_suspended: (): ContenuPush => ({
+    titre: "Makiti",
+    corps: "Une décision concernant votre compte vous attend.",
+    url: "/compte/suspendu",
+    tag: "decision-compte",
+  }),
+};
+
 async function composeFor(
   admin: Admin,
   kind: "merchant_approved" | "merchant_rejected" | "profile_suspended",
   profileId: string,
-  siteUrl: string,
+  /** `null` quand l'email n'est pas configuré : on ne compose alors aucun
+   *  texte, et on ne va surtout pas chercher une adresse dont personne ne
+   *  se servira. */
+  siteUrl: string | null,
 ): Promise<Composition> {
   const { data: profile, error } = await admin
     .from("profiles")
@@ -146,12 +273,20 @@ async function composeFor(
      règle que `notifyNewMessage`. */
   if (profile.is_deleted) return { kind: "abandon", raison: "compte supprimé" };
 
-  const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
-    profile.auth_user_id,
-  );
-  if (authError) return { kind: "echec", raison: `adresse illisible : ${authError.message}` };
-  const to = authUser?.user?.email;
-  if (!to) return { kind: "abandon", raison: "aucune adresse email sur la connexion" };
+  /* L'adresse n'est cherchée QUE si un email doit partir — la même
+     correction que dans `notifyNewMessage` : la chercher d'abord faisait
+     tomber le push quand `auth.admin` répondait mal ou quand la connexion
+     n'avait pas d'adresse lisible. Un canal ne doit jamais tomber à cause
+     de la configuration d'un autre. */
+  let to: string | null = null;
+  if (siteUrl) {
+    const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
+      profile.auth_user_id,
+    );
+    if (authError) return { kind: "echec", raison: `adresse illisible : ${authError.message}` };
+    to = authUser?.user?.email ?? null;
+    if (!to) return { kind: "abandon", raison: "aucune adresse email sur la connexion" };
+  }
 
   if (kind === "profile_suspended") {
     /* LA DÉCISION A PU ÊTRE REPRISE entre le trigger et ce passage :
@@ -159,7 +294,12 @@ async function composeFor(
        administre à la main. Annoncer une sanction levée serait pire que
        ne rien annoncer. */
     if (!profile.is_suspended) return { kind: "abandon", raison: "suspension déjà levée" };
-    return { kind: "email", email: suspensionEmail({ to, siteUrl, name: profile.full_name }) };
+    return {
+      kind: "envoi",
+      authUserId: profile.auth_user_id,
+      email: to && siteUrl ? suspensionEmail({ to, siteUrl, name: profile.full_name }) : null,
+      push: PUSH_PAR_DECISION.profile_suspended(),
+    };
   }
 
   const { data: merchant, error: merchantError } = await admin
@@ -177,21 +317,31 @@ async function composeFor(
   if (kind === "merchant_approved") {
     if (merchant.status !== "approved") return { kind: "abandon", raison: "validation reprise" };
     return {
-      kind: "email",
-      email: approvalEmail({ to, siteUrl, name: profile.full_name, shopName: merchant.shop_name }),
+      kind: "envoi",
+      authUserId: profile.auth_user_id,
+      email:
+        to && siteUrl
+          ? approvalEmail({ to, siteUrl, name: profile.full_name, shopName: merchant.shop_name })
+          : null,
+      push: PUSH_PAR_DECISION.merchant_approved(merchant.shop_name),
     };
   }
 
   if (merchant.status !== "rejected") return { kind: "abandon", raison: "refus repris" };
   return {
-    kind: "email",
-    email: rejectionEmail({
-      to,
-      siteUrl,
-      name: profile.full_name,
-      shopName: merchant.shop_name,
-      reason: merchant.rejection_reason,
-    }),
+    kind: "envoi",
+    authUserId: profile.auth_user_id,
+    email:
+      to && siteUrl
+        ? rejectionEmail({
+            to,
+            siteUrl,
+            name: profile.full_name,
+            shopName: merchant.shop_name,
+            reason: merchant.rejection_reason,
+          })
+        : null,
+    push: PUSH_PAR_DECISION.merchant_rejected(),
   };
 }
 

@@ -57,11 +57,13 @@ export async function GET(request: Request) {
        endroit où l'on constatera qu'un envoi coince. Personne ne regarde
        la réponse d'un cron. */
     if (!rapport.configuree) {
-      console.warn("[notifications] Resend non configuré : rien n'a été envoyé.");
+      console.warn("[notifications] ni Resend ni les clés VAPID : rien n'a été envoyé.");
     } else if (rapport.echouees > 0) {
       console.error(`[notifications] ${rapport.echouees} envoi(s) en échec — voir la table notifications.`);
     } else if (rapport.envoyees > 0) {
-      console.log(`[notifications] ${rapport.envoyees} email(s) envoyé(s).`);
+      console.log(
+        `[notifications] ${rapport.envoyees} décision(s) annoncée(s), dont ${rapport.poussees} sur un appareil.`,
+      );
     }
 
     return NextResponse.json(rapport);
