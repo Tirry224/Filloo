@@ -14,14 +14,11 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 /**
- * Identifiants RÉELS lus en base, jamais codés en dur : les identifiants
- * fixes de l'ancien `src/lib/mock.ts` sont morts depuis que l'application
- * lit la vraie base, et un index dont un tiers des liens mène à « Cette
- * page n'existe pas » fait croire que l'application est cassée.
- *
- * Quand un enregistrement manque, la ligne dit QUOI faire pour l'obtenir
- * plutôt que d'offrir un lien qui échoue : c'est l'état normal d'une base
- * neuve, pas une erreur.
+ * Identifiants RÉELS lus en base, jamais codés en dur : ceux de l'ancien
+ * `src/lib/mock.ts` sont morts, et un index dont un tiers des liens mène à
+ * « Cette page n'existe pas » fait croire que l'application est cassée. Quand
+ * un enregistrement manque, la ligne dit QUOI faire pour l'obtenir plutôt que
+ * d'offrir un lien qui échoue — état normal d'une base neuve, pas une erreur.
  */
 type ScreenIds = {
   produit?: string;
@@ -110,32 +107,26 @@ function screenGroups(ids: ScreenIds): {
   ];
 }
 
-/* Rendu à la requête, pas au build : sinon le résultat de `notFound()`
-   est figé dans une page statique mise en cache et la garde `NODE_ENV`
-   ne vaut plus rien.
+/* Rendu à la requête, pas au build : sinon le résultat de `notFound()` est
+   figé dans une page statique mise en cache et la garde `NODE_ENV` ne vaut
+   plus rien.
 
-   PIÈGE : la réponse reste un 200 portant le contenu « Cette page
-   n'existe pas », pas un vrai 404. Attendu en Next 16 (voir
-   `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
-   « Calling notFound() after streaming has started ») : le `loading.tsx`
-   racine ouvre un `<Suspense>` sur chaque route, donc le flux a commencé
-   avant l'évaluation de la garde et le statut ne se change plus. Next
-   injecte en échange `<meta name="robots" content="noindex">`, ce qui
-   ferme le risque réel : cette page de travail trouvée par un moteur.
-   Un vrai 404 demanderait de déplacer la garde dans `proxy`
-   (remplaçant de `middleware`), qui s'exécute AVANT le flux. */
+   PIÈGE : la réponse reste un 200 portant « Cette page n'existe pas », pas un
+   vrai 404 — attendu en Next 16 quand le flux a commencé avant l'évaluation
+   de la garde (`not-found.md`, « Calling notFound() after streaming has
+   started »). Next injecte en échange `<meta name="robots" content="noindex">`,
+   ce qui ferme le risque réel : cette page de travail trouvée par un moteur.
+   Un vrai 404 demanderait la garde dans `proxy` (remplaçant de `middleware`),
+   qui s'exécute AVANT le flux. */
 export const dynamic = "force-dynamic";
 
 /**
- * Page de TRAVAIL : accessible en développement, introuvable en
- * production. Elle partait en ligne ouverte à tous tant qu'elle était
- * prérendue (`○ /ecrans`).
+ * Page de TRAVAIL : accessible en développement, introuvable en production —
+ * elle partait en ligne ouverte à tous tant qu'elle était prérendue.
  *
  * `notFound()` conditionnel plutôt qu'un `rm` : l'étape 1 de
- * `docs/REPRISE.md` (ouvrir les 33 écrans) se fait depuis ici, donc
- * l'outil reste entier en local pendant que l'adresse se comporte en
- * production comme n'importe quelle URL inventée. À supprimer pour de
- * bon quand cette étape sera terminée.
+ * `docs/REPRISE.md` (ouvrir les 33 écrans) se fait depuis ici, l'outil restant
+ * entier en local. À supprimer quand cette étape sera terminée.
  */
 export default async function ScreensIndexPage() {
   if (process.env.NODE_ENV === "production") notFound();
@@ -197,9 +188,8 @@ export default async function ScreensIndexPage() {
                       <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
                     ) : (
                       /* Distinguer l'écran qui s'affiche tout seul
-                         (« automatique ») de celui qui attend une vraie
-                         donnée : dire lequel manque évite de chercher un
-                         bug qui n'existe pas. */
+                         (« automatique ») de celui qui attend une donnée
+                         réelle évite de chercher un bug qui n'existe pas. */
                       <span className="shrink-0 text-2xs text-ink-soft">{manque ?? "automatique"}</span>
                     )}
                   </>
