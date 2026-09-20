@@ -6,30 +6,21 @@ import { WifiOff } from "lucide-react";
 /**
  * Bandeau « Pas de connexion » — écran 4 de `docs/ECRANS.md`.
  *
- * POURQUOI CE COMPOSANT EST CLIENT, ALORS QUE PRESQUE AUCUN NE L'EST
- * Savoir si le téléphone a du réseau est une information que seul le
- * navigateur possède : aucun rendu serveur ne peut la deviner. C'est l'un
- * des rares cas où du JavaScript côté client est la seule solution, et non
- * la solution confortable. Il pèse quelques centaines d'octets et ne
- * s'affiche presque jamais — mais quand il s'affiche, il évite à quelqu'un
- * de croire que Makiti est cassé alors que c'est son réseau qui est tombé.
- * Sur les connexions que ce produit vise, la différence entre « l'app est
- * nulle » et « je n'ai plus de réseau » décide si la personne revient.
+ * COMPOSANT CLIENT, et c'est l'un des rares cas où c'est la seule solution
+ * et non la solution confortable : seul le navigateur sait si le téléphone
+ * a du réseau. Quelques centaines d'octets pour éviter qu'on croie Makiti
+ * cassé alors que c'est le réseau qui est tombé — sur les connexions
+ * visées, cette différence décide si la personne revient.
  *
- * CE QU'IL NE FAIT PAS, ET POURQUOI SON TEXTE NE PROMET RIEN
- * Il ne rend pas l'application consultable hors ligne : sans service
- * worker, une page non chargée reste inaccessible. La version d'origine de
- * ce bandeau disait « vous voyez les produits déjà consultés » — ce serait
- * un mensonge ici, puisque rien n'est mis en cache. Un message qui promet
- * ce que le produit ne tient pas coûte plus cher que pas de message.
- * Le vrai écran 4 — le fil rempli de ce qu'on a déjà consulté — viendra
- * avec le service worker (`docs/PERFORMANCE.md`, règle R6).
+ * SON TEXTE NE PROMET RIEN, volontairement : sans service worker, une page
+ * non chargée reste inaccessible. La version d'origine disait « vous voyez
+ * les produits déjà consultés », ce qui serait un mensonge puisque rien
+ * n'est mis en cache. Un message qui promet ce que le produit ne tient pas
+ * coûte plus cher que pas de message.
  *
- * LA LIMITE DE `navigator.onLine`
- * Il ment dans un cas : il dit « en ligne » quand le téléphone est
- * connecté à un réseau qui ne mène nulle part. Il détecte donc la coupure
- * franche, pas le réseau poussif. C'est déjà l'essentiel, et prétendre
- * mesurer le reste demanderait des requêtes de test — c'est-à-dire
+ * `navigator.onLine` ment dans un cas : il dit « en ligne » sur un réseau
+ * qui ne mène nulle part. Il détecte la coupure franche, pas le réseau
+ * poussif — mesurer le reste demanderait des requêtes de test, donc de
  * consommer les données de quelqu'un qui n'en a déjà plus.
  */
 export function OfflineBanner() {

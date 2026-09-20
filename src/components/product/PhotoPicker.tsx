@@ -19,19 +19,16 @@ type Slot = {
 /**
  * Sélecteur de 1 à 3 photos — écran 24, décision 15 de docs/SPEC.md.
  *
- * La compression tourne dans le navigateur, dans un worker
- * (`useWebWorker: true`) pour ne pas geler l'interface sur un téléphone
- * d'entrée de gamme, PUIS l'envoi vers Supabase Storage se fait aussi
- * depuis le navigateur — directement, sans repasser par le serveur Next,
- * qui n'aurait fait que relayer un fichier déjà prêt. Seul le CHEMIN
- * obtenu voyage ensuite dans le formulaire (`imagePaths`, un champ caché
- * par photo), lu par `createProductAction` / `updateProductAction`.
+ * C'est le cas d'école de la règle R3 : la compression tourne dans le
+ * navigateur, dans un worker pour ne pas geler un téléphone d'entrée de
+ * gamme, et l'envoi part directement vers Storage sans repasser par le
+ * serveur Next qui n'aurait fait que relayer. Seul le CHEMIN voyage dans
+ * le formulaire.
  *
- * `productId` est déjà connu au moment où cette photo s'envoie — généré
- * côté navigateur par `ProductForm` pour un nouveau produit — ce qui
+ * `productId` est connu avant l'envoi — généré par `ProductForm` — ce qui
  * respecte la convention de chemin imposée par le RLS du stockage
- * (`product-images/{merchant_id}/{product_id}/{fichier}`, voir
- * 0004_storage.sql) sans attendre que la ligne `products` existe.
+ * (`{merchant_id}/{product_id}/…`, 0004) sans attendre que la ligne
+ * `products` existe.
  */
 export function PhotoPicker({
   merchantId,
@@ -97,24 +94,20 @@ export function PhotoPicker({
   /**
    * Retirer une photo du formulaire — et RIEN d'autre.
    *
-   * Le fichier était supprimé de Storage ici même, au clic. Sur un produit
-   * qu'on modifie, ses photos sont déjà référencées par `product_images` :
-   * retirer une photo puis quitter l'écran sans enregistrer — ou perdre le
-   * réseau à l'enregistrement — détruisait le fichier en laissant la ligne
-   * en base. Le produit restait publié avec une vignette cassée dans le
-   * catalogue public, et rien ne pouvait plus la réparer : le fichier
-   * n'existait plus nulle part.
+   * Le fichier était supprimé de Storage ici, au clic. Sur un produit qu'on
+   * modifie, ses photos sont déjà référencées par `product_images` :
+   * retirer une photo puis quitter sans enregistrer — ou perdre le réseau —
+   * détruisait le fichier en laissant la ligne en base. Le produit restait
+   * publié avec une vignette cassée que plus rien ne pouvait réparer.
    *
-   * Le formulaire ne décide donc plus de rien : il propose une liste, et
-   * c'est l'ENREGISTREMENT qui tranche. `updateProductAction` remplace les
-   * lignes `product_images`, puis supprime dans Storage les fichiers que
-   * plus aucune ligne ne référence — dans cet ordre, jamais l'inverse.
+   * Le formulaire ne décide donc plus : il propose une liste, et c'est
+   * l'ENREGISTREMENT qui tranche. `updateProductAction` remplace les lignes
+   * puis supprime les fichiers que plus aucune ne référence, dans cet
+   * ordre.
    *
    * Le cas symétrique reste ouvert et il est bénin : une photo envoyée puis
-   * retirée avant tout enregistrement laisse un fichier orphelin dans
-   * Storage. Un octet en trop ne casse aucun écran ; une référence morte,
-   * si. Entre les deux erreurs possibles, on choisit celle qui ne se voit
-   * pas.
+   * retirée avant enregistrement laisse un orphelin dans Storage. Un octet
+   * en trop ne casse aucun écran, une référence morte si.
    */
   function removeSlot(id: string) {
     setSlots((s) => s.filter((x) => x.id !== id));
