@@ -4,20 +4,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * L'envoi d'une notification push, côté serveur.
  *
- * POURQUOI `service_role` (`createAdminClient`)
- * Les abonnements d'une personne ne sont lisibles que par elle
- * (RLS de `0023`). Or c'est l'EXPÉDITEUR du message qui déclenche l'envoi,
- * et il n'a évidemment aucun droit sur les appareils du destinataire —
- * heureusement : ces trois valeurs donnent le droit d'écrire sur son écran
- * verrouillé. La lecture se fait donc ici, côté serveur, et ne repart
- * vers aucun écran.
+ * POURQUOI `service_role` (`createAdminClient`) : les abonnements ne sont
+ * lisibles que par leur propriétaire (RLS de `0023`), or c'est l'EXPÉDITEUR
+ * du message qui déclenche l'envoi et il n'a aucun droit sur les appareils
+ * du destinataire — heureusement, ces trois valeurs donnent le droit
+ * d'écrire sur son écran verrouillé. La lecture reste donc côté serveur et
+ * ne repart vers aucun écran.
  *
- * CE QUI PART, ET CE QUI NE PART PAS
- * Le corps du message n'est PAS recopié dans la notification. Un push
- * s'affiche sur un écran verrouillé, que n'importe qui à côté peut lire.
- * L'email, lui, recopie l'extrait — parce qu'il faut déverrouiller son
- * téléphone et ouvrir sa boîte pour le voir. Deux canaux, deux niveaux
- * d'exposition, deux contenus.
+ * CE QUI PART : pas le corps du message. Un push s'affiche sur un écran
+ * verrouillé, que n'importe qui à côté peut lire ; l'email recopie
+ * l'extrait, parce qu'il faut déverrouiller et ouvrir sa boîte pour le
+ * voir. Deux canaux, deux niveaux d'exposition.
  */
 
 /** Une paire VAPID absente n'est pas une panne : c'est l'état d'un projet
@@ -28,21 +25,18 @@ function configurer(): boolean {
   const privee = process.env.VAPID_PRIVATE_KEY;
   if (!publique || !privee) return false;
 
-  /* Le « sujet » VAPID identifie l'expéditeur auprès du service de push,
-     qui s'en sert pour nous joindre en cas d'abus. Le standard accepte une
-     adresse email ou une URL ; on donne l'URL du site, jamais l'adresse
-     personnelle du porteur du projet — elle partirait chez Google, Apple
-     et Mozilla sans raison. */
+  /* Le « sujet » VAPID identifie l'expéditeur auprès du service de push, qui
+     s'en sert pour nous joindre en cas d'abus. Le standard accepte une
+     adresse email ou une URL : on donne l'URL du site, jamais l'adresse
+     personnelle du porteur du projet — elle partirait chez Google, Apple et
+     Mozilla sans raison. */
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
   if (!site) {
-    /* LE REPLI EST FAUX, ET IL DOIT SE VOIR. `makiti.app` n'appartient
-       pas au projet : c'est l'adresse que Google, Apple et Mozilla
-       liraient pour nous joindre en cas d'abus, donc une identité
-       d'expéditeur qui ne mène nulle part. On continue quand même —
-       couper les notifications pour une variable oubliée serait une
-       punition disproportionnée, et le sujet VAPID n'empêche aucune
-       distribution — mais on le DIT dans les journaux, une fois par
-       invocation, plutôt que de laisser ce mensonge silencieux. */
+    /* LE REPLI EST FAUX, ET IL DOIT SE VOIR : `makiti.app` n'appartient pas
+       au projet, c'est une identité d'expéditeur qui ne mène nulle part si
+       un service de push cherche à nous joindre. On continue quand même —
+       le sujet VAPID n'empêche aucune distribution — mais on le journalise
+       plutôt que de laisser ce mensonge silencieux. */
     console.error(
       "[push] NEXT_PUBLIC_SITE_URL absente : sujet VAPID de repli utilisé, à poser sur l'hébergeur.",
     );
@@ -61,20 +55,16 @@ export type ContenuPush = {
 };
 
 /**
- * Envoie à TOUS les appareils d'une connexion. Une personne a souvent un
- * téléphone et parfois un ordinateur ; prévenir un seul des deux, c'est
- * prévenir celui qu'elle n'a pas en main.
+ * Envoie à TOUS les appareils d'une connexion : prévenir un seul des deux,
+ * c'est souvent prévenir celui qu'elle n'a pas en main.
  *
  * Ne lève jamais : une notification est un service rendu en plus, elle ne
  * doit pas casser l'envoi du message qui l'a déclenchée.
  *
- * REND LE NOMBRE D'APPAREILS RÉELLEMENT ATTEINTS, et pas `void` comme au
- * début. `notifyNewMessage` n'en fait rien — là-bas, l'email est le canal
- * de secours et le push n'engage rien. Mais `drainNotifications` en a
- * besoin : quand l'email n'est pas configuré, ce chiffre est la SEULE
- * façon de savoir si une décision d'administration a été annoncée à
- * quelqu'un ou n'a été annoncée à personne. Marquer « envoyée » une
- * décision que personne n'a reçue la perdrait définitivement.
+ * Rend le nombre d'appareils réellement atteints, dont `drainNotifications`
+ * a besoin : sans email configuré, ce chiffre est la seule façon de savoir
+ * si une décision d'administration a été annoncée à quelqu'un. Marquer
+ * « envoyée » une décision que personne n'a reçue la perdrait.
  */
 export async function sendPushToUser(authUserId: string, contenu: ContenuPush): Promise<number> {
   if (!configurer()) return 0;
@@ -108,16 +98,13 @@ export async function sendPushToUser(authUserId: string, contenu: ContenuPush): 
         } catch (cause) {
           const statut = (cause as { statusCode?: number }).statusCode;
 
-          /* 404 et 410 sont les DEUX seules réponses qui veulent dire
-             « cet appareil n'existe plus » : application désinstallée,
-             données du navigateur effacées, abonnement révoqué. On
-             supprime la ligne immédiatement. Sans ça, la table se remplit
-             de fantômes qu'on réessaie à chaque message, indéfiniment —
-             et les services de push finissent par nous considérer comme
-             un émetteur négligent.
-
-             Tout le reste (429, 500, réseau) est passager : on garde la
-             ligne et on réessaiera au message suivant. */
+          /* 404 et 410 sont les seules réponses qui veulent dire « cet
+             appareil n'existe plus » (application désinstallée, données du
+             navigateur effacées, abonnement révoqué) : on supprime la ligne
+             tout de suite, sinon la table se remplit de fantômes réessayés
+             à chaque message et les services de push nous classent parmi
+             les émetteurs négligents. Tout le reste (429, 500, réseau) est
+             passager : on garde la ligne. */
           if (statut === 404 || statut === 410) {
             await admin.from("push_subscriptions").delete().eq("id", abonnement.id);
             return;

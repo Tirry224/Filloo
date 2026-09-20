@@ -66,42 +66,26 @@ export function MenuItem({
       </form>
     );
   }
-  /* Ni lien ni action : ce n'est pas un bouton, c'est une ligne
-     d'information. Elle en rendait un quand même — `cursor-pointer`
-     compris — et « Conditions d'utilisation » était donc, sur `/compte`
-     comme sur `/vendeur/boutique`, un bouton qu'on touche et qui ne fait
-     rien. On réessaie, on croit l'application bloquée : exactement le
-     défaut déjà rencontré avec l'onglet « Accueil » mort du commerçant
-     (docs/REPRISE.md, section 5).
-
-     C'est « Conditions d'utilisation » qui avait révélé ce défaut, le
-     temps que son texte existe ; depuis le 2026-09-17 elle porte un
-     `href` et redevient un vrai lien. Cette branche reste, parce que la
-     règle qu'elle défend ne dépendait pas de ce cas : une ligne sans
-     destination ni action doit se présenter comme une information, pas
-     comme un bouton mort. */
+  /* Ni lien ni action : une ligne d'information, pas un bouton. Elle en
+     rendait un quand même, `cursor-pointer` compris — on touche, rien ne se
+     passe, on croit l'application bloquée. Aucune ligne n'est dans ce cas
+     aujourd'hui, mais la règle ne dépend pas du cas qui l'a révélée. */
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }
 
 /**
  * Une ligne de réglage qui n'emmène nulle part : elle OUVRE un panneau.
  *
- * POURQUOI PAS DE CHEVRON
- * Dans cette liste, le chevron promet un départ — « tu vas changer
- * d'écran ». Ici on ne part pas : un panneau remonte du bas et l'écran
- * reste dessous. Mettre le chevron quand même, c'est annoncer un geste
- * qui n'aura pas lieu, et le bouton « retour » du téléphone ne ramènera
- * pas là où la personne croit.
+ * PAS DE CHEVRON : dans cette liste il promet un changement d'écran, alors
+ * qu'ici le panneau remonte du bas et l'écran reste dessous — le « retour »
+ * du téléphone ne ramènerait pas là où la personne croit.
  *
- * POURQUOI UN PANNEAU ET PAS UNE PAGE
- * Changer son mot de passe est un aller-retour de quelques secondes,
- * après lequel on veut se retrouver exactement où l'on était. Une page
- * dédiée ferait sortir de l'écran de compte pour y revenir — et
- * `docs/ECRANS.md` compterait un écran de plus pour trois champs.
+ * UN PANNEAU ET PAS UNE PAGE : l'aller-retour dure quelques secondes et on
+ * veut se retrouver exactement où l'on était ; une page dédiée coûterait un
+ * écran de plus dans `docs/ECRANS.md` pour trois champs.
  *
- * Même mécanique que les panneaux de filtre : un `<details>`, donc il
- * s'ouvre sans JavaScript, et `data-panneau` le fait refermer par
- * `ClosePanels` quand on touche à côté.
+ * Même mécanique que les panneaux de filtre : un `<details>`, donc sans
+ * JavaScript, et `data-panneau` le fait refermer par `ClosePanels`.
  */
 export function MenuPanel({
   icon: Icon,

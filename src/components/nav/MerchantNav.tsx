@@ -6,43 +6,26 @@ import { House, MessageCircle, Package, Store } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * La barre d'onglets de l'espace COMMERÇANT — quatre onglets.
+ * La barre d'onglets de l'espace COMMERÇANT — quatre onglets, comme le
+ * prototype (`design/`) : Accueil, Produits, Messages, Boutique. Avec
+ * trois, « Ma boutique » servait à la fois de tableau de bord et de liste
+ * de produits — les chiffres poussaient la liste vers le bas, la liste
+ * noyait les chiffres.
  *
- * ELLE EN A LONGTEMPS EU TROIS, ET C'ÉTAIT TROP PEU
- * « Ma boutique » mélangeait deux choses que le commerçant ne fait pas en
- * même temps : consulter son activité (combien de messages, combien de
- * produits en ligne) et TENIR son catalogue (ajouter, modifier, masquer).
- * Le même écran servait de tableau de bord et de liste de produits, donc
- * ni l'un ni l'autre correctement : les chiffres poussaient la liste vers
- * le bas, et la liste noyait les chiffres.
+ * « Rechercher » est absent volontairement : chercher des produits est un
+ * geste de client, et on bascule d'espace explicitement
+ * (`SwitchSpaceCard`).
  *
- * Le prototype (`design/`) tranchait déjà ce point avec quatre onglets —
- * Accueil, Produits, Messages, Boutique. L'application n'avait jamais
- * suivi. Ce découpage est repris ici, dans les couleurs et les composants
- * de Makiti, pas dans ceux de la maquette.
- *
- * « Rechercher » reste absent, et ce n'est pas un oubli : chercher des
- * produits est un geste de client. Une personne qui veut les deux crée
- * son compte client lié et bascule explicitement (`SwitchSpaceCard`) ; à
- * tout instant un seul espace est actif.
- *
- * TOUS LES LIENS RESTENT DANS `/vendeur`
- * C'est la propriété qui rend cette barre vérifiable d'un coup d'œil, et
- * elle remplace un mécanisme qui ne l'était pas : l'onglet « Messages »
- * pointait avant sur `/messages?vue=commercant`, c'est-à-dire sur un
- * écran de l'espace client rendu marchand par une query string. Un
- * paramètre perdu — un favori, un lien partagé, un retour arrière, une
- * redirection qui ne le repropage pas — et le commerçant atterrissait
- * dans sa boîte d'ACHETEUR. `src/lib/space.ts` existait uniquement pour
- * empêcher cette perte ; le paramètre supprimé, la fonction l'est aussi.
- *
- * La règle qui en découle : si un lien de cette barre ne commence pas par
- * `/vendeur`, c'est un bug, et il se voit sans lire le reste du fichier.
+ * TOUS LES LIENS RESTENT DANS `/vendeur` : si un lien de cette barre ne
+ * commence pas par `/vendeur`, c'est un bug, et il se voit d'un coup
+ * d'œil. « Messages » pointait avant sur `/messages?vue=commercant` — un
+ * écran client rendu marchand par une query string, que le moindre favori,
+ * lien partagé ou retour arrière perdait, renvoyant le commerçant dans sa
+ * boîte d'ACHETEUR.
  */
 /* Les quatre `match` sont volontairement DISJOINTS : deux onglets allumés
-   en même temps, c'est une barre qui ment sur l'endroit où l'on est.
-   `/vendeur` est donc testé à l'identique, jamais en préfixe — sans quoi
-   « Accueil » s'allumerait sur tout l'espace. */
+   à la fois, c'est une barre qui ment sur l'endroit où l'on est. D'où
+   `/vendeur` testé à l'identique, jamais en préfixe. */
 const TABS = [
   {
     label: "Accueil",
@@ -54,9 +37,8 @@ const TABS = [
     label: "Produits",
     href: "/vendeur/produits",
     icon: Package,
-    /* Les écrans d'un produit — ajout, modification, feuille d'actions —
-       vivent tous sous `/vendeur/produits`, donc le préfixe suffit et
-       l'onglet reste allumé pendant qu'on travaille sur un produit. */
+    /* Ajout, modification et feuille d'actions vivent tous sous
+       `/vendeur/produits` : le préfixe garde l'onglet allumé. */
     match: (p: string) => p.startsWith("/vendeur/produits"),
   },
   {
@@ -69,10 +51,8 @@ const TABS = [
     label: "Boutique",
     href: "/vendeur/boutique",
     icon: Store,
-    /* Nommé « Compte » auparavant, alors que l'écran édite la BOUTIQUE —
-       nom, ville, WhatsApp, description — et ne contient les réglages de
-       compte qu'en second. L'intitulé décrit maintenant ce qu'on y
-       trouve d'abord. */
+    /* « Boutique » et non « Compte » : l'écran édite d'abord la boutique
+       (nom, ville, WhatsApp, description), les réglages viennent après. */
     match: (p: string) => p.startsWith("/vendeur/boutique"),
   },
 ] as const;

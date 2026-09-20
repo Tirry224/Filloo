@@ -2,21 +2,13 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 /**
- * Feuille glissée depuis le bas, par-dessus l'écran courant.
+ * Feuille glissée depuis le bas : près du pouce, et l'écran d'origine
+ * reste visible, ce qu'une boîte de dialogue centrée ne donne pas.
  *
- * Sur téléphone, elle vaut mieux qu'une boîte de dialogue centrée : elle
- * arrive près du pouce et laisse voir l'écran d'où l'on vient, donc on ne
- * perd pas le fil.
- *
- * Chaque feuille est une VRAIE ADRESSE (`/produit/p-riz/signaler`) et non
- * un état caché dans la page. Trois avantages : le bouton « retour » du
- * téléphone la referme sans qu'on écrive une ligne, la feuille se partage
- * par lien, et l'écran existe sans qu'aucune action ne soit encore
- * branchée. Quand les actions arriveront, on pourra la superposer sans
- * rechargement — l'adresse restera la même.
- *
- * Le voile est un lien vers `closeHref` : taper à côté referme, comme le
- * fait n'importe quelle application.
+ * Chaque feuille est une VRAIE ADRESSE (`/produit/p-riz/signaler`), pas un
+ * état caché dans la page : le bouton « retour » du téléphone la referme
+ * sans une ligne de code, et elle se partage par lien. Le voile est un
+ * lien vers `closeHref` — taper à côté referme.
  */
 export function Sheet({
   title,

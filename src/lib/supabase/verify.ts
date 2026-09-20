@@ -4,39 +4,23 @@ import type { Database } from "@/lib/database.types";
 /**
  * Vérifie un mot de passe SANS toucher à la session en cours.
  *
- * POURQUOI CE FICHIER EXISTE, ET PAS UN SIMPLE APPEL
- * Supabase n'expose aucun « ce mot de passe est-il le bon ? ». La seule
- * façon de le savoir est de s'en servir pour se connecter. Le faire avec
- * le client de `server.ts` marcherait — c'est le même compte — mais ce
- * client-là ÉCRIT LES COOKIES de session, et on ne sait pas ce qu'il en
- * fait quand la connexion échoue. Une faute de frappe qui déconnecte la
- * personne au milieu d'un formulaire à moitié rempli serait un défaut bien
- * pire que celui qu'on cherche à corriger.
+ * Supabase n'expose aucun « ce mot de passe est-il le bon ? » : la seule
+ * façon de le savoir est de s'en servir pour se connecter. Le faire avec le
+ * client de `server.ts` marcherait — même compte — mais ce client-là ÉCRIT
+ * LES COOKIES de session, et une faute de frappe qui déconnecte quelqu'un
+ * au milieu d'un formulaire à moitié rempli serait pire que le défaut qu'on
+ * corrige. Celui-ci n'a aucune mémoire : `persistSession: false`,
+ * `autoRefreshToken: false`, aucun accès aux cookies de la requête. Il pose
+ * une question, reçoit oui ou non, et disparaît.
  *
- * Ce client-ci n'a aucune mémoire : `persistSession: false` et
- * `autoRefreshToken: false` lui interdisent de garder ou de renouveler
- * quoi que ce soit, et il ne connaît pas les cookies de la requête. Il
- * pose une question, reçoit oui ou non, et disparaît. La session de la
- * personne ne peut donc pas être abîmée par le résultat, quel qu'il soit.
+ * CE N'EST PAS UNE AUTORISATION. Il répond « ce mot de passe ouvre bien ce
+ * compte », rien de plus : à l'appelant de vérifier d'abord QUI est
+ * connecté, puis de n'agir que sur les données de cette personne-là. Le RLS
+ * reste seul maître de ce qui s'écrit.
  *
- * Cette dernière phrase a été FAUSSE pendant trois jours : le code
- * appelait `signOut()` après vérification, et cet appel est GLOBAL chez
- * Supabase — il révoquait la session du navigateur. Voir le commentaire
- * qui suit l'appel, plus bas : « ne rien faire » était la bonne
- * réponse.
- *
- * CE QU'IL N'EST PAS
- * Ce n'est pas une autorisation. Il répond « ce mot de passe ouvre bien ce
- * compte », rien de plus : c'est à l'appelant de vérifier d'abord QUI est
- * connecté, puis de n'agir que sur les données de cette personne-là. Le
- * RLS reste seul maître de ce qui s'écrit.
- *
- * Il utilise la clé publique (`anon`), pas `service_role` : vérifier un
- * mot de passe est exactement ce que fait l'écran de connexion, avec les
- * mêmes droits. La limitation de débit d'authentification de Supabase
- * s'applique donc ici aussi — essayer des mots de passe en série finit par
- * être refusé, ce qu'un contrôle écrit à la main dans notre code n'aurait
- * pas offert.
+ * Il utilise la clé publique `anon`, comme l'écran de connexion : la
+ * limitation de débit d'authentification de Supabase s'applique donc ici
+ * aussi, ce qu'un contrôle écrit à la main n'aurait pas offert.
  */
 export async function passwordIsValid(email: string, password: string): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

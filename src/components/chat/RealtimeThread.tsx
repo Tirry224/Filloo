@@ -6,20 +6,16 @@ import { createClient } from "@/lib/supabase/client";
 
 /**
  * N'affiche rien : écoute les nouveaux messages de CE fil (migration
- * `0014_realtime_on_messages.sql`) et rafraîchit la page serveur dès qu'un
- * message arrive pendant qu'on lit le fil. Sans lui, un message reçu ne
- * s'affiche qu'au prochain aller-retour vers `/messages` — voir
- * docs/REPRISE.md, point 9.
+ * `0014_realtime_on_messages.sql`) et rafraîchit la page serveur à leur
+ * arrivée. Sans lui, un message reçu n'apparaît qu'au prochain
+ * aller-retour vers `/messages`.
  *
  * `router.refresh()` plutôt qu'un état local dupliqué : la page reste la
- * seule source qui sait lire un message (citation de produit, marquage
- * "lu"), donc c'est elle qui refait le travail, pas ce composant.
+ * seule à savoir rendre un message (citation de produit, marquage « lu »).
  *
  * Mes propres messages sont ignorés : `sendMessageAction` redirige déjà
- * vers ce fil, donc ils sont à l'écran avant que l'événement n'arrive.
- * Rafraîchir une seconde fois coûterait un aller-retour réseau pour
- * réafficher exactement la même page — sur un forfait de données guinéen,
- * ça se paie (docs/PERFORMANCE.md).
+ * vers ce fil, donc ils sont à l'écran avant l'événement, et rafraîchir
+ * coûterait un aller-retour pour le même rendu (docs/PERFORMANCE.md).
  */
 export function RealtimeThread({
   conversationId,

@@ -12,15 +12,11 @@ import { passwordIsValid } from "@/lib/supabase/verify";
  * Mes informations — écran 18, monté par les deux espaces.
  *
  * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE.
- * `profiles` porte ces colonnes par rôle (`unique (auth_user_id, role)`),
- * donc une connexion à deux comptes en détient deux copies, et cette action
- * n'écrivait que sur le profil client : le numéro se corrigeait à moitié.
- * Ce qui change légitimement selon le rôle, c'est l'identité PUBLIQUE de la
- * boutique — `shop_name`, `whatsapp_phone` — modifiée ailleurs.
- *
- * Aucune migration n'a été nécessaire : la policy « profiles: je modifie
- * mon profil » est portée par `auth_user_id = auth.uid()`, pas par un
- * identifiant de profil. Le code se limitait tout seul.
+ * `profiles` porte ces colonnes par rôle (`unique (auth_user_id, role)`) :
+ * une connexion à deux comptes en détient deux copies, et n'écrire que sur
+ * le profil client corrigeait le numéro à moitié. Ce qui change selon le
+ * rôle, c'est l'identité PUBLIQUE de la boutique (`shop_name`,
+ * `whatsapp_phone`), modifiée ailleurs.
  *
  * LA VILLE NE SE PROPAGE PAS : `profiles.city_id` est la ville de résidence
  * d'un client (0010), celle d'un commerçant est celle de sa boutique
@@ -32,12 +28,11 @@ import { passwordIsValid } from "@/lib/supabase/verify";
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
-  /* PRÉSENTE ET VIDE, OU ABSENTE : ce ne sont PAS la même chose, et les
-     confondre effaçait une donnée. Le montage commerçant ne rend pas le
-     menu des villes, donc `cityId` n'arrive pas du tout dans son
-     formulaire ; traité comme « vide », il remettait à NULL la ville de
-     résidence du compte client. `FormData.get` rend `null` pour un champ
-     absent et `""` pour un champ laissé sur « Non renseignée ». */
+  /* PRÉSENTE ET VIDE, OU ABSENTE : les confondre effaçait une donnée. Le
+     montage commerçant ne rend pas le menu des villes, donc `cityId`
+     n'arrive pas dans son formulaire ; traité comme « vide », il remettait
+     à NULL la ville de résidence du compte client. `FormData.get` rend
+     `null` pour un champ absent et `""` pour « Non renseignée ». */
   const cityBrut = formData.get("cityId");
   const villeFournie = cityBrut !== null;
   const cityIdRaw = String(cityBrut ?? "").trim();
@@ -58,10 +53,8 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
-  /* Neutre au rôle, comme l'écran de suppression depuis le 2026-09-13 :
-     un commerçant sans compte client lié doit pouvoir corriger son nom,
-     et il ne le pouvait pas tant que cette ligne exigeait un profil
-     client. */
+  /* Neutre au rôle : un commerçant sans compte client lié doit pouvoir
+     corriger son nom, ce qu'exiger un profil client lui interdisait. */
   const clientProfile = profiles.find((p) => p.role === "client");
   if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
 
@@ -78,11 +71,10 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
   }
 
-  /* TOUS les profils de la connexion, désignés par `auth_user_id` et non
-     par un identifiant de profil : c'est ce filtre-là qui fait que la
-     correction ne s'arrête plus à un seul rôle. Le RLS borne de toute
-     façon l'écriture aux lignes de la personne connectée, donc ce `.eq`
-     dit ce qu'on veut écrire, il ne fait pas office de serrure. */
+  /* TOUS les profils de la connexion, désignés par `auth_user_id` : c'est
+     ce filtre qui empêche la correction de s'arrêter à un seul rôle. Le RLS
+     borne de toute façon l'écriture aux lignes de la personne connectée, ce
+     `.eq` dit ce qu'on veut écrire et ne fait pas office de serrure. */
   const { data, error } = await supabase
     .from("profiles")
     .update({ full_name: fullName, phone: nettoyerTelephone(phone) })
@@ -97,30 +89,26 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  /* La ville part dans une SECONDE écriture, et seulement si le
-     formulaire l'a réellement portée ET qu'un profil client existe pour
-     la recevoir. La joindre à celle du dessus l'aurait recopiée sur le
-     profil commerçant, où elle ne veut rien dire — et où elle aurait fini
-     par contredire la ville de la boutique. */
+  /* SECONDE écriture, et seulement si le formulaire a porté la ville ET
+     qu'un profil client existe pour la recevoir : la joindre à celle du
+     dessus la recopierait sur le profil commerçant, où elle finirait par
+     contredire la ville de la boutique. */
   if (villeFournie && clientProfile) {
     const { error: villeError } = await supabase
       .from("profiles")
       .update({ city_id: cityId })
       .eq("id", clientProfile.id);
-    /* Une ville qui ne s'enregistre pas alors que le nom l'a fait est le
-       seul cas où cette action réussit à moitié. On le DIT plutôt que de
-       rendre un succès : la personne relirait son écran et n'y verrait
-       pas la ville qu'elle vient de choisir, sans savoir pourquoi. */
+    /* Seul cas où cette action réussit à moitié : on le DIT plutôt que de
+       rendre un succès, sinon la personne relit son écran sans y trouver la
+       ville qu'elle vient de choisir, ni savoir pourquoi. */
     if (villeError) {
       return { error: "Nom et téléphone enregistrés, mais pas la ville. Réessayez." };
     }
   }
 
-  /* L'espace vient du formulaire, donc du navigateur : on ne lui laisse
-     choisir QU'ENTRE deux chemins internes écrits ici. Tout ce qui n'est
-     pas exactement « merchant » ramène côté client — c'est la même
-     prudence que `safeNextPath`, en plus simple puisqu'il n'y a que deux
-     réponses possibles et qu'aucune ne vient de l'URL. */
+  /* L'espace vient du navigateur : on ne lui laisse choisir QU'ENTRE deux
+     chemins internes écrits ici, tout ce qui n'est pas exactement
+     « merchant » ramène côté client. Même prudence que `safeNextPath`. */
   redirect(formData.get("espace") === "merchant" ? "/vendeur/boutique" : "/compte");
 }
 
@@ -175,8 +163,7 @@ export async function deleteAccountAction() {
       // Retire du catalogue public plutôt que de toucher `merchants.status` :
       // aucune valeur de l'énumération ('pending'/'approved'/'rejected') ne
       // veut dire « fermée par son propriétaire », et masquer les produits
-      // suffit à obtenir le même résultat visible (policy "products:
-      // catalogue public" exige déjà un produit `active`).
+      // suffit (policy "products: catalogue public" exige déjà `active`).
       if (merchant) {
         const { error: hideError } = await admin
           .from("products")
@@ -186,16 +173,12 @@ export async function deleteAccountAction() {
       }
     }
 
-    // `throw` et non un message d'erreur rendu à l'écran : ces deux
-    // écritures tournent avec `service_role`, donc le RLS ne peut pas les
-    // écarter — une erreur ici est une vraie panne, pas un refus.
-    //
-    // Elles n'inspectaient rien du tout, et c'était le pire endroit du
-    // projet pour le faire : si l'anonymisation échoue alors que le
-    // bannissement qui suit réussit, la personne perd l'accès à son compte
-    // pendant que son nom et son téléphone restent en base. « Supprimer
-    // mon compte » aurait alors fait exactement l'inverse de ce qu'il
-    // promet, sans que personne puisse s'en apercevoir.
+    // `throw` et non un message rendu à l'écran : ces écritures tournent
+    // avec `service_role`, le RLS ne peut pas les écarter — une erreur ici
+    // est une panne, pas un refus. Et elle doit être vue : si
+    // l'anonymisation échoue alors que le bannissement qui suit réussit, la
+    // personne perd l'accès pendant que son nom et son téléphone restent en
+    // base — l'inverse exact de ce que « Supprimer mon compte » promet.
     const { error: anonError } = await admin
       .from("profiles")
       .update({
@@ -208,15 +191,14 @@ export async function deleteAccountAction() {
     if (anonError) throw anonError;
   }
 
-  /* LES APPAREILS PARTENT AVEC LE COMPTE, et c'est à écrire ici : `0023`
-     compte sur `on delete cascade` depuis `auth.users`, mais on BANNIT au
-     lieu de supprimer — pour garder les fils lisibles par l'autre partie —
-     donc la cascade ne se déclenche jamais. Un abonnement push porte un
-     identifiant d'appareil et l'empreinte de son navigateur : les garder
-     après « supprimer mon compte » contredit ce que ce bouton promet.
-     Aucun push ne partait pour autant (`notifyNewMessage` s'arrête sur
-     `is_deleted`), mais compter sur la retenue de l'appelant pour protéger
-     une donnée est ce que le reste du projet refuse de faire. */
+  /* LES APPAREILS PARTENT AVEC LE COMPTE, explicitement : `0023` compte sur
+     `on delete cascade` depuis `auth.users`, mais on BANNIT au lieu de
+     supprimer — pour garder les fils lisibles par l'autre partie — donc la
+     cascade ne se déclenche jamais. Un abonnement push porte un identifiant
+     d'appareil et l'empreinte de son navigateur : les garder après
+     « supprimer mon compte » contredit ce que ce bouton promet. Aucun push
+     ne partait pour autant (`notifyNewMessage` s'arrête sur `is_deleted`),
+     mais protéger une donnée par la retenue de l'appelant ne suffit pas. */
   const { error: pushError } = await admin
     .from("push_subscriptions")
     .delete()

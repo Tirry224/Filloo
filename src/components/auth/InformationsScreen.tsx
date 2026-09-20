@@ -14,27 +14,20 @@ import type { Espace } from "@/lib/espace";
 /**
  * Mes informations — écran 18, monté par les DEUX espaces.
  *
- * UN COMPOSANT, DEUX ROUTES, comme `TermsScreen` et `ThreadScreen`, et
- * pour la même raison : le contenu est rigoureusement le même, le chemin
- * de RETOUR ne l'est pas. Un commerçant qui corrige son numéro ne doit
- * pas ressortir dans son espace d'acheteur.
+ * UN COMPOSANT, DEUX ROUTES, comme `TermsScreen` et `ThreadScreen` : même
+ * contenu, mais chemin de RETOUR différent — un commerçant qui corrige son
+ * numéro ne doit pas ressortir dans son espace d'acheteur.
  *
- * POURQUOI CET ÉCRAN A DÛ QUITTER L'ESPACE CLIENT
- * Il n'existait que sous `/compte/informations`, derrière une garde qui
- * exigeait un profil CLIENT. Un commerçant sans compte client lié ne
- * pouvait donc jamais corriger son nom ni son téléphone — le même trou
- * que celui déjà rebouché pour le mot de passe et pour la suppression de
- * compte. Trois fois la même leçon : ce qui appartient à la CONNEXION ne
- * peut pas vivre derrière la porte d'un seul rôle.
+ * L'écran ne peut pas rester derrière la garde « profil CLIENT » de
+ * `/compte/informations` : un commerçant sans compte client lié ne
+ * pourrait jamais corriger son nom ni son téléphone. Ce qui appartient à
+ * la CONNEXION ne vit pas derrière la porte d'un seul rôle (même trou que
+ * pour le mot de passe et la suppression de compte).
  *
- * QUELLE VALEUR ON AFFICHE QUAND LES DEUX PROFILS ONT DÉRIVÉ
- * Jusqu'ici, seul le profil client était modifiable : c'est donc lui, et
- * lui seul, qui peut porter une correction faite par la personne — le
- * profil commerçant en est resté à ce qui avait été tapé à l'inscription.
- * On affiche donc le client quand il existe, et le commerçant sinon.
- * L'inverse aurait fait recopier une vieille valeur par-dessus une valeur
- * corrigée, au premier enregistrement, sans que personne ne le voie
- * passer. La dérive se referme à cet enregistrement-là.
+ * Quand les deux profils ont dérivé, on affiche le CLIENT s'il existe, le
+ * commerçant sinon : seul le client était modifiable jusqu'ici, donc lui
+ * seul porte les corrections. L'inverse recopierait une vieille valeur
+ * par-dessus une valeur corrigée au premier enregistrement.
  */
 export async function InformationsScreen({ espace }: { espace: Espace }) {
   const supabase = await createClient();
@@ -48,8 +41,7 @@ export async function InformationsScreen({ espace }: { espace: Espace }) {
   const commercant = profiles.find((p) => p.role === "merchant");
   const identite = client ?? commercant;
   /* Aucun profil utilisable : personne n'est connecté. `clientSpaceFallback`
-     sait déjà distinguer ce cas de celui d'une connexion qui n'a pas le
-     bon rôle, et envoie se connecter plutôt qu'au catalogue. */
+     distingue ce cas d'un rôle manquant et envoie se connecter. */
   if (!identite || !user) redirect(await clientSpaceFallback(supabase));
 
   const retour = espace === "merchant" ? "/vendeur/boutique" : "/compte";
@@ -80,12 +72,10 @@ export async function InformationsScreen({ espace }: { espace: Espace }) {
             <Input id="email" type="email" defaultValue={user.email ?? ""} disabled />
           </Field>
 
-          {/* La suppression n'est proposée ICI que côté client. Côté
-              commerçant, elle vit déjà sur `/vendeur/boutique` — même
-              règle d'emplacement unique que le mot de passe et les
-              notifications : une action qui porte sur la CONNEXION ne
-              doit pas s'offrir deux fois dans le même espace, sans quoi
-              on croit à deux suppressions différentes. */}
+          {/* Côté commerçant, la suppression vit déjà sur
+              `/vendeur/boutique` : une action qui porte sur la CONNEXION
+              ne s'offre qu'à un endroit par espace, sinon on croit à deux
+              suppressions différentes. */}
           {espace === "client" ? (
             <Link
               href="/compte/informations/supprimer"

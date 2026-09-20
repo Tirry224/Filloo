@@ -5,18 +5,12 @@ import { TopBar } from "@/components/ui/TopBar";
 /**
  * Mot de passe oublié — écran 15 de docs/ECRANS.md.
  *
- * `?erreur=lien_invalide` est posé par deux endroits — `/auth/confirm`
- * quand l'échange du jeton échoue, et `/reinitialiser-mot-de-passe` quand
- * aucune session de récupération n'est active — mais cet écran ne le
- * lisait pas. Quelqu'un qui cliquait sur un lien reçu la veille retombait
- * donc sur le formulaire de départ, mot pour mot identique, sans un mot
- * d'explication : il ne pouvait pas distinguer « le lien a expiré » de
- * « je me suis trompé d'adresse » ou de « l'application est cassée ».
- *
- * Le coût n'est pas seulement de la confusion : il redemande un lien, et
- * chaque demande frappe la limite d'envoi du serveur mail intégré de
- * Supabase (étape 2 de docs/REPRISE.md). Un écran muet fabrique le
- * problème qu'il devrait éviter.
+ * `?erreur=lien_invalide` est posé par `/auth/confirm` (échange du jeton
+ * échoué) et par `/reinitialiser-mot-de-passe` (aucune session de
+ * récupération). Cet écran doit le LIRE : muet, il réaffichait le
+ * formulaire à l'identique, sans distinguer un lien expiré d'une erreur de
+ * saisie, et la personne redemandait un lien — chaque demande frappant la
+ * limite d'envoi du serveur mail de Supabase (docs/REPRISE.md, étape 2).
  */
 export default async function ForgotPasswordPage({
   searchParams,

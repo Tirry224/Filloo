@@ -8,32 +8,20 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Index des écrans — page de TRAVAIL, pas de produit.
- *
- * Elle existe parce qu'il n'y a pas encore d'authentification : rien ne
- * dit si l'on est client ou commerçant, et plusieurs écrans (boutique
- * refusée, compte suspendu, hors ligne) ne s'atteignent pas en naviguant
- * normalement. Cette page les rend tous accessibles pour relecture.
- *
- * À SUPPRIMER quand la session existera. Une page de débogage qu'on oublie
- * de retirer finit toujours par être trouvée par un utilisateur.
+ * Index des écrans — page de TRAVAIL, pas de produit : elle rend
+ * joignables des écrans qu'on n'atteint pas en naviguant normalement
+ * (boutique refusée, compte suspendu, hors ligne), pour relecture.
  */
 
 /**
- * Identifiants RÉELS lus en base, jamais codés en dur.
+ * Identifiants RÉELS lus en base, jamais codés en dur : les identifiants
+ * fixes de l'ancien `src/lib/mock.ts` sont morts depuis que l'application
+ * lit la vraie base, et un index dont un tiers des liens mène à « Cette
+ * page n'existe pas » fait croire que l'application est cassée.
  *
- * Neuf liens de cette page pointaient sur `p-riz`, `p-huile`,
- * `m-aissatou`, `t-mariama` — les identifiants de l'ancien `src/lib/mock.ts`.
- * Ils étaient donc morts depuis que l'application lit la vraie base : le
- * jeu de démonstration créait des UUID (`c0000000-…`), pas ces noms. Un
- * index d'écrans dont un tiers des liens mène à « Cette page n'existe
- * pas » ne sert pas à relire les écrans, il fait croire que
- * l'application est cassée.
- *
- * Quand un enregistrement manque (base vide, aucun fil de discussion
- * encore créé), la ligne dit QUOI faire pour l'obtenir au lieu d'offrir
- * un lien qui échoue. C'est l'état normal d'une base neuve, pas une
- * erreur.
+ * Quand un enregistrement manque, la ligne dit QUOI faire pour l'obtenir
+ * plutôt que d'offrir un lien qui échoue : c'est l'état normal d'une base
+ * neuve, pas une erreur.
  */
 type ScreenIds = {
   produit?: string;
@@ -100,11 +88,10 @@ function screenGroups(ids: ScreenIds): {
     {
       title: "Messagerie",
       screens: [
-        /* Deux adresses, plus deux vues d'une seule. `?vue=` n'existe
-           plus : la messagerie du commerçant vit sous `/vendeur`, celle
-           du client à la racine. L'écran 29 (« vide ») n'a plus d'URL
-           propre — il n'en a jamais eu une vraie : c'était l'état des
-           deux autres quand la liste est vide, pas un troisième écran. */
+        /* `?vue=` n'existe plus : la messagerie du commerçant vit sous
+           `/vendeur`, celle du client à la racine. L'écran 29 (« vide »)
+           n'a pas d'URL propre — c'est l'état des deux autres quand la
+           liste est vide, pas un troisième écran. */
         ["27", "Messages — commerçant", "/vendeur/messages"],
         ["28", "Messages — client", "/messages"],
         ["30", "Fil de discussion", ids.conversation && `/messages/${ids.conversation}`, MANQUE_FIL],
@@ -123,58 +110,38 @@ function screenGroups(ids: ScreenIds): {
   ];
 }
 
-/* Rendu à la requête, pas au build : sans ça, le résultat de `notFound()`
-   était figé dans une page statique mise en cache, et la garde
-   `NODE_ENV` n'était plus qu'un souvenir du build.
+/* Rendu à la requête, pas au build : sinon le résultat de `notFound()`
+   est figé dans une page statique mise en cache et la garde `NODE_ENV`
+   ne vaut plus rien.
 
-   Ce que ce réglage ne corrige PAS, vérifié au `curl` et non supposé : la
-   réponse reste un **200** portant le contenu « Cette page n'existe
-   pas », pas un vrai 404. C'est documenté et attendu en Next 16
-   (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
-   section « Calling notFound() after streaming has started ») : le
-   `loading.tsx` de la racine ouvre une frontière `<Suspense>` sur chaque
-   route, donc la réponse a commencé à partir avant que la garde ne soit
-   évaluée — et un statut ne se change plus une fois le flux ouvert.
-
-   Ce que Next fait à la place, et qui suffit ici : il injecte
-   `<meta name="robots" content="noindex">`, vérifié présent sur cette
-   adresse et absent des pages légitimes. Le risque réel — une page de
-   travail interne trouvée par un moteur de recherche — est donc fermé.
-
-   Pour un vrai 404, il faudrait déplacer la garde dans `proxy` (le
-   remplaçant de `middleware`, cf. l'avertissement de dépréciation au
-   build), qui s'exécute AVANT le flux. À faire avec cette migration, pas
-   au milieu d'une correction de bugs. */
+   PIÈGE : la réponse reste un 200 portant le contenu « Cette page
+   n'existe pas », pas un vrai 404. Attendu en Next 16 (voir
+   `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
+   « Calling notFound() after streaming has started ») : le `loading.tsx`
+   racine ouvre un `<Suspense>` sur chaque route, donc le flux a commencé
+   avant l'évaluation de la garde et le statut ne se change plus. Next
+   injecte en échange `<meta name="robots" content="noindex">`, ce qui
+   ferme le risque réel : cette page de travail trouvée par un moteur.
+   Un vrai 404 demanderait de déplacer la garde dans `proxy`
+   (remplaçant de `middleware`), qui s'exécute AVANT le flux. */
 export const dynamic = "force-dynamic";
 
 /**
  * Page de TRAVAIL : accessible en développement, introuvable en
- * production.
+ * production. Elle partait en ligne ouverte à tous tant qu'elle était
+ * prérendue (`○ /ecrans`).
  *
- * `README` et `docs/REPRISE.md` prévoyaient de la supprimer « quand
- * l'authentification existera » — c'est chose faite depuis le
- * 2026-09-11, et pourtant le build la prérendait toujours (`○ /ecrans`),
- * donc elle partait en ligne, ouverte à tous.
- *
- * La supprimer maintenant serait quand même une erreur : l'étape 1 de
- * `docs/REPRISE.md` — ouvrir les 33 écrans dans un navigateur, la
- * première chose qui reste à faire sur ce projet — se fait précisément
- * depuis ici. On ne jette pas l'outil la veille de s'en servir.
- *
- * D'où ce `notFound()` conditionnel plutôt qu'un `rm` : l'outil reste
- * entier en local, et l'adresse renvoie la page « Cette page n'existe
- * pas » en production, comme n'importe quelle URL inventée. Le test
- * s'évalue au build (`NODE_ENV` vaut alors `production`), donc rien n'est
- * décidé à chaud à chaque visite.
- *
- * À supprimer pour de bon quand l'étape 1 sera terminée.
+ * `notFound()` conditionnel plutôt qu'un `rm` : l'étape 1 de
+ * `docs/REPRISE.md` (ouvrir les 33 écrans) se fait depuis ici, donc
+ * l'outil reste entier en local pendant que l'adresse se comporte en
+ * production comme n'importe quelle URL inventée. À supprimer pour de
+ * bon quand cette étape sera terminée.
  */
 export default async function ScreensIndexPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
-  /* Quatre lectures indépendantes, lancées ensemble : aucune n'attend le
-     résultat d'une autre. Les conversations ne remonteront que pour une
-     session qui en a (le RLS s'en charge) — normal, pas une erreur. */
+  /* Les conversations ne remontent que pour une session qui en a (le RLS
+     s'en charge) — normal, pas une erreur. */
   const supabase = await createClient();
   const [produit, produitVendu, boutique, conversation] = await Promise.all([
     supabase.from("products").select("id").eq("status", "active").limit(1).maybeSingle(),
@@ -229,10 +196,10 @@ export default async function ScreensIndexPage() {
                     {href ? (
                       <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
                     ) : (
-                      /* Trois états, pas deux : un écran qui s'affiche tout
-                         seul (« automatique ») et un écran qui attend une
-                         vraie donnée ne se ressemblent pas. Dire lequel
-                         manque évite de chercher un bug qui n'existe pas. */
+                      /* Distinguer l'écran qui s'affiche tout seul
+                         (« automatique ») de celui qui attend une vraie
+                         donnée : dire lequel manque évite de chercher un
+                         bug qui n'existe pas. */
                       <span className="shrink-0 text-2xs text-ink-soft">{manque ?? "automatique"}</span>
                     )}
                   </>

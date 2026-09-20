@@ -1,13 +1,10 @@
 /**
  * Types du domaine, lus par tous les écrans.
  *
- * Ce fichier ne disparaît PAS quand Supabase existe (contrairement à ce que
- * disait ce commentaire avant le 2026-09-11) : la base réelle est en
- * snake_case (`price_gnf`), ces types en camelCase (`priceGnf`) — les deux
- * conventions naturelles de chaque monde. Réécrire ~30 écrans pour suivre
- * la casse de la base aurait été un chantier mécanique sans vrai bénéfice.
- * `src/lib/database.types.ts` (généré) et `src/lib/data/` (la traduction
- * entre les deux) sont les seuls endroits qui connaissent le schéma réel.
+ * Ils coexistent avec le schéma Supabase au lieu de le refléter : la base
+ * est en snake_case (`price_gnf`), ces types en camelCase (`priceGnf`).
+ * `src/lib/database.types.ts` (généré) et `src/lib/data/` (la traduction)
+ * sont les seuls endroits qui connaissent le schéma réel.
  */
 
 export type ProductStatus = "draft" | "active" | "sold" | "hidden";

@@ -1,54 +1,39 @@
 /**
  * L'adresse où reprendre après une connexion ou une inscription.
  *
- * Le seul écran de l'application qui exige un compte est « Contacter le
- * vendeur » (écran 16). Jusqu'ici, la personne y touchait « Créer mon
- * compte », s'inscrivait… et atterrissait sur le fil d'accueil : le
- * produit qu'elle voulait acheter avait disparu en chemin, et il lui
- * fallait le retrouver à la main pour recommencer. On demande un compte
- * au moment précis où quelqu'un veut écrire à un vendeur — c'est le
- * geste le plus précieux du produit, et c'est celui qu'on lui faisait
- * perdre.
+ * Le seul écran qui exige un compte est « Contacter le vendeur » (16). Sans
+ * `?next=`, la personne s'inscrivait et atterrissait sur le fil d'accueil :
+ * le produit qu'elle voulait acheter avait disparu en chemin. On demande un
+ * compte au moment du geste le plus précieux du produit, et c'était celui-là
+ * qu'on lui faisait perdre.
  *
- * L'intention voyage donc dans `?next=`, d'écran en écran, jusqu'à
- * l'action serveur qui conclut l'authentification.
+ * CE PARAMÈTRE VIENT DE L'URL, DONC DE N'IMPORTE QUI. Un lien
+ * `…/connexion?next=https://faux-makiti.gn` envoyé sur WhatsApp ferait
+ * rebondir la victime vers un site d'hameçonnage APRÈS une connexion
+ * réussie, sans aucune raison de se méfier : c'est la redirection ouverte.
  *
- * `safeNextPath` est ce qui rend ce paramètre sûr. Il vient de l'URL,
- * donc de n'importe qui : un lien `…/connexion?next=https://faux-makiti.gn`
- * envoyé sur WhatsApp ferait rebondir la victime vers un site
- * d'hameçonnage APRÈS une connexion réussie — elle n'aurait aucune
- * raison de se méfier. C'est la faille dite « redirection ouverte ».
+ * POURQUOI UNE COMPARAISON DE PRÉFIXES NE SUFFIT PAS — mesuré le
+ * 2026-09-15. La première version testait « commence par `/`, mais pas par
+ * `//` ni `/\` ». Or `/⇥/faux-makiti.gn`, une TABULATION en deuxième
+ * position, passait le filtre : Node émet l'en-tête `Location` tel quel, et
+ * la spécification URL impose aux navigateurs de SUPPRIMER tabulations,
+ * retours chariot et sauts de ligne avant d'analyser une adresse. Le chemin
+ * redevient `//faux-makiti.gn`, c'est-à-dire l'autre domaine.
  *
- * POURQUOI LA PREMIÈRE VERSION NE SUFFISAIT PAS
- * Elle testait des PRÉFIXES : commence par `/`, mais pas par `//` ni
- * `/\`. Audit du 2026-09-15, mesuré : `/⇥/faux-makiti.gn` — une
- * tabulation glissée en deuxième position — passait le filtre, et Node
- * émet l'en-tête `Location` avec la tabulation intacte (vérifié sur un
- * serveur de test). Or la spécification URL impose aux navigateurs de
- * SUPPRIMER tabulations, retours chariot et sauts de ligne avant
- * d'analyser une adresse : `/⇥/faux-makiti.gn` redevient
- * `//faux-makiti.gn`, c'est-à-dire l'autre domaine, écrit en abrégé.
- * Même tour avec `\n` et `\r`.
+ * La leçon dépasse ce fichier : une liste blanche qui compare des préfixes
+ * valide une ORTHOGRAPHE, pas une adresse. Il faut analyser la chaîne comme
+ * une URL, exactement comme celui qui la suivra.
  *
- * La leçon est générale et vaut au-delà de ce fichier : une liste
- * blanche qui compare des préfixes valide une ORTHOGRAPHE, pas une
- * adresse. Elle ne peut pas voir ce que le navigateur fera du texte
- * ensuite. Il faut analyser la chaîne comme une URL — exactement comme
- * celui qui la suivra.
+ * D'où la règle en trois temps : un seul slash au début ; aucun caractère
+ * de contrôle, puisque le navigateur en efface trois et change ainsi le
+ * sens de l'adresse ; et, résolue contre une origine qui n'existe pas,
+ * l'adresse doit RESTER sur cette origine — ce qui écarte `//autre.gn/x`,
+ * `/\autre.gn` (l'antislash vaut un slash pour l'analyseur) et tout ce
+ * qu'on n'a pas encore imaginé.
  *
- * La règle est donc en trois temps :
- *   1. un seul slash au début, sinon rien à discuter ;
- *   2. aucun caractère de contrôle, puisque le navigateur en efface
- *      trois et change ainsi le sens de l'adresse ;
- *   3. résolue contre une origine qui n'existe pas, l'adresse doit
- *      RESTER sur cette origine. C'est ce qui écarte `//autre.gn/x`,
- *      `/\autre.gn` (l'antislash vaut un slash pour l'analyseur) et
- *      tout ce qu'on n'a pas encore imaginé.
- *
- * `makiti.invalid` : le domaine de premier niveau `.invalid` est
- * réservé par la RFC 2606 et ne peut être enregistré par personne. Rien
- * n'est joint, c'est une analyse de chaîne — mais si un jour cette
- * valeur fuitait dans une requête, elle ne mènerait nulle part.
+ * `.invalid` est réservé par la RFC 2606 : rien n'est joint, c'est une
+ * analyse de chaîne, mais si cette valeur fuitait elle ne mènerait nulle
+ * part.
  */
 const ORIGINE_DE_TEST = "http://makiti.invalid";
 
