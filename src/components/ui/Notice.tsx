@@ -2,16 +2,14 @@
  * Bandeau d'erreur affiché EN HAUT d'un écran, après une action qui a
  * échoué ailleurs (une feuille d'actions, typiquement).
  *
- * Le message transite par `?erreur=` et non par `useActionState` : les
- * lignes de feuille (`ActionRow`) sont de vraies `<form>` serveur, ce qui
- * les fait marcher sans JavaScript sur un réseau guinéen instable
- * (docs/REPRISE.md, étape 2) ; `useActionState` rendrait chaque feuille
- * cliente.
+ * Le message transite par `?erreur=` et non par `useActionState`, qui rendrait
+ * cliente chaque feuille : les lignes (`ActionRow`) sont de vraies `<form>`
+ * serveur, donc utilisables sans JavaScript (docs/REPRISE.md, étape 2).
  *
  * SÉCURITÉ : ce texte vient donc de l'URL, donc de l'utilisateur. React
  * l'échappe (pas d'injection), mais n'importe qui peut fabriquer un lien
- * affichant le message de son choix. Acceptable pour un bandeau qui ne
- * fait qu'informer ; PAS pour une valeur qui déclencherait une action.
+ * affichant le message de son choix — acceptable pour un bandeau qui informe,
+ * PAS pour une valeur qui déclencherait une action.
  */
 export function Notice({ children, tone = "danger" }: { children: React.ReactNode; tone?: "danger" | "success" }) {
   if (!children) return null;

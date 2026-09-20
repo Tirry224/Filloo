@@ -8,25 +8,18 @@ import { changeMyPasswordAction, type ActionState } from "@/lib/actions/auth";
 /**
  * Changer son mot de passe en le connaissant — panneau de l'écran compte.
  *
- * TROIS CHAMPS, ET CHACUN A SA RAISON
  * Le mot de passe ACTUEL prouve que c'est bien la personne : sans lui, un
  * téléphone déverrouillé emprunté trente secondes suffit à enfermer son
- * propriétaire dehors. Le NOUVEAU se tape DEUX fois parce que c'est le
- * seul champ du parcours qu'on ne peut pas relire — et qu'une faute de
- * frappe ne se découvre qu'à la connexion suivante, quand plus rien ne
- * rappelle ce qu'on croyait avoir écrit.
+ * propriétaire dehors. Le NOUVEAU se tape DEUX fois : seul champ qu'on ne
+ * peut pas relire, sa faute de frappe ne se découvrirait qu'à la
+ * connexion suivante.
  *
- * POURQUOI ÇA NE REDIRIGE PAS
- * Le formulaire vit dans un panneau posé sur l'écran de compte. Renvoyer
- * ailleurs après un succès donnerait l'impression d'avoir perdu sa place
- * pour un geste de dix secondes. Le panneau dit que c'est fait, la
- * personne referme.
+ * Pas de redirection : le panneau est posé sur l'écran de compte, il dit
+ * que c'est fait et la personne referme.
  *
- * `autoComplete` distingue bien les deux rôles : `current-password` sur le
- * premier, `new-password` sur les suivants. C'est ce qui permet au
- * gestionnaire de mots de passe du téléphone de proposer l'ancien au bon
- * endroit, et d'enregistrer le nouveau — sans ça, il enregistre souvent
- * l'un à la place de l'autre.
+ * `autoComplete` distingue les deux rôles (`current-password` puis
+ * `new-password`) : sans ça, le gestionnaire du téléphone enregistre
+ * souvent l'un à la place de l'autre.
  */
 export function ChangePasswordForm() {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(changeMyPasswordAction, null);

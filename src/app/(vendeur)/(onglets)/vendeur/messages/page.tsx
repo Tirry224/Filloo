@@ -10,21 +10,13 @@ import { getMyThreadsAsMerchant } from "@/lib/data/messages";
 /**
  * Messages — côté COMMERÇANT. Écran 27 de docs/ECRANS.md.
  *
- * Nouvelle route, ancien écran : c'est ce qui vivait derrière
- * `/messages?vue=commercant`. Le déplacer sous `/vendeur` fait trois
- * choses qu'une query string ne pouvait pas faire :
+ * Nouvelle route, ancien écran : il vivait derrière
+ * `/messages?vue=commercant`. Sous `/vendeur`, il hérite de la garde de
+ * `(vendeur)/layout.tsx` — un client qui tape cette URL n'y entre plus,
+ * au lieu de retomber sur sa propre boîte, ce qui masquait le problème —
+ * et de la barre d'onglets commerçant, avec une adresse stable.
  *
- *   - il hérite de la garde de `(vendeur)/layout.tsx`, donc un client
- *     authentifié qui tape cette URL n'y entre pas — avant, il obtenait
- *     `/messages` sans `?vue=`, c'est-à-dire sa propre boîte, ce qui
- *     masquait le problème plutôt que de le poser ;
- *   - il hérite de la barre d'onglets commerçant, sans que cet écran ait
- *     à la demander ;
- *   - son adresse est stable : plus rien à reproposer à chaque lien, donc
- *     plus rien à perdre en chemin.
- *
- * Aucune garde n'est écrite ici, et c'est le signe que le découpage
- * marche : le layout l'a déjà faite pour tout ce qui vit sous `/vendeur`.
+ * Aucune garde écrite ici, et c'est le signe que le découpage marche.
  */
 export default async function MerchantMessagesPage() {
   const supabase = await createClient();

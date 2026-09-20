@@ -279,20 +279,15 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
 }
 
 /**
- * Le nombre de messages non lus DANS UN ESPACE — client ou commerçant —
- * pour le badge de la barre d'onglets (décision 5 de docs/SPEC.md).
+ * Messages non lus DANS UN ESPACE — client ou commerçant — pour le badge
+ * de la barre d'onglets (décision 5 de docs/SPEC.md).
  *
- * Compté par espace et jamais globalement : un commerçant qui range sa
- * boutique n'a pas à voir clignoter les messages de son compte d'acheteur,
- * et l'inverse non plus. C'est la même règle que le reste du projet — à
- * tout instant, un seul contexte est actif.
- *
- * Deux requêtes plutôt qu'une jointure filtrée : la seconde est un `head`
- * (aucune ligne rapatriée, juste le compte), et les deux sont couvertes
- * par le RLS, qui ne laisse déjà voir que MES conversations. Renvoie 0
- * sans rien interroger pour un visiteur anonyme ou pour un espace dont la
- * connexion n'a pas le profil — le cas le plus fréquent sur le catalogue
- * public, qui ne doit rien coûter.
+ * Jamais global : un commerçant qui range sa boutique n'a pas à voir
+ * clignoter les messages de son compte d'acheteur, ni l'inverse.
+ * Deux requêtes plutôt qu'une jointure, la seconde en `head` (juste le
+ * compte), toutes deux couvertes par le RLS. Renvoie 0 sans rien
+ * interroger sans profil pour cet espace — le cas du catalogue public,
+ * qui ne doit rien coûter.
  */
 export async function countUnreadMessages(
   supabase: SupabaseClient<Database>,

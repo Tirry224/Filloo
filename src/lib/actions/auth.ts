@@ -90,17 +90,14 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
  * mot de passe à saisir, c'est la même connexion — juste un nouveau profil
  * (policy « profiles: je cree mon second compte », 0002).
  *
- * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT. Ils
- * appartiennent à la connexion, pas au rôle : les redemander revenait à
- * proposer d'en donner d'autres, et c'est ainsi que les deux profils d'une
- * même personne divergeaient dès leur création.
+ * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT : ils
+ * appartiennent à la connexion, pas au rôle, et les redemander faisait
+ * diverger les deux profils d'une même personne dès leur création.
  *
- * ET C'EST AUSSI UNE QUESTION DE SÉCURITÉ : propager les valeurs SAISIES
- * ICI vers le profil existant ouvrirait un contournement de la
- * confirmation par mot de passe — un téléphone emprunté trente secondes,
- * un second compte créé, et le nom comme le numéro du premier réécrits
- * sans rien connaître du compte. Recopier ce qui est déjà en base ne peut
- * rien réécrire.
+ * C'EST AUSSI UNE QUESTION DE SÉCURITÉ : propager des valeurs saisies ici
+ * vers le profil existant contournerait la confirmation par mot de passe
+ * — téléphone emprunté trente secondes, second compte créé, nom et numéro
+ * du premier réécrits. Recopier la base ne peut rien réécrire.
  */
 export async function createLinkedProfileAction(
   _prevState: ActionState | null,
@@ -227,16 +224,13 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
 /**
  * Changer son mot de passe depuis son compte, en le CONNAISSANT.
  *
- * POURQUOI UNE ACTION DE PLUS, ET PAS `updatePasswordAction` : celle du
- * dessus sert la réinitialisation par email, où la preuve est le lien reçu
- * dans la boîte ; ici aucun email n'est envoyé, la seule preuve disponible
- * est le mot de passe actuel. Deux preuves différentes, donc deux actions —
- * les fondre rendrait le contrôle facultatif, c'est-à-dire inexistant.
+ * PAS `updatePasswordAction` : là-bas la preuve est le lien reçu par
+ * email, ici c'est le mot de passe actuel. Deux preuves, donc deux
+ * actions — les fondre rendrait le contrôle facultatif, donc inexistant.
  *
- * CE QUE ÇA EMPÊCHE : un téléphone déverrouillé emprunté trente secondes.
- * Sans ce contrôle, changer le mot de passe de quelqu'un ferme la porte
- * derrière soi — le propriétaire ne peut plus entrer, et la
- * réinitialisation ne le sauve que s'il a encore accès à sa boîte.
+ * CE QUE ÇA EMPÊCHE : un téléphone emprunté trente secondes. Sans ce
+ * contrôle, changer le mot de passe de quelqu'un ferme la porte derrière
+ * soi, et la réinitialisation ne le sauve que s'il a encore sa boîte.
  */
 export async function changeMyPasswordAction(
   _prevState: ActionState | null,

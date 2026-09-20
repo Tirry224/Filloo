@@ -12,26 +12,20 @@ import { markSoldAction, hideProductAction, republishProductAction, deleteProduc
  * Chaque action dit sa CONSÉQUENCE : « Masquer » et « Supprimer » se
  * ressemblent dans une liste, ce qu'ils font aux données non.
  *
- * LES ACTIONS SUIVENT L'ÉTAT RÉEL DU PRODUIT. La feuille proposait les
- * mêmes lignes à un brouillon qu'à un produit publié : « Publier »
- * n'existait nulle part, le seul chemin étant « Masquer » puis
- * « Republier » — deux intitulés qui décrivent le contraire de ce qu'ils
- * font ; et « Marquer comme vendu » était offert sur un brouillon, alors
- * qu'on ne vend pas ce qui n'a jamais été en vitrine.
+ * LES ACTIONS SUIVENT L'ÉTAT RÉEL DU PRODUIT : un brouillon n'avait pas
+ * de « Publier » (il fallait « Masquer » puis « Republier »), et se
+ * voyait proposer « Marquer comme vendu ».
  *
- * CE QUE CETTE PAGE NE PROTÈGE PAS, et c'est le point à retenir. Retirer
- * une ligne d'une feuille d'actions ne ferme rien : `markSoldAction` reste
- * appelable par une requête forgée, et la policy laisse le commerçant
- * écrire `status` sur ses propres produits. La faille `draft → sold` — un
- * brouillon sans photo qui entrait au catalogue parce que
- * `check_product_publishable` ne regardait que `active` — est fermée par la
- * migration 0020, EN BASE. Ceci est une correction d'INTERFACE : ne plus
- * proposer ce que la base refusera, jamais la protection elle-même.
+ * CE QUE CETTE PAGE NE PROTÈGE PAS : retirer une ligne ne ferme rien,
+ * `markSoldAction` restant appelable par une requête forgée. La faille
+ * `draft → sold` — un brouillon sans photo entrant au catalogue parce que
+ * `check_product_publishable` ne regardait que `active` — est fermée EN
+ * BASE par 0020. Ici, on ne fait que cesser de proposer ce que la base
+ * refusera.
  *
  * Aucune action nouvelle : publier un brouillon et republier un produit
  * masqué sont la MÊME écriture (`status = 'active'`), donc le même
- * `republishProductAction`. Seul l'intitulé change, parce que seul le point
- * de départ change.
+ * `republishProductAction` ; seul l'intitulé change.
  */
 export default async function ProductActionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

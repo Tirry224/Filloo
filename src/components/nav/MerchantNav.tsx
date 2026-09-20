@@ -6,22 +6,17 @@ import { House, MessageCircle, Package, Store } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * La barre d'onglets de l'espace COMMERÇANT — quatre onglets, comme le
- * prototype (`design/`) : Accueil, Produits, Messages, Boutique. Avec
- * trois, « Ma boutique » servait à la fois de tableau de bord et de liste
- * de produits — les chiffres poussaient la liste vers le bas, la liste
- * noyait les chiffres.
+ * La barre d'onglets de l'espace COMMERÇANT — quatre onglets comme le
+ * prototype (`design/`) : avec trois, « Ma boutique » cumulait tableau de
+ * bord et liste de produits, chacun noyant l'autre. « Rechercher » est absent
+ * volontairement : chercher est un geste de client, et on bascule d'espace
+ * explicitement (`SwitchSpaceCard`).
  *
- * « Rechercher » est absent volontairement : chercher des produits est un
- * geste de client, et on bascule d'espace explicitement
- * (`SwitchSpaceCard`).
- *
- * TOUS LES LIENS RESTENT DANS `/vendeur` : si un lien de cette barre ne
- * commence pas par `/vendeur`, c'est un bug, et il se voit d'un coup
- * d'œil. « Messages » pointait avant sur `/messages?vue=commercant` — un
- * écran client rendu marchand par une query string, que le moindre favori,
- * lien partagé ou retour arrière perdait, renvoyant le commerçant dans sa
- * boîte d'ACHETEUR.
+ * TOUS LES LIENS RESTENT DANS `/vendeur` : un lien qui n'y commence pas est
+ * un bug, visible d'un coup d'œil. « Messages » pointait avant sur
+ * `/messages?vue=commercant` — un écran client rendu marchand par une query
+ * string, que le moindre favori ou retour arrière perdait, renvoyant le
+ * commerçant dans sa boîte d'ACHETEUR.
  */
 /* Les quatre `match` sont volontairement DISJOINTS : deux onglets allumés
    à la fois, c'est une barre qui ment sur l'endroit où l'on est. D'où

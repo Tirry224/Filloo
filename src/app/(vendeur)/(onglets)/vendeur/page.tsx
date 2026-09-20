@@ -16,31 +16,19 @@ import { countUnreadMessages, getMyThreadsAsMerchant } from "@/lib/data/messages
 /**
  * Accueil commerçant — l'écran d'ouverture de l'espace.
  *
- * CE QU'IL ÉTAIT, ET POURQUOI IL A CHANGÉ
- * `/vendeur` portait à la fois les chiffres d'activité et la liste
- * complète des produits. Les deux s'y gênaient : les cartes repoussaient
- * le catalogue vers le bas, et un catalogue un peu long noyait les
- * chiffres. Le prototype (`design/`) séparait déjà ces deux gestes en
- * deux onglets — regarder où l'on en est, et tenir son stock. La liste
- * vit maintenant sur `/vendeur/produits` ; cet écran ne garde que la
- * lecture.
+ * Il portait aussi la liste complète des produits : les cartes repoussaient
+ * le catalogue vers le bas, et un catalogue un peu long noyait les chiffres.
+ * La liste vit maintenant sur `/vendeur/produits`, comme dans le prototype
+ * (`design/`) ; cet écran ne garde que la lecture.
  *
- * LES TROIS CHIFFRES, ET CELUI QUI N'Y EST PAS
- * Le prototype en affiche trois : produits actifs, messages non lus,
- * « vues boutique ». Les deux premiers sont calculés depuis la vraie
- * base. Le troisième NE L'EST PAS, parce qu'aucune table de ce projet ne
- * compte les vues d'une boutique — ni `merchants`, ni `products`. On ne
- * l'affiche donc pas : un tableau de bord dont un chiffre sur trois est
- * inventé n'est pas un tableau de bord, c'est une image. L'ajouter
- * demanderait une colonne, une migration et une décision sur ce qu'on
- * compte (une visite ? un visiteur ? sur quelle durée ?) — un autre
- * travail, à décider, pas à improviser ici.
- *
- * À sa place, une donnée que la base tient DÉJÀ : `products.contact_count`
- * compte les clients DISTINCTS ayant posé une question sur un produit
- * (voir `bump_contact_count`, 0002 partie 3.3). Leur somme dit combien de
- * personnes se sont manifestées — ce que « vues » prétendait approcher,
- * mesuré pour de bon.
+ * TROIS CHIFFRES, DONT UN QUI N'Y EST PAS : le prototype affiche « vues
+ * boutique », qu'aucune table ne compte — ni `merchants`, ni `products`. Un
+ * tableau de bord dont un chiffre sur trois est inventé n'est pas un tableau
+ * de bord, c'est une image ; l'afficher demanderait une migration et une
+ * décision sur ce qu'on compte. À sa place, une donnée que la base tient
+ * DÉJÀ : la somme des `products.contact_count`, soit les clients DISTINCTS
+ * ayant posé une question sur un produit (`bump_contact_count`, 0002
+ * partie 3.3).
  */
 export default async function MerchantHomePage({
   searchParams,
@@ -59,12 +47,10 @@ export default async function MerchantHomePage({
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
 
-  /* Le message d'erreur SUIT la redirection. Sans ces deux lignes, il
-     mourait ici : une action produit qui échoue revient toujours sur
-     `/vendeur?erreur=…` (voir `backToSeller`), et `/vendeur` renvoyait
-     aussitôt une boutique non validée vers son écran de statut — en
-     laissant le paramètre derrière lui. Le refus de la base était donc
-     correct, expliqué, et invisible. */
+  /* Le message d'erreur SUIT la redirection : une action produit qui échoue
+     revient sur `/vendeur?erreur=…` (voir `backToSeller`), et `/vendeur`
+     renvoyait aussitôt une boutique non validée vers son écran de statut en
+     laissant le paramètre derrière — refus correct, expliqué, invisible. */
   const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
   if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
   if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
@@ -104,10 +90,9 @@ export default async function MerchantHomePage({
 
           <div className="flex flex-col gap-2.5">
             <SectionLabel>Votre activité</SectionLabel>
-            {/* Trois colonnes égales, comme le prototype. Les deux cartes
-                qui MÈNENT quelque part sont des liens ; celle qui ne fait
-                que compter n'en est pas un — un bloc cliquable qui ne
-                réagit pas apprend à ne plus rien toucher. */}
+            {/* Les deux cartes qui MÈNENT quelque part sont des liens ;
+                celle qui ne fait que compter n'en est pas un — un bloc
+                cliquable qui ne réagit pas apprend à ne plus rien toucher. */}
             <div className="flex gap-2.5">
               <Link href="/vendeur/produits" className="flex-1">
                 <Card className="flex h-full flex-col gap-0.5 p-3">
@@ -141,10 +126,8 @@ export default async function MerchantHomePage({
 
           {catalogue.length === 0 ? (
             /* Une boutique neuve n'a rien à lire dans ses chiffres : trois
-               zéros et un écran vide diraient seulement « il ne se passe
-               rien », sans dire quoi faire. On garde donc l'appel à
-               l'action qui vivait sur l'ancien écran — c'est le seul geste
-               utile à ce stade. */
+               zéros diraient « il ne se passe rien » sans dire quoi faire.
+               D'où l'appel à l'action, seul geste utile à ce stade. */
             <EmptyState
               icon={Plus}
               title="Votre boutique est vide"
@@ -171,11 +154,9 @@ export default async function MerchantHomePage({
                           <span className="truncate text-base font-semibold">{thread.peerName}</span>
                           <span className="truncate text-xs text-ink-soft">{thread.lastProductTitle}</span>
                         </div>
-                        {/* Deux états, pas trois. Le prototype en montrait
-                            un troisième (« À répondre »), qui supposerait
-                            de savoir QUI a écrit en dernier — une donnée
-                            que `Thread` ne porte pas. On dit ce qu'on sait
-                            plutôt que de deviner. */}
+                        {/* Deux états, pas trois : le troisième du prototype
+                            (« À répondre ») supposerait de savoir QUI a
+                            écrit en dernier, que `Thread` ne porte pas. */}
                         {thread.unreadCount > 0 ? (
                           <Badge tone="accent">Nouveau</Badge>
                         ) : (

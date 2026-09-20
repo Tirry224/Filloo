@@ -6,22 +6,18 @@ import { WifiOff } from "lucide-react";
 /**
  * Bandeau « Pas de connexion » — écran 4 de `docs/ECRANS.md`.
  *
- * COMPOSANT CLIENT, et c'est l'un des rares cas où c'est la seule solution
- * et non la solution confortable : seul le navigateur sait si le téléphone
- * a du réseau. Quelques centaines d'octets pour éviter qu'on croie Makiti
- * cassé alors que c'est le réseau qui est tombé — sur les connexions
- * visées, cette différence décide si la personne revient.
+ * COMPOSANT CLIENT par nécessité, pas par confort : seul le navigateur
+ * sait si le téléphone a du réseau. Quelques centaines d'octets pour
+ * éviter qu'on croie Makiti cassé quand c'est le réseau qui est tombé.
  *
- * SON TEXTE NE PROMET RIEN, volontairement : sans service worker, une page
- * non chargée reste inaccessible. La version d'origine disait « vous voyez
- * les produits déjà consultés », ce qui serait un mensonge puisque rien
- * n'est mis en cache. Un message qui promet ce que le produit ne tient pas
- * coûte plus cher que pas de message.
+ * SON TEXTE NE PROMET RIEN : sans service worker, une page non chargée
+ * reste inaccessible, et la version d'origine (« vous voyez les produits
+ * déjà consultés ») mentait, rien n'étant mis en cache.
  *
  * `navigator.onLine` ment dans un cas : il dit « en ligne » sur un réseau
- * qui ne mène nulle part. Il détecte la coupure franche, pas le réseau
- * poussif — mesurer le reste demanderait des requêtes de test, donc de
- * consommer les données de quelqu'un qui n'en a déjà plus.
+ * qui ne mène nulle part. Il voit la coupure franche, pas le réseau
+ * poussif — le mesurer consommerait les données de quelqu'un qui n'en a
+ * déjà plus.
  */
 export function OfflineBanner() {
   const [horsLigne, setHorsLigne] = useState(false);

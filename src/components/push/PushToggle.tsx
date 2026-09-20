@@ -7,25 +7,22 @@ import { usePushAbonnement } from "@/components/push/usePushAbonnement";
 /**
  * L'interrupteur des notifications, et tout ce qu'il doit dire.
  *
- * LA SÉQUENCE N'EST PLUS ICI
- * Permission, abonnement, appel serveur et états vivent dans
- * `usePushAbonnement`, partagé avec `PushInvite` : deux commandes du même
- * abonnement ne peuvent pas diverger si elles lisent le même code. Ce
- * composant ne fait plus qu'une chose — CHOISIR QUOI MONTRER.
+ * LA SÉQUENCE N'EST PLUS ICI : permission, abonnement et appel serveur
+ * vivent dans `usePushAbonnement`, partagé avec `PushInvite` — deux
+ * commandes du même abonnement ne divergent pas si elles lisent le même
+ * code. Ce composant CHOISIT QUOI MONTRER, rien d'autre.
  *
- * TROIS ÉTATS À DISTINGUER, ET C'EST TOUT L'INTÉRÊT DU COMPOSANT
- *   - pas supporté (iPhone ouvert dans Safari, navigateur ancien) : on le
- *     DIT, avec ce qu'il faut faire — sinon la personne touche un bouton
- *     qui ne répond pas et conclut que l'application est cassée ;
+ * TROIS ÉTATS À DISTINGUER
+ *   - pas supporté (iPhone dans Safari, navigateur ancien) : on le DIT,
+ *     avec la marche à suivre — sinon la personne touche un bouton muet
+ *     et conclut que l'application est cassée ;
  *   - permission refusée : le navigateur ne redemandera plus, seul le
- *     réglage du site peut la rouvrir. Le bouton ne servirait à rien ;
+ *     réglage du site rouvre la porte, le bouton ne servirait à rien ;
  *   - abonné / non abonné : le cas normal.
  *
- * POURQUOI LE BOUTON DE TEST RESTE APRÈS LA MISE AU POINT
- * Le jour où un commerçant dira « je ne reçois rien », ce bouton répondra
- * en trois secondes : soit la notification arrive et le problème est
- * ailleurs, soit elle n'arrive pas et on sait où chercher. Un diagnostic
- * qui demande un deuxième téléphone et un deuxième compte ne se fait pas.
+ * LE BOUTON DE TEST RESTE : au « je ne reçois rien » d'un commerçant, il
+ * répond en trois secondes, là où un diagnostic exigeant un deuxième
+ * téléphone et un deuxième compte ne se ferait jamais.
  */
 export function PushToggle() {
   const { supporte, permission, abonne, enCours, erreur, message, activer, desactiver, tester } =

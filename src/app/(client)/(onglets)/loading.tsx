@@ -8,25 +8,17 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 /**
  * Écran 3 — chargement du fil CLIENT.
  *
- * Ce fichier n'est pas une page : Next l'affiche AUTOMATIQUEMENT pendant
- * qu'une page du même dossier — donc de TOUTE l'application, celui-ci
- * étant à la racine — attend ses données. Rien à déclencher.
+ * Ce n'est pas une page : Next l'affiche AUTOMATIQUEMENT pendant qu'un écran
+ * de ce groupe attend ses données. D'où le défaut corrigé — ce squelette est
+ * celui du fil client (logo, ville, quatre onglets) et s'affichait aussi
+ * devant l'espace commerçant : le mélange des deux espaces que
+ * `design/README.md` interdit. Le vendeur a le sien, dans son propre groupe.
  *
- * C'est précisément ce qui en faisait un défaut : ce squelette est celui
- * du fil client (logo, ville, barre d'onglets à quatre onglets), et il
- * s'affichait aussi devant l'espace commerçant. Un commerçant voyait donc
- * « Conakry » et les onglets du client le temps du chargement — le même
- * mélange des deux espaces que `design/README.md` interdit. L'espace
- * vendeur a maintenant le sien : `src/app/vendeur/loading.tsx`.
- *
- * La barre de recherche a par ailleurs été retirée d'ici : l'accueil ne
- * l'a plus. Un squelette qui montre un élément que la vraie page n'a pas
- * fait SAUTER la page à l'arrivée des données, exactement ce que ce
- * fichier prétend éviter.
- *
- * Il reproduit la silhouette du fil plutôt qu'un tourniquet centré : la
- * page ne saute pas quand les données arrivent, et l'attente paraît plus
- * courte parce qu'on voit déjà où les choses vont se placer.
+ * Il reproduit la silhouette du fil plutôt qu'un tourniquet centré, et jamais
+ * un élément que la vraie page n'a pas : la barre de recherche a été retirée
+ * d'ici quand l'accueil l'a perdue, car un squelette qui ne correspond plus
+ * fait SAUTER la page à l'arrivée des données — ce qu'il doit justement
+ * éviter.
  */
 export default function Loading() {
   return (

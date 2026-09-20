@@ -11,32 +11,26 @@ import {
  * Tout ce qu'un écran a besoin de savoir et de faire sur l'abonnement
  * push de CET appareil.
  *
- * POURQUOI CE FICHIER EXISTE
- * Deux composants commandent le même abonnement : `PushToggle`, dans le
- * panneau « Notifications », et `PushInvite`, la carte qui le propose à
- * quelqu'un qui n'a rien activé. Recopier la séquence — permission,
- * `subscribe`, action serveur, état — dans les deux, c'est se garantir
- * qu'un jour l'un demandera la permission autrement que l'autre. La
- * séquence vit donc ici, une fois.
+ * Deux composants commandent le même abonnement — `PushToggle` dans le
+ * panneau « Notifications », `PushInvite` la carte qui le propose. Recopier
+ * la séquence (permission, `subscribe`, action serveur, état) dans les deux,
+ * c'est se garantir qu'un jour l'un demandera la permission autrement que
+ * l'autre : elle vit donc ici, une fois.
  *
- * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE, ET C'EST UNE RÈGLE
- * Aucune fonction de ce fichier ne s'exécute au chargement : `activer()`
- * ne part que d'un tap. Un navigateur à qui l'on demande la permission
- * sans prévenir reçoit un « non » réflexe, et Chrome ne repose JAMAIS la
- * question — la personne est perdue pour les notifications sans avoir
- * compris ce qu'on lui proposait.
+ * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE, ET C'EST UNE RÈGLE : rien
+ * ici ne s'exécute au chargement, `activer()` ne part que d'un tap. Une
+ * demande sans prévenir reçoit un « non » réflexe, et Chrome ne repose
+ * JAMAIS la question.
  */
 
 /**
  * Au-delà, on considère que le service worker ne s'enregistrera pas.
  *
- * `navigator.serviceWorker.ready` est une promesse qui ne se rejette
- * JAMAIS : si l'enregistrement a échoué — script introuvable, stockage
- * plein, navigateur en navigation privée — elle attend indéfiniment.
- * Sans cette borne, toucher « Activer » ne produisait donc rien du tout :
- * pas d'erreur, pas de message, pas de changement d'état. Un bouton qui
- * ne répond pas est lu comme une application cassée, ce qui est pire que
- * l'aveu d'un échec.
+ * `navigator.serviceWorker.ready` ne se rejette JAMAIS : si l'enregistrement
+ * a échoué (script introuvable, stockage plein, navigation privée), elle
+ * attend indéfiniment. Sans cette borne, toucher « Activer » ne produisait
+ * rien du tout — ni erreur, ni message — et un bouton qui ne répond pas est
+ * lu comme une application cassée.
  */
 const DELAI_SERVICE_WORKER_MS = 10_000;
 

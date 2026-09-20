@@ -9,15 +9,13 @@ import { countUnreadMessages } from "@/lib/data/messages";
  *
  * PAS DE GARDE ICI, ET C'EST VOULU : le catalogue est PUBLIC (`/`,
  * `/recherche`, `/boutique/[id]` se lisent sans compte), contrairement au
- * pendant commerçant qui, lui, refuse l'entrée. Les deux écrans du groupe
- * qui exigent un compte — `/compte` et `/messages` — le demandent
- * eux-mêmes par `requireClientSpace` : la garde est sur les écrans qui en
- * ont besoin, pas sur l'espace entier.
+ * pendant commerçant qui refuse l'entrée. Les deux écrans qui exigent un
+ * compte se gardent eux-mêmes — `/messages` par `requireClientSpace`,
+ * `/compte` par `clientSpaceFallback`.
  *
  * Le compteur n'est demandé qu'aux personnes connectées :
  * `countUnreadMessages` interroge la base, et la déclencher pour chaque
- * visiteur anonyme coûterait une requête par page vue sur un réseau
- * guinéen (docs/PERFORMANCE.md).
+ * visiteur anonyme coûterait une requête par page vue (docs/PERFORMANCE.md).
  */
 export default async function ClientTabsLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();

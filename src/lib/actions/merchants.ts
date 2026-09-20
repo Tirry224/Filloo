@@ -50,22 +50,17 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 
 /**
  * Renvoyer ma boutique à la vérification — écran 21, après correction.
+ * Sans cette flèche, corriger ses informations ne changeait pas
+ * `merchants.status` : une boutique refusée le restait indéfiniment.
  *
- * C'est la flèche qui manquait au parcours « refusée → correction →
- * renvoi → attente » : corriger ses informations n'a JAMAIS changé
- * `merchants.status`, donc une boutique refusée le restait indéfiniment
- * quoi que son propriétaire corrige.
+ * Le statut est écrit par `resubmit_my_merchant()` (0015), en base, qui
+ * n'autorise que 'rejected' → 'pending' et seulement sur la boutique de
+ * l'appelant : le commerçant n'a aucun droit d'écriture sur
+ * `merchants.status`, et c'est la base qui le garantit, pas cet écran.
  *
- * Le statut n'est pas écrit ici : il l'est par `resubmit_my_merchant()`
- * (0015), en base, qui n'autorise qu'une seule transition
- * ('rejected' → 'pending') et seulement sur la boutique de la connexion
- * qui appelle. Le commerçant n'a toujours aucun droit d'écriture sur
- * `merchants.status` — s'auto-valider reste impossible, et c'est bien la
- * base qui le garantit, pas cet écran.
- *
- * Une `<form>` de composant serveur, sans `useActionState` : comme les
- * actions produit, elle fonctionne sans JavaScript, et son message
- * d'erreur voyage donc dans l'URL, lu par `Notice` sur `/vendeur/refusee`.
+ * `<form>` de composant serveur, sans `useActionState` : elle marche
+ * sans JavaScript, son erreur voyage donc dans l'URL, lue par `Notice`
+ * sur `/vendeur/refusee`.
  */
 export async function resubmitMerchantAction() {
   const supabase = await createClient();
@@ -110,22 +105,17 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return { error: "Vous devez être connecté en tant que commerçant." };
 
-  /* LA CONFIRMATION PAR MOT DE PASSE, ET CE QU'ELLE PROTÈGE VRAIMENT
-     Ces informations sont celles qu'un client lit avant de se déplacer :
-     l'adresse où l'on vous trouve et le numéro WhatsApp. Quelqu'un qui
-     emprunte un téléphone déverrouillé quelques secondes pouvait les
-     réécrire sans rien connaître du compte — et rediriger vers lui les
-     acheteurs d'une boutique qui n'est pas la sienne. Redemander le mot
-     de passe au moment d'écrire est ce qui distingue « cette session est
-     ouverte » de « c'est bien la bonne personne, maintenant ».
+  /* LA CONFIRMATION PAR MOT DE PASSE, ET CE QU'ELLE PROTÈGE
+     Adresse et WhatsApp sont ce qu'un client lit avant de se déplacer :
+     un téléphone déverrouillé emprunté quelques secondes suffisait à les
+     réécrire et à détourner les acheteurs d'une boutique. Le mot de passe
+     redemandé au moment d'écrire distingue « cette session est ouverte »
+     de « c'est bien la bonne personne ».
 
-     Supabase n'a pas d'appel « vérifie ce mot de passe » : la seule façon
-     de le savoir est de s'en servir pour se connecter. `passwordIsValid`
-     le fait avec un client JETABLE, qui n'écrit aucun cookie — voir
-     `src/lib/supabase/verify.ts` pour la raison, qui compte : le client de
-     session aurait pu abîmer la session en cours sur un simple échec, et
-     une faute de frappe qui déconnecte au milieu d'un formulaire à moitié
-     rempli serait pire que le défaut qu'on corrige. */
+     Supabase n'a pas d'appel « vérifie ce mot de passe » : il faut s'en
+     servir pour se connecter. `passwordIsValid` le fait avec un client
+     JETABLE, sans cookie (voir `src/lib/supabase/verify.ts`) — sinon une
+     faute de frappe déconnecterait au milieu du formulaire. */
   const user = await getSessionUser(supabase);
   if (!user?.email) {
     // Aucun compte du projet ne devrait être dans ce cas — l'inscription
@@ -161,11 +151,9 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  /* Retour sur la CONSULTATION, pas sur l'accueil. C'est la règle que
-     l'écran d'édition pose : ses deux sorties — la flèche retour qui
-     annule, et cet enregistrement — mènent au même endroit, celui d'où
-     l'on vient. Renvoyer ailleurs obligerait à retrouver son écran pour
-     vérifier ce qu'on vient d'écrire, et c'est précisément le moment où
-     l'on veut le relire. */
+  /* Retour sur la CONSULTATION, pas sur l'accueil : les deux sorties de
+     l'écran d'édition — la flèche qui annule et cet enregistrement —
+     mènent là d'où l'on vient, au moment précis où l'on veut relire ce
+     qu'on vient d'écrire. */
   redirect("/vendeur/boutique");
 }

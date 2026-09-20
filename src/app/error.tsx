@@ -9,27 +9,18 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 /**
  * Écran 4 — le chargement a échoué.
  *
- * `"use client"` est obligatoire ici : ce fichier doit tourner dans le
- * navigateur pour proposer un bouton « Réessayer » qui relance vraiment le
- * rendu. C'est le premier composant client de l'application, et il l'est
- * pour une raison précise, pas par confort.
+ * `"use client"` est obligatoire : le bouton « Réessayer » ne relance le
+ * rendu que depuis le navigateur.
  *
- * En Guinée, la connexion tombe. Une page blanche à ce moment-là est
- * comprise comme « l'application est cassée », pas comme « le réseau est
- * mauvais ». La différence entre les deux, c'est un utilisateur qui
- * revient ou pas.
+ * En Guinée, la connexion tombe. Une page blanche est alors comprise
+ * comme « l'application est cassée », pas « le réseau est mauvais » — et
+ * c'est la différence entre un utilisateur qui revient ou pas.
  *
- * Le titre disait « Impossible de charger les produits », et c'était vrai
- * de l'écran 4 seulement. Or c'est l'UNIQUE `error.tsx` du projet : il
- * couvre donc toute l'application, et il annonçait des produits à qui
- * venait d'échouer en envoyant un message, en ouvrant son compte ou en
- * contactant un vendeur. Constaté au balayage navigateur du 2026-09-13,
- * où même l'espace commerçant l'affichait.
- *
- * C'est le message d'erreur le plus fréquent de l'application, sur le
- * marché le plus instable : il doit être vrai partout, donc ne nommer
- * aucun contenu en particulier. Un écran de section peut toujours poser
- * son propre `error.tsx` plus précis par-dessus.
+ * LE TITRE NE NOMME AUCUN CONTENU : c'est l'UNIQUE `error.tsx` du projet,
+ * donc il couvre toute l'application. Il annonçait « Impossible de
+ * charger les produits » à qui venait d'échouer en envoyant un message ou
+ * dans l'espace commerçant. Un écran de section peut toujours poser son
+ * propre `error.tsx` plus précis par-dessus.
  */
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (

@@ -24,23 +24,16 @@ export async function getCategories(supabase: SupabaseClient<Database>): Promise
 export const FALLBACK_CITY = "Conakry";
 
 /**
- * La ville de DÉPART de la navigation : celle que le client a renseignée
- * dans son profil (`profiles.city_id`, 0010), sinon Conakry.
+ * La ville de DÉPART de la navigation : celle du profil client
+ * (`profiles.city_id`, 0010), sinon Conakry. Un point de départ, jamais un
+ * filtre permanent — dès que `?ville=` est dans l'URL, c'est lui qui gagne,
+ * et le filtre reste MANUEL (docs/SPEC.md, décision 9) : on ne devine rien,
+ * on relit un choix déjà fait.
  *
- * Elle ne fixe qu'un point de départ, jamais un filtre permanent : dès que
- * `?ville=` est présent dans l'URL, c'est lui qui gagne. Le filtre de ville
- * reste MANUEL (docs/SPEC.md, décision 9) — cette fonction ne devine rien,
- * elle relit un choix déjà fait par la personne.
- *
- * Elle existe parce que le fil d'accueil appliquait cette règle et que
- * `/recherche` avait son propre "Conakry" en dur : un client de Boké
- * voyait son fil à Boké, touchait l'onglet « Rechercher », et se
- * retrouvait à Conakry sans avoir rien demandé. Deux écrans du même espace
- * ne peuvent pas répondre différemment à la même question.
- *
- * `cities` est passée en paramètre plutôt que relue ici : les deux écrans
- * qui s'en servent ont déjà la liste sous la main, et une requête gratuite
- * reste une requête.
+ * Écrite une fois parce que `/recherche` avait son propre "Conakry" en dur :
+ * un client de Boké voyait son fil à Boké puis retombait à Conakry en
+ * touchant « Rechercher ». `cities` est passée en paramètre, les deux écrans
+ * qui s'en servent l'ayant déjà sous la main.
  */
 export async function getDefaultCityName(
   supabase: SupabaseClient<Database>,

@@ -9,19 +9,15 @@ import { conversationReportReasons } from "@/lib/mock";
 import { messagesBase, type Espace } from "@/lib/espace";
 
 /**
- * Écran 32b — signaler une conversation.
- *
- * La maquette (`design/SignalerConversation.dc.html`) prévoyait cet écran
- * depuis le début ; l'action serveur existait déjà, mais la feuille
- * d'actions (écran 32) l'appelait avec un motif figé. Le motif se choisit
- * maintenant ici.
+ * Écran 32b — signaler une conversation. La feuille d'actions (écran 32)
+ * appelait l'action serveur avec un motif figé ; le motif se choisit ici.
  *
  * Composant serveur et `<form>` classique, sans `useActionState` :
  * `reportConversationAction` redirige vers le fil en portant son message
  * dans l'URL, donc l'écran fonctionne sans JavaScript (PERFORMANCE.md).
- * Les motifs sont de vraies cases radio natives, pour la même raison que
- * dans `ReportForm` — la sélection doit voyager dans le formulaire, pas
- * dépendre d'un état client.
+ * Les motifs sont de vraies cases radio natives, comme dans `ReportForm` —
+ * la sélection doit voyager dans le formulaire, pas dépendre d'un état
+ * client.
  */
 export async function ReportThreadScreen({
   espace,
@@ -39,16 +35,12 @@ export async function ReportThreadScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen`, pour la même raison : un fil a deux
-     côtés, `getThreadContext` sait lequel est le nôtre, et le chemin
-     emprunté doit correspondre à ce fait. Elle manquait ici — le fil
-     était gardé, ses trois feuilles ne l'étaient pas. Un commerçant
-     ouvrant `/messages/<id>/actions` obtenait donc cette feuille habillée
-     en client, dont le bouton de fermeture ne le ramenait dans son espace
-     qu'au coup d'après, par le rattrapage de `ThreadScreen`.
-
-     C'est exactement le motif que cette réorganisation corrigeait
-     ailleurs : la garde écrite sur un écran et oubliée sur ses voisins. */
+  /* La même garde que `ThreadScreen` : un fil a deux côtés,
+     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté
+     doit y correspondre. Elle manquait ici — le fil était gardé, ses
+     feuilles non : un commerçant obtenait cette feuille habillée en
+     client, et ne rentrait dans son espace qu'au coup d'après. La garde
+     écrite sur un écran et oubliée sur ses voisins. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/signaler`);
 

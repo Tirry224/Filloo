@@ -25,25 +25,16 @@ type MerchantRow = {
 /**
  * Modifier ma boutique — l'écran d'édition, séparé de sa consultation.
  *
- * POURQUOI CE DÉCOUPAGE
- * `/vendeur/boutique` présentait ces champs directement modifiables, avec
- * « Enregistrer » en permanence dans la barre du haut :
+ * Quand `/vendeur/boutique` rendait ces champs modifiables sur place : on
+ * modifiait sans l'avoir décidé (un doigt qui glisse sur « Ville » pendant
+ * le défilement), « Enregistrer » s'affichait même sans rien à
+ * enregistrer, et consulter revenait à lire des champs de saisie, qui
+ * disent « écris ici » plutôt que « voici ce que tu as ».
  *
- *   - on modifiait sans l'avoir décidé (un doigt qui glisse sur « Ville »
- *     pendant le défilement change la ville, sans rien signaler) ;
- *   - « Enregistrer » s'affichait même sans rien à enregistrer, et un
- *     bouton qui ne fait rien apprend à ne plus le regarder ;
- *   - consulter demandait de lire des champs de saisie, qui disent
- *     « écris ici », pas « voici ce que tu as ».
- *
- * Modifier devient donc un geste qu'on demande, sur son propre écran,
- * comme l'ajout d'un produit.
- *
- * PLEIN ÉCRAN, SANS BARRE D'ONGLETS
- * Comme les formulaires produit : on ne propose pas de partir ailleurs au
- * milieu d'un formulaire à moitié rempli. Les deux sorties sont
- * explicites et mènent à `/vendeur/boutique` — la flèche retour (annuler)
- * et « Enregistrer » (voir `updateMerchantAction`).
+ * Plein écran sans barre d'onglets, comme les formulaires produit : on ne
+ * propose pas de partir ailleurs au milieu d'un formulaire à moitié
+ * rempli. Les deux sorties mènent à `/vendeur/boutique` — la flèche
+ * retour (annuler) et « Enregistrer » (`updateMerchantAction`).
  */
 export default async function EditShopPage() {
   const supabase = await createClient();

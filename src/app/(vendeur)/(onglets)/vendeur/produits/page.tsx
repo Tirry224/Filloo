@@ -13,19 +13,14 @@ import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 /**
  * Mes produits — écran 22 de docs/ECRANS.md, devenu un onglet à part.
  *
- * POURQUOI CETTE LISTE A QUITTÉ `/vendeur`
- * Elle y cohabitait avec les chiffres d'activité, et les deux s'y
- * gênaient : les cartes de statistiques repoussaient le catalogue vers le
- * bas de l'écran, et un catalogue de trente produits noyait les chiffres
- * qu'on venait consulter. Ce sont deux gestes différents — regarder où
- * l'on en est, et tenir son stock — qui méritaient deux écrans, comme le
- * prototype le prévoyait depuis le début.
+ * ELLE A QUITTÉ `/vendeur` parce qu'elle y gênait les chiffres
+ * d'activité : les cartes repoussaient le catalogue vers le bas, et trente
+ * produits noyaient les chiffres. Deux gestes — voir où l'on en est,
+ * tenir son stock — donc deux écrans.
  *
- * LE BOUTON « AJOUTER » EST EN HAUT, PAS EN BAS
- * Il vivait dans un `ScreenFooter` collé au bas de l'écran. Sur une liste
- * longue, ce pied de page recouvre en permanence le dernier produit — et
- * c'est justement celui qu'on vient de créer. En tête de barre, il ne
- * masque rien et reste atteignable sans dérouler.
+ * LE BOUTON « AJOUTER » EST EN HAUT : dans un `ScreenFooter`, il
+ * recouvrait en permanence le dernier produit de la liste, justement
+ * celui qu'on vient de créer.
  */
 export default async function MerchantProductsPage({
   searchParams,

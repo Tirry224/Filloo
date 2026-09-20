@@ -4,22 +4,20 @@ import { Field, Input } from "@/components/ui/Field";
 /**
  * « Enregistrer » qui demande d'abord le mot de passe, dans un panneau.
  *
- * LE CHAMP N'EST PLUS EN BAS DU FORMULAIRE. Il y était, dernier d'une liste
- * de six : on le remplissait AVANT d'avoir décidé d'enregistrer, donc
- * souvent pour rien, et sur un écran qui défile le bouton de la barre du
- * haut restait à portée de pouce alors que le champ qu'il exige était hors
- * de vue. Le refus « confirmez avec votre mot de passe » arrivait sans
- * qu'on voie de quoi il parlait.
+ * LE CHAMP N'EST PLUS EN BAS DU FORMULAIRE : dernier d'une liste de six,
+ * on le remplissait avant même d'avoir décidé d'enregistrer, et le bouton
+ * de la barre du haut restait à portée de pouce quand le champ qu'il
+ * exige était hors de vue — le refus « confirmez avec votre mot de
+ * passe » arrivait sans qu'on voie de quoi il parlait.
  *
  * UN SEUL CHEMIN VERS L'ENREGISTREMENT : le bouton de la barre du haut
- * n'enregistre plus, il OUVRE. Deux boutons portant « Enregistrer »
- * laisseraient croire que le premier a déjà tout fait.
+ * n'enregistre plus, il OUVRE. Deux boutons « Enregistrer » laisseraient
+ * croire que le premier a déjà tout fait.
  *
- * L'attribut `form` du HTML relie le champ au formulaire sans qu'il en soit
- * le parent — natif, ancien, et ça évite de dupliquer le formulaire. C'est
- * un `<details>`, donc ça marche sans JavaScript ; `data-panneau` le fait
- * refermer par `ClosePanels` au tap extérieur, un confort jamais une
- * condition.
+ * L'attribut `form` relie le champ au formulaire sans en être le parent,
+ * ce qui évite de dupliquer celui-ci. C'est un `<details>`, donc sans
+ * JavaScript ; `data-panneau` le fait refermer par `ClosePanels` au tap
+ * extérieur, confort jamais condition.
  */
 export function ConfirmPasswordSave({
   formId,

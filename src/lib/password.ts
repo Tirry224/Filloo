@@ -1,16 +1,13 @@
 /**
- * La règle d'un mot de passe qu'on CRÉE ou qu'on change, écrite une fois.
+ * La règle d'un mot de passe qu'on CRÉE ou qu'on change, écrite une fois :
+ * trois écrans en créent ou en changent un (inscription, réinitialisation,
+ * modification de la boutique) et, recopiée, la règle divergerait — le projet
+ * a payé la leçon avec sept gardes recopiées dans `/vendeur`, la huitième
+ * oubliée.
  *
- * UN FICHIER POUR DEUX CONDITIONS : trois écrans créent ou modifient un mot
- * de passe (inscription, réinitialisation par email, modification de la
- * boutique). Recopiées, ces règles divergeraient — le jour où la longueur
- * minimale change, on en corrigerait deux sur trois. Le projet a déjà payé
- * cette leçon : sept gardes recopiées dans `/vendeur`, la huitième oubliée.
- *
- * LA VÉRIFICATION EST CÔTÉ SERVEUR parce qu'elle seule est une garantie :
- * les formulaires doivent fonctionner SANS JavaScript (docs/PERFORMANCE.md,
- * règle R7) et une requête forgée ne passe par aucun champ. Le contrôle du
- * navigateur, quand il existe, ne fait que l'annoncer plus tôt.
+ * LA VÉRIFICATION EST CÔTÉ SERVEUR parce qu'elle seule est une garantie : les
+ * formulaires doivent marcher SANS JavaScript (docs/PERFORMANCE.md, R7) et une
+ * requête forgée ne passe par aucun champ.
  */
 
 /** Longueur minimale, à un seul endroit : Supabase impose 6 par défaut, le

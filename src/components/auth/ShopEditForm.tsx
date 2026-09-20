@@ -13,18 +13,11 @@ import type { Merchant } from "@/lib/types";
  * voir le commentaire de `updateMerchantAction` sur la promesse de
  * « nouvelle vérification » retirée de cet écran.
  *
- * Pas de `<ScreenBody>`/`<ScreenFooter>` ici : c'est la page qui pose le
+ * Pas de `<ScreenBody>`/`<ScreenFooter>` : c'est la page qui pose le
  * cadre, ce composant ne rend que les champs. Le bouton « Enregistrer »
  * vit dans la barre du haut et rejoint cette `<form>` par l'attribut HTML
- * `form`, pas par l'imbrication du JSX.
- *
- * Ce lien par attribut avait d'abord été choisi pour une autre raison :
- * ce formulaire cohabitait sur `/vendeur/boutique` avec des blocs qui
- * sont eux-mêmes de petites `<form>` (bascule d'espace, déconnexion), et
- * on n'imbrique pas une `<form>` dans une autre. Il vit maintenant seul
- * sur `/vendeur/boutique/modifier`, mais le montage reste le bon : un
- * bouton dans la barre du haut ne peut de toute façon pas être un enfant
- * du formulaire qu'il envoie.
+ * `form` — un bouton de la barre du haut ne peut pas être un enfant du
+ * formulaire qu'il envoie.
  */
 export function ShopEditForm({
   merchant,
@@ -75,18 +68,16 @@ export function ShopEditForm({
         <Textarea id="description" name="description" rows={3} defaultValue={merchant.description ?? ""} />
       </Field>
 
-      {/* AUCUN CHAMP DE MOT DE PASSE DANS CE FORMULAIRE, ET DEUX RAISONS
+      {/* AUCUN CHAMP DE MOT DE PASSE ICI, ET DEUX RAISONS
           Le CHANGEMENT de mot de passe vit dans un panneau de l'onglet
           `/vendeur/boutique` : il n'appartient qu'à la connexion, alors
-          que l'adresse et le numéro WhatsApp d'ici sont publics et lus
-          par un client avant qu'il se déplace.
+          que l'adresse et le WhatsApp d'ici sont publics.
 
-          La CONFIRMATION par mot de passe, elle, est toujours exigée pour
-          enregistrer — c'est ce qui distingue « cette session est
-          ouverte » de « c'est bien la bonne personne, maintenant » — mais
-          elle se demande au moment du geste, dans le panneau de
-          `ConfirmPasswordSave`, dont le champ porte `form="shop-edit-form"`
-          pour rejoindre ce formulaire sans y être imbriqué. */}
+          La CONFIRMATION par mot de passe reste exigée pour enregistrer —
+          c'est ce qui distingue « cette session est ouverte » de « c'est
+          bien la bonne personne, maintenant » — mais elle se demande au
+          moment du geste, dans `ConfirmPasswordSave`, dont le champ porte
+          `form="shop-edit-form"`. */}
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
     </form>

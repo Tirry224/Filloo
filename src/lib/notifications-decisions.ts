@@ -14,22 +14,17 @@ import { sendPushToUser, type ContenuPush } from "@/lib/push";
  * dans le tableau de bord Supabase : boutique validée, refusée, compte
  * suspendu.
  *
- * LE PENDANT DE `notifications.ts`, ET DIFFÉRENT EXPRÈS. Là-bas une action
- * serveur vient d'écrire un message : elle sait qui prévenir, et `after()`
- * suffit. Ici personne n'a exécuté de code — quelqu'un a coché une case sur
- * supabase.com. Ce sont les triggers de `0021` qui laissent une trace, et
- * ce balayage la relève.
+ * LE PENDANT DE `notifications.ts`, ET DIFFÉRENT EXPRÈS : là-bas une
+ * action serveur sait qui prévenir, `after()` suffit ; ici personne n'a
+ * exécuté de code — quelqu'un a coché une case sur supabase.com, et les
+ * triggers de `0021` laissent la trace que ce balayage relève.
  *
- * TOUT L'ÉTAT VIT EN BASE : cette fonction n'a aucune mémoire. Un
- * déploiement au milieu, un timeout, une invocation tuée — le passage
- * suivant reprend là où celui-ci s'est arrêté, puisque ce qui n'est pas
- * marqué est encore en attente. Ce qui coince se voit en une requête :
- *
- *     select * from notifications where sent_at is null;
- *
- * Le cron ne passe qu'une fois par jour (offre Hobby, `vercel.json`) : le
- * push ne raccourcit pas ce délai, il fait arriver la nouvelle sur un écran
- * verrouillé au lieu d'attendre qu'on pense à ouvrir sa boîte mail.
+ * TOUT L'ÉTAT VIT EN BASE, aucune mémoire ici : déploiement, timeout ou
+ * invocation tuée, le passage suivant reprend ce qui n'est pas marqué, et
+ * ce qui coince se voit par `select * from notifications where sent_at is
+ * null`. Le cron ne passe qu'une fois par jour (offre Hobby,
+ * `vercel.json`) : le push ne raccourcit pas ce délai, il porte la
+ * nouvelle sur un écran verrouillé.
  */
 
 /** Assez petit pour tenir largement dans une invocation serverless, et
@@ -129,15 +124,13 @@ export async function drainNotifications(): Promise<DrainReport> {
       continue;
     }
 
-    /* LE PUSH D'ABORD, ET UNE SEULE FOIS — SAUF S'IL EST SEUL.
-       D'abord parce qu'il arrive en secondes sur un écran verrouillé. Une
-       seule fois quand un email doit suivre, parce que la ligne est rejouée
-       tant que cet email n'est pas parti : sans cette borne, une adresse
-       invalide ferait sonner le téléphone cinq fois pour une décision
-       unique — le `tag` regroupe l'affichage, pas les vibrations.
-       Mais quand le push est le SEUL canal, il EST ce qu'on réessaie : le
-       borner au premier passage condamnerait la décision de quelqu'un qui
-       n'avait aucun appareil abonné ce jour-là. */
+    /* LE PUSH D'ABORD, ET UNE SEULE FOIS — SAUF S'IL EST SEUL. D'abord
+       parce qu'il arrive en secondes. Une seule fois quand un email doit
+       suivre, car la ligne est rejouée tant que cet email n'est pas parti :
+       sans cette borne, une adresse invalide ferait sonner le téléphone
+       cinq fois (le `tag` regroupe l'affichage, pas les vibrations).
+       Seul canal, en revanche, il EST ce qu'on réessaie — le borner
+       condamnerait la décision de qui n'avait aucun appareil abonné. */
     let atteints = 0;
     if (pushPret && (ligne.attempts === 0 || !composed.email)) {
       atteints = await sendPushToUser(composed.authUserId, composed.push);
@@ -145,12 +138,10 @@ export async function drainNotifications(): Promise<DrainReport> {
     }
 
     if (!composed.email) {
-      /* PUSH SEUL : Resend n'est pas branché. La décision est annoncée
-         si — et seulement si — un appareil l'a reçue. Marquer « envoyée »
-         une décision que personne n'a reçue la perdrait pour de bon,
-         puisque rien ne relit une ligne marquée ; la laisser en échec la
-         garde visible (`select * from notifications where sent_at is
-         null`) et la fait cesser d'elle-même au bout de cinq tentatives. */
+      /* PUSH SEUL (Resend non branché) : annoncée si et seulement si un
+         appareil l'a reçue. Marquer « envoyée » ce que personne n'a reçu
+         le perdrait pour de bon, rien ne relisant une ligne marquée ; en
+         échec, elle reste visible et cesse au bout de cinq tentatives. */
       if (atteints > 0) {
         await marquerTraitee(admin, ligne.id, "annoncée par notification seule : email non configuré");
         rapport.envoyees += 1;
@@ -193,15 +184,13 @@ type Composition =
   | { kind: "echec"; raison: string };
 
 /**
- * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS. Un écran verrouillé se lit
- * par-dessus l'épaule — d'où deux textes sur trois volontairement muets :
- *
- * - « votre boutique est validée » s'annonce en clair : bonne nouvelle, et
- *   c'est le moment d'ouvrir l'application pour publier ses brouillons ;
- * - un REFUS et une SUSPENSION, non. Les lire par-dessus l'épaule de
- *   quelqu'un, dans un marché, c'est l'humilier pour un motif que lui seul
- *   devrait connaître. Le push dit qu'une décision attend, l'email — qui
- *   demande de déverrouiller son téléphone — dit laquelle et pourquoi.
+ * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS : un écran verrouillé se lit
+ * par-dessus l'épaule, d'où deux textes sur trois volontairement muets.
+ * La validation s'annonce en clair — bonne nouvelle, et le moment de
+ * publier ses brouillons. Un REFUS ou une SUSPENSION, non : les lire dans
+ * un marché par-dessus l'épaule de quelqu'un, c'est l'humilier pour un
+ * motif que lui seul devrait connaître. Le push dit qu'une décision
+ * attend ; l'email, qui exige de déverrouiller, dit laquelle et pourquoi.
  */
 const PUSH_PAR_DECISION = {
   merchant_approved: (shopName: string): ContenuPush => ({
@@ -421,15 +410,12 @@ function suspensionEmail(input: { to: string; siteUrl: string; name: string }) {
   const link = `${input.siteUrl}/compte/suspendu`;
   const subject = "Votre compte Makiti a été suspendu";
 
-  /* Ce que cet email NE DIT PAS, et volontairement : le motif. La table
-     `profiles` n'a pas de colonne pour ça (voir l'écran 19, qui a retiré
-     le motif inventé par la maquette). Inventer une raison ici serait
-     reproduire le même défaut dans un canal qu'on ne peut pas corriger
-     après coup.
-
-     Il dit en revanche ce qui reste possible — lire — parce que couper
-     tout d'un coup pousse la personne à se recréer un compte, ce qui
-     annule la sanction. */
+  /* Volontairement SANS MOTIF : `profiles` n'a pas de colonne pour ça
+     (écran 19, qui a retiré le motif inventé par la maquette), et en
+     inventer un dans un canal qu'on ne peut pas corriger après coup
+     serait pire. Il dit en revanche ce qui reste possible — lire — parce
+     que tout couper pousse à se recréer un compte, ce qui annule la
+     sanction. */
   const text = [
     `Bonjour ${input.name},`,
     `Votre compte Makiti a été suspendu : vous ne pouvez plus envoyer de messages ni publier.`,

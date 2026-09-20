@@ -6,25 +6,18 @@ import { TopBar } from "@/components/ui/TopBar";
 /**
  * Chargement de l'espace COMMERÇANT.
  *
- * Existe pour une raison précise : le `loading.tsx` de la racine est le
- * squelette du fil client — logo Makiti, ville, quatre onglets. Sans ce
- * fichier, Next l'affichait aussi devant `/vendeur`, et un commerçant
- * voyait « Conakry » et les onglets du client pendant le chargement de sa
- * propre boutique. Un fichier `loading.tsx` placé dans un dossier prend le
- * pas sur celui du parent pour ce dossier et ses enfants : c'est tout ce
- * qu'il fallait.
+ * Existe parce que le `loading.tsx` de la racine est le squelette du fil
+ * client — logo, ville, quatre onglets — et que Next l'affichait aussi
+ * devant `/vendeur` : un commerçant voyait « Conakry » et les onglets du
+ * client en attendant sa propre boutique. Un `loading.tsx` posé dans un
+ * dossier prend le pas sur celui du parent, c'est tout ce qu'il fallait.
  *
- * Il reproduit la silhouette de l'ACCUEIL commerçant — salutation, trois
- * cartes d'activité, quelques lignes — plutôt qu'un tourniquet centré :
- * la page ne saute pas quand les données arrivent, et l'attente paraît
- * plus courte parce qu'on voit déjà où les choses vont se placer.
- *
- * Il imitait « Mes produits » tant que cette liste vivait sur `/vendeur`.
- * Depuis qu'elle a son propre onglet, c'est l'accueil qu'on voit en
- * arrivant, et c'est donc lui qu'il faut annoncer. Ce même squelette sert
- * les quatre onglets : viser celui où l'on atterrit est le meilleur
- * compromis possible avec un seul fichier. Pas de ville ici : une
- * boutique n'en change pas au fil de la navigation.
+ * Il reproduit la silhouette de l'ACCUEIL commerçant plutôt qu'un
+ * tourniquet : la page ne saute pas à l'arrivée des données, et voir où
+ * les choses vont se placer raccourcit l'attente. Ce même squelette sert
+ * les quatre onglets ; viser celui où l'on atterrit est le meilleur
+ * compromis avec un seul fichier. Pas de ville : une boutique n'en
+ * change pas au fil de la navigation.
  */
 export default function LoadingSeller() {
   return (

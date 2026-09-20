@@ -184,19 +184,15 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     if (imagesError) return { error: imagesError.message };
   }
 
-  /* Le ménage dans Storage vient APRÈS l'écriture en base, jamais avant.
-     `PhotoPicker` supprimait le fichier au clic sur « retirer », donc avant
-     tout enregistrement : quitter l'écran sans enregistrer — ou perdre le
-     réseau en chemin — laissait `product_images` pointer sur un fichier
-     détruit, c'est-à-dire une vignette cassée dans le catalogue public que
-     plus rien ne pouvait réparer.
-     La base est la source de vérité, le stockage la suit. Un fichier qu'on
-     supprime ici n'est référencé par aucune ligne : les lignes finales
-     viennent d'être écrites juste au-dessus.
+  /* Le ménage dans Storage vient APRÈS l'écriture en base, jamais avant :
+     `PhotoPicker` supprimait le fichier dès le clic sur « retirer », si
+     bien que quitter l'écran ou perdre le réseau laissait
+     `product_images` pointer sur un fichier détruit — vignette cassée
+     dans le catalogue public, irréparable. La base est la source de
+     vérité, le stockage la suit.
 
-     Best effort assumé : une suppression ratée laisse un fichier orphelin,
-     qui ne casse aucun écran — personne ne le référence. C'est l'erreur la
-     moins chère des deux, et la seule qui ne se voie pas. */
+     Best effort assumé : une suppression ratée laisse un orphelin que
+     personne ne référence, la moins chère des deux erreurs. */
   const removedPaths = (previousImages ?? [])
     .map((image) => image.storage_path)
     .filter((path) => !fields.imagePaths.includes(path));

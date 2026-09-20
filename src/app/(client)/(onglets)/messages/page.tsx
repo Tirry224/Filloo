@@ -12,31 +12,19 @@ import { getMyThreadsAsClient } from "@/lib/data/messages";
  * Mes messages — côté CLIENT, et uniquement lui. Écrans 28 et 29 de
  * docs/ECRANS.md.
  *
- * CE QUE CET ÉCRAN NE FAIT PLUS
- * Il servait les deux rôles, et `?vue=commercant` les distinguait. Trois
- * défauts tenaient à ça, et aucun n'était réparable sans supprimer le
- * paramètre :
+ * Cet écran servait les deux rôles, distingués par `?vue=commercant` :
+ * un même chemin rendait deux écrans (un favori ou un retour arrière
+ * changeait d'espace sous les pieds), `?vue=` absent valait « client »
+ * (un commerçant aux deux comptes tombait dans sa boîte d'ACHETEUR), et
+ * tout l'écran portait des `asClient ? … : …`.
  *
- *   - le même chemin rendait deux écrans différents, donc un favori, un
- *     lien partagé ou un retour arrière pouvait changer d'espace sous les
- *     pieds de la personne ;
- *   - `?vue=` absent voulait dire « client » par défaut, donc un
- *     commerçant ayant les deux comptes liés tombait dans sa boîte
- *     d'ACHETEUR chaque fois qu'un lien oubliait le paramètre ;
- *   - la barre d'onglets, les états vides et les boutons devaient tous
- *     porter un `asClient ? … : …`, c'est-à-dire que deux parcours
- *     vivaient dans le même fichier en se surveillant mutuellement.
- *
- * La boîte du commerçant est maintenant `/vendeur/messages`, un autre
- * fichier, dans un autre groupe, derrière une autre garde. Il n'y a plus
- * de branche à écrire : cet écran ne connaît qu'un seul rôle.
+ * La boîte du commerçant est maintenant `/vendeur/messages`, derrière une
+ * autre garde : plus aucune branche à écrire ici.
  */
 export default async function ClientMessagesPage() {
   const supabase = await createClient();
-  // Remplace le `if (!clientProfile && !merchantProfile) redirect(...)`
-  // d'avant, qui laissait entrer un commerçant SANS compte client — il
-  // voyait alors « Aucune conversation », une réponse à une question
-  // qu'il n'avait pas posée. Ici, pas de compte client, pas d'écran.
+  // Pas de compte client, pas d'écran : la garde d'avant laissait entrer
+  // un commerçant SANS compte client, qui voyait « Aucune conversation ».
   await requireClientSpace(supabase);
 
   const list = await getMyThreadsAsClient(supabase);

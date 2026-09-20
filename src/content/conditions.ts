@@ -2,25 +2,19 @@
  * Le texte des conditions d'utilisation, fourni par le porteur du projet
  * le 2026-09-17.
  *
- * POURQUOI IL VIT DANS UN FICHIER DE DONNÉES, ET PAS DANS L'ÉCRAN
- * Un texte juridique se relit, se fait relire, et se modifie sans que
- * personne n'ait envie de traverser du JSX pour y arriver. La même
- * raison que `composeNewMessageEmail` : ce qui se lit séparément du code
- * qui l'affiche se corrige sans risque de casser l'affichage.
+ * DANS UN FICHIER DE DONNÉES, PAS DANS L'ÉCRAN : un texte juridique se
+ * relit et se corrige sans traverser du JSX, ni risquer l'affichage —
+ * même raison que `composeNewMessageEmail`.
  *
- * CE QUI A ÉTÉ MODIFIÉ DU TEXTE ORIGINAL : les apostrophes seulement.
- * La source mélangeait l'apostrophe typographique (’) et l'apostrophe
- * droite ('), parfois dans la même phrase. Tout est uniformisé en ’,
- * qui est ce que rend un écran de téléphone correctement. Aucun mot,
- * aucune clause et aucun ordre n'ont été touchés — ce texte engage la
- * responsabilité du porteur du projet, pas la mienne, donc il ne
- * s'améliore pas en passant par ici.
+ * SEULES LES APOSTROPHES ONT ÉTÉ MODIFIÉES : la source mélangeait ’ et ',
+ * tout est uniformisé en ’, que les téléphones rendent correctement.
+ * Aucun mot, aucune clause, aucun ordre — ce texte engage le porteur du
+ * projet, il ne s'améliore pas en passant par ici.
  *
  * SA DATE EST DANS LE TEXTE, ET C'EST VOULU : l'article 20 promet que
- * toute nouvelle version « indiquera sa date de mise à jour ». Une date
- * calculée à l'affichage (`new Date()`) tiendrait cette promesse en
- * mentant — elle changerait chaque jour sans qu'une ligne du texte ne
- * bouge. Elle se modifie donc à la main, en même temps que le texte.
+ * toute nouvelle version « indiquera sa date de mise à jour ». Calculée à
+ * l'affichage (`new Date()`), elle tiendrait la promesse en mentant, en
+ * changeant chaque jour sans qu'une ligne du texte ne bouge.
  */
 
 export const CONDITIONS_MISE_A_JOUR = "17 septembre 2026";

@@ -8,28 +8,18 @@ import { cn } from "@/lib/cn";
 /**
  * La barre d'onglets de l'espace CLIENT — et elle ne sert que lui.
  *
- * POURQUOI DEUX COMPOSANTS PLUTÔT QU'UN AVEC UNE PROP `space`
- * L'ancien `BottomNav` portait les deux listes d'onglets et choisissait
- * d'après une prop. L'intention était juste (décision 8 de docs/SPEC.md :
- * les deux rôles n'ont pas la même barre), mais la mécanique laissait la
- * porte ouverte : la prop valait « client » par DÉFAUT, et six écrans sur
- * les onze qui rendaient une barre passaient `space="merchant"`. Tous les
- * autres affichaient la barre du client sans l'avoir décidé. Un oubli de
- * prop ne se voit pas à la relecture — il se voit en production, quand un
- * commerçant touche « Rechercher » et se retrouve dans le fil d'achat.
+ * DEUX COMPOSANTS PLUTÔT QU'UN AVEC UNE PROP `space` : l'ancien `BottomNav`
+ * choisissait d'après une prop qui valait « client » par DÉFAUT, donc tout
+ * écran oubliant `space="merchant"` affichait la barre du client sans l'avoir
+ * décidé — invisible à la relecture, visible en production quand un
+ * commerçant touche « Rechercher » et se retrouve dans le fil d'achat. Ici
+ * c'est le LAYOUT qui rend l'une ou l'autre : un écran de `(client)` n'a
+ * aucun moyen de demander celle du commerçant (décision 8 de docs/SPEC.md).
  *
- * Ici, l'espace n'est plus une valeur qu'on passe : c'est le LAYOUT qui
- * rend cette barre-ci ou l'autre. Un écran de `(client)` ne peut pas
- * afficher la navigation du commerçant, parce qu'il n'a aucun moyen de la
- * demander. C'est la différence entre une règle et une convention.
- *
- * POURQUOI UN COMPOSANT CLIENT
- * L'onglet actif se lit dans le chemin, via `usePathname`. Ça n'oblige
- * personne à exécuter du JavaScript : Next rend ce composant sur le
- * serveur au premier chargement, `aria-current` et la couleur sont donc
- * corrects dans le HTML initial. La contrainte R7 de docs/PERFORMANCE.md
- * (tout doit marcher sans JavaScript) est tenue — vérifiable en coupant
- * JS : les onglets restent des `<a>` qui naviguent.
+ * Composant client pour lire l'onglet actif dans le chemin (`usePathname`),
+ * sans exiger de JavaScript : Next le rend sur le serveur au premier
+ * chargement, donc `aria-current` et la couleur sont corrects dans le HTML
+ * initial et les onglets restent des `<a>` (R7 de docs/PERFORMANCE.md).
  */
 const TABS = [
   { label: "Accueil", href: "/", icon: House, match: (p: string) => p === "/" },

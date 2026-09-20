@@ -14,20 +14,18 @@ import type { Espace } from "@/lib/espace";
 /**
  * Mes informations — écran 18, monté par les DEUX espaces.
  *
- * UN COMPOSANT, DEUX ROUTES, comme `TermsScreen` et `ThreadScreen` : même
- * contenu, mais chemin de RETOUR différent — un commerçant qui corrige son
- * numéro ne doit pas ressortir dans son espace d'acheteur.
+ * UN COMPOSANT, DEUX ROUTES, comme `TermsScreen` : même contenu, chemin
+ * de RETOUR différent — un commerçant qui corrige son numéro ne doit pas
+ * ressortir dans son espace d'acheteur.
  *
- * L'écran ne peut pas rester derrière la garde « profil CLIENT » de
- * `/compte/informations` : un commerçant sans compte client lié ne
- * pourrait jamais corriger son nom ni son téléphone. Ce qui appartient à
- * la CONNEXION ne vit pas derrière la porte d'un seul rôle (même trou que
- * pour le mot de passe et la suppression de compte).
+ * Pas derrière la garde « profil CLIENT » de `/compte/informations`, où
+ * un commerçant sans compte client lié ne pourrait jamais corriger son
+ * nom : ce qui appartient à la CONNEXION ne vit pas derrière la porte
+ * d'un seul rôle (même trou que le mot de passe et la suppression).
  *
- * Quand les deux profils ont dérivé, on affiche le CLIENT s'il existe, le
- * commerçant sinon : seul le client était modifiable jusqu'ici, donc lui
- * seul porte les corrections. L'inverse recopierait une vieille valeur
- * par-dessus une valeur corrigée au premier enregistrement.
+ * Profils dérivés : on affiche le CLIENT s'il existe, seul modifiable
+ * jusqu'ici, donc seul porteur des corrections — l'inverse recopierait
+ * une vieille valeur par-dessus dès le premier enregistrement.
  */
 export async function InformationsScreen({ espace }: { espace: Espace }) {
   const supabase = await createClient();

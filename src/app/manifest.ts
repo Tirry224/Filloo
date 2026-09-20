@@ -1,29 +1,20 @@
 import type { MetadataRoute } from "next";
 
 /**
- * Le manifeste, première pierre des notifications push.
+ * Le manifeste, première pierre des notifications push : sans lui, pas
+ * d'« Ajouter à l'écran d'accueil », et sur iPhone Safari n'autorise le
+ * push QUE pour une application installée ainsi. C'est la condition
+ * d'entrée, pas une coquetterie.
  *
- * POURQUOI CE FICHIER EXISTE MAINTENANT
- * Sans lui, aucun téléphone ne propose « Ajouter à l'écran d'accueil », et
- * sur iPhone c'est éliminatoire : Safari n'autorise le push QUE pour une
- * application installée depuis l'écran d'accueil. Un manifeste ne sert
- * donc pas qu'à faire joli dans la liste des applications — il est la
- * condition d'entrée.
+ * Route typée plutôt que `public/manifest.json` : Next la sert avec le
+ * bon type MIME et vérifie les champs à la compilation, là où un JSON
+ * écrit à la main se tairait sur une faute de frappe.
  *
- * POURQUOI UNE ROUTE TYPÉE ET NON UN `public/manifest.json`
- * Next sert ce fichier à `/manifest.webmanifest` avec le bon type MIME et
- * vérifie les champs à la compilation. Un JSON posé à la main dans
- * `public/` se serait tu le jour d'une faute de frappe.
+ * `display: "standalone"` : ouverte sans barre d'adresse, elle ressemble
+ * à une application qu'on garde, pas à un site qu'on visite.
  *
- * `display: "standalone"` : lancée depuis l'écran d'accueil, Makiti
- * s'ouvre sans la barre d'adresse du navigateur. Ce n'est pas cosmétique —
- * c'est ce qui la fait ressembler à une application qu'on garde, et non à
- * un site qu'on visite.
- *
- * `start_url: "/"` et non l'écran vendeur : une connexion qui n'a qu'un
- * compte commerçant est redirigée par `landingForSession`, et une
- * connexion cliente atterrit là où elle doit. Le manifeste ne connaît pas
- * la personne, il ne doit donc pas choisir à sa place.
+ * `start_url: "/"` et non l'écran vendeur : le manifeste ne connaît pas
+ * la personne, c'est `landingForSession` qui aiguille.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -42,12 +33,10 @@ export default function manifest(): MetadataRoute.Manifest {
        si les tokens changent, ces deux lignes sont à changer aussi. */
     background_color: "#fcf8f3",
     theme_color: "#b64c1b",
-    /* Chaque taille est déclarée DEUX fois, `any` puis `maskable`, parce
-       que le type de Next n'accepte pas la valeur combinée « any maskable »
-       du standard. Le fichier est le même : l'icône est plein cadre, donc
-       Android peut la recadrer en cercle, en goutte ou en losange sans
-       rogner le « M ». Une icône transparente avec des marges se
-       retrouverait rognée de travers selon le téléphone. */
+    /* Chaque taille est déclarée DEUX fois, `any` puis `maskable` : le
+       type de Next refuse la valeur combinée « any maskable ». Même
+       fichier, plein cadre, qu'Android peut recadrer en cercle ou en
+       goutte sans rogner le « M ». */
     icons: [
       { src: "/icons/icone-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icone-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },

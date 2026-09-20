@@ -21,27 +21,18 @@ import { searchProducts } from "@/lib/data/products";
 /**
  * Fil d'accueil — écrans 1 et 2 de docs/ECRANS.md.
  *
- * Le filtre de ville passe par l'URL (`/?ville=Boké`) et non par un état
- * caché dans la page. Conséquence : le fil filtré se partage par lien, le
- * bouton « retour » du téléphone défait le filtre, et l'écran vide est
- * atteignable pour de vrai — pas seulement en imagination. La catégorie
- * suit la même règle (`&categorie=...`).
+ * Ville et catégorie passent par l'URL (`/?ville=Boké&categorie=…`) et non
+ * par un état caché : le fil filtré se partage par lien, le bouton
+ * « retour » défait le filtre, et l'écran vide est atteignable pour de vrai.
  *
- * Sans `?ville=` dans l'URL, le défaut est la ville de résidence du
- * client connecté (`profiles.city_id`) plutôt que "Conakry" en dur —
- * décision du 2026-09-11 (voir docs/REPRISE.md, étape 4). Un visiteur non
- * connecté, un compte sans profil client, ou un client qui n'a pas encore
- * renseigné sa ville retombent sur "Conakry". Une fois `ville` présent
- * dans l'URL (l'utilisateur a changé de ville depuis l'écran de
- * recherche), il gagne toujours : ceci ne fixe qu'un point de départ, pas
- * un filtre permanent — un client peut chercher ailleurs que chez lui.
+ * Sans `?ville=`, le défaut est la ville de résidence du client connecté
+ * (`profiles.city_id`) plutôt que "Conakry" en dur (docs/REPRISE.md,
+ * étape 4) ; un visiteur, un compte sans profil client ou une ville non
+ * renseignée retombent sur "Conakry". L'URL gagne toujours : ceci fixe un
+ * point de départ, pas un filtre permanent.
  *
- * Un seul appel réseau : `inCity` (toute la ville, sans filtre de
- * catégorie) est déjà tout ce dont l'écran a besoin — la catégorie choisie
- * ne fait que filtrer ce résultat en mémoire, comme `src/lib/mock.ts` le
- * faisait avant. Le catalogue d'une ville reste de taille modeste (limite
- * dure de 50 dans `search_products`) : un deuxième aller-retour réseau
- * n'apporterait rien.
+ * Un seul appel réseau : `inCity` rapporte toute la ville, la catégorie ne
+ * fait que filtrer en mémoire (limite dure de 50 dans `search_products`).
  */
 export default async function HomePage({
   searchParams,
@@ -51,19 +42,12 @@ export default async function HomePage({
   const { ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
   const supabase = await createClient();
 
-  /* Le fil client n'est pas l'écran d'ouverture d'un commerçant — décision
-     écrite (`design/README.md`, `docs/SPEC.md` décision 8) : les deux rôles
-     n'ont ni la même barre d'onglets, ni le même écran d'ouverture. Une
-     connexion sans compte client repart donc chez elle.
-
-     Corrigé ici EN PLUS de `signInAction` : cette adresse est atteinte
-     autrement que par une connexion — un favori, un lien partagé, un simple
-     rechargement — et l'aiguillage ne doit pas dépendre du chemin parcouru
-     pour y arriver.
-
-     Un visiteur non connecté et une personne qui possède les deux comptes
-     liés ne sont pas concernés : `landingForSession` ne renvoie `/vendeur`
-     que pour une connexion QUI N'A QUE le compte commerçant. */
+  /* Le fil client n'est pas l'écran d'ouverture d'un commerçant (`docs/SPEC.md`
+     décision 8) : une connexion sans compte client repart chez elle. Corrigé
+     ici EN PLUS de `signInAction`, car cette adresse s'atteint aussi par un
+     favori ou un rechargement — l'aiguillage ne doit pas dépendre du chemin
+     parcouru. `landingForSession` ne renvoie `/vendeur` que pour une connexion
+     QUI N'A QUE le compte commerçant : visiteurs et doubles comptes passent. */
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
@@ -158,18 +142,15 @@ export default async function HomePage({
         ) : null}
 
         <Section className="gap-2 pt-3.5">
-          {/* « Populaires » était un <span> en couleur d'accent, posé
-              exactement là où toutes les autres listes de l'application
-              mettent un lien actif : on le touchait, rien ne bougeait. Le
-              fil était figé sur `recent` alors que `search_products` sait
-              déjà trier par popularité et que la décision 4 de
-              docs/SPEC.md prévoit ce classement.
-
-              Les deux sont maintenant de vrais liens, et celui qui est
-              actif porte la couleur d'accent — c'est-à-dire que la
-              couleur redevient une information vraie au lieu d'un
-              ornement. Ils gardent ville et catégorie : changer l'ordre
-              ne doit pas défaire le filtre. */}
+          {/* « Populaires » était un <span> en couleur d'accent, posé là où
+              les autres listes mettent un lien : on le touchait, rien ne
+              bougeait, et le fil restait figé sur `recent` alors que
+              `search_products` sait trier par popularité (décision 4 de
+              docs/SPEC.md). Désormais seul le tri INACTIF est un lien, en
+              couleur d'accent ; l'actif reste un `SectionLabel` neutre — la
+              couleur redevient une information au lieu d'un ornement. Le lien
+              garde ville et catégorie : changer l'ordre ne défait pas le
+              filtre. */}
           <div className="flex items-baseline justify-between">
             {sort === "popular" ? (
               <Link href={triHref("recent")} className="text-sm font-semibold text-accent">
