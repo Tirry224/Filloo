@@ -88,15 +88,30 @@
   --color-viewer: oklch(0.17 0.008 70);
 
   /* ═══ TYPOGRAPHIE ═══════════════════════════════════════════════════
-     Deux familles, pas trois. Bricolage Grotesque pour les titres et les
-     prix : elle a du caractère et attire l'œil là où c'est utile. Figtree
-     pour tout le reste : elle est faite pour être lue en petit sur un
-     téléphone. Les variables --font-display-src et --font-sans-src sont
-     renseignées par Next dans layout.tsx, qui héberge les polices
-     lui-même — aucun appel à Google au chargement de la page. */
+     UNE SEULE FAMILLE : Figtree, faite pour être lue en petit sur un
+     téléphone. Elle est renseignée par Next dans layout.tsx, qui héberge
+     la police lui-même — aucun appel à Google au chargement de la page.
+
+     LE JETON --font-display SURVIT À LA SECONDE POLICE, ET C'EST VOULU.
+     Les titres, les prix et le logotype s'écrivent toujours avec la classe
+     `font-display` ou avec `h1`–`h4` (voir base.css) : six composants et
+     treize fichiers en dépendent. Garder le jeton, en le faisant pointer
+     vers la même famille que le texte, évite de toucher à tous ces
+     fichiers — et laisse la porte ouverte à une police de titres le jour
+     où le budget le permettra. Ce qui distingue un titre aujourd'hui,
+     c'est sa graisse et son interlettrage (base.css), pas sa famille.
+
+     POURQUOI IL N'ENCHAÎNE PLUS SUR LA VARIABLE DE LA POLICE DE TITRES :
+     une variable CSS absente ne fait PAS glisser sur la valeur suivante de
+     la liste. Elle rend la déclaration entière invalide, et `font-family`
+     retombe alors sur l'héritage. Le rendu aurait donc été juste par
+     accident — on écrit la famille voulue plutôt que de compter sur un
+     repli qui n'existe pas. (L'audit du 2026-09-20 affirmait le
+     contraire ; vérifié : tort sur le mécanisme, raison sur le
+     résultat.) */
 
   --font-sans: var(--font-body-src), "Segoe UI", system-ui, sans-serif;
-  --font-display: var(--font-display-src), var(--font-body-src), sans-serif;
+  --font-display: var(--font-body-src), "Segoe UI", system-ui, sans-serif;
 
   /* Échelle de tailles : 8 marches, et pas une de plus.
      La maquette a été dessinée à main levée et contenait 21 tailles

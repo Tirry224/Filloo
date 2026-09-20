@@ -121,12 +121,29 @@ Le reste des garde-fous tient toujours :
   si le JavaScript n'a pas fini de charger, ce qui est exactement le cas sur
   un réseau lent.
 
-### R4 — Une seule police, décidé
+### R4 — Une seule police : décidé le 2026-09-14, APPLIQUÉ le 2026-09-20
 
-Le projet en chargeait deux : Figtree pour le texte, Bricolage Grotesque pour
-les titres — 60 Ko, dont 40 pour les seuls titres. Bricolage est retirée :
-les titres gardent leur présence par la graisse et l'interlettrage. **19,7 Ko
-aujourd'hui.** Ajouter une police redevient une décision, pas un réflexe.
+Le projet en chargeait deux : Figtree pour le texte, une seconde pour les
+titres, les prix et le logotype — 60 Ko, dont 40,3 pour les seuls titres,
+soit deux fois le poids de Figtree. Elle est retirée : les titres gardent
+leur présence par la graisse et l'interlettrage. **19,7 Ko aujourd'hui.**
+Ajouter une police redevient une décision, pas un réflexe.
+
+**Cette règle a menti pendant six jours, et c'est la leçon à retenir.** Elle
+a été écrite au passé — « est retirée » — dans le commit qui créait
+`src/app/layout.tsx`, lequel chargeait les deux polices. Le document et le
+code se contredisaient donc dès leur naissance, et `npm run poids` échouait
+sur ce budget à chaque exécution sans que personne ne relie les deux. Une
+règle écrite n'est pas une règle appliquée : ce qui l'a fait appliquer, ce
+n'est pas le document, c'est d'avoir remis les deux rendus côte à côte à
+400 px pour que le porteur du projet tranche en les voyant.
+
+**`preload: false` aurait été un faux ami.** `scripts/poids.mjs` ne mesure
+que les polices PRÉCHARGÉES — il les cherche dans le HTML, où seules les
+balises `<link rel="preload">` les inscrivent. Cette option aurait donc
+remis le budget au vert sans qu'un seul octet cesse d'être téléchargé :
+la police serait simplement arrivée plus tard, après un changement de
+lettres visible à l'écran. Un chiffre au vert n'est pas un gain.
 
 ### R5 — Les données : demander peu, et une seule fois
 

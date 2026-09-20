@@ -134,7 +134,7 @@ export default function StyleguidePage() {
           </div>
         </Block>
 
-        <Block title="Typographie" note="Huit tailles, pas une de plus. Titres en Bricolage Grotesque, texte en Figtree.">
+        <Block title="Typographie" note="Huit tailles, pas une de plus. Une seule police, Figtree : les titres se distinguent par la graisse et l'interlettrage, pas par la famille (R4).">
           <div className="flex flex-col gap-3">
             {TEXTS.map(([cls, note]) => (
               <div key={cls} className="flex flex-col gap-0.5">
