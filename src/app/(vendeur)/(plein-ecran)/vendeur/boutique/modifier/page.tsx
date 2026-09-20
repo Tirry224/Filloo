@@ -27,28 +27,23 @@ type MerchantRow = {
  *
  * POURQUOI CE DÉCOUPAGE
  * `/vendeur/boutique` présentait ces champs directement modifiables, avec
- * « Enregistrer » en permanence dans la barre du haut. Trois défauts en
- * découlaient, et le premier est le plus coûteux :
+ * « Enregistrer » en permanence dans la barre du haut :
  *
- *   - On modifie sans l'avoir décidé. Un doigt qui glisse sur « Ville »
- *     pendant qu'on fait défiler l'écran change la ville de la boutique,
- *     et rien ne le signale tant qu'on n'a pas appuyé sur « Enregistrer ».
- *   - « Enregistrer » restait affiché même quand il n'y avait rien à
- *     enregistrer, donc un bouton qui, la plupart du temps, ne faisait
- *     rien. Un bouton qui ne fait rien apprend à ne plus le regarder.
- *   - Consulter ses informations demandait de lire des champs de saisie,
- *     qui se lisent moins bien qu'un texte : le cadre, le curseur et le
- *     fond blanc disent « écris ici », pas « voici ce que tu as ».
+ *   - on modifiait sans l'avoir décidé (un doigt qui glisse sur « Ville »
+ *     pendant le défilement change la ville, sans rien signaler) ;
+ *   - « Enregistrer » s'affichait même sans rien à enregistrer, et un
+ *     bouton qui ne fait rien apprend à ne plus le regarder ;
+ *   - consulter demandait de lire des champs de saisie, qui disent
+ *     « écris ici », pas « voici ce que tu as ».
  *
- * La modification devient donc un geste qu'on demande — « Modifier » — et
- * qui s'ouvre sur son propre écran, comme l'ajout d'un produit.
+ * Modifier devient donc un geste qu'on demande, sur son propre écran,
+ * comme l'ajout d'un produit.
  *
  * PLEIN ÉCRAN, SANS BARRE D'ONGLETS
- * Ce fichier vit dans `(plein-ecran)` comme les formulaires produit : on
- * ne propose pas de partir ailleurs au milieu d'un formulaire à moitié
- * rempli. Les deux sorties sont explicites et mènent au même endroit —
- * la flèche retour (annuler) et « Enregistrer » (voir
- * `updateMerchantAction`), toutes deux vers `/vendeur/boutique`.
+ * Comme les formulaires produit : on ne propose pas de partir ailleurs au
+ * milieu d'un formulaire à moitié rempli. Les deux sorties sont
+ * explicites et mènent à `/vendeur/boutique` — la flèche retour (annuler)
+ * et « Enregistrer » (voir `updateMerchantAction`).
  */
 export default async function EditShopPage() {
   const supabase = await createClient();
@@ -83,9 +78,8 @@ export default async function EditShopPage() {
   return (
     <Screen>
       {/* La flèche retour EST le bouton « annuler » : elle ramène sur
-          `/vendeur/boutique` sans rien écrire. Pas de second bouton
-          « Annuler » en bas — il ferait deux chemins pour le même geste,
-          et le doigt cherche déjà la flèche en haut à gauche. */}
+          `/vendeur/boutique` sans rien écrire. Pas de second « Annuler »
+          en bas — deux chemins pour un même geste. */}
       <TopBar
         title="Modifier ma boutique"
         backHref="/vendeur/boutique"

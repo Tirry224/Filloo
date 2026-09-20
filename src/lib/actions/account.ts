@@ -11,20 +11,15 @@ import { passwordIsValid } from "@/lib/supabase/verify";
 /**
  * Mes informations — écran 18, monté par les deux espaces.
  *
- * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE.
- * `profiles` porte ces colonnes par rôle (`unique (auth_user_id, role)`) :
- * une connexion à deux comptes en détient deux copies, et n'écrire que sur
- * le profil client corrigeait le numéro à moitié. Ce qui change selon le
- * rôle, c'est l'identité PUBLIQUE de la boutique (`shop_name`,
- * `whatsapp_phone`), modifiée ailleurs.
+ * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE :
+ * `profiles` porte ces colonnes par rôle (`unique (auth_user_id, role)`), donc
+ * n'écrire que sur le profil client corrigeait le numéro à moitié. L'identité
+ * PUBLIQUE de la boutique (`shop_name`, `whatsapp_phone`) se modifie ailleurs.
  *
- * LA VILLE NE SE PROPAGE PAS : `profiles.city_id` est la ville de résidence
- * d'un client (0010), celle d'un commerçant est celle de sa boutique
- * (`merchants.city_id`). Confondre les deux, c'est confondre « où j'habite »
- * et « où l'on me trouve ».
+ * LA VILLE NE SE PROPAGE PAS : `profiles.city_id` est la résidence d'un
+ * client (0010), celle d'un commerçant est sa boutique (`merchants.city_id`).
  *
- * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par
- * 0010. L'email de la maquette n'a pas de colonne réelle. */
+ * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par 0010. */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
@@ -113,32 +108,21 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
 }
 
 /**
- * Supprimer mon compte — écran 18, décision de section 4 point 3 de
- * docs/REPRISE.md : anonymisation, jamais un vrai DELETE. Trois raisons
- * pour lesquelles cette fonction ne peut PAS tourner avec le client normal
- * de l'utilisateur (RLS) :
+ * Supprimer mon compte — écran 18, section 4 point 3 de docs/REPRISE.md :
+ * anonymisation, jamais un vrai DELETE. Impossible avec le client RLS de
+ * l'utilisateur : `is_deleted`/`deleted_at` sont hors de la liste blanche des
+ * colonnes modifiables (0002 partie 4) pour qu'un profil ne puisse pas se
+ * marquer supprimé pendant que sa connexion reste active, couper l'accès à
+ * `auth.users` exige `service_role`, et les deux doivent arriver ENSEMBLE —
+ * d'où l'unique connexion `admin` ci-dessous.
  *
- * 1. `profiles.is_deleted`/`deleted_at` sont hors de la liste blanche de
- *    colonnes modifiables par un utilisateur (0002_rules_and_security.sql,
- *    partie 4) — volontairement, pour ne jamais laisser un profil se
- *    marquer supprimé pendant que sa connexion reste active.
- * 2. Couper l'accès à `auth.users` demande l'API Admin, qui exige
- *    `service_role`.
- * 3. Les deux doivent arriver ENSEMBLE : d'où la connexion `admin` unique
- *    ci-dessous, jamais deux opérations séparées qui pourraient réussir
- *    l'une sans l'autre.
- *
- * **Piège évité en écrivant cette fonction** : `auth.users` n'est PAS
- * supprimé (`admin.auth.admin.deleteUser`). `profiles.auth_user_id`
- * référence `auth.users(id) on delete cascade` (0001_schema.sql) —
- * supprimer la ligne `auth.users` aurait donc tenté de supprimer aussi les
- * lignes `profiles`, qui sont elles-mêmes référencées par
- * `messages.sender_id` SANS cascade. Résultat : une erreur de contrainte
- * de clé étrangère aurait fait échouer l'opération entière, au moment
- * précis où l'utilisateur clique sur « Supprimer ». La bonne opération est
- * un BANNISSEMENT (`ban_duration`) : la connexion devient définitivement
- * inutilisable, la ligne `auth.users` survit, `profiles` aussi — exactement
- * ce que « couper l'accès sans effacer l'historique » demande.
+ * **Piège évité** : `auth.users` n'est PAS supprimé. `profiles.auth_user_id`
+ * référence `auth.users(id) on delete cascade` (0001) et les `profiles` sont
+ * référencés par `messages.sender_id` SANS cascade : un `deleteUser` aurait
+ * échoué sur une contrainte de clé étrangère, au clic même sur « Supprimer ».
+ * La bonne opération est un BANNISSEMENT (`ban_duration`) : la connexion
+ * devient inutilisable, `auth.users` et `profiles` survivent — exactement
+ * « couper l'accès sans effacer l'historique ».
  */
 export async function deleteAccountAction() {
   const supabase = await createClient();

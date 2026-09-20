@@ -15,35 +15,30 @@ export type FilterOption = {
  * Une puce de filtre qui ouvre ses options par-dessus les résultats, sans
  * une ligne de JavaScript.
  *
- * `<details>` ET PAS UN ÉTAT REACT : il fait nativement ce qu'on écrirait
- * avec `useState`, pour zéro octet ajouté au socle — et surtout le panneau
- * s'ouvre AVANT que le JavaScript soit chargé, donc pendant les longues
- * secondes d'une connexion guinéenne (R3).
+ * `<details>` ET PAS UN ÉTAT REACT : zéro octet ajouté au socle, et le
+ * panneau s'ouvre AVANT que le JavaScript soit chargé — décisif pendant
+ * les longues secondes d'une connexion guinéenne (R3).
  *
- * UN PANNEAU ET PAS UNE PAGE : filtrer suppose de voir ce qu'on filtre. Une
- * page cacherait les résultats qu'on cherche à réduire et imposerait deux
- * navigations là où un panneau n'en demande aucune.
+ * UN PANNEAU ET PAS UNE PAGE : filtrer suppose de voir ce qu'on filtre ;
+ * une page cacherait les résultats et coûterait deux navigations.
  *
  * EN BAS DE L'ÉCRAN, PAS SOUS SA PUCE : la rangée de puces défile
- * horizontalement quand les filtres ne tiennent pas sur une ligne, et un
- * parent en `overflow-x: auto` découpe ce qui dépasse — rogner
- * horizontalement rogne aussi verticalement. Le panneau est donc en
- * `fixed`, que rien ne coupe, posé en bas comme les `Sheet` : près du
- * pouce, résultats visibles au-dessus. Détaché de sa puce, il doit dire ce
- * qu'il filtre — d'où le titre.
+ * horizontalement, et un parent en `overflow-x: auto` rogne aussi
+ * verticalement ce qui dépasse. D'où le panneau en `fixed`, posé en bas
+ * comme les `Sheet` : près du pouce, résultats visibles au-dessus.
+ * Détaché de sa puce, il doit dire ce qu'il filtre — d'où le titre.
  *
  * FERMER EN TOUCHANT AILLEURS
- * Un `<details>` ne se referme nativement que par sa propre étiquette.
- * C'est déroutant : sur un téléphone, on touche à côté d'une pop-up pour
- * la fermer. L'attribut `data-panneau` signale ce panneau à
- * `ClosePanels`, posé une fois dans le layout racine, qui le referme au
- * tap extérieur et sur Échap. C'est une AMÉLIORATION, pas une dépendance :
- * sans JavaScript, la puce ouvre et ferme toujours son panneau.
+ * Un `<details>` ne se referme nativement que par sa propre étiquette,
+ * alors que sur un téléphone on touche à côté d'une pop-up pour la
+ * fermer. `data-panneau` signale ce panneau à `ClosePanels` (posé une
+ * fois dans le layout racine), qui le referme au tap extérieur et sur
+ * Échap. AMÉLIORATION, pas dépendance : sans JavaScript, la puce ouvre
+ * et ferme toujours son panneau.
  *
  * PAS DE BOUTON « APPLIQUER »
  * Chaque option est un lien : choisir recharge la page, et le panneau
- * repart fermé. Un brouillon de filtres serait un état de plus à gérer,
- * pour trois filtres.
+ * repart fermé — un brouillon de filtres serait un état de plus à gérer.
  */
 export function FilterChip({
   title,
@@ -66,8 +61,7 @@ export function FilterChip({
       <summary
         className={cn(
           /* `list-none` et le pseudo-élément WebKit retirent le triangle
-             par défaut, qui n'existe pas dans le design system. Le chevron
-             le remplace, et lui tourne à l'ouverture. */
+             par défaut, absent du design system ; le chevron le remplace. */
           "inline-flex shrink-0 cursor-pointer list-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden",
           selected ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink",
         )}
@@ -77,14 +71,11 @@ export function FilterChip({
         <ChevronDown size={15} strokeWidth={2} className="group-open:rotate-180" aria-hidden />
       </summary>
 
-      {/* `fixed` et non `absolute` : c'est ce qui le rend insensible au
-          débordement de la rangée de puces. `max-h` en `vh` et non en
-          pixels, parce que la liste des villes peut grandir et qu'un
-          panneau plus haut que l'écran ne se referme plus du pouce — il
-          défile à l'intérieur, l'écran ne bouge pas.
-
-          `z-20` : la barre de navigation du bas n'a pas de plan déclaré,
-          donc elle passerait devant sans ça. */}
+      {/* `fixed` et non `absolute` : insensible au débordement de la
+          rangée de puces. `max-h` en `vh` : la liste des villes peut
+          grandir, et un panneau plus haut que l'écran ne se referme plus
+          du pouce. `z-20` : sans ça, la barre de navigation du bas, sans
+          plan déclaré, passerait devant. */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[55vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
         <p className="shrink-0 px-4.5 pt-3.5 pb-2 text-sm font-bold">{title}</p>
         <div className="overflow-y-auto px-2.5 pb-5">

@@ -19,16 +19,13 @@ type Slot = {
 /**
  * Sélecteur de 1 à 3 photos — écran 24, décision 15 de docs/SPEC.md.
  *
- * C'est le cas d'école de la règle R3 : la compression tourne dans le
- * navigateur, dans un worker pour ne pas geler un téléphone d'entrée de
- * gamme, et l'envoi part directement vers Storage sans repasser par le
- * serveur Next qui n'aurait fait que relayer. Seul le CHEMIN voyage dans
- * le formulaire.
+ * Cas d'école de la règle R3 : compression dans le navigateur, dans un worker
+ * pour ne pas geler un téléphone d'entrée de gamme, envoi direct vers Storage
+ * sans relais par le serveur Next. Seul le CHEMIN voyage dans le formulaire.
  *
- * `productId` est connu avant l'envoi — généré par `ProductForm` — ce qui
- * respecte la convention de chemin imposée par le RLS du stockage
- * (`{merchant_id}/{product_id}/…`, 0004) sans attendre que la ligne
- * `products` existe.
+ * `productId` est généré par `ProductForm` avant l'envoi : le chemin imposé
+ * par le RLS du stockage (`{merchant_id}/{product_id}/…`, 0004) n'attend donc
+ * pas que la ligne `products` existe.
  */
 export function PhotoPicker({
   merchantId,
@@ -94,20 +91,16 @@ export function PhotoPicker({
   /**
    * Retirer une photo du formulaire — et RIEN d'autre.
    *
-   * Le fichier était supprimé de Storage ici, au clic. Sur un produit qu'on
-   * modifie, ses photos sont déjà référencées par `product_images` :
-   * retirer une photo puis quitter sans enregistrer — ou perdre le réseau —
-   * détruisait le fichier en laissant la ligne en base. Le produit restait
-   * publié avec une vignette cassée que plus rien ne pouvait réparer.
+   * Le fichier était supprimé de Storage au clic : sur un produit qu'on
+   * modifie, ses photos sont déjà référencées par `product_images`, donc
+   * retirer une photo puis quitter sans enregistrer détruisait le fichier en
+   * laissant la ligne — produit publié, vignette cassée, irréparable. C'est
+   * l'ENREGISTREMENT qui tranche désormais : `updateProductAction` remplace
+   * les lignes puis supprime les fichiers que plus aucune ne référence.
    *
-   * Le formulaire ne décide donc plus : il propose une liste, et c'est
-   * l'ENREGISTREMENT qui tranche. `updateProductAction` remplace les lignes
-   * puis supprime les fichiers que plus aucune ne référence, dans cet
-   * ordre.
-   *
-   * Le cas symétrique reste ouvert et il est bénin : une photo envoyée puis
-   * retirée avant enregistrement laisse un orphelin dans Storage. Un octet
-   * en trop ne casse aucun écran, une référence morte si.
+   * Le cas symétrique reste ouvert et bénin : une photo envoyée puis retirée
+   * avant enregistrement laisse un orphelin dans Storage. Un octet en trop ne
+   * casse aucun écran, une référence morte si.
    */
   function removeSlot(id: string) {
     setSlots((s) => s.filter((x) => x.id !== id));

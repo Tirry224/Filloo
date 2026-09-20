@@ -19,11 +19,10 @@ type MessageRow = {
 };
 
 /**
- * Un seul aller-retour pour TOUS les fils plutôt qu'un par fil : la leçon
- * de `auth.getUser()` (docs/REPRISE.md, section 7) vaut aussi pour les
- * requêtes en base — vingt fils ne doivent pas coûter vingt requêtes.
- * Les messages de tous les fils sont lus une fois, triés du plus récent
- * au plus ancien, puis regroupés en mémoire par fil.
+ * Un seul aller-retour pour TOUS les fils : vingt fils ne doivent pas
+ * coûter vingt requêtes (leçon de `auth.getUser()`, docs/REPRISE.md §7).
+ * Les messages sont lus une fois, du plus récent au plus ancien, puis
+ * regroupés en mémoire.
  */
 async function summarizeThreads(
   supabase: SupabaseClient<Database>,
@@ -56,9 +55,8 @@ async function summarizeThreads(
       });
     } else {
       if (isUnread) existing.unreadCount += 1;
-      // Un des messages plus anciens de ce fil cite un produit, mais aucun
-      // des plus récents encore vus : c'est le meilleur "de quoi parle ce
-      // fil" disponible tant qu'on n'a pas trouvé plus récent.
+      // Le produit cité le plus récent gagne ; à défaut, celui d'un
+      // message plus ancien reste le meilleur « de quoi parle ce fil ».
       if (!existing.lastProductTitle && row.products?.title) {
         existing.lastProductTitle = row.products.title;
       }
@@ -140,18 +138,13 @@ export type ThreadContext = {
   /** L'identifiant public de la boutique, pour "Voir sa fiche" côté client. */
   merchantPublicId: string;
   /** `false` quand L'UN DES DEUX comptes du fil — le mien compris — est
-   * suspendu ou supprimé : le fil passe alors en LECTURE SEULE (0017
-   * pour le côté boutique, 0022 pour le côté client). Plus personne n'y
-   * écrit, mais tout l'historique reste affiché — c'est la décision du
-   * 2026-09-15, étendue le 2026-09-17. */
+   * suspendu ou supprimé : le fil passe en LECTURE SEULE (0017 côté
+   * boutique, 0022 côté client), l'historique restant affiché. */
   isOpen: boolean;
-  /** `true` quand c'est MON compte qui est suspendu. Sert uniquement à
-   * choisir le texte du fil gelé : « votre compte » quand la sanction est
-   * la mienne, « cette personne / cette boutique » quand elle est en
-   * face. Sans cette distinction, un commerçant parfaitement en règle
-   * dont le client vient d'être suspendu lisait « votre compte ne permet
-   * plus d'écrire » — une accusation fausse, sur un écran qu'il ne peut
-   * pas contester. */
+  /** `true` quand c'est MON compte qui est suspendu. Sert à choisir le
+   * texte du fil gelé : sans cette distinction, un commerçant en règle
+   * dont le client est suspendu lisait « votre compte ne permet plus
+   * d'écrire » — une accusation fausse et incontestable. */
   iAmSuspended: boolean;
 };
 
@@ -162,39 +155,26 @@ export async function getThreadContext(
   supabase: SupabaseClient<Database>,
   conversationId: string,
 ): Promise<ThreadContext | null> {
-  /* Sans session, il n'y a pas de fil à résoudre — et surtout, il ne
-     faut pas POSER la question.
-
+  /* Sans session, il ne faut surtout pas POSER la question :
      `conversation_is_open` est révoquée à `anon` (0017), donc la RPC
      ci-dessous répond « permission refusée » à un visiteur, et cette
-     erreur était propagée : `/messages/<id>` ouvert sans session
-     affichait la frontière d'erreur (« Vérifiez votre connexion »)
-     au lieu de la page introuvable qu'il rendait avant 0017. Un lien
-     de conversation partagé sur WhatsApp, ou remis en favori après
-     expiration de la session, faisait donc croire à une panne réseau
-     et invitait à réessayer — pour un fil que le RLS n'aurait de
-     toute façon pas laissé lire.
+     erreur remontait en frontière d'erreur (« Vérifiez votre
+     connexion ») au lieu de la page introuvable attendue — un lien de
+     conversation partagé ou remis en favori faisait croire à une panne.
 
-     Aucune page de `/messages` n'exige de session en amont : le
-     middleware ne fait que rafraîchir le cookie. C'est donc ici que
-     le cas se traite, en une ligne et pour les quatre écrans et les
-     trois actions serveur qui passent par cette fonction.
-
-     Gratuit pour une session ouverte : `getSessionUser` est mis en
-     cache pour la durée de la requête, et `getMyProfile` l'appelle de
-     toute façon quelques lignes plus bas. */
+     Le cas se traite ICI parce qu'aucune page de `/messages` n'exige de
+     session en amont (le middleware ne fait que rafraîchir le cookie) :
+     une ligne couvre les quatre écrans et les trois actions serveur.
+     Gratuit pour une session ouverte, `getSessionUser` étant mis en
+     cache pour la durée de la requête. */
   const user = await getSessionUser(supabase);
   if (!user) return null;
 
   /* L'ouverture du fil est demandée à la BASE (`conversation_is_open`,
      0017) et non déduite ici : c'est la même fonction qui décide, dans la
-     policy d'envoi, si le message passera. Une règle appliquée à deux
-     endroits finit toujours par diverger, et l'écran promettrait alors un
-     champ de saisie que la base refuserait — ou l'inverse, plus sournois :
-     un champ éteint alors que tout va bien.
-
-     Les deux appels partent ensemble : la question coûte une lecture
-     d'index, pas un aller-retour de plus. */
+     policy d'envoi, si le message passera. Dédoublée, la règle finirait
+     par diverger — champ de saisie promis puis refusé, ou éteint pour
+     rien. Les deux appels partent ensemble. */
   const [{ data, error }, { data: isOpen, error: openError }] = await Promise.all([
     supabase
       .from("conversations")
@@ -219,11 +199,9 @@ export async function getThreadContext(
   const merchantProfile = await getMyProfile(supabase, "merchant");
   const iAmMerchant = merchantProfile?.id === data.merchants.profile_id;
 
-  /* Le profil par lequel JE participe à ce fil, pour savoir si la
-     suspension qui le gèle est la mienne. `getMyProfiles` est mis en
-     cache pour la durée de la requête et `getMyProfile` vient d'être
-     appelé juste au-dessus : cette ligne ne coûte pas un aller-retour de
-     plus. */
+  /* Le profil par lequel JE participe au fil, pour savoir si la
+     suspension qui le gèle est la mienne. Mis en cache pour la durée de
+     la requête : pas d'aller-retour de plus. */
   const myProfile = iAmMerchant ? merchantProfile : await getMyProfile(supabase, "client");
 
   return {
