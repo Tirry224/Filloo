@@ -34,8 +34,18 @@ if (!existsSync(".next")) {
   process.exit(1);
 }
 
-// Le socle : ce que TOUT visiteur télécharge à sa première visite, quelle
-// que soit la page d'arrivée — donc l'INTERSECTION des ressources des pages.
+// Le socle : l'INTERSECTION des ressources des pages pré-rendues.
+//
+// ATTENTION, CE CHIFFRE SOUS-COMPTE, mesuré le 2026-09-20 : `_global-error`
+// ne référence AUCUN CSS, et comme elle entre dans l'intersection, elle en
+// éjecte la feuille de style entière et trois chunks présents partout —
+// environ 30 Ko. Une vraie première visite pèse donc ~195 Ko, pas 165, et
+// quatre routes (messagerie, ajout de produit) dépassent les 200 Ko du
+// budget sans que rien ne le signale.
+//
+// Corriger la mesure ferait échouer le build sur ces routes : c'est le but,
+// mais c'est un chantier à part. En attendant, ce chiffre est un plancher,
+// pas un total.
 const pages = walk(".next/server/app").filter((f) => extname(f) === ".html");
 const refsPar = pages.map(
   (f) => new Set(readFileSync(f, "utf8").match(/\/_next\/static\/[^"']+\.(?:js|css)/g) ?? []),

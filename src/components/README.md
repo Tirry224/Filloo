@@ -30,8 +30,15 @@ Puis `/styleguide` : tous les composants sur une seule page, hors de tout
 
 ## Composants serveur
 
-Aucun fichier ne porte `"use client"` : tout est rendu sur le serveur.
-C'est ce qui permet aux fiches produits d'être lisibles par Google et
-partageables sur WhatsApp avec un aperçu. Les composants qui auront besoin
-d'un état — le champ de recherche, les filtres, l'envoi d'un message —
-basculeront côté navigateur au moment des actions, un par un et pas avant.
+Le défaut est le composant SERVEUR, et il le reste : c'est ce qui permet aux
+fiches produits d'être lisibles par Google et partageables sur WhatsApp avec
+un aperçu, et c'est ce qui coûte zéro octet au visiteur.
+
+Ce fichier a longtemps affirmé qu'« aucun fichier ne porte `"use client"` ».
+C'était vrai à l'écriture, faux depuis : **24 fichiers en portent un**
+aujourd'hui. Chacun doit satisfaire l'un des trois critères de la règle R3
+de `docs/PERFORMANCE.md` — économiser plus d'octets qu'il n'en pèse, donner
+une information que le serveur n'a pas, ou éviter un aller-retour réseau —
+et écrire cette raison dans le fichier. Un document qui décrit un état
+révolu est pire qu'un document absent : il endort la vigilance qu'il
+prétendait tenir.

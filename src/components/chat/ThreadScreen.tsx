@@ -70,19 +70,12 @@ export async function ThreadScreen({
     .neq("sender_id", context.myParticipantId);
   if (readError) console.error("marquage lu impossible :", readError.message);
 
-  /* HISTORIQUE, parce qu'il explique pourquoi la route est découpée
-     ainsi aujourd'hui : le lien de retour de cet écran était figé sur
-     `/messages`, qui choisissait l'espace CLIENT dès que les deux
-     profils existaient. Un commerçant appuyait sur « retour » et
-     atterrissait dans sa boîte d'acheteur, avec la barre d'onglets du
-     client.
-
-     On a d'abord corrigé en déduisant l'espace du fil et en portant un
-     paramètre `?vue=` dans le lien. Ça marchait, et ça restait fragile :
-     un paramètre se perd, un chemin se perd moins. La déduction est
-     conservée — c'est elle qui alimente la garde ci-dessus — mais elle
-     ne sert plus à fabriquer un lien : elle sert à VÉRIFIER qu'on est
-     sur le bon chemin. */
+  /* La déduction de l'espace ne sert plus à FABRIQUER un lien, seulement à
+     VÉRIFIER qu'on est sur le bon chemin. Le retour était figé sur
+     `/messages`, donc côté client dès que les deux profils existaient : un
+     commerçant appuyait sur « retour » et atterrissait dans sa boîte
+     d'acheteur. La première correction portait un `?vue=` dans le lien —
+     un paramètre se perd, un chemin se perd moins. */
   /* LA GARDE DE CE FIL, et elle vaut dans les deux sens.
 
      Un fil a exactement deux côtés, et `getThreadContext` sait de quel
@@ -202,20 +195,16 @@ export async function ThreadScreen({
         {frozen ? (
           /* TROIS textes, et pas deux, depuis que `0022` gèle le fil dans
              les deux sens : il faut d'abord savoir DE QUI vient la
-             sanction.
+             sanction. Ma propre suspension se dit franchement ; celle d'en
+             face, jamais — la sanction d'un tiers ne se publie pas (même
+             raison que `merchant_is_public`, 0013). On dit alors ce qui est
+             vrai et utile : l'autre n'est plus joignable, l'échange reste
+             lisible.
 
-             Ma propre suspension se dit franchement — c'est la mienne,
-             `/compte/suspendu` me l'annonce déjà, et un email aussi
-             depuis `0021`. Celle d'en face, jamais : la sanction d'un
-             tiers ne se publie pas (même raison que `merchant_is_public`,
-             0013, qui confond volontairement refusée, en attente et
-             suspendue). On dit alors ce qui est vrai et utile — l'autre
-             n'est plus joignable, et ce qui a été échangé reste là.
-
-             Sans ce tri, le commerçant en règle dont le client vient
-             d'être suspendu lisait « votre compte ne permet plus
-             d'écrire » : une accusation fausse, sur un écran où il n'a
-             personne à qui répondre. */
+             Sans ce tri, le commerçant en règle dont le client vient d'être
+             suspendu lisait « votre compte ne permet plus d'écrire » : une
+             accusation fausse, sur un écran où il n'a personne à qui
+             répondre. */
           <p className="py-2 text-center text-sm text-ink-soft">
             {context.iAmSuspended
               ? "Votre compte ne permet plus d'écrire. Vos conversations restent consultables."

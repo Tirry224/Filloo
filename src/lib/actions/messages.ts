@@ -12,19 +12,16 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 
 /**
- * Retour vers un fil, en portant un message dans l'URL. Les lignes de la
- * feuille d'actions (écran 32) sont de vraies `<form>` de composants
- * serveur, sans `useActionState` : elles fonctionnent donc sans
- * JavaScript, et l'URL est le seul canal qui survive à la redirection.
- * Le fil affiche ensuite le message avec `Notice`.
+ * Retour vers un fil, le message porté par l'URL. Les lignes de la feuille
+ * d'actions (écran 32) sont de vraies `<form>` serveur, sans
+ * `useActionState` : elles marchent sans JavaScript, et l'URL est alors le
+ * seul canal qui survive à la redirection.
  *
- * `iAmMerchant` vient de `getThreadContext`, que chaque appelant a déjà
- * interrogé. Sans lui, cette fonction renvoyait toujours sur `/messages` :
- * un commerçant qui bloquait quelqu'un depuis `/vendeur/messages/[id]`
- * ressortait donc dans l'espace CLIENT. La garde de `ThreadScreen` le
- * rattraperait — elle renvoie chaque fil vers son espace réel — mais au
- * prix d'une redirection de plus, et surtout d'une sortie d'espace
- * visible à l'écran. Une action ne fait pas changer d'espace.
+ * `iAmMerchant` vient de `getThreadContext`, déjà interrogé par l'appelant.
+ * Sans lui, un commerçant qui bloquait quelqu'un depuis son espace
+ * ressortait côté CLIENT : la garde de `ThreadScreen` le rattrapait, mais
+ * au prix d'une sortie d'espace visible. Une action ne fait pas changer
+ * d'espace.
  */
 function backToThread(
   conversationId: string,
@@ -44,13 +41,11 @@ function backToThread(
  * Ce que répond « Contacter le vendeur » : un fil prêt à recevoir un
  * message, ou un refus à MONTRER.
  *
- * Un simple `string` obligeait l'appelant à traiter tout refus comme une
- * panne : l'exception remontait à la frontière d'erreur, qui affiche
- * « Vérifiez votre connexion ». Le quota de 20 boutiques par jour
- * (décision 13 de docs/SPEC.md) est pourtant une règle, pas un incident —
- * et son message, écrit en français dans le trigger `check_conversation_
- * rate_limit` (0002, 3.4), existe précisément pour être lu par la
- * personne concernée.
+ * Un simple `string` faisait traiter tout refus comme une panne —
+ * l'exception remontait à la frontière d'erreur, qui affiche « Vérifiez
+ * votre connexion ». Le quota de 20 boutiques par jour (SPEC, décision 13)
+ * est une règle, pas un incident, et son message est écrit en français dans
+ * le trigger pour être lu tel quel.
  */
 export type ConversationOutcome =
   | { kind: "ready"; conversationId: string }
@@ -273,17 +268,10 @@ export async function reportConversationAction(formData: FormData) {
   // Un signalement avalé en silence est pire qu'un bouton absent : la
   // personne croit l'équipe prévenue et n'en reparle jamais.
   //
-  // Précision mesurée le 2026-09-13 sur un PostgreSQL local, parce que ce
-  // commentaire a d'abord porté une explication FAUSSE : un `insert`
-  // refusé par le RLS n'est PAS silencieux. Un `with check` qui échoue
-  // lève « new row violates row-level security policy », donc `error`
-  // suffisait déjà ici. Le succès muet à zéro ligne est le propre des
-  // `update` et `delete`, dont le `using` filtre des lignes au lieu de
-  // refuser une valeur.
-  //
-  // Le `.select("id")` reste, pour la seule raison qui tienne : un
-  // trigger `before insert` qui renvoie NULL écarte la ligne SANS erreur
-  // (vérifié de la même façon). Aucun trigger du projet ne le fait
+  // Un `insert` refusé par le RLS n'est PAS silencieux — un `with check`
+  // qui échoue lève une erreur, donc `error` suffirait. Le `.select("id")`
+  // reste pour l'autre cas : un trigger `before insert` qui renvoie NULL
+  // écarte la ligne SANS erreur. Aucun trigger du projet ne le fait
   // aujourd'hui, mais une écriture qui sait ce qu'elle a écrit ne dépend
   // pas de cette promesse.
   if (error) backToThread(conversationId, context.iAmMerchant, error.message);

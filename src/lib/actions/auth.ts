@@ -94,23 +94,19 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
 /**
  * Créer le SECOND compte lié (écran 12, en étant déjà connecté) : pas de
  * mot de passe à saisir, c'est la même connexion — juste un nouveau profil
- * (policy "profiles: je cree mon second compte", 0002).
+ * (policy « profiles: je cree mon second compte », 0002).
  *
- * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT.
- * Ils appartiennent à la connexion, pas au rôle : les redemander revenait
- * à proposer d'en donner d'autres, et c'est ainsi que les deux profils
- * d'une même personne se mettaient à diverger dès leur deuxième jour.
- * L'écran les affiche désormais, il ne les édite pas ; ils se corrigent
- * dans « Mes informations », des deux côtés.
+ * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT. Ils
+ * appartiennent à la connexion, pas au rôle : les redemander revenait à
+ * proposer d'en donner d'autres, et c'est ainsi que les deux profils d'une
+ * même personne divergeaient dès leur création.
  *
- * ET C'EST AUSSI UNE QUESTION DE SÉCURITÉ. La première version de cette
- * correction propageait les valeurs SAISIES ICI vers le profil existant —
- * ce qui aurait ouvert un contournement propre de la confirmation par mot
- * de passe : un téléphone déverrouillé emprunté trente secondes, un
- * second compte créé, et le nom comme le numéro du profil d'origine
- * étaient réécrits sans rien connaître du compte. Or c'est exactement ce
- * que `updateProfileAction` exige un mot de passe pour empêcher.
- * Recopier ce qui est DÉJÀ en base ne peut rien réécrire.
+ * ET C'EST AUSSI UNE QUESTION DE SÉCURITÉ : propager les valeurs SAISIES
+ * ICI vers le profil existant ouvrirait un contournement de la
+ * confirmation par mot de passe — un téléphone emprunté trente secondes,
+ * un second compte créé, et le nom comme le numéro du premier réécrits
+ * sans rien connaître du compte. Recopier ce qui est déjà en base ne peut
+ * rien réécrire.
  */
 export async function createLinkedProfileAction(
   _prevState: ActionState | null,
@@ -163,29 +159,20 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: translateAuthError(error.message) };
 
-  /* Où atterrir, et la règle a dû être précisée quand le middleware s'est
-     mis à poser `?next=` lui-même.
+  /* Où atterrir. Jamais `/` en dur : une connexion qui n'a qu'un compte
+     commerçant atterrissait sur le fil client, avec la barre d'onglets du
+     client — ce que la décision 8 de SPEC interdit. `landingForSession`
+     tranche ce cas.
 
-     Jamais `/` en dur : une connexion qui n'a qu'un compte commerçant
-     atterrissait sur le fil client, avec la barre d'onglets du client —
-     ce que `design/README.md` interdit explicitement (décision 8 de
-     docs/SPEC.md). `landingForSession` tranche ce cas.
+     ET ON SUIT `next` S'IL APPARTIENT À L'ESPACE AUTORISÉ. La version
+     précédente le jetait dès que l'atterrissage n'était pas « / » : juste
+     tant que `?next=` ne venait que de l'écran 16, faux depuis que le
+     middleware le pose lui-même sur `/vendeur/*`. Un commerçant ouvrant un
+     lien vers un de ses fils perdait alors ce qu'il venait lire.
 
-     LA VERSION PRÉCÉDENTE IGNORAIT `next` DÈS QUE L'ATTERRISSAGE N'ÉTAIT
-     PAS « / ». C'était juste tant que `?next=` ne venait que de l'écran
-     16 (« contacter ce vendeur »), donc toujours d'un écran client. Le
-     middleware refusant désormais `/vendeur/*` aux visiteurs anonymes,
-     `next` peut valoir `/vendeur/messages` — et l'ancienne règle jetait
-     précisément la destination qu'elle aurait dû servir : un commerçant
-     ouvrant un lien vers un de ses fils se connectait et atterrissait sur
-     `/vendeur`, en ayant perdu ce qu'il venait lire.
-
-     La règle exacte est donc : on suit `next` s'il appartient à l'espace
-     où cette connexion a le droit d'être. Une connexion commerçant-seul
-     ne suit `next` que sous `/vendeur` ; toute autre connexion le suit
-     partout, son espace client étant légitime. Un paramètre d'URL ne
-     défait toujours pas la décision 8 — il ne peut plus que choisir une
-     destination À L'INTÉRIEUR de l'espace autorisé. */
+     Une connexion commerçant-seul ne suit donc `next` que sous `/vendeur` ;
+     toute autre le suit partout. Un paramètre d'URL ne défait pas la
+     décision 8, il choisit seulement une destination à l'intérieur. */
   const landing = await landingForSession(supabase);
   const next = safeNextPath(formData.get("next"));
   const espaceCommercantSeul = landing === "/vendeur";
@@ -216,17 +203,11 @@ export async function requestPasswordResetAction(
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/confirm?next=/reinitialiser-mot-de-passe`,
   });
-  // La réponse rendue reste `sent: true` DANS TOUS LES CAS, y compris en
-  // cas d'échec : répondre autre chose pour une adresse inconnue dirait à
-  // un inconnu qui a un compte ici. Ce n'est pas un oubli, c'est la
-  // protection contre l'énumération des comptes, et elle ne bouge pas.
-  //
-  // Mais l'erreur était jusqu'ici invisible AUSSI côté serveur, ce qui est
-  // un autre problème : le serveur mail intégré de Supabase plafonne à
-  // quelques envois par heure (étape 2 de docs/REPRISE.md), donc l'échec
-  // attendu ici est le dépassement de quota — précisément celui qu'il faut
-  // pouvoir constater dans les journaux Vercel pour savoir que Resend
-  // devient urgent.
+  // `sent: true` DANS TOUS LES CAS, échec compris : répondre autre chose
+  // pour une adresse inconnue dirait à un inconnu qui a un compte ici.
+  // C'est la protection contre l'énumération des comptes, et elle ne bouge
+  // pas. L'erreur, elle, se journalise : l'échec attendu est le quota du
+  // serveur mail, et c'est dans les journaux qu'on le constate.
   if (error) console.error("resetPasswordForEmail a échoué :", error.message);
   return { sent: true };
 }
