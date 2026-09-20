@@ -21,15 +21,12 @@ import { ThreadRow } from "@/components/chat/ThreadRow";
 import { conversation, findProduct, products, threads } from "@/lib/mock";
 
 /**
- * Catalogue vivant du design system.
+ * Catalogue vivant du design system, à l'adresse /styleguide.
  *
- * Tout composant apparaît ici, isolé de tout écran. Ça sert à trois
- * choses : voir d'un coup d'œil ce qui existe déjà avant d'en écrire un
- * de plus, repérer une incohérence (deux gris presque identiques, deux
- * rayons voisins), et vérifier qu'un changement dans tokens.css n'a rien
- * cassé ailleurs.
- *
- * Adresse : /styleguide
+ * Tout composant y apparaît isolé de tout écran : voir ce qui existe déjà
+ * avant d'en écrire un de plus, repérer une incohérence (deux gris
+ * presque identiques), et vérifier qu'un changement dans tokens.css n'a
+ * rien cassé ailleurs.
  */
 
 const COLORS = [
@@ -66,49 +63,40 @@ function Block({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
-/* Rendu à la requête, pas au build : sans ça, le résultat de `notFound()`
-   était figé dans une page statique mise en cache, et la garde
-   `NODE_ENV` n'était plus qu'un souvenir du build.
+/* Rendu à la requête, pas au build : sinon le résultat de `notFound()`
+   était figé dans une page statique mise en cache.
 
-   Ce que ce réglage ne corrige PAS, vérifié au `curl` et non supposé : la
-   réponse reste un **200** portant le contenu « Cette page n'existe
-   pas », pas un vrai 404. C'est documenté et attendu en Next 16
-   (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
-   section « Calling notFound() after streaming has started ») : le
-   `loading.tsx` de la racine ouvre une frontière `<Suspense>` sur chaque
-   route, donc la réponse a commencé à partir avant que la garde ne soit
-   évaluée — et un statut ne se change plus une fois le flux ouvert.
+   Ce que ce réglage ne corrige PAS, vérifié au `curl` : la réponse reste
+   un **200** portant « Cette page n'existe pas », pas un vrai 404. C'est
+   attendu en Next 16 (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
+   « Calling notFound() after streaming has started ») : le `loading.tsx`
+   racine ouvre une frontière `<Suspense>` sur chaque route, donc la
+   réponse est déjà partie quand la garde s'évalue, et un statut ne se
+   change plus le flux ouvert.
 
-   Ce que Next fait à la place, et qui suffit ici : il injecte
-   `<meta name="robots" content="noindex">`, vérifié présent sur cette
-   adresse et absent des pages légitimes. Le risque réel — une page de
-   travail interne trouvée par un moteur de recherche — est donc fermé.
-
-   Pour un vrai 404, il faudrait déplacer la garde dans `proxy` (le
-   remplaçant de `middleware`, cf. l'avertissement de dépréciation au
-   build), qui s'exécute AVANT le flux. À faire avec cette migration, pas
-   au milieu d'une correction de bugs. */
+   Ce qui suffit ici : Next injecte `<meta name="robots" content="noindex">`,
+   vérifié présent sur cette adresse et absent des pages légitimes — le
+   risque réel, une page de travail trouvée par un moteur, est fermé. Un
+   vrai 404 demanderait de déplacer la garde dans `proxy` (remplaçant de
+   `middleware`), qui s'exécute AVANT le flux : à faire avec cette
+   migration, pas au milieu d'une correction de bugs. */
 export const dynamic = "force-dynamic";
 
 /**
  * Page de TRAVAIL : accessible en développement, introuvable en
  * production.
  *
- * `README` et `docs/REPRISE.md` prévoyaient de la supprimer « quand
- * l'authentification existera » — c'est chose faite depuis le
- * 2026-09-11, et pourtant le build la prérendait toujours (`○ /styleguide`),
- * donc elle partait en ligne, ouverte à tous.
- *
- * La supprimer maintenant serait quand même une erreur : l'étape 1 de
- * `docs/REPRISE.md` — ouvrir les 33 écrans dans un navigateur, la
- * première chose qui reste à faire sur ce projet — se fait précisément
- * depuis ici. On ne jette pas l'outil la veille de s'en servir.
+ * `README` et `docs/REPRISE.md` prévoyaient de la supprimer une fois
+ * l'authentification en place ; elle l'est, et le build prérendait
+ * pourtant toujours la page (`○ /styleguide`), donc elle partait en ligne
+ * ouverte à tous. La supprimer serait quand même une erreur : l'étape 1
+ * de `docs/REPRISE.md` — ouvrir les 33 écrans dans un navigateur — se
+ * fait précisément depuis ici.
  *
  * D'où ce `notFound()` conditionnel plutôt qu'un `rm` : l'outil reste
- * entier en local, et l'adresse renvoie la page « Cette page n'existe
- * pas » en production, comme n'importe quelle URL inventée. Le test
- * s'évalue au build (`NODE_ENV` vaut alors `production`), donc rien n'est
- * décidé à chaud à chaque visite.
+ * entier en local et l'adresse se comporte en production comme une URL
+ * inventée. `NODE_ENV` est figé au build, mais la garde, elle, s'exécute
+ * à chaque requête (voir `dynamic` ci-dessus).
  *
  * À supprimer pour de bon quand l'étape 1 sera terminée.
  */

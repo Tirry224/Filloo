@@ -67,25 +67,24 @@ export function MenuItem({
     );
   }
   /* Ni lien ni action : une ligne d'information, pas un bouton. Elle en
-     rendait un quand même, `cursor-pointer` compris — on touche, rien ne se
-     passe, on croit l'application bloquée. Aucune ligne n'est dans ce cas
-     aujourd'hui, mais la règle ne dépend pas du cas qui l'a révélée. */
+     rendait un, `cursor-pointer` compris — on touche, rien ne se passe, on
+     croit l'application bloquée. */
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }
 
 /**
  * Une ligne de réglage qui n'emmène nulle part : elle OUVRE un panneau.
  *
- * PAS DE CHEVRON : dans cette liste il promet un changement d'écran, alors
- * qu'ici le panneau remonte du bas et l'écran reste dessous — le « retour »
- * du téléphone ne ramènerait pas là où la personne croit.
+ * PAS DE CHEVRON : il promettrait un changement d'écran alors que le
+ * panneau remonte du bas — le « retour » du téléphone ne ramènerait pas
+ * où la personne croit.
  *
- * UN PANNEAU ET PAS UNE PAGE : l'aller-retour dure quelques secondes et on
- * veut se retrouver exactement où l'on était ; une page dédiée coûterait un
- * écran de plus dans `docs/ECRANS.md` pour trois champs.
+ * UN PANNEAU ET PAS UNE PAGE : l'aller-retour dure quelques secondes et
+ * doit laisser exactement où l'on était, quand une page dédiée coûterait
+ * un écran de plus dans `docs/ECRANS.md` pour trois champs.
  *
- * Même mécanique que les panneaux de filtre : un `<details>`, donc sans
- * JavaScript, et `data-panneau` le fait refermer par `ClosePanels`.
+ * Même mécanique que les filtres : un `<details>`, donc sans JavaScript,
+ * que `data-panneau` fait refermer par `ClosePanels`.
  */
 export function MenuPanel({
   icon: Icon,

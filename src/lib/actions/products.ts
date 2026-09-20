@@ -92,16 +92,12 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .eq("id", productId)
       .select("id");
     if (publishError) return { error: publishError.message };
-    // DEUX REFUS, DEUX CANAUX, à ne pas confondre :
-    // - « pas de photo » et « boutique non validée » viennent du trigger,
-    //   qui lève une exception portant son message en français : c'est
-    //   `publishError` qui les rend ;
-    // - le succès muet à zéro ligne vient du RLS, dont la policy ne regarde
-    //   PAS la validation de la boutique. Elle n'écarte la ligne que si le
-    //   compte commerçant est suspendu, supprimé, ou si le produit n'est
-    //   pas le sien.
-    // Le message ci-dessous doit nommer CE cas-là : accuser la mauvaise
-    // cause envoie chercher une photo quelqu'un qui est suspendu.
+    // DEUX REFUS, DEUX CANAUX : « pas de photo » et « boutique non
+    // validée » viennent du trigger, en français, via `publishError` ; le
+    // succès muet à zéro ligne vient du RLS, qui ne regarde PAS la
+    // validation et n'écarte que compte suspendu, supprimé ou produit
+    // d'autrui. Le message ci-dessous nomme CE cas : accuser la mauvaise
+    // cause envoie chercher une photo à quelqu'un qui est suspendu.
     if (!published || published.length === 0) {
       return { error: "Publication impossible : votre compte commerçant n'est plus actif. Le produit est enregistré en brouillon." };
     }
@@ -197,16 +193,13 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     .map((image) => image.storage_path)
     .filter((path) => !fields.imagePaths.includes(path));
 
-  /* Une dernière question avant de détruire quoi que ce soit : ce fichier
-     est-il encore cité AILLEURS ? `product_images.storage_path` n'est
-     unique nulle part, et `imagePaths` vient du formulaire, donc du
-     navigateur — un envoi fabriqué peut faire pointer un produit sur le
-     chemin d'un autre. Supprimer sans regarder reviendrait à laisser une
-     écriture sur le produit X détruire la photo du produit Y.
-     Le RLS du stockage limite déjà les dégâts au dossier du commerçant
-     lui-même ; ce n'est pas une raison de le laisser casser SES propres
-     annonces. Une requête de plus, et seulement quand une photo est
-     réellement retirée. */
+  /* Ce fichier est-il encore cité AILLEURS ? `storage_path` n'est unique
+     nulle part et `imagePaths` vient du navigateur : un envoi fabriqué
+     peut faire pointer un produit sur le chemin d'un autre, et supprimer
+     sans regarder laisserait une écriture sur X détruire la photo de Y.
+     Le RLS du stockage borne les dégâts au dossier du commerçant, ce
+     n'est pas une raison de le laisser casser SES annonces. Une requête
+     de plus, seulement quand une photo est retirée. */
   if (removedPaths.length > 0) {
     const { data: stillReferenced } = await supabase
       .from("product_images")
@@ -237,17 +230,14 @@ function backToSeller(errorMessage?: string): never {
 /**
  * Changement de statut : vendu, masqué, republié.
  *
- * DEUX FAÇONS D'ÉCHOUER, et « pas d'erreur » ne veut jamais dire
- * « c'est fait » :
+ * DEUX FAÇONS D'ÉCHOUER, et « pas d'erreur » ne veut pas dire « fait » :
  *
  * 1. une exception du trigger `products_check_publishable` — « Republier »
- *    quand la boutique n'est plus approuvée, ou « Marquer vendu » sur un
- *    produit non publié, `sold` étant un état public depuis 0018 ;
- * 2. un succès portant ZÉRO ligne, quand le RLS écarte la ligne. D'où le
- *    `.select("id")` : c'est la seule façon de savoir ce qui a changé.
+ *    boutique non approuvée, ou « Marquer vendu » sur un produit non
+ *    publié, `sold` étant un état public depuis 0018 ;
+ * 2. un succès à ZÉRO ligne, quand le RLS l'écarte — d'où `.select("id")`.
  *
- * Sans ces deux contrôles, « Republier » laissait le produit masqué sans
- * rien dire, et le commerçant concluait que l'application était cassée.
+ * Sans ces contrôles, « Republier » laissait le produit masqué en silence.
  */
 async function setProductStatus(formData: FormData, status: "active" | "sold" | "hidden") {
   const productId = String(formData.get("productId") ?? "");

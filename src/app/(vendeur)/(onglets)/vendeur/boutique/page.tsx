@@ -30,35 +30,29 @@ type MerchantRow = {
 };
 
 /**
- * Écran 26 — modifier ma boutique. Accessible quel que soit le statut de
- * la boutique (approuvée, en attente, refusée) : c'est aussi par ici
- * qu'on corrige une boutique refusée avant de la renvoyer.
+ * Écran 26 — ma boutique, en LECTURE (la modification vit sur
+ * `/vendeur/boutique/modifier`). Accessible quel que soit le statut —
+ * approuvée, en attente, refusée —, car c'est aussi d'ici qu'on repart
+ * corriger une boutique refusée.
  *
- * Les trois lectures indépendantes (profil commerçant, profil client,
- * villes) partent EN MÊME TEMPS : rien ici n'a besoin d'attendre le
- * résultat d'un autre. `getMyProfile` est mis en cache par requête (voir
- * `src/lib/data/session.ts`), donc appeler deux fois "merchant" et
- * "client" ne fait qu'UNE requête `profiles` en base, pas deux.
+ * Les deux lectures partent EN MÊME TEMPS, aucune n'attendant l'autre.
+ * `getMyProfile` est mis en cache par requête (`src/lib/data/session.ts`),
+ * donc "merchant" puis "client" ne font qu'UNE requête `profiles`.
  */
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  /* La liste des villes n'est plus chargée ici : elle ne servait qu'au
-     menu déroulant du formulaire, parti sur `/vendeur/boutique/modifier`.
-     Une requête de moins sur l'écran qu'on ouvre le plus souvent — et le
-     projet se mesure sur un réseau guinéen (docs/PERFORMANCE.md). */
+  /* Plus de liste de villes ici : elle ne servait qu'au menu déroulant du
+     formulaire, parti sur `/vendeur/boutique/modifier`. Une requête de
+     moins sur l'écran le plus ouvert (docs/PERFORMANCE.md). */
   const [merchantProfile, clientProfile] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getMyProfile(supabase, "client"),
   ]);
-  /* `merchantProfile` ne peut pas être nul ici : `(vendeur)/layout.tsx`
-     a déjà refusé l'entrée à une connexion sans profil commerçant, et
-     déjà renvoyé un profil suspendu sur `/compte/suspendu`. Les deux
-     gardes qui se trouvaient à cette place ont donc disparu, pas été
-     oubliées. Le test qui suit ne porte donc PAS sur le profil : il
-     porte sur la BOUTIQUE, qu'un profil commerçant tout neuf n'a pas
-     encore — c'est le seul cas que le layout laisse volontairement
-     passer, et TypeScript a de toute façon besoin de le voir écrit. */
+  /* Rôle et suspension sont déjà traités par `(vendeur)/layout.tsx` : les
+     gardes d'ici ont disparu, pas été oubliées. Ce test porte sur la
+     BOUTIQUE, qu'un profil commerçant tout neuf n'a pas encore — le seul
+     cas que le layout laisse passer, et TypeScript veut le voir écrit. */
   if (!merchantProfile) redirect("/inscription/boutique");
 
   const { data: row, error } = await supabase
@@ -79,10 +73,9 @@ export default async function EditShopPage() {
     rejectionReason: row.rejection_reason,
   };
 
-  /* Les cinq informations de la boutique, dans l'ordre du formulaire qui
-     les modifie : on retrouve au même rang ce qu'on vient de changer.
-     Les champs vides affichent un tiret plutôt que rien — une ligne vide
-     laisse croire à un bug d'affichage, un tiret dit « pas renseigné ». */
+  /* Dans l'ordre du formulaire qui les modifie : on retrouve au même rang
+     ce qu'on vient de changer. Un champ vide affiche un tiret — une ligne
+     vide laisse croire à un bug, un tiret dit « pas renseigné ». */
   const infos = [
     { label: "Nom de la boutique", value: merchant.shopName },
     { label: "Ville", value: merchant.city || "—" },
@@ -93,20 +86,14 @@ export default async function EditShopPage() {
 
   return (
     <>
-      {/* Plus de flèche retour : cet écran est un ONGLET depuis que la
-          barre en compte quatre, et un onglet est une destination, pas un
-          sous-écran. Une flèche qui renvoie « en arrière » vers un autre
-          onglet apprend au doigt un geste faux — on y revient ensuite par
-          la barre, et la flèche ne correspond plus à rien. */}
-      {/* « Modifier » plutôt qu'« Enregistrer ». Cet écran ne modifiait
-          rien la plupart du temps, et affichait pourtant en permanence le
-          bouton qui enregistre — un bouton qui, presque toujours, ne fait
-          rien. Pire : les champs étaient directement modifiables, donc un
-          doigt qui glisse sur « Ville » en faisant défiler changeait la
-          ville de la boutique sans que rien ne le dise.
-
-          Modifier est maintenant un geste qu'on DEMANDE, et qui s'ouvre
-          sur son propre écran — comme l'ajout d'un produit. */}
+      {/* Plus de flèche retour : cet écran est un ONGLET, donc une
+          destination et pas un sous-écran. Une flèche « en arrière » vers
+          un autre onglet apprend au doigt un geste faux. */}
+      {/* « Modifier » plutôt qu'« Enregistrer » : cet écran affichait en
+          permanence le bouton qui enregistre alors qu'il n'y avait presque
+          jamais rien à enregistrer, et ses champs modifiables changeaient
+          la ville sous un doigt qui fait défiler. Modifier est maintenant
+          un geste qu'on DEMANDE, sur son propre écran. */}
       <TopBar
         title="Ma boutique"
         right={
@@ -130,10 +117,8 @@ export default async function EditShopPage() {
             </div>
           </div>
 
-          {/* Les informations se LISENT ici, elles ne s'y saisissent plus.
-              Un champ de saisie se lit moins bien qu'un texte : son cadre,
-              son curseur et son fond blanc disent « écris ici », pas
-              « voici ce que tu as ». */}
+          {/* Les informations se LISENT ici : un champ de saisie dit
+              « écris ici », pas « voici ce que tu as ». */}
           <div className="flex flex-col gap-2.5">
             <SectionLabel>Informations</SectionLabel>
             {infos.map(({ label, value }) => (
@@ -147,19 +132,13 @@ export default async function EditShopPage() {
             ))}
           </div>
 
-          {/* Le mot de passe a quitté cet écran pour
-              `/vendeur/boutique/modifier`, où il est devenu une
-              modification du compte comme les autres.
-
-              Il reste joignable par un commerçant SANS compte client lié,
-              et c'est ce qui compte : cette page fait office de « mon
-              compte » côté commerçant (docs/ECRANS.md, écran 26), et le
-              mot de passe appartient à la CONNEXION, pas au profil. Il ne
-              vivait longtemps que sur `/compte/informations`, réservé à un
-              profil client — un commerçant sans compte lié n'avait alors
-              aucun moyen de le changer. Le déplacer d'un écran de cet
-              espace à un autre ne rouvre pas ce trou ; l'enlever de
-              l'espace, si. */}
+          {/* Cette page fait office de « mon compte » côté commerçant
+              (docs/ECRANS.md, écran 26) : tout ce qui touche à la
+              CONNEXION doit y rester joignable par un commerçant SANS
+              compte client lié. Le mot de passe ne vivait que sur
+              `/compte/informations`, réservé à un profil client — un
+              commerçant sans compte lié n'avait aucun moyen de le
+              changer. */}
 
           {clientProfile ? (
             <SwitchSpaceCard
@@ -169,51 +148,37 @@ export default async function EditShopPage() {
             />
           ) : (
             /* Le miroir exact de `/compte` : sans compte client, cet
-               emplacement était vide, et un commerçant n'avait donc aucun
-               chemin pour s'en créer un.
-
-               Ajouté le 2026-09-13 APRÈS avoir ouvert la même porte côté
-               client — et seulement parce que le porteur du projet a
-               demandé « et la bascule ? ». C'est la deuxième fois que la
-               question est posée pour la même raison : une règle qui vaut
-               dans les deux sens n'a été traitée que dans un (voir la
-               leçon du 2026-09-12 sur les barres d'onglets). Corriger la
-               moitié d'une symétrie laisse un défaut qui ressemble à un
-               travail fini.
-
-               Un commerçant peut parcourir le catalogue sans compte, mais
-               pas ÉCRIRE à un vendeur : sans profil client, il ne peut pas
-               acheter sur sa propre place de marché. */
+               emplacement restait vide et un commerçant n'avait aucun
+               chemin pour s'en créer un — alors qu'il peut parcourir le
+               catalogue mais pas ÉCRIRE à un vendeur. La porte avait été
+               ouverte côté client seulement : corriger la moitié d'une
+               symétrie laisse un défaut qui ressemble à un travail
+               fini. */
             <MenuList>
               <MenuItem icon={ShoppingBag} label="Créer mon compte client" href="/inscription" />
             </MenuList>
           )}
 
-          {/* L'invitation est posée AVANT la liste de réglages, parce que
-              c'est tout le problème qu'elle corrige : l'interrupteur
-              existait depuis le premier jour, replié dans le panneau
-              « Notifications » ci-dessous, et il fallait savoir qu'il
-              était là pour l'y trouver. Elle disparaît dès que cet
-              appareil est abonné — ou si la permission a déjà été
-              refusée, auquel cas il n'y a plus rien à proposer. */}
+          {/* AVANT la liste de réglages, parce que c'est tout le problème
+              qu'elle corrige : l'interrupteur était replié dans le panneau
+              « Notifications » ci-dessous, et il fallait savoir qu'il y
+              était. Elle disparaît une fois l'appareil abonné, ou la
+              permission refusée. */}
           <PushInvite raison="Un client qui n'obtient pas de réponse écrit à la boutique suivante. C'est le seul canal qui vous prévient sur un écran verrouillé, application fermée." />
 
           <MenuList>
             {/* « Mes informations » — le nom et le téléphone de la
-                PERSONNE, à ne pas confondre avec « Modifier » en haut de
-                cet écran, qui porte sur la BOUTIQUE. Cet écran n'existait
-                que côté client : un commerçant sans compte lié ne pouvait
-                donc jamais corriger son propre numéro, celui-là même par
-                lequel on l'appelle pour valider sa boutique. Troisième
-                fois que ce trou se rebouche, après le mot de passe et la
-                suppression de compte. */}
+                PERSONNE, à ne pas confondre avec « Modifier » en haut, qui
+                porte sur la BOUTIQUE. L'écran n'existait que côté client :
+                un commerçant sans compte lié ne pouvait pas corriger son
+                propre numéro, celui par lequel on l'appelle pour valider
+                sa boutique. */}
             <MenuItem icon={User} label="Mes informations" href="/vendeur/informations" />
-            {/* Le mot de passe se change ICI, et non dans « Modifier ma
-                boutique » : ce sont deux choses différentes. Les
-                informations de la boutique, un client les LIT avant de se
-                déplacer ; le mot de passe n'appartient qu'à la connexion,
-                et c'est le même pour le compte client lié quand il existe
-                — d'où sa place unique, sur l'espace commerçant. */}
+            {/* Le mot de passe se change ICI et non dans « Modifier ma
+                boutique » : les informations de la boutique, un client les
+                LIT avant de se déplacer, alors que le mot de passe
+                n'appartient qu'à la connexion — le même que celui du
+                compte client lié, d'où sa place unique. */}
             {/* Les notifications comptent DOUBLE ici : un commerçant qui
                 répond quatre heures après a perdu le client, et c'est le
                 seul canal qui arrive sur un écran verrouillé. */}
@@ -226,14 +191,11 @@ export default async function EditShopPage() {
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
           </MenuList>
 
-          {/* La suppression de compte n'était atteignable QUE depuis
-              /compte/informations, c'est-à-dire uniquement par quelqu'un
-              ayant un profil client. Un commerçant sans compte client ne
-              pouvait donc pas supprimer le sien : /compte le renvoyait
-              ici. Une fonctionnalité décidée, construite et testée
-              (anonymisation + bannissement) restait inaccessible à la
-              moitié des comptes — et c'est celle qu'on ne peut pas
-              remplacer par un contournement. */}
+          {/* La suppression n'était atteignable que depuis
+              `/compte/informations`, donc réservée à qui a un profil
+              client : un commerçant sans compte lié ne pouvait pas
+              supprimer le sien (anonymisation + bannissement), et rien ne
+              remplace cette fonction par un contournement. */}
           <MenuList>
             <MenuItem
               icon={Trash2}

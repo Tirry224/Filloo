@@ -5,17 +5,15 @@ import type { Database } from "@/lib/database.types";
 
 /**
  * Client Supabase pour les composants serveur (voir
- * src/components/README.md). Un client PAR REQUÊTE, jamais un singleton
- * module-level : les cookies de session diffèrent d'une requête à
- * l'autre, un client partagé mélangerait les utilisateurs.
+ * src/components/README.md). Un client PAR REQUÊTE, jamais un singleton :
+ * les cookies de session diffèrent, un client partagé mélangerait les
+ * utilisateurs.
  *
  * `setAll` peut échouer dans un composant serveur pur (pas de réponse à
- * écrire) : sans conséquence tant qu'un middleware rafraîchit la session
- * ailleurs, d'où l'erreur avalée plutôt que la page en échec.
- *
- * `cache()` mémorise le client pour la durée d'UNE requête. Sans ce
- * partage, `getSessionUser` (`src/lib/data/session.ts`) ne dédupliquerait
- * pas ses appels : deux clients sont deux clés de cache différentes.
+ * écrire) : sans conséquence tant que le middleware rafraîchit la session,
+ * d'où l'erreur avalée. `cache()` mémorise le client pour la durée d'UNE
+ * requête, sans quoi `getSessionUser` ne dédupliquerait pas ses appels —
+ * deux clients, deux clés de cache.
  */
 export const createClient = cache(async () => {
   const cookieStore = await cookies();

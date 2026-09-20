@@ -6,19 +6,17 @@ import { ClosePanels } from "@/components/ui/ClosePanels";
 import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
 
 /**
- * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md, qui raconte l'histoire).
- * La seconde, réservée aux titres et au logotype, pesait 40,3 Ko — deux
- * fois celle-ci — pour une différence à peine visible à la largeur d'un
- * téléphone. En ajouter une redevient une décision, pas un réflexe.
+ * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md) : la seconde, pour les
+ * titres et le logotype, pesait 40,3 Ko — le double — pour une différence
+ * à peine visible sur un téléphone. En ajouter une est une décision.
  *
- * PIÈGE À NE PAS RETOMBER DEDANS : `preload: false` remettrait le budget
- * au vert sans qu'un seul octet cesse d'être téléchargé, puisque
- * `scripts/poids.mjs` ne compte que les polices PRÉCHARGÉES. La police
- * arriverait simplement plus tard, après un changement de lettres visible.
+ * PIÈGE : `preload: false` remettrait le budget au vert sans économiser
+ * un octet, `scripts/poids.mjs` ne comptant que les polices PRÉCHARGÉES ;
+ * la police arriverait juste plus tard, avec un saut de lettres visible.
  *
- * Next l'héberge lui-même : aucun appel à Google au chargement. `variable`
- * la publie comme variable CSS, que tokens.css récupère ; les composants
- * ne connaissent jamais le nom d'une police.
+ * Next l'héberge lui-même, donc aucun appel à Google ; `variable` la
+ * publie en variable CSS que tokens.css récupère, et les composants ne
+ * connaissent jamais le nom d'une police.
  */
 
 const body = Figtree({

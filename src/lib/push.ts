@@ -6,15 +6,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * POURQUOI `service_role` (`createAdminClient`) : les abonnements ne sont
  * lisibles que par leur propriétaire (RLS de `0023`), or c'est l'EXPÉDITEUR
- * du message qui déclenche l'envoi et il n'a aucun droit sur les appareils
- * du destinataire — heureusement, ces trois valeurs donnent le droit
- * d'écrire sur son écran verrouillé. La lecture reste donc côté serveur et
- * ne repart vers aucun écran.
+ * du message qui déclenche l'envoi, sans aucun droit sur les appareils du
+ * destinataire — et ces trois valeurs donnent le droit d'écrire sur son écran
+ * verrouillé. La lecture reste donc côté serveur, sans repartir vers un écran.
  *
  * CE QUI PART : pas le corps du message. Un push s'affiche sur un écran
- * verrouillé, que n'importe qui à côté peut lire ; l'email recopie
- * l'extrait, parce qu'il faut déverrouiller et ouvrir sa boîte pour le
- * voir. Deux canaux, deux niveaux d'exposition.
+ * verrouillé que n'importe qui à côté peut lire ; l'email recopie l'extrait,
+ * parce qu'il faut déverrouiller et ouvrir sa boîte pour le voir.
  */
 
 /** Une paire VAPID absente n'est pas une panne : c'est l'état d'un projet
@@ -55,16 +53,15 @@ export type ContenuPush = {
 };
 
 /**
- * Envoie à TOUS les appareils d'une connexion : prévenir un seul des deux,
- * c'est souvent prévenir celui qu'elle n'a pas en main.
+ * Envoie à TOUS les appareils d'une connexion : prévenir un seul, c'est
+ * souvent prévenir celui qu'elle n'a pas en main. Ne lève jamais — une
+ * notification est un service rendu en plus, elle ne doit pas casser l'envoi
+ * du message qui l'a déclenchée.
  *
- * Ne lève jamais : une notification est un service rendu en plus, elle ne
- * doit pas casser l'envoi du message qui l'a déclenchée.
- *
- * Rend le nombre d'appareils réellement atteints, dont `drainNotifications`
- * a besoin : sans email configuré, ce chiffre est la seule façon de savoir
- * si une décision d'administration a été annoncée à quelqu'un. Marquer
- * « envoyée » une décision que personne n'a reçue la perdrait.
+ * Rend le nombre d'appareils atteints, dont `drainNotifications` a besoin :
+ * sans email configuré, c'est la seule façon de savoir si une décision
+ * d'administration a été annoncée. Marquer « envoyée » une décision que
+ * personne n'a reçue la perdrait.
  */
 export async function sendPushToUser(authUserId: string, contenu: ContenuPush): Promise<number> {
   if (!configurer()) return 0;
@@ -98,13 +95,12 @@ export async function sendPushToUser(authUserId: string, contenu: ContenuPush): 
         } catch (cause) {
           const statut = (cause as { statusCode?: number }).statusCode;
 
-          /* 404 et 410 sont les seules réponses qui veulent dire « cet
-             appareil n'existe plus » (application désinstallée, données du
-             navigateur effacées, abonnement révoqué) : on supprime la ligne
-             tout de suite, sinon la table se remplit de fantômes réessayés
-             à chaque message et les services de push nous classent parmi
-             les émetteurs négligents. Tout le reste (429, 500, réseau) est
-             passager : on garde la ligne. */
+          /* 404 et 410 sont les seules réponses qui disent « cet appareil
+             n'existe plus » (désinstallation, données effacées, abonnement
+             révoqué) : on supprime la ligne, sinon la table se remplit de
+             fantômes réessayés à chaque message et les services de push nous
+             classent parmi les émetteurs négligents. Tout le reste (429, 500,
+             réseau) est passager : on garde la ligne. */
           if (statut === 404 || statut === 410) {
             await admin.from("push_subscriptions").delete().eq("id", abonnement.id);
             return;
