@@ -8,34 +8,21 @@ import {
 } from "@/content/conditions";
 
 /**
- * Conditions d'utilisation — le 34e écran, et le premier ajouté depuis
- * que la maquette en comptait 33.
+ * Conditions d'utilisation — écran 34.
  *
- * UN COMPOSANT, DEUX ROUTES, comme `ThreadScreen` et pour la même
- * raison : le texte est rigoureusement le même des deux côtés, mais le
- * lien de RETOUR ne l'est pas. Un commerçant qui lit les conditions
- * depuis `/vendeur/boutique` doit y revenir, pas atterrir dans son
- * espace d'acheteur — c'est le défaut exact que le découpage en groupes
- * de routes a corrigé pour la messagerie.
+ * UN COMPOSANT, DEUX ROUTES, comme `ThreadScreen` : le texte est le même
+ * des deux côtés, le lien de RETOUR ne l'est pas. Un commerçant qui lit les
+ * conditions depuis `/vendeur/boutique` doit y revenir, pas atterrir dans
+ * son espace d'acheteur. `backHref` est donc IMPOSÉ par la route qui monte
+ * ce fichier, jamais lu dans l'URL — un paramètre se perd (favori, lien
+ * partagé, retour arrière), un chemin se perd moins.
  *
- * `backHref` est donc IMPOSÉ par la route qui monte ce fichier, jamais
- * lu dans l'URL : un paramètre se perd (favori, lien partagé, retour
- * arrière), un chemin se perd moins. C'est la leçon écrite en tête de
- * `src/lib/espace.ts`.
- *
- * CE COMPOSANT NE POSE AUCUNE GARDE, et il n'a rien à garder : il ne lit
- * aucune donnée et n'appelle pas la base. Les deux routes qui le montent
- * n'ont donc pas le même accès, et c'est correct :
- *
- *   - `/conditions` est PUBLIQUE, comme le catalogue. L'article 25 dit que
- *     l'utilisateur accepte ces Conditions en créant un compte : les
- *     cacher derrière une inscription reviendrait à faire accepter un
- *     texte qu'on ne peut pas lire avant.
- *   - `/vendeur/conditions` hérite de la garde de `(vendeur)/layout.tsx`,
- *     comme tout cet espace. Ce n'est pas une restriction sur le texte —
- *     il reste lisible par tous sur `/conditions` — seulement sur ce
- *     chemin-là, dont le lien de retour n'a de sens que pour un
- *     commerçant connecté.
+ * AUCUNE GARDE ICI, et il n'y a rien à garder : ce composant ne lit aucune
+ * donnée. `/conditions` est PUBLIQUE comme le catalogue — l'article 25 dit
+ * que l'utilisateur accepte ces conditions en créant un compte, les cacher
+ * derrière une inscription ferait accepter un texte qu'on ne peut pas lire
+ * avant. `/vendeur/conditions` hérite de la garde de son espace : ce n'est
+ * pas une restriction sur le texte, seulement sur ce chemin-là.
  */
 export function TermsScreen({ backHref }: { backHref: string }) {
   return (

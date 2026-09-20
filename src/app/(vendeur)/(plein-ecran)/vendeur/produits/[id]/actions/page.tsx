@@ -9,47 +9,29 @@ import { markSoldAction, hideProductAction, republishProductAction, deleteProduc
 /**
  * Écran 25 — actions sur un produit.
  *
- * Chaque action dit sa CONSÉQUENCE. « Masquer » et « Supprimer » se
- * ressemblent dans une liste ; ce qu'ils font aux données, non. Écrire la
- * conséquence sous l'intitulé coûte une ligne et évite des suppressions
- * regrettées.
+ * Chaque action dit sa CONSÉQUENCE : « Masquer » et « Supprimer » se
+ * ressemblent dans une liste, ce qu'ils font aux données non.
  *
- * LES ACTIONS SUIVENT L'ÉTAT RÉEL DU PRODUIT
- * Cette feuille proposait les mêmes lignes à un BROUILLON qu'à un produit
- * publié, et c'était faux des deux côtés :
+ * LES ACTIONS SUIVENT L'ÉTAT RÉEL DU PRODUIT. La feuille proposait les
+ * mêmes lignes à un brouillon qu'à un produit publié : « Publier »
+ * n'existait nulle part, le seul chemin étant « Masquer » puis
+ * « Republier » — deux intitulés qui décrivent le contraire de ce qu'ils
+ * font ; et « Marquer comme vendu » était offert sur un brouillon, alors
+ * qu'on ne vend pas ce qui n'a jamais été en vitrine.
  *
- *   - « Publier » n'existait nulle part pour un brouillon. Le seul chemin
- *     était « Masquer du catalogue » (qui n'y est pas) puis « Republier »
- *     (qui n'a jamais été publié) : deux intitulés qui décrivent le
- *     contraire de ce qu'ils font. `/vendeur/attente` promet pourtant, en
- *     toutes lettres, des brouillons « publiés en un clic dès la
- *     validation » — la promesse était tenable, elle n'était pas tenue.
- *   - « Marquer comme vendu » était offert sur un brouillon, ce qui n'a
- *     aucun sens : on ne vend pas ce qui n'a jamais été en vitrine.
+ * CE QUE CETTE PAGE NE PROTÈGE PAS, et c'est le point à retenir. Retirer
+ * une ligne d'une feuille d'actions ne ferme rien : `markSoldAction` reste
+ * appelable par une requête forgée, et la policy laisse le commerçant
+ * écrire `status` sur ses propres produits. La faille `draft → sold` — un
+ * brouillon sans photo qui entrait au catalogue parce que
+ * `check_product_publishable` ne regardait que `active` — est fermée par la
+ * migration 0020, EN BASE. Ceci est une correction d'INTERFACE : ne plus
+ * proposer ce que la base refusera, jamais la protection elle-même.
  *
- * SUR LA FAILLE `draft → sold`, ET SUR CE QUE CETTE PAGE CORRIGE VRAIMENT
- * Cette même ligne a été, un temps, un contournement du contrôle de
- * publication : `check_product_publishable` ne se déclenchait que sur
- * `status = 'active'` (0002, partie 3.2), alors que la policy « catalogue
- * public » publie `active` ET `sold` (0008). Un brouillon sans photo
- * passait donc directement à `sold` et entrait au catalogue.
- *
- * Ce trou est fermé — par la migration 0020, EN BASE, pas ici. La garde
- * porte désormais sur l'ENTRÉE dans l'ensemble visible `{active, sold}`,
- * donc `draft → sold` est vérifié comme `draft → active` l'a toujours été.
- *
- * La distinction est le point à retenir : retirer une ligne d'une feuille
- * d'actions ne ferme rien du tout. `markSoldAction` reste une Server
- * Action appelable par une requête forgée, et la policy « products: je
- * gere mes produits » laisse le commerçant écrire `status` sur ses propres
- * produits. Seul le trigger arrête la requête forgée. Ce qui suit est donc
- * une correction d'INTERFACE — ne plus proposer ce que la base refusera —
- * et elle ne doit jamais être lue comme la protection elle-même.
- *
- * Aucune action nouvelle n'est créée pour autant : publier un brouillon et
- * republier un produit masqué sont la MÊME écriture, `status = 'active'`,
- * donc le même `republishProductAction`. Seul l'intitulé change, parce que
- * seul le point de départ change.
+ * Aucune action nouvelle : publier un brouillon et republier un produit
+ * masqué sont la MÊME écriture (`status = 'active'`), donc le même
+ * `republishProductAction`. Seul l'intitulé change, parce que seul le point
+ * de départ change.
  */
 export default async function ProductActionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

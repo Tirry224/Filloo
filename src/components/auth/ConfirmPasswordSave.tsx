@@ -4,36 +4,22 @@ import { Field, Input } from "@/components/ui/Field";
 /**
  * « Enregistrer » qui demande d'abord le mot de passe, dans un panneau.
  *
- * POURQUOI LE CHAMP N'EST PLUS EN BAS DU FORMULAIRE
- * Il y était, dernier d'une liste de six. Deux défauts s'y ajoutaient :
- * on le remplissait AVANT d'avoir décidé d'enregistrer — donc souvent
- * pour rien — et, sur un écran qui défile, le bouton « Enregistrer » de
- * la barre du haut restait à portée de pouce alors que le champ qu'il
- * exige était deux écrans plus bas, hors de vue. Un refus « confirmez
- * avec votre mot de passe » arrivait alors sans qu'on voie de quoi il
- * parlait.
+ * LE CHAMP N'EST PLUS EN BAS DU FORMULAIRE. Il y était, dernier d'une liste
+ * de six : on le remplissait AVANT d'avoir décidé d'enregistrer, donc
+ * souvent pour rien, et sur un écran qui défile le bouton de la barre du
+ * haut restait à portée de pouce alors que le champ qu'il exige était hors
+ * de vue. Le refus « confirmez avec votre mot de passe » arrivait sans
+ * qu'on voie de quoi il parlait.
  *
- * Le demander AU MOMENT du geste supprime les deux : on ne le tape que si
- * l'on enregistre, et il est sous les yeux quand il est exigé.
+ * UN SEUL CHEMIN VERS L'ENREGISTREMENT : le bouton de la barre du haut
+ * n'enregistre plus, il OUVRE. Deux boutons portant « Enregistrer »
+ * laisseraient croire que le premier a déjà tout fait.
  *
- * UN SEUL CHEMIN VERS L'ENREGISTREMENT
- * Le bouton de la barre du haut n'enregistre plus : il OUVRE. Le seul
- * bouton qui envoie le formulaire est celui du panneau, sous le champ.
- * Deux boutons portant « Enregistrer » laisseraient croire que le premier
- * a déjà tout fait.
- *
- * COMMENT LE CHAMP REJOINT UN FORMULAIRE QU'IL N'HABITE PAS
- * Le panneau vit dans la barre du haut, le formulaire dans le corps de
- * l'écran : impossible d'imbriquer l'un dans l'autre. L'attribut `form`
- * du HTML relie les deux — un champ peut appartenir à un formulaire qui
- * n'est pas son parent, pourvu qu'il en porte l'identifiant. C'est natif
- * et ancien, et ça évite de dupliquer le formulaire ou de passer par du
- * JavaScript.
- *
- * SANS JAVASCRIPT, ÇA MARCHE AUSSI
- * C'est un `<details>`, comme les panneaux de filtre. `data-panneau` le
- * fait refermer par `ClosePanels` quand on touche à côté — un confort,
- * jamais une condition.
+ * L'attribut `form` du HTML relie le champ au formulaire sans qu'il en soit
+ * le parent — natif, ancien, et ça évite de dupliquer le formulaire. C'est
+ * un `<details>`, donc ça marche sans JavaScript ; `data-panneau` le fait
+ * refermer par `ClosePanels` au tap extérieur, un confort jamais une
+ * condition.
  */
 export function ConfirmPasswordSave({
   formId,
