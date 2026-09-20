@@ -3,36 +3,24 @@ import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/l
 import { sendPushToUser } from "@/lib/push";
 
 /**
- * Prévenir la personne qui vient de recevoir un message — par
- * notification push ET par email.
+ * Prévenir la personne qui vient de recevoir un message, par notification
+ * push ET par email. Sans ça, la messagerie est une boîte aux lettres que
+ * personne ne relève, et tout le produit repose dessus.
  *
- * C'est le point 1 de `docs/REPRISE.md` : sans cet email, la messagerie
- * est une boîte aux lettres que personne ne relève. Un commerçant qui
- * n'est jamais prévenu ne revient pas, et tout le produit repose sur
- * cette messagerie.
+ * `service_role` parce que l'adresse vit dans `auth.users`, hors RLS : et
+ * c'est heureux, l'expéditeur ne doit JAMAIS pouvoir obtenir l'email de son
+ * interlocuteur, ce serait contourner la messagerie interne. L'adresse est
+ * lue ici et ne repart vers aucun écran.
  *
- * POURQUOI `service_role` (`createAdminClient`)
- * L'adresse du destinataire vit dans `auth.users`, que le RLS ne couvre
- * pas et qu'aucune session cliente ne peut lire. Et c'est heureux :
- * l'expéditeur ne doit JAMAIS pouvoir obtenir l'email de son
- * interlocuteur — ce serait contourner la messagerie interne, qui est le
- * seul canal prévu par SPEC. L'adresse est donc lue ici, côté serveur,
- * utilisée pour l'envoi, et ne repart vers aucun écran.
- *
- * POURQUOI PAS UN TRIGGER EN BASE, NI UNE EDGE FUNCTION
- * Le même raisonnement que la suppression de compte
- * (`src/lib/supabase/admin.ts`) : une action serveur fait exactement la
- * même chose, avec un aller-retour de moins et un seul système à
- * déployer. Un trigger `pg_net` ajouterait une extension, une clé
- * d'API stockée en base et un chemin d'échec invisible depuis Vercel.
+ * Ni trigger en base ni Edge Function : une action serveur fait la même
+ * chose avec un aller-retour de moins et un seul système à déployer.
  */
 export async function notifyNewMessage(messageId: string): Promise<void> {
   try {
-    /* DEUX CANAUX, DEUX CONFIGURATIONS, UNE SEULE RÈGLE D'ENVOI.
-       L'email et le push s'allument indépendamment : chacun peut être
-       éteint sans empêcher l'autre. Ce qu'ils PARTAGENT, c'est tout ce
-       qui suit — qui prévenir, et la règle anti-spam. La dupliquer dans
-       deux fonctions, c'est se garantir qu'un jour l'une enverra ce que
+    /* DEUX CANAUX, DEUX CONFIGURATIONS, UNE SEULE RÈGLE D'ENVOI. Chacun
+       peut être éteint sans empêcher l'autre ; ce qu'ils partagent, c'est
+       qui prévenir et la règle anti-spam. La dupliquer, c'est se garantir
+       qu'un jour l'une enverra ce que
        l'autre retient. */
     const emailPret = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
     const pushPret = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
@@ -68,21 +56,14 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }>();
     if (messageError || !message) return;
 
-    /* LA RÈGLE QUI ÉVITE LE SPAM, ET ELLE NE COÛTE AUCUNE COLONNE.
-       On ne prévient QUE si ce message est le premier non lu du fil. S'il
-       reste un message non lu du même expéditeur, le destinataire a déjà
-       reçu un email pour ce fil et n'est pas revenu : lui en envoyer un
-       second ne l'informe de rien, et c'est exactement ainsi qu'on finit
-       en courrier indésirable — après quoi plus AUCUNE notification
-       n'arrive, y compris les utiles.
-
-       Deux personnes qui échangent dix messages produisent donc un seul
-       email. Dès que le destinataire ouvre le fil, `read_at` se pose
-       (`/messages/[id]`) et le message suivant redevient notifiable.
-
-       C'est `read_at`, qui existe depuis 0001, qui porte toute la règle :
-       pas de colonne « déjà notifié », pas de table de file d'attente,
-       pas de tâche planifiée à surveiller. */
+    /* LA RÈGLE ANTI-SPAM, ET ELLE NE COÛTE AUCUNE COLONNE. On ne prévient
+       que si ce message est le premier non lu du fil : s'il en reste un du
+       même expéditeur, le destinataire a déjà été prévenu et n'est pas
+       revenu. Un second avertissement ne l'informe de rien et mène au
+       courrier indésirable, après quoi plus AUCUNE notification n'arrive.
+       Dix messages échangés produisent donc un seul email ; `read_at` se
+       pose à l'ouverture du fil et le suivant redevient notifiable.
+       Tout tient sur cette colonne, qui existe depuis 0001. */
     const { count: alreadyWaiting, error: countError } = await admin
       .from("messages")
       .select("id", { count: "exact", head: true })
@@ -132,17 +113,13 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
     if (recipient.is_deleted) return;
 
 
-    /* LE PUSH D'ABORD, ET L'ORDRE N'EST PAS INDIFFÉRENT.
-       C'est lui qui arrive en quelques secondes sur un écran verrouillé ;
-       l'email met le temps qu'il met. Le faire partir avant évite qu'une
-       lenteur de Resend retarde la seule alerte que la personne verra
-       vraiment. Il ne lève jamais (voir `src/lib/push.ts`), donc il ne
-       peut pas empêcher l'email qui suit.
+    /* LE PUSH D'ABORD : il arrive en secondes sur un écran verrouillé,
+       l'email met le temps qu'il met, et il ne lève jamais — il ne peut
+       donc pas empêcher l'email qui suit.
 
-       CE QU'IL NE DIT PAS : le corps du message. Un push s'affiche sur un
-       écran verrouillé, que n'importe qui à côté peut lire. L'email
-       recopie l'extrait, lui, parce qu'il faut déverrouiller son téléphone
-       et ouvrir sa boîte pour le voir. Deux niveaux d'exposition, deux
+       CE QU'IL NE DIT PAS : le corps du message. Un écran verrouillé se lit
+       par-dessus l'épaule ; l'email, lui, demande de déverrouiller son
+       téléphone. Deux expositions, deux
        contenus. */
     if (pushPret) {
       await sendPushToUser(recipient.auth_user_id, {
@@ -160,11 +137,10 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
 
     if (!emailPossible) return;
 
-    /* L'ADRESSE EMAIL N'EST CHERCHÉE QU'ICI, ET C'EST UNE CORRECTION.
-       Elle l'était avant le push, donc un compte sans adresse lisible —
-       ou une panne de `auth.admin` — supprimait AUSSI la notification
-       push, qui n'en a pourtant aucun besoin. Un canal ne doit jamais
-       tomber à cause de la configuration d'un autre. */
+    /* L'ADRESSE N'EST CHERCHÉE QU'ICI : avant le push, un compte sans
+       adresse lisible supprimait AUSSI la notification, qui n'en a aucun
+       besoin. Un canal ne doit jamais tomber à cause de la configuration
+       d'un autre. */
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
       recipient.auth_user_id,
     );

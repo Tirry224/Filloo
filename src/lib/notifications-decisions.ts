@@ -10,35 +10,26 @@ import {
 import { sendPushToUser, type ContenuPush } from "@/lib/push";
 
 /**
- * Annoncer — par notification ET par email — les trois décisions qui se
- * prennent dans le tableau de bord Supabase : boutique validée, boutique
- * refusée, compte suspendu.
+ * Annoncer — par notification ET par email — les trois décisions prises
+ * dans le tableau de bord Supabase : boutique validée, refusée, compte
+ * suspendu.
  *
- * POURQUOI LE PUSH COMPTE DOUBLE ICI
- * Le cron ne passe qu'une fois par jour depuis le passage en offre Hobby
- * (`vercel.json`) : entre la case cochée dans Supabase et l'email reçu,
- * il peut s'écouler 24 heures. C'est long pour n'importe quelle nouvelle,
- * et c'est interminable pour la seule qu'un commerçant attend vraiment —
- * savoir si sa boutique est acceptée. Le push ne raccourcit pas ce délai,
- * il ne part pas plus tôt que le balayage ; ce qu'il change, c'est que la
- * nouvelle arrive sur un écran verrouillé au lieu d'attendre que la
- * personne pense à ouvrir sa boîte mail.
+ * LE PENDANT DE `notifications.ts`, ET DIFFÉRENT EXPRÈS. Là-bas une action
+ * serveur vient d'écrire un message : elle sait qui prévenir, et `after()`
+ * suffit. Ici personne n'a exécuté de code — quelqu'un a coché une case sur
+ * supabase.com. Ce sont les triggers de `0021` qui laissent une trace, et
+ * ce balayage la relève.
  *
- * CE FICHIER EST LE PENDANT DE `notifications.ts`, ET IL EST DIFFÉRENT
- * EXPRÈS. Là-bas, une action serveur vient d'écrire un message : elle
- * sait qui prévenir, tout de suite, et `after()` suffit. Ici, personne
- * n'a exécuté de code — quelqu'un a coché une case sur supabase.com. Ce
- * sont les triggers de la migration `0021` qui ont laissé une trace, et
- * c'est ce balayage qui la relève.
- *
- * TOUT L'ÉTAT VIT EN BASE, ET C'EST LE POINT
- * Cette fonction n'a aucune mémoire : elle lit ce qui attend, envoie,
- * marque. Un déploiement au milieu, un timeout Resend, une invocation
- * tuée — le passage suivant reprend exactement là où celui-ci s'est
- * arrêté, parce que ce qui n'est pas marqué est encore en attente. Rien
- * ne se perd en silence, et ce qui coince se voit en une requête :
+ * TOUT L'ÉTAT VIT EN BASE : cette fonction n'a aucune mémoire. Un
+ * déploiement au milieu, un timeout, une invocation tuée — le passage
+ * suivant reprend là où celui-ci s'est arrêté, puisque ce qui n'est pas
+ * marqué est encore en attente. Ce qui coince se voit en une requête :
  *
  *     select * from notifications where sent_at is null;
+ *
+ * Le cron ne passe qu'une fois par jour (offre Hobby, `vercel.json`) : le
+ * push ne raccourcit pas ce délai, il fait arriver la nouvelle sur un écran
+ * verrouillé au lieu d'attendre qu'on pense à ouvrir sa boîte mail.
  */
 
 /** Assez petit pour tenir largement dans une invocation serverless, et
@@ -139,21 +130,14 @@ export async function drainNotifications(): Promise<DrainReport> {
     }
 
     /* LE PUSH D'ABORD, ET UNE SEULE FOIS — SAUF S'IL EST SEUL.
-       D'abord, pour la même raison que dans `notifyNewMessage` : il
-       arrive en quelques secondes sur un écran verrouillé, l'email met
-       le temps qu'il met.
-
-       Une seule fois quand un email doit suivre, parce qu'ici —
-       contrairement à l'envoi d'un message — la ligne est REJOUÉE tant
-       que cet email n'est pas parti. Sans cette condition, une adresse
-       invalide ferait sonner le téléphone à chaque passage du balayage,
-       jusqu'à cinq fois, pour une décision unique. Le `tag` regroupe
-       l'affichage, il n'empêche pas le téléphone de vibrer.
-
-       Mais quand le push est le SEUL canal, il est lui-même ce qu'on
-       réessaie : le borner au premier passage condamnerait la décision
-       de quelqu'un qui n'avait aucun appareil abonné ce jour-là à
-       échouer quatre fois de plus sans qu'on retente jamais rien. */
+       D'abord parce qu'il arrive en secondes sur un écran verrouillé. Une
+       seule fois quand un email doit suivre, parce que la ligne est rejouée
+       tant que cet email n'est pas parti : sans cette borne, une adresse
+       invalide ferait sonner le téléphone cinq fois pour une décision
+       unique — le `tag` regroupe l'affichage, pas les vibrations.
+       Mais quand le push est le SEUL canal, il EST ce qu'on réessaie : le
+       borner au premier passage condamnerait la décision de quelqu'un qui
+       n'avait aucun appareil abonné ce jour-là. */
     let atteints = 0;
     if (pushPret && (ligne.attempts === 0 || !composed.email)) {
       atteints = await sendPushToUser(composed.authUserId, composed.push);
@@ -209,21 +193,15 @@ type Composition =
   | { kind: "echec"; raison: string };
 
 /**
- * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS, ET POURQUOI.
+ * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS. Un écran verrouillé se lit
+ * par-dessus l'épaule — d'où deux textes sur trois volontairement muets :
  *
- * Une notification s'affiche sur un écran verrouillé, que n'importe qui à
- * côté peut lire — c'est la raison pour laquelle `notifyNewMessage` ne
- * recopie jamais le corps d'un message. La même règle appliquée ici
- * change le texte de deux des trois décisions :
- *
- *   - « votre boutique est validée » s'annonce en clair : c'est une bonne
- *     nouvelle, et c'est le moment où le commerçant doit ouvrir
- *     l'application pour publier ses brouillons ;
- *   - un REFUS et une SUSPENSION ne s'annoncent pas en clair. Les lire
- *     par-dessus l'épaule de quelqu'un, dans un marché, c'est l'humilier
- *     pour un motif que lui seul devrait connaître. Le push dit qu'une
- *     décision attend, l'email — qui demande de déverrouiller son
- *     téléphone — porte laquelle et pourquoi.
+ * - « votre boutique est validée » s'annonce en clair : bonne nouvelle, et
+ *   c'est le moment d'ouvrir l'application pour publier ses brouillons ;
+ * - un REFUS et une SUSPENSION, non. Les lire par-dessus l'épaule de
+ *   quelqu'un, dans un marché, c'est l'humilier pour un motif que lui seul
+ *   devrait connaître. Le push dit qu'une décision attend, l'email — qui
+ *   demande de déverrouiller son téléphone — dit laquelle et pourquoi.
  */
 const PUSH_PAR_DECISION = {
   merchant_approved: (shopName: string): ContenuPush => ({

@@ -11,51 +11,33 @@ import { passwordIsValid } from "@/lib/supabase/verify";
 /**
  * Mes informations — écran 18, monté par les deux espaces.
  *
- * `full_name`, `phone` et `city_id` sont modifiables par un utilisateur
- * (liste blanche de colonnes, 0002_rules_and_security.sql partie 4,
- * complétée par 0010_client_profile_city.sql) : seul l'email de la
- * maquette n'a pas de colonne réelle — voir docs/REPRISE.md.
+ * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE.
+ * `profiles` porte ces colonnes par rôle (`unique (auth_user_id, role)`),
+ * donc une connexion à deux comptes en détient deux copies, et cette action
+ * n'écrivait que sur le profil client : le numéro se corrigeait à moitié.
+ * Ce qui change légitimement selon le rôle, c'est l'identité PUBLIQUE de la
+ * boutique — `shop_name`, `whatsapp_phone` — modifiée ailleurs.
  *
- * LE NOM ET LE TÉLÉPHONE APPARTIENNENT À LA CONNEXION, PAS AU RÔLE
- * C'est la décision du porteur du projet, et c'est la troisième fois que
- * ce projet la prend : le mot de passe (`ChangePasswordForm`) et
- * l'abonnement push (`0023`) ont déjà été rangés du côté de la connexion,
- * avec les mêmes mots. Une personne a un nom et un numéro ; ce qui change
- * selon le rôle, c'est l'identité PUBLIQUE de la boutique —
- * `merchants.shop_name` et `merchants.whatsapp_phone` — qui existe pour
- * ça et se modifie ailleurs.
+ * Aucune migration n'a été nécessaire : la policy « profiles: je modifie
+ * mon profil » est portée par `auth_user_id = auth.uid()`, pas par un
+ * identifiant de profil. Le code se limitait tout seul.
  *
- * CE QUE ÇA CORRIGE, ET QUI A ÉTÉ CONSTATÉ À L'USAGE
- * `profiles` porte ces colonnes PAR RÔLE (`unique (auth_user_id, role)`),
- * donc une connexion à deux comptes en détient deux copies. Cette action
- * n'écrivait que sur le profil client : quelqu'un qui corrigeait son
- * numéro le corrigeait à moitié, et l'autre moitié gardait indéfiniment
- * ce qui avait été tapé à l'inscription — y compris le numéro par lequel
- * on rappelle un commerçant pour valider sa boutique.
+ * LA VILLE NE SE PROPAGE PAS : `profiles.city_id` est la ville de résidence
+ * d'un client (0010), celle d'un commerçant est celle de sa boutique
+ * (`merchants.city_id`). Confondre les deux, c'est confondre « où j'habite »
+ * et « où l'on me trouve ».
  *
- * AUCUNE MIGRATION N'A ÉTÉ NÉCESSAIRE : la policy « profiles: je modifie
- * mon profil » (0002, resserrée par 0006) est portée par
- * `auth_user_id = auth.uid()`, pas par un identifiant de profil. Elle
- * autorisait donc déjà cette écriture — c'est le code applicatif qui se
- * limitait tout seul.
- *
- * LA VILLE, ELLE, NE SE PROPAGE PAS. `profiles.city_id` est la ville de
- * RÉSIDENCE d'un client (0010) ; celle d'un commerçant est la ville de sa
- * boutique et vit dans `merchants.city_id`. Les recopier l'une sur
- * l'autre confondrait « où j'habite » et « où l'on me trouve ». */
+ * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par
+ * 0010. L'email de la maquette n'a pas de colonne réelle. */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   /* PRÉSENTE ET VIDE, OU ABSENTE : ce ne sont PAS la même chose, et les
-     confondre effaçait une donnée.
-     Le montage commerçant ne rend pas le menu des villes — la ville d'un
-     commerçant est celle de sa boutique — donc `cityId` n'arrive pas du
-     tout dans son formulaire. Traité comme « vide », il remettait la
-     ville de résidence du compte client à NULL : corriger son nom depuis
-     l'espace commerçant effaçait en silence une information saisie
-     ailleurs.
-     `FormData.get` rend `null` pour un champ ABSENT et `""` pour un champ
-     présent laissé sur « Non renseignée ». On lit donc les deux. */
+     confondre effaçait une donnée. Le montage commerçant ne rend pas le
+     menu des villes, donc `cityId` n'arrive pas du tout dans son
+     formulaire ; traité comme « vide », il remettait à NULL la ville de
+     résidence du compte client. `FormData.get` rend `null` pour un champ
+     absent et `""` pour un champ laissé sur « Non renseignée ». */
   const cityBrut = formData.get("cityId");
   const villeFournie = cityBrut !== null;
   const cityIdRaw = String(cityBrut ?? "").trim();
@@ -226,22 +208,15 @@ export async function deleteAccountAction() {
     if (anonError) throw anonError;
   }
 
-  /* LES APPAREILS PARTENT AVEC LE COMPTE, ET IL FAUT L'ÉCRIRE ICI.
-     La migration `0023` compte sur `on delete cascade` depuis
-     `auth.users` — ce qui serait vrai si on SUPPRIMAIT la connexion. On
-     la BANNIT (voir juste en dessous), précisément pour garder les fils
-     de discussion lisibles par l'autre partie : la ligne `auth.users`
-     survit, donc la cascade ne se déclenche jamais et les abonnements
-     restaient en base indéfiniment.
-
-     Ce ne sont pas des lignes inertes : un abonnement push porte un
-     identifiant d'appareil et l'empreinte de son navigateur. Les garder
+  /* LES APPAREILS PARTENT AVEC LE COMPTE, et c'est à écrire ici : `0023`
+     compte sur `on delete cascade` depuis `auth.users`, mais on BANNIT au
+     lieu de supprimer — pour garder les fils lisibles par l'autre partie —
+     donc la cascade ne se déclenche jamais. Un abonnement push porte un
+     identifiant d'appareil et l'empreinte de son navigateur : les garder
      après « supprimer mon compte » contredit ce que ce bouton promet.
-
-     Aucun push ne partait pour autant — `notifyNewMessage` s'arrête sur
-     `is_deleted` — mais compter sur la retenue de l'appelant pour
-     protéger une donnée, c'est exactement ce que le reste du projet
-     refuse de faire. */
+     Aucun push ne partait pour autant (`notifyNewMessage` s'arrête sur
+     `is_deleted`), mais compter sur la retenue de l'appelant pour protéger
+     une donnée est ce que le reste du projet refuse de faire. */
   const { error: pushError } = await admin
     .from("push_subscriptions")
     .delete()
