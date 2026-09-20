@@ -92,12 +92,11 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
 /**
  * Échappe ce qui vient d'un humain avant de le coller dans du HTML.
  *
- * Corps de message et nom de boutique sont saisis par des inconnus et
- * partent dans un document HTML. Sans cet échappement, un message
- * contenant `<a href="...">` arrive comme un VRAI lien signé par notre
- * domaine : de l'hameçonnage offert, payé par la réputation d'envoi de
- * Makiti. Les clients mail n'exécutent pas de JavaScript, mais ils rendent
- * très bien les liens et les images.
+ * Corps de message et nom de boutique sont saisis par des inconnus. Sans
+ * cet échappement, un message contenant `<a href="...">` arrive comme un
+ * VRAI lien signé par notre domaine : de l'hameçonnage offert, payé par
+ * la réputation d'envoi de Makiti. Les clients mail n'exécutent pas de
+ * JavaScript, mais ils rendent très bien liens et images.
  */
 export function escapeHtml(raw: string): string {
   return raw
@@ -109,19 +108,17 @@ export function escapeHtml(raw: string): string {
 }
 
 /**
- * L'enveloppe HTML commune à tous les emails de Makiti : des copies du même
- * `<!doctype html>` divergeraient au premier changement de couleur, et un
- * email qui ne ressemble pas aux autres du même domaine ressemble à de
- * l'hameçonnage.
+ * L'enveloppe HTML commune à tous les emails de Makiti : des copies du
+ * même `<!doctype html>` divergeraient au premier changement de couleur,
+ * et un email qui ne ressemble pas aux autres du même domaine ressemble à
+ * de l'hameçonnage.
  *
- * Volontairement pauvre — une `div`, pas de style externe, pas d'image,
- * pas de police : c'est ce que tous les clients mail rendent pareil, et ça
- * reste léger sur un forfait compté.
+ * Volontairement pauvre — une `div`, pas de style externe, d'image ni de
+ * police : c'est ce que tous les clients mail rendent pareil, et ça reste
+ * léger sur un forfait compté.
  *
  * ATTENTION : `content` doit arriver DÉJÀ ÉCHAPPÉ (`escapeHtml`), cette
- * fonction ne peut pas distinguer ce qui vient d'un humain de ce qui vient
- * de nous.
- */
+ * fonction ne peut pas distinguer ce qui vient d'un humain. */
 export function emailShell(content: string): string {
   return `<!doctype html>
 <html lang="fr">

@@ -16,13 +16,10 @@ import Link from "next/link";
 /**
  * Recherche — écrans 5 et 6 de docs/ECRANS.md.
  *
- * `search_products` (0003_search_and_seed.sql) porte déjà toute la
- * logique — texte sans accent/casse, ville, catégorie — donc cette page
- * ne fait que résoudre les noms de l'URL en identifiants et afficher le
- * résultat. Le comportement décrit dans le commentaire d'origine du
- * fichier (recherche sur titre/description/boutique, insensible aux
- * accents) n'a pas changé : il vit maintenant dans la fonction SQL,
- * vérifié par les tests de `supabase/tests/security_test.sql`.
+ * `search_products` (0003_search_and_seed.sql) porte toute la logique —
+ * titre, description et nom de boutique, sans accent ni casse, ville,
+ * catégorie — vérifiée par `supabase/tests/security_test.sql`. Cette page ne
+ * fait que résoudre les noms de l'URL en identifiants et afficher le résultat.
  */
 export default async function SearchPage({
   searchParams,
@@ -34,15 +31,11 @@ export default async function SearchPage({
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
 
-  /* Cet écran avait son propre "Conakry" en dur, indépendant de celui du
-     fil d'accueil : un client de Boké voyait son fil à Boké, touchait
-     l'onglet « Rechercher », et se retrouvait à Conakry sans avoir rien
-     demandé — sa ville perdue en changeant d'onglet.
-
-     La ville de départ est désormais résolue au même endroit pour les deux
-     écrans (`getDefaultCityName`). Changer de ville reste possible et
-     manuel : `?ville=` gagne toujours, et se choisit maintenant dans le
-     panneau de la puce « ville » plutôt que sur une page à part. */
+  /* Cet écran avait son propre "Conakry" en dur : un client de Boké voyait
+     son fil à Boké puis se retrouvait à Conakry en touchant « Rechercher »,
+     sa ville perdue en changeant d'onglet. La ville de départ est désormais
+     résolue au même endroit pour les deux écrans (`getDefaultCityName`) ;
+     `?ville=` gagne toujours et se choisit dans le panneau de la puce. */
   const defaultVille = await getDefaultCityName(supabase, cities);
   const ville = villeParam ?? defaultVille;
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
@@ -78,10 +71,9 @@ export default async function SearchPage({
   // lui pour lui rendre service.
   const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
 
-  /* Une seule fonction construit TOUTES les URL de filtre. Les recopier à
-     la main, c'est la certitude qu'un jour l'une d'elles oubliera de
-     reporter `q` — et effacer la recherche de quelqu'un parce qu'il a
-     changé de ville est le genre de défaut qu'on ne remarque qu'en
+  /* Une seule fonction construit TOUTES les URL de filtre : recopiées à la
+     main, l'une d'elles oublierait un jour de reporter `q`, et effacer la
+     recherche de quelqu'un qui change de ville ne se remarque qu'en
      production. */
   const lien = (modifs: { ville?: string; categorie?: string; tri?: string }) => {
     const params = new URLSearchParams({
@@ -97,21 +89,15 @@ export default async function SearchPage({
     <>
       <TopBar
         title={
-          /* Cette barre AFFICHAIT la recherche sans jamais permettre de la
-             taper : un <div> contenant un <span>, aucun <input>, aucun
-             <form>. `q` n'était donc renseignable qu'en écrivant l'URL à
-             la main, et `search_products` — la fonction SQL qui cherche
-             dans le titre, la description et le nom de boutique, sans
-             accents ni casse — restait inatteignable depuis l'écran qui
-             existe pour elle. La croix « Effacer la recherche »
-             apparaissait pourtant dès que `q` était rempli : l'écran
-             était construit autour d'un champ qui n'a jamais été posé.
-
+          /* Cette barre AFFICHAIT la recherche sans permettre de la taper :
+             aucun <input>, aucun <form>, alors que la croix « Effacer la
+             recherche » apparaissait dès que `q` était rempli. `q` ne se
+             renseignait qu'en écrivant l'URL à la main, et `search_products`
+             restait inatteignable depuis l'écran qui existe pour elle.
              `method="get"` sur un vrai <form> : la recherche marche sans
-             JavaScript, comme le reste des formulaires du projet, et la
-             requête reste dans l'URL donc partageable et revenable. Les
-             trois champs cachés reportent ville, catégorie et tri —
-             chercher ne doit pas réinitialiser ce qu'on avait réglé. */
+             JavaScript et reste dans l'URL, donc partageable. Les trois champs
+             cachés reportent ville, catégorie et tri — chercher ne doit pas
+             réinitialiser ce qu'on avait réglé. */
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
             <input type="hidden" name="ville" value={ville} />
             <input type="hidden" name="categorie" value={categorie} />
@@ -144,8 +130,6 @@ export default async function SearchPage({
 
       <ScreenBody>
         {resting ? (
-          // État de repos : rien à afficher, tout à proposer. Montrer des
-          // produits ici ferait croire à des résultats de recherche.
           <Section className="gap-4">
             <RecentSearches q="" show />
             <SectionLabel>Parcourir</SectionLabel>
@@ -165,17 +149,13 @@ export default async function SearchPage({
               {activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}
             </p>
 
-            {/* Les trois filtres s'ouvrent PAR-DESSUS les résultats, au
-                lieu d'envoyer sur une page qui les cache. On voit ce qu'on
-                filtre pendant qu'on filtre, et aucune navigation n'est
-                nécessaire pour revenir.
-
-                La rangée tient sur UNE ligne et défile au doigt : une
-                rangée qui se replie fait sauter les résultats de deux
-                lignes vers le bas dès qu'on ajoutera un quatrième filtre.
-                C'est possible parce que les panneaux sont en `fixed` et
-                s'ouvrent en bas de l'écran — un panneau ancré sous sa
-                puce serait découpé par ce débordement. */}
+            {/* Les filtres s'ouvrent PAR-DESSUS les résultats plutôt que sur
+                une page qui les cache : on voit ce qu'on filtre pendant qu'on
+                filtre. La rangée tient sur UNE ligne et défile au doigt —
+                repliée, elle ferait sauter les résultats de deux lignes au
+                quatrième filtre. Possible parce que les panneaux sont en
+                `fixed` et s'ouvrent en bas : ancré sous sa puce, un panneau
+                serait découpé par ce débordement. */}
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
               <FilterChip
                 title="Ville"
@@ -223,10 +203,9 @@ export default async function SearchPage({
                     : "Essayez un mot plus court, ou changez de ville."
                 }
               >
-                {/* Proposer « Chercher à Conakry » à quelqu'un qui cherche
-                    DÉJÀ à Conakry est un bouton qui ne fait rien : la plus
-                    grosse ville du catalogue reste la bonne suggestion,
-                    mais seulement pour qui est ailleurs. */}
+                {/* Proposer « Chercher à Conakry » à quelqu'un qui y cherche
+                    DÉJÀ est un bouton qui ne fait rien : la plus grosse ville
+                    du catalogue ne se suggère qu'à qui est ailleurs. */}
                 {elsewhereCount === 0 && ville !== FALLBACK_CITY ? (
                   <Button href={searchInConakryHref}>Chercher à {FALLBACK_CITY}</Button>
                 ) : null}

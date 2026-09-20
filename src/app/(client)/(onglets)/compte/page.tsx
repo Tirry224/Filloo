@@ -14,9 +14,9 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import { signOutAction } from "@/lib/actions/auth";
 
 /**
- * Mon compte — écran 17. « Ma ville » de la maquette a disparu : aucune
- * colonne ne porte la ville d'un CLIENT (les villes de la base
- * n'appartiennent qu'aux boutiques) — retirée plutôt que simulée.
+ * Mon compte — écran 17. « Ma ville » de la maquette n'est pas ici mais dans
+ * « Mes informations », avec le reste de ce qui s'édite (`profiles.city_id`,
+ * 0010) ; cet écran ne fait que mener aux réglages.
  */
 export default async function AccountPage() {
   const supabase = await createClient();
