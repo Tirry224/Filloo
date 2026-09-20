@@ -6,36 +6,19 @@ import { ClosePanels } from "@/components/ui/ClosePanels";
 import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
 
 /**
- * UNE SEULE POLICE, ET C'EST LA DÉCISION R4 DE docs/PERFORMANCE.md.
+ * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md, qui raconte l'histoire).
+ * La seconde, réservée aux titres et au logotype, pesait 40,3 Ko — deux
+ * fois celle-ci — pour une différence à peine visible à la largeur d'un
+ * téléphone. En ajouter une redevient une décision, pas un réflexe.
  *
- * Le projet en chargeait deux : Figtree pour le texte, une seconde pour
- * les titres, les prix et le logotype. Cette seconde pesait 40,3 Ko —
- * DEUX FOIS Figtree (19,7 Ko) — et elle partait au premier chargement,
- * avant que la personne ne voie quoi que ce soit. Sur une connexion
- * facturée au mégaoctet, c'était le poste le plus cher du texte.
+ * PIÈGE À NE PAS RETOMBER DEDANS : `preload: false` remettrait le budget
+ * au vert sans qu'un seul octet cesse d'être téléchargé, puisque
+ * `scripts/poids.mjs` ne compte que les polices PRÉCHARGÉES. La police
+ * arriverait simplement plus tard, après un changement de lettres visible.
  *
- * R4 avait tranché le 2026-09-14 en écrivant « Bricolage est retirée ».
- * Le code ne l'a jamais fait : le document et ce fichier se
- * contredisaient depuis le commit qui les a écrits tous les deux, et
- * `npm run poids` échouait sur le budget polices (60 Ko pour 40) sans que
- * personne ne relie les deux. Appliqué pour de bon le 2026-09-20, après
- * que le porteur du projet a comparé les deux rendus à 400 px.
- *
- * CE QUE L'ÉCART COÛTAIT EN APPARENCE : presque rien. Les titres gardent
- * leur graisse et leur interlettrage resserré (`src/styles/base.css`) ;
- * seul le dessin de la lettre change. Le logotype est ce qui perd le
- * plus, et la différence reste faible à la largeur d'un téléphone.
- *
- * `preload: false` aurait été un faux ami : `scripts/poids.mjs` ne compte
- * que les polices PRÉCHARGÉES, donc le budget serait repassé au vert sans
- * qu'un seul octet cesse d'être téléchargé — simplement plus tard, et
- * après un changement de police visible à l'écran.
- *
- * Next héberge la police lui-même : le navigateur ne contacte jamais
- * Google au chargement. C'est une question de vitesse — un aller-retour
- * réseau de moins — et de vie privée. `variable` la publie comme variable
- * CSS, que tokens.css récupère ; les composants ne connaissent donc
- * jamais le nom d'une police.
+ * Next l'héberge lui-même : aucun appel à Google au chargement. `variable`
+ * la publie comme variable CSS, que tokens.css récupère ; les composants
+ * ne connaissent jamais le nom d'une police.
  */
 
 const body = Figtree({

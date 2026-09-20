@@ -12,37 +12,25 @@ export type FilterOption = {
 };
 
 /**
- * Une puce de filtre qui ouvre ses options par-dessus les résultats —
- * sans une ligne de JavaScript.
+ * Une puce de filtre qui ouvre ses options par-dessus les résultats, sans
+ * une ligne de JavaScript.
  *
- * POURQUOI `<details>` ET PAS UN ÉTAT REACT
- * `<details>` fait nativement ce qu'on écrirait sinon avec `useState` :
- * ouvrir, fermer, et se replier au clavier comme au doigt. Zéro octet
- * ajouté au socle, et surtout : le panneau s'ouvre AVANT que le JavaScript
- * soit chargé, donc pendant les longues secondes qui comptent sur une
- * connexion guinéenne (`docs/PERFORMANCE.md`, règle R3). Un panneau de
- * filtres qui exige d'attendre le JavaScript est un panneau qui ne sert
- * pas au moment où l'on en a besoin.
+ * `<details>` ET PAS UN ÉTAT REACT : il fait nativement ce qu'on écrirait
+ * avec `useState`, pour zéro octet ajouté au socle — et surtout le panneau
+ * s'ouvre AVANT que le JavaScript soit chargé, donc pendant les longues
+ * secondes d'une connexion guinéenne (R3).
  *
- * POURQUOI PAS UNE PAGE, ALORS QUE LE RESTE DE L'APP EN UTILISE
- * Les feuilles de Makiti (`Sheet`) ont chacune leur adresse, et c'est un
- * bon choix quand l'écran REMPLACE le précédent — choisir un motif de
- * signalement, par exemple. Filtrer est différent : on veut voir ce qu'on
- * filtre. Une page entière cache les résultats qu'on essaie justement de
- * réduire, et impose deux navigations (aller, revenir) là où un panneau
- * n'en demande aucune.
+ * UN PANNEAU ET PAS UNE PAGE : filtrer suppose de voir ce qu'on filtre. Une
+ * page cacherait les résultats qu'on cherche à réduire et imposerait deux
+ * navigations là où un panneau n'en demande aucune.
  *
- * POURQUOI LE PANNEAU S'OUVRE EN BAS, ET NON SOUS SA PUCE
- * Il l'a d'abord fait, en `absolute`, et c'était intenable : la rangée de
- * puces doit pouvoir défiler horizontalement quand les filtres ne tiennent
- * pas sur une ligne, or un parent en `overflow-x: auto` DÉCOUPE ce qui
- * dépasse — rogner horizontalement rogne aussi verticalement. Le panneau
- * est donc en `fixed`, ce qu'aucun débordement ne coupe, et se place en bas
- * de l'écran comme les feuilles de l'app (`Sheet`) : près du pouce, sur la
- * moitié basse, les résultats restant visibles au-dessus.
- *
- * Détaché de sa puce, il doit dire ce qu'il filtre : d'où le titre, que
- * `Sheet` affiche pour la même raison.
+ * EN BAS DE L'ÉCRAN, PAS SOUS SA PUCE : la rangée de puces défile
+ * horizontalement quand les filtres ne tiennent pas sur une ligne, et un
+ * parent en `overflow-x: auto` découpe ce qui dépasse — rogner
+ * horizontalement rogne aussi verticalement. Le panneau est donc en
+ * `fixed`, que rien ne coupe, posé en bas comme les `Sheet` : près du
+ * pouce, résultats visibles au-dessus. Détaché de sa puce, il doit dire ce
+ * qu'il filtre — d'où le titre.
  *
  * FERMER EN TOUCHANT AILLEURS
  * Un `<details>` ne se referme nativement que par sa propre étiquette.

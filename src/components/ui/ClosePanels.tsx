@@ -5,33 +5,22 @@ import { useEffect } from "react";
 /**
  * Referme les panneaux de filtre quand on touche ailleurs, ou sur Échap.
  *
- * POURQUOI CE FICHIER EXISTE
- * Les panneaux de `FilterChip` sont des `<details>`, et un `<details>` ne
- * se referme QUE par sa propre étiquette : toucher à côté ne le ferme pas.
- * C'est le comportement natif, et c'est exactement ce qu'un utilisateur ne
- * s'attend pas à trouver — on touche à côté d'une pop-up pour la fermer,
- * partout ailleurs sur un téléphone. Constaté à l'usage le 2026-09-19.
+ * Un `<details>` ne se referme QUE par son étiquette : toucher à côté ne le
+ * ferme pas. C'est le comportement natif, et c'est exactement ce qu'on
+ * n'attend pas d'une pop-up sur un téléphone.
  *
- * POURQUOI UNE AMÉLIORATION, ET NON UNE RÉÉCRITURE
- * Le panneau continue de s'ouvrir et de se fermer SANS JavaScript, par sa
- * puce : c'est le socle, et il ne bouge pas (`docs/PERFORMANCE.md`,
- * règle R3). Ce fichier n'ajoute qu'un confort par-dessus. Si le
- * JavaScript n'est pas encore chargé — les longues secondes d'une
- * connexion guinéenne — l'application reste utilisable, simplement moins
- * confortable. C'est l'ordre inverse qui serait une faute : faire dépendre
- * l'ouverture du panneau d'un script qui n'est pas là.
+ * UN CONFORT, JAMAIS UNE CONDITION : le panneau s'ouvre et se ferme sans
+ * JavaScript, par sa puce. Ce fichier ajoute par-dessus ; l'ordre inverse
+ * serait la faute, faire dépendre l'ouverture d'un script pas encore
+ * chargé.
  *
- * POURQUOI ICI ET PAS DANS `FilterChip`
- * `FilterChip` reste un composant serveur : il n'envoie aucun JavaScript
- * au navigateur, et il y en a jusqu'à trois par écran. Un seul écouteur
- * posé une fois sur le document coûte moins que trois composants clients,
- * et il couvrira les panneaux à venir sans qu'on y repense.
+ * ICI ET PAS DANS `FilterChip`, qui reste un composant serveur : un seul
+ * écouteur sur le document coûte moins que trois composants clients par
+ * écran, et couvrira les panneaux à venir sans qu'on y repense.
  *
- * POURQUOI `pointerdown` ET PAS `click`
- * `click` ne se déclenche qu'au relâchement du doigt : le panneau resterait
- * ouvert pendant tout l'appui, ce qui se voit. `pointerdown` couvre aussi
- * bien le doigt que la souris, là où `touchstart` laisserait les ordinateurs
- * de côté.
+ * `pointerdown` et non `click` : `click` ne se déclenche qu'au relâchement,
+ * le panneau resterait ouvert pendant tout l'appui. `pointerdown` couvre le
+ * doigt comme la souris, là où `touchstart` oublierait les ordinateurs.
  */
 export function ClosePanels() {
   useEffect(() => {
