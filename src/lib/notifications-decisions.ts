@@ -14,41 +14,33 @@ import { sendPushToUser, type ContenuPush } from "@/lib/push";
  * dans le tableau de bord Supabase : boutique validée, refusée, compte
  * suspendu.
  *
- * LE PENDANT DE `notifications.ts`, ET DIFFÉRENT EXPRÈS : là-bas une
- * action serveur sait qui prévenir, `after()` suffit ; ici personne n'a
- * exécuté de code — quelqu'un a coché une case sur supabase.com, et les
+ * Différent de `notifications.ts` : là-bas une action serveur sait qui
+ * prévenir et `after()` suffit ; ici personne n'a exécuté de code, et les
  * triggers de `0021` laissent la trace que ce balayage relève.
  *
- * TOUT L'ÉTAT VIT EN BASE, aucune mémoire ici : déploiement, timeout ou
- * invocation tuée, le passage suivant reprend ce qui n'est pas marqué, et
- * ce qui coince se voit par `select * from notifications where sent_at is
- * null`. Le cron ne passe qu'une fois par jour (offre Hobby,
- * `vercel.json`) : le push ne raccourcit pas ce délai, il porte la
- * nouvelle sur un écran verrouillé.
+ * Tout l'état vit en base, aucune mémoire ici : après un déploiement ou un
+ * timeout, le passage suivant reprend ce qui n'est pas marqué, et ce qui
+ * coince se voit par `select * from notifications where sent_at is null`.
+ * Le cron passe une fois par jour (offre Hobby, `vercel.json`).
  */
 
-/** Assez petit pour tenir largement dans une invocation serverless, et
- *  pour qu'un lot raté ne bloque pas le suivant. Au rythme réel du
- *  projet — des validations à la main, une par une — vingt est déjà un
- *  plafond théorique. */
+/** Assez petit pour tenir dans une invocation serverless et qu'un lot raté
+ *  ne bloque pas le suivant. */
 const TAILLE_DU_LOT = 20;
 
-/** Au-delà, on cesse de réessayer. Une adresse invalide réessayée toutes
- *  les dix minutes indéfiniment finit par abîmer la réputation d'envoi
- *  du domaine — c'est-à-dire par faire tomber TOUS les emails, y compris
- *  ceux qui marchaient. La ligne reste en base, non envoyée, avec son
- *  motif : elle est visible, ce qui est le seul but. */
+/** Au-delà, on cesse de réessayer : une adresse invalide rejouée sans fin
+ *  abîme la réputation d'envoi du domaine, donc TOUS les emails. La ligne
+ *  reste en base avec son motif, donc visible. */
 const TENTATIVES_MAX = 5;
 
 export type DrainReport = {
-  /** `false` quand AUCUN canal n'est branché — ni Resend, ni les clés
-   *  VAPID : l'état normal tant que les variables ne sont pas posées, et
-   *  surtout PAS une panne. */
+  /** `false` quand aucun canal n'est branché — ni Resend, ni les clés
+   *  VAPID. État normal, pas une panne. */
   configuree: boolean;
   lues: number;
   envoyees: number;
-  /** Décisions pour lesquelles au moins un appareil a été prévenu. Compté
-   *  à part des emails : les deux canaux ne réussissent pas ensemble. */
+  /** Compté à part des emails : les deux canaux ne réussissent pas
+   *  ensemble. */
   poussees: number;
   /** Rien à envoyer, définitivement : compte supprimé, ou décision déjà
    *  reprise avant le passage du balayage. */
@@ -66,22 +58,17 @@ export async function drainNotifications(): Promise<DrainReport> {
     echouees: 0,
   };
 
-  /* DEUX CANAUX, DEUX CONFIGURATIONS, ET AUCUN QUI DÉPENDE DE L'AUTRE.
-     C'est la règle déjà écrite dans `notifyNewMessage`, appliquée ici :
-     l'email s'allume avec Resend, le push avec les clés VAPID, et l'un
-     éteint ne doit pas emporter l'autre. L'email a besoin de `siteUrl`
-     en plus — ses liens sont lus dans une boîte mail, donc absolus ;
-     ceux du push sont relatifs et s'ouvrent dans l'application. */
+  /* Deux canaux, deux configurations, aucun qui dépende de l'autre : un
+     canal éteint ne doit pas emporter l'autre. L'email exige `siteUrl` en
+     plus, ses liens étant lus dans une boîte mail donc absolus ; ceux du
+     push sont relatifs et s'ouvrent dans l'application. */
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
   const emailPossible = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && siteUrl);
   const pushPret = Boolean(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
   );
 
-  /* Même garde qu'ailleurs, et au même endroit : AVANT la moindre
-     requête. Un service éteint ne doit rien coûter — surtout pas six
-     allers-retours en base par passage pour découvrir qu'on n'enverra
-     rien. */
+  // AVANT la moindre requête : un service éteint ne doit rien coûter.
   if (!emailPossible && !pushPret) {
     return { ...vide, configuree: false };
   }
@@ -93,18 +80,15 @@ export async function drainNotifications(): Promise<DrainReport> {
     .select("id, kind, profile_id, attempts")
     .is("sent_at", null)
     .lt("attempts", TENTATIVES_MAX)
-    /* La plus ancienne d'abord : c'est celle dont la personne attend la
-       réponse depuis le plus longtemps. */
+    // La plus ancienne d'abord : la plus longtemps attendue.
     .order("created_at", { ascending: true })
     .limit(TAILLE_DU_LOT);
   if (error) throw error;
 
   const rapport: DrainReport = { ...vide, lues: waiting?.length ?? 0 };
 
-  /* En SÉRIE, pas en parallèle. Vingt appels simultanés à Resend
-     déclenchent sa limite de débit, et l'échec retombe alors sur des
-     notifications parfaitement valides. Un lot de vingt envois
-     séquentiels tient de toute façon dans une invocation. */
+  /* En SÉRIE : vingt appels simultanés déclenchent la limite de débit de
+     Resend, et l'échec retombe sur des notifications valides. */
   for (const ligne of waiting ?? []) {
     const composed = await composeFor(
       admin,
@@ -124,13 +108,11 @@ export async function drainNotifications(): Promise<DrainReport> {
       continue;
     }
 
-    /* LE PUSH D'ABORD, ET UNE SEULE FOIS — SAUF S'IL EST SEUL. D'abord
-       parce qu'il arrive en secondes. Une seule fois quand un email doit
-       suivre, car la ligne est rejouée tant que cet email n'est pas parti :
-       sans cette borne, une adresse invalide ferait sonner le téléphone
-       cinq fois (le `tag` regroupe l'affichage, pas les vibrations).
-       Seul canal, en revanche, il EST ce qu'on réessaie — le borner
-       condamnerait la décision de qui n'avait aucun appareil abonné. */
+    /* Le push d'abord, car il arrive en secondes ; une seule fois quand un
+       email doit suivre, la ligne étant rejouée tant qu'il n'est pas parti
+       — sinon une adresse invalide fait sonner le téléphone cinq fois (le
+       `tag` regroupe l'affichage, pas les vibrations). Seul canal, en
+       revanche, il EST ce qu'on réessaie. */
     let atteints = 0;
     if (pushPret && (ligne.attempts === 0 || !composed.email)) {
       atteints = await sendPushToUser(composed.authUserId, composed.push);
@@ -138,10 +120,9 @@ export async function drainNotifications(): Promise<DrainReport> {
     }
 
     if (!composed.email) {
-      /* PUSH SEUL (Resend non branché) : annoncée si et seulement si un
-         appareil l'a reçue. Marquer « envoyée » ce que personne n'a reçu
-         le perdrait pour de bon, rien ne relisant une ligne marquée ; en
-         échec, elle reste visible et cesse au bout de cinq tentatives. */
+      /* Push seul : annoncée si et seulement si un appareil l'a reçue.
+         Rien ne relit une ligne marquée, donc marquer « envoyée » ce que
+         personne n'a reçu la perdrait pour de bon. */
       if (atteints > 0) {
         await marquerTraitee(admin, ligne.id, "annoncée par notification seule : email non configuré");
         rapport.envoyees += 1;
@@ -171,8 +152,7 @@ type Composition =
   | {
       kind: "envoi";
       /** L'appareil appartient à la CONNEXION, pas au profil (migration
-       *  `0023`) : c'est donc `auth_user_id` qui désigne les téléphones à
-       *  prévenir, jamais `profile_id`. */
+       *  `0023`) : donc `auth_user_id`, jamais `profile_id`. */
       authUserId: string;
       /** `null` quand Resend n'est pas branché : le push part quand même. */
       email: { to: string; subject: string; text: string; html: string } | null;
@@ -184,13 +164,9 @@ type Composition =
   | { kind: "echec"; raison: string };
 
 /**
- * CE QUE LE PUSH NE DIT PAS DES DÉCISIONS : un écran verrouillé se lit
- * par-dessus l'épaule, d'où deux textes sur trois volontairement muets.
- * La validation s'annonce en clair — bonne nouvelle, et le moment de
- * publier ses brouillons. Un REFUS ou une SUSPENSION, non : les lire dans
- * un marché par-dessus l'épaule de quelqu'un, c'est l'humilier pour un
- * motif que lui seul devrait connaître. Le push dit qu'une décision
- * attend ; l'email, qui exige de déverrouiller, dit laquelle et pourquoi.
+ * Un écran verrouillé se lit par-dessus l'épaule : seule la validation
+ * s'annonce en clair. Pour un refus ou une suspension, le push dit qu'une
+ * décision attend ; l'email, qui exige de déverrouiller, dit laquelle.
  */
 const PUSH_PAR_DECISION = {
   merchant_approved: (shopName: string): ContenuPush => ({
@@ -217,9 +193,8 @@ async function composeFor(
   admin: Admin,
   kind: "merchant_approved" | "merchant_rejected" | "profile_suspended",
   profileId: string,
-  /** `null` quand l'email n'est pas configuré : on ne compose alors aucun
-   *  texte, et on ne va surtout pas chercher une adresse dont personne ne
-   *  se servira. */
+  /** `null` quand l'email n'est pas configuré : aucun texte composé, et
+   *  aucune adresse cherchée. */
   siteUrl: string | null,
 ): Promise<Composition> {
   const { data: profile, error } = await admin
@@ -227,24 +202,17 @@ async function composeFor(
     .select("auth_user_id, full_name, is_suspended, is_deleted")
     .eq("id", profileId)
     .single();
-  /* Une erreur de lecture est passagère (réseau, base occupée) ; un
-     profil absent ne l'est pas — la ligne référence pourtant une clé
-     étrangère, donc ce cas ne devrait pas exister. On le distingue quand
-     même : réessayer indéfiniment une ligne impossible, c'est exactement
-     ce que le compteur de tentatives sert à éviter. */
+  /* Une erreur de lecture est passagère ; un profil absent ne l'est pas.
+     Les distinguer évite de réessayer indéfiniment une ligne impossible. */
   if (error) return { kind: "echec", raison: `profil illisible : ${error.message}` };
   if (!profile) return { kind: "abandon", raison: "profil introuvable" };
 
-  /* Un compte supprimé est banni côté `auth.users` : l'email partirait
-     vers quelqu'un qui ne peut plus se connecter pour agir dessus. Même
-     règle que `notifyNewMessage`. */
+  // Un compte supprimé est banni côté `auth.users` : l'email irait à
+  // quelqu'un qui ne peut plus se connecter pour agir dessus.
   if (profile.is_deleted) return { kind: "abandon", raison: "compte supprimé" };
 
-  /* L'adresse n'est cherchée QUE si un email doit partir — la même
-     correction que dans `notifyNewMessage` : la chercher d'abord faisait
-     tomber le push quand `auth.admin` répondait mal ou quand la connexion
-     n'avait pas d'adresse lisible. Un canal ne doit jamais tomber à cause
-     de la configuration d'un autre. */
+  // L'adresse n'est cherchée QUE si un email doit partir : la chercher
+  // d'abord ferait tomber le push quand `auth.admin` répond mal.
   let to: string | null = null;
   if (siteUrl) {
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
@@ -256,10 +224,8 @@ async function composeFor(
   }
 
   if (kind === "profile_suspended") {
-    /* LA DÉCISION A PU ÊTRE REPRISE entre le trigger et ce passage :
-       suspendre puis rétablir dans la minute est un geste banal quand on
-       administre à la main. Annoncer une sanction levée serait pire que
-       ne rien annoncer. */
+    // La décision a pu être reprise entre le trigger et ce passage :
+    // annoncer une sanction levée est pire que ne rien annoncer.
     if (!profile.is_suspended) return { kind: "abandon", raison: "suspension déjà levée" };
     return {
       kind: "envoi",
@@ -277,10 +243,8 @@ async function composeFor(
   if (merchantError) return { kind: "echec", raison: `boutique illisible : ${merchantError.message}` };
   if (!merchant) return { kind: "abandon", raison: "boutique introuvable" };
 
-  /* Le statut est relu MAINTENANT, et pas recopié dans la file : entre
-     la décision et l'envoi, elle a pu être reprise. Annoncer « votre
-     boutique est en ligne » à quelqu'un qui vient d'être remis en
-     attente coûterait bien plus qu'un silence. */
+  // Statut relu MAINTENANT, jamais recopié dans la file : la décision a pu
+  // être reprise entre-temps.
   if (kind === "merchant_approved") {
     if (merchant.status !== "approved") return { kind: "abandon", raison: "validation reprise" };
     return {
@@ -317,11 +281,9 @@ async function marquerTraitee(admin: Admin, id: string, raison: string | null): 
     .from("notifications")
     .update({ sent_at: new Date().toISOString(), last_error: raison })
     .eq("id", id);
-  /* Un marquage raté renverra le même email au passage suivant. C'est le
-     seul défaut assumé de ce mécanisme, et il va dans le bon sens :
-     mieux vaut un doublon qu'un commerçant jamais prévenu. Mais il se
-     journalise, parce qu'un doublon toutes les dix minutes n'est plus un
-     défaut, c'est une boucle. */
+  /* Un marquage raté renverra le même email au passage suivant : défaut
+     assumé, un doublon valant mieux qu'un commerçant jamais prévenu. Il se
+     journalise, parce qu'un doublon répété est une boucle. */
   if (error) console.error(`[notifications] marquage impossible (${id}) : ${error.message}`);
 }
 
@@ -339,20 +301,17 @@ async function marquerEchouee(
 }
 
 /* ---------------------------------------------------------------------
-   Les trois textes.
-
-   Séparés de l'envoi pour être relus — et réécrits — sans toucher au
-   transport, exactement comme `composeNewMessageEmail`. Ils se lisent
-   d'affilée, ce qui est le seul moyen de vérifier qu'ils se ressemblent.
+   Les trois textes, séparés de l'envoi pour être relus et réécrits sans
+   toucher au transport, et lisibles d'affilée pour vérifier qu'ils se
+   ressemblent.
    --------------------------------------------------------------------- */
 
 function approvalEmail(input: { to: string; siteUrl: string; name: string; shopName: string }) {
   const link = `${input.siteUrl}/vendeur`;
   const subject = `${input.shopName} est en ligne sur Makiti`;
 
-  /* L'email dit quoi faire MAINTENANT, et pas seulement ce qui s'est
-     passé. Un commerçant validé qui ne publie rien reste une boutique
-     vide, c'est-à-dire le risque n° 1 de docs/SPEC.md. */
+  // Dit quoi faire maintenant : un commerçant validé qui ne publie rien
+  // reste une boutique vide, risque n° 1 de docs/SPEC.md.
   const text = [
     `Bonjour ${input.name},`,
     `Votre boutique « ${input.shopName} » a été validée : elle est visible par les clients sur Makiti.`,
@@ -379,12 +338,9 @@ function rejectionEmail(input: {
   const link = `${input.siteUrl}/vendeur/refusee`;
   const subject = `Votre boutique ${input.shopName} n'a pas été validée`;
 
-  /* Le MOTIF est le seul contenu utile de cet email. Un refus sans motif
-     est un vendeur perdu définitivement (docs/REPRISE.md) — et un email
-     de refus sans motif est pire encore, puisqu'il n'y a même pas
-     d'écran à ouvrir pour le lire. Le repli existe parce que la base
-     n'impose ce motif que depuis 0012 : des lignes plus anciennes
-     peuvent encore en manquer. */
+  /* Le motif est le seul contenu utile de cet email : un refus sans motif
+     est un vendeur perdu définitivement (docs/REPRISE.md). Le repli existe
+     parce que la base n'impose ce motif que depuis 0012. */
   const motif =
     input.reason?.trim() ||
     "Aucun motif n'a été enregistré. Répondez à cet email pour en connaître la raison.";
@@ -410,12 +366,10 @@ function suspensionEmail(input: { to: string; siteUrl: string; name: string }) {
   const link = `${input.siteUrl}/compte/suspendu`;
   const subject = "Votre compte Makiti a été suspendu";
 
-  /* Volontairement SANS MOTIF : `profiles` n'a pas de colonne pour ça
-     (écran 19, qui a retiré le motif inventé par la maquette), et en
-     inventer un dans un canal qu'on ne peut pas corriger après coup
-     serait pire. Il dit en revanche ce qui reste possible — lire — parce
-     que tout couper pousse à se recréer un compte, ce qui annule la
-     sanction. */
+  /* Sans motif : `profiles` n'a pas de colonne pour ça, et en inventer un
+     dans un canal qu'on ne peut pas corriger serait pire. Il dit en
+     revanche ce qui reste possible — lire — parce que tout couper pousse à
+     se recréer un compte, ce qui annule la sanction. */
   const text = [
     `Bonjour ${input.name},`,
     `Votre compte Makiti a été suspendu : vous ne pouvez plus envoyer de messages ni publier.`,

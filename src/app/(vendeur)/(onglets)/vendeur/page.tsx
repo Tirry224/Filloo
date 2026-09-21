@@ -14,43 +14,32 @@ import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { countUnreadMessages, getMyThreadsAsMerchant } from "@/lib/data/messages";
 
 /**
- * Accueil commerçant — l'écran d'ouverture de l'espace.
+ * Accueil commerçant — l'écran d'ouverture de l'espace. La liste complète
+ * des produits vit sur `/vendeur/produits` : ici, la lecture seulement.
  *
- * Il portait aussi la liste complète des produits : les cartes repoussaient
- * le catalogue vers le bas, et un catalogue un peu long noyait les chiffres.
- * La liste vit maintenant sur `/vendeur/produits`, comme dans le prototype
- * (`design/`) ; cet écran ne garde que la lecture.
- *
- * TROIS CHIFFRES, DONT UN QUI N'Y EST PAS : le prototype affiche « vues
- * boutique », qu'aucune table ne compte — ni `merchants`, ni `products`. Un
- * tableau de bord dont un chiffre sur trois est inventé n'est pas un tableau
- * de bord, c'est une image ; l'afficher demanderait une migration et une
- * décision sur ce qu'on compte. À sa place, une donnée que la base tient
- * DÉJÀ : la somme des `products.contact_count`, soit les clients DISTINCTS
- * ayant posé une question sur un produit (`bump_contact_count`, 0002
- * partie 3.3).
+ * Le prototype affiche « vues boutique », qu'aucune table ne compte : un
+ * chiffre inventé ferait une image, pas un tableau de bord. À sa place, une
+ * donnée que la base tient déjà — la somme des `products.contact_count`,
+ * soit les clients DISTINCTS ayant posé une question (`bump_contact_count`,
+ * 0002 partie 3.3).
  */
 export default async function MerchantHomePage({
   searchParams,
 }: {
-  /* `erreur` est posé par les actions de `src/lib/actions/products.ts`
-     quand l'une d'elles échoue : elles redirigent ici plutôt que de se
-     taire. Voir `Notice` pour pourquoi le message passe par l'URL. */
+  // `erreur` est posé par les actions de `src/lib/actions/products.ts` ;
+  // voir `Notice` pour pourquoi le message passe par l'URL.
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
-  /* La suspension et le rôle sont traités par `(vendeur)/layout.tsx` pour
-     TOUT l'espace, via `requireMerchantSpace`. Ne reste ici que ce que ce
-     layout laisse volontairement passer : un profil commerçant sans
+  /* La suspension et le rôle sont traités par `(vendeur)/layout.tsx`. Ne
+     reste ici que ce qu'il laisse volontairement passer : un profil sans
      boutique, et une boutique dont le statut décide de l'écran. */
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
 
-  /* Le message d'erreur SUIT la redirection : une action produit qui échoue
-     revient sur `/vendeur?erreur=…` (voir `backToSeller`), et `/vendeur`
-     renvoyait aussitôt une boutique non validée vers son écran de statut en
-     laissant le paramètre derrière — refus correct, expliqué, invisible. */
+  // Le message d'erreur SUIT la redirection : sans ça, une boutique non
+  // validée part vers son écran de statut en laissant le paramètre ici.
   const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
   if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
   if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
@@ -63,8 +52,7 @@ export default async function MerchantHomePage({
 
   const published = catalogue.filter((p) => p.status === "active").length;
   const contacts = catalogue.reduce((total, p) => total + p.contactCount, 0);
-  /* Trois suffisent : cet écran donne un aperçu, la liste complète est à
-     un onglet d'ici. Au-delà, on recopierait `/vendeur/messages`. */
+  // Trois suffisent : au-delà, on recopierait `/vendeur/messages`.
   const dernieres = threads.slice(0, 3);
 
   return (
@@ -125,9 +113,8 @@ export default async function MerchantHomePage({
           </div>
 
           {catalogue.length === 0 ? (
-            /* Une boutique neuve n'a rien à lire dans ses chiffres : trois
-               zéros diraient « il ne se passe rien » sans dire quoi faire.
-               D'où l'appel à l'action, seul geste utile à ce stade. */
+            // Trois zéros diraient « il ne se passe rien » sans dire quoi
+            // faire : l'appel à l'action est le seul geste utile ici.
             <EmptyState
               icon={Plus}
               title="Votre boutique est vide"

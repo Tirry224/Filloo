@@ -9,17 +9,13 @@ import { changeMyPasswordAction, type ActionState } from "@/lib/actions/auth";
  * Changer son mot de passe en le connaissant — panneau de l'écran compte.
  *
  * Le mot de passe ACTUEL prouve que c'est bien la personne : sans lui, un
- * téléphone déverrouillé emprunté trente secondes suffit à enfermer son
- * propriétaire dehors. Le NOUVEAU se tape DEUX fois : seul champ qu'on ne
- * peut pas relire, sa faute de frappe ne se découvrirait qu'à la
- * connexion suivante.
- *
- * Pas de redirection : le panneau est posé sur l'écran de compte, il dit
- * que c'est fait et la personne referme.
+ * téléphone emprunté trente secondes suffit à enfermer son propriétaire
+ * dehors. Le NOUVEAU se tape deux fois, sa faute de frappe ne se
+ * découvrant qu'à la connexion suivante.
  *
  * `autoComplete` distingue les deux rôles (`current-password` puis
- * `new-password`) : sans ça, le gestionnaire du téléphone enregistre
- * souvent l'un à la place de l'autre.
+ * `new-password`), sans quoi le gestionnaire du téléphone enregistre l'un
+ * à la place de l'autre.
  */
 export function ChangePasswordForm() {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(changeMyPasswordAction, null);

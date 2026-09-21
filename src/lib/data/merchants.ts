@@ -30,11 +30,9 @@ function mapMerchant(row: MerchantRow): Merchant {
 }
 
 /**
- * Boutique publique (écran 11). RLS ne laisse un visiteur lire qu'une
- * boutique `approved` — une boutique en attente ou refusée renvoie donc
- * `null` ici, exactement comme si elle n'existait pas. C'est voulu : ce
- * n'est pas à ce visiteur de savoir qu'une boutique existe mais attend
- * une validation.
+ * Boutique publique (écran 11). Le RLS ne laisse lire qu'une boutique
+ * `approved` : en attente ou refusée, elle renvoie `null`, comme si elle
+ * n'existait pas — un visiteur n'a pas à savoir qu'elle attend.
  */
 export async function getMerchant(supabase: SupabaseClient<Database>, id: string): Promise<Merchant | null> {
   const { data, error } = await supabase
@@ -48,17 +46,14 @@ export async function getMerchant(supabase: SupabaseClient<Database>, id: string
 }
 
 /**
- * La boutique de la connexion active, avec son statut réel — contrairement
- * à `getMerchant`, réservée à un visiteur et donc muette sur une boutique
- * en attente ou refusée. Sert à tout l'espace vendeur : lui seul a le
- * droit de savoir où en est SA boutique.
+ * La boutique de la connexion active avec son statut RÉEL, contrairement à
+ * `getMerchant` : seul son propriétaire a le droit de savoir où elle en
+ * est.
  *
- * Mise en cache pour la durée d'UNE requête, pour la même raison que
- * `getSessionUser` et `getMyProfiles` : depuis que le badge de non-lus
- * existe, les écrans vendeur appellent cette fonction DEUX fois — une pour
- * la page, une pour `countUnreadMessages` — et rien ne justifiait de payer
- * deux fois le même aller-retour. `createClient` est lui aussi mis en
- * cache, donc les deux appels partagent bien la même clé.
+ * En cache pour la durée d'une requête : les écrans vendeur l'appellent
+ * deux fois, une pour la page, une pour `countUnreadMessages`.
+ * `createClient` étant aussi en cache, les deux appels partagent la même
+ * clé.
  */
 export const getMyMerchant = cache(async (supabase: SupabaseClient<Database>): Promise<Merchant | null> => {
   const merchantProfile = await getMyProfile(supabase, "merchant");
@@ -85,10 +80,9 @@ type MerchantProductRow = {
   product_images: { storage_path: string; position: number }[];
 };
 
-/** Catalogue d'une boutique (écran 11) : RLS filtre déjà les brouillons et
- * les produits masqués pour un visiteur non connecté ; pour le commerçant
- * propriétaire, la même policy le laisse tout voir — cette fonction sert
- * donc aussi à « Mes produits » (écran 22). */
+/** Catalogue d'une boutique (écran 11). Le RLS filtre brouillons et
+ * produits masqués pour un visiteur, et laisse tout voir au propriétaire :
+ * cette fonction sert donc aussi à « Mes produits » (écran 22). */
 export async function getMerchantProducts(
   supabase: SupabaseClient<Database>,
   merchant: Merchant,

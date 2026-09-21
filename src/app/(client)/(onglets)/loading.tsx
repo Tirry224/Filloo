@@ -6,19 +6,14 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 
 /**
- * Écran 3 — chargement du fil CLIENT.
+ * Écran 3 — chargement du fil CLIENT. Ce n'est pas une page : Next
+ * l'affiche automatiquement pendant qu'un écran de ce groupe attend ses
+ * données, et il est posé DANS le groupe client pour ne pas s'afficher
+ * devant l'espace commerçant, qui a le sien.
  *
- * Ce n'est pas une page : Next l'affiche AUTOMATIQUEMENT pendant qu'un écran
- * de ce groupe attend ses données. D'où le défaut corrigé — ce squelette est
- * celui du fil client (logo, ville, quatre onglets) et s'affichait aussi
- * devant l'espace commerçant : le mélange des deux espaces que
- * `design/README.md` interdit. Le vendeur a le sien, dans son propre groupe.
- *
- * Il reproduit la silhouette du fil plutôt qu'un tourniquet centré, et jamais
- * un élément que la vraie page n'a pas : la barre de recherche a été retirée
- * d'ici quand l'accueil l'a perdue, car un squelette qui ne correspond plus
- * fait SAUTER la page à l'arrivée des données — ce qu'il doit justement
- * éviter.
+ * Il reproduit la silhouette du fil plutôt qu'un tourniquet, et jamais un
+ * élément que la vraie page n'a pas : un squelette qui ne correspond plus
+ * fait SAUTER la page à l'arrivée des données.
  */
 export default function Loading() {
   return (

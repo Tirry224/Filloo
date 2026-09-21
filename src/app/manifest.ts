@@ -1,20 +1,15 @@
 import type { MetadataRoute } from "next";
 
 /**
- * Le manifeste, première pierre des notifications push : sans lui, pas
+ * Le manifeste, condition d'entrée des notifications push : sans lui, pas
  * d'« Ajouter à l'écran d'accueil », et sur iPhone Safari n'autorise le
- * push QUE pour une application installée ainsi. C'est la condition
- * d'entrée, pas une coquetterie.
+ * push QUE pour une application installée ainsi.
  *
- * Route typée plutôt que `public/manifest.json` : Next la sert avec le
- * bon type MIME et vérifie les champs à la compilation, là où un JSON
- * écrit à la main se tairait sur une faute de frappe.
+ * Route typée plutôt que `public/manifest.json` : Next la sert avec le bon
+ * type MIME et vérifie les champs à la compilation.
  *
- * `display: "standalone"` : ouverte sans barre d'adresse, elle ressemble
- * à une application qu'on garde, pas à un site qu'on visite.
- *
- * `start_url: "/"` et non l'écran vendeur : le manifeste ne connaît pas
- * la personne, c'est `landingForSession` qui aiguille.
+ * `start_url: "/"` et non l'écran vendeur : le manifeste ne connaît pas la
+ * personne, c'est `landingForSession` qui aiguille.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -27,16 +22,13 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    /* Les deux couleurs viennent de `src/styles/tokens.css` : `--color-paper`
-       pour le fond, `--color-accent` pour la barre système. Elles sont
-       écrites en hexadécimal ici parce qu'un manifeste ne lit pas le CSS —
-       si les tokens changent, ces deux lignes sont à changer aussi. */
+    /* Recopiées de `src/styles/tokens.css` (`--color-paper`,
+       `--color-accent`) : un manifeste ne lit pas le CSS, donc ces deux
+       lignes sont à changer avec les tokens. */
     background_color: "#fcf8f3",
     theme_color: "#b64c1b",
-    /* Chaque taille est déclarée DEUX fois, `any` puis `maskable` : le
-       type de Next refuse la valeur combinée « any maskable ». Même
-       fichier, plein cadre, qu'Android peut recadrer en cercle ou en
-       goutte sans rogner le « M ». */
+    /* Chaque taille est déclarée deux fois, `any` puis `maskable` : le
+       type de Next refuse la valeur combinée « any maskable ». */
     icons: [
       { src: "/icons/icone-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icone-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },

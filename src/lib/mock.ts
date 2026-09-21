@@ -1,12 +1,9 @@
 /**
- * Données de démonstration.
+ * Données de démonstration, en place le temps que l'écran soit dessiné.
  *
- * Elles occupent la place des vraies données le temps que l'écran soit
- * dessiné. Elles disparaîtront quand les pages liront Supabase — et elles
- * sont volontairement RÉALISTES (Madina, Ratoma, pagne wax, prix en GNF)
- * plutôt que « Produit 1 · Lorem ipsum ». Un écran rempli de faux contenu
- * neutre paraît toujours réussi ; c'est le vrai contenu, avec ses titres
- * trop longs et ses noms de boutique à rallonge, qui casse une mise en page.
+ * Volontairement RÉALISTES (Madina, Ratoma, pagne wax, prix en GNF) plutôt
+ * que « Produit 1 · Lorem ipsum » : un écran rempli de faux contenu neutre
+ * paraît toujours réussi, c'est le vrai contenu qui casse une mise en page.
  */
 
 import type { Merchant, Message, Product, Thread } from "./types";
@@ -43,12 +40,8 @@ export const merchantAissatou: Merchant = {
   rejectionReason: null,
 };
 
-/**
- * Boutique refusée — écran 21 uniquement. Un second objet plutôt qu'un
- * champ ignoré sur `merchantAissatou`, qui elle est approuvée dans toute
- * la démo : les deux statuts ne doivent jamais se mélanger sur un même
- * commerçant, même fictif.
- */
+/** Boutique refusée — écran 21 uniquement. Un second objet plutôt qu'un
+ * champ ignoré sur `merchantAissatou`, approuvée partout ailleurs. */
 export const merchantRejected: Merchant = {
   id: "m-rejected-demo",
   shopName: "Chez Aïssatou",
@@ -147,11 +140,9 @@ export function findProduct(id: string): Product | undefined {
 }
 
 /**
- * Les 5 catégories qu'utilisent les produits de démonstration ci-dessus —
- * PAS la liste définitive des 10 catégories de la décision 3 de SPEC.md,
- * qui reste une question ouverte (voir REPRISE.md, section 5). Les valeurs
- * doivent rester identiques à `Product["category"]` : un libellé raccourci
- * ici ne correspondrait plus à rien côté filtre.
+ * Les 5 catégories des produits de démonstration — PAS la liste définitive
+ * des 10 de la décision 3 de SPEC.md, encore ouverte (REPRISE.md, §5). Les
+ * valeurs doivent rester identiques à `Product["category"]`.
  */
 export const categories = [
   "Tout",
@@ -210,9 +201,8 @@ export const conversation: Message[] = [
 ];
 
 /* ── Vues secondaires ──────────────────────────────────────────────────
-   Sans authentification, on ne peut pas encore savoir si l'utilisateur est
-   client ou commerçant. Ces jeux séparés permettent de voir les deux points
-   de vue ; ils disparaîtront quand la session existera. */
+   Jeux séparés pour voir les deux points de vue tant que la session
+   n'existe pas. */
 
 export const clientThreads: Thread[] = [
   {
@@ -238,13 +228,9 @@ export const clientThreads: Thread[] = [
 /** Les produits d'une seule boutique, côté commerçant (brouillons compris). */
 export const myProducts: Product[] = products.filter((p) => p.merchant.id === "m-aissatou");
 
-/**
- * Motifs de signalement d'une CONVERSATION — écran 32b.
- *
- * Volontairement disjoints de `reportReasons` : on ne signale pas une
- * personne pour « photo trompeuse ». Réutiliser la même liste aurait été
- * plus court à écrire et incompréhensible à lire.
- */
+/** Motifs de signalement d'une CONVERSATION — écran 32b. Disjoints de
+ * `reportReasons` : on ne signale pas une personne pour « photo
+ * trompeuse ». */
 export const conversationReportReasons = [
   "Insultes ou menaces",
   "Tentative d'arnaque",

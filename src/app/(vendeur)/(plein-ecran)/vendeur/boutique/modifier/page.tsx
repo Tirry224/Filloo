@@ -23,25 +23,19 @@ type MerchantRow = {
 };
 
 /**
- * Modifier ma boutique — l'écran d'édition, séparé de sa consultation.
- *
- * Quand `/vendeur/boutique` rendait ces champs modifiables sur place : on
- * modifiait sans l'avoir décidé (un doigt qui glisse sur « Ville » pendant
- * le défilement), « Enregistrer » s'affichait même sans rien à
- * enregistrer, et consulter revenait à lire des champs de saisie, qui
- * disent « écris ici » plutôt que « voici ce que tu as ».
+ * Modifier ma boutique — l'écran d'édition, séparé de sa consultation :
+ * des champs modifiables sur place se modifient sans qu'on l'ait décidé,
+ * et disent « écris ici » plutôt que « voici ce que tu as ».
  *
  * Plein écran sans barre d'onglets, comme les formulaires produit : on ne
- * propose pas de partir ailleurs au milieu d'un formulaire à moitié
- * rempli. Les deux sorties mènent à `/vendeur/boutique` — la flèche
- * retour (annuler) et « Enregistrer » (`updateMerchantAction`).
+ * propose pas de partir au milieu d'un formulaire à moitié rempli. Les
+ * deux sorties mènent à `/vendeur/boutique`.
  */
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  /* Le rôle et la suspension sont traités par `(vendeur)/layout.tsx` pour
-     tout l'espace. Ne reste ici que le cas que ce layout laisse
-     volontairement passer : un profil commerçant sans boutique. */
+  // Le rôle et la suspension sont traités par `(vendeur)/layout.tsx` ; ne
+  // reste ici que le profil commerçant sans boutique.
   const [merchantProfile, cities] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getCities(supabase),

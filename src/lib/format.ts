@@ -9,13 +9,10 @@ export function formatGnf(amount: number): string {
   return (
     new Intl.NumberFormat("fr-FR")
       .format(amount)
-      /* En français, Intl sépare les milliers par une espace FINE insécable
-         (U+202F). Sur un écran de téléphone elle est si étroite que
-         « 450 000 » se lit « 450000 » — sur une marketplace, c'est
-         l'information la plus importante de l'écran qui devient illisible.
-         On la remplace par une espace insécable ordinaire (U+00A0) :
-         visible, et le montant ne se coupe toujours pas en fin de ligne.
-         Défaut invisible dans le code, trouvé en regardant l'écran. */
+      /* Intl sépare les milliers par une espace FINE insécable (U+202F),
+         si étroite sur un téléphone que « 450 000 » se lit « 450000 ». On
+         la remplace par une insécable ordinaire (U+00A0) : visible, et le
+         montant ne se coupe toujours pas en fin de ligne. */
       .replace(/\u202F/g, "\u00A0") + "\u00A0GNF"
   );
 }

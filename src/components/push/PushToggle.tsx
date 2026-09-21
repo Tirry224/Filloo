@@ -5,24 +5,19 @@ import { Button } from "@/components/ui/Button";
 import { usePushAbonnement } from "@/components/push/usePushAbonnement";
 
 /**
- * L'interrupteur des notifications, et tout ce qu'il doit dire.
+ * L'interrupteur des notifications. Il CHOISIT QUOI MONTRER, rien d'autre :
+ * permission, abonnement et appel serveur vivent dans `usePushAbonnement`,
+ * partagé avec `PushInvite`.
  *
- * LA SÉQUENCE N'EST PLUS ICI : permission, abonnement et appel serveur
- * vivent dans `usePushAbonnement`, partagé avec `PushInvite` — deux
- * commandes du même abonnement ne divergent pas si elles lisent le même
- * code. Ce composant CHOISIT QUOI MONTRER, rien d'autre.
- *
- * TROIS ÉTATS À DISTINGUER
- *   - pas supporté (iPhone dans Safari, navigateur ancien) : on le DIT,
- *     avec la marche à suivre — sinon la personne touche un bouton muet
- *     et conclut que l'application est cassée ;
+ * Trois états à distinguer :
+ *   - pas supporté (iPhone dans Safari, navigateur ancien) : on le DIT
+ *     avec la marche à suivre, sinon le bouton paraît cassé ;
  *   - permission refusée : le navigateur ne redemandera plus, seul le
- *     réglage du site rouvre la porte, le bouton ne servirait à rien ;
+ *     réglage du site rouvre la porte ;
  *   - abonné / non abonné : le cas normal.
  *
- * LE BOUTON DE TEST RESTE : au « je ne reçois rien » d'un commerçant, il
- * répond en trois secondes, là où un diagnostic exigeant un deuxième
- * téléphone et un deuxième compte ne se ferait jamais.
+ * Le bouton de test reste : il répond au « je ne reçois rien » sans exiger
+ * un second téléphone ni un second compte.
  */
 export function PushToggle() {
   const { supporte, permission, abonne, enCours, erreur, message, activer, desactiver, tester } =

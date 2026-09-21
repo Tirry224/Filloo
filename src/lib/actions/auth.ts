@@ -17,19 +17,16 @@ export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: 
  * cacherait l'information utile en cas de bug. */
 function translateAuthError(message: string): string {
   if (message.includes("already registered") || message.includes("already exists")) {
-    // Un simple « essayez de vous connecter » produisait des connexions
-    // distinctes au lieu d'un second profil lié : qui veut « aussi vendre »
-    // lit « compte déjà pris » et repart avec un deuxième email. Dire la
-    // suite évite un compte en trop, qu'on ne peut plus fusionner.
+    // Dire la suite, sinon qui veut « aussi vendre » repart avec un
+    // deuxième email — et deux comptes ne se fusionnent pas.
     return "Un compte existe déjà avec cet email. Connectez-vous : vous pourrez ajouter votre second compte depuis « Mon compte », sans changer d'adresse.";
   }
   if (message.includes("Invalid login credentials")) {
     return "Email ou mot de passe incorrect.";
   }
   if (message.includes("Password should be at least")) {
-    // Le chiffre vient de la même constante que nos propres contrôles :
-    // Supabase impose son minimum, nous le nôtre, et deux textes qui
-    // annoncent des longueurs différentes rendraient le refus incompréhensible.
+    // Même constante que nos propres contrôles : deux textes annonçant des
+    // longueurs différentes rendraient le refus incompréhensible.
     return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
   }
   return message;
@@ -49,16 +46,12 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (!fullName || !phone || !email || !password) {
     return { error: "Tous les champs sont obligatoires." };
   }
-  /* Le numéro est vérifié AVANT la création du compte : corrigé après
-     coup, il l'est dans « Mes informations », un écran que personne ne
-     rouvre spontanément. Un compte créé avec un numéro injoignable le
-     reste. */
+  // Vérifié AVANT la création : un numéro injoignable ne se corrige que
+  // dans « Mes informations », un écran que personne ne rouvre.
   const erreurNumero = erreurTelephone(phone, true);
   if (erreurNumero) return { error: erreurNumero };
-  /* Double saisie : c'est le seul champ du parcours qu'on ne peut pas
-     relire, et mal tapé il enferme dehors — la faute ne se découvre qu'à la
-     connexion suivante et coûte une réinitialisation par email, sur un
-     réseau où recevoir cet email n'est pas acquis. */
+  // Double saisie : seul champ qu'on ne peut pas relire, et mal tapé il
+  // enferme dehors — la faute coûte une réinitialisation par email.
   const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -71,33 +64,24 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (error) return { error: translateAuthError(error.message) };
 
   // `data.session` est null quand la confirmation par email est activée
-  // (réglage du tableau de bord Supabase) : le compte existe déjà côté
-  // auth.users, mais aucune connexion n'est active tant que le lien reçu
-  // par email n'a pas été cliqué. Impossible d'aller plus loin dans l'app
-  // dans ce cas — on le dit plutôt que de rediriger vers un écran qui
-  // échouerait faute de session.
+  // (réglage Supabase) : le compte existe, mais aucune session tant que le
+  // lien n'est pas cliqué. On le dit plutôt que de rediriger dans le vide.
   if (!data.session) return { needsConfirmation: true };
 
   if (role === "merchant") redirect("/inscription/boutique");
-  // `next` porte l'intention qui a mené ici — presque toujours
-  // « contacter ce vendeur » (écran 16). Voir `safeNextPath`, qui refuse
-  // tout ce qui n'est pas une adresse interne.
+  // `next` porte l'intention qui a mené ici, presque toujours « contacter
+  // ce vendeur » (écran 16). `safeNextPath` refuse toute adresse externe.
   redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
 /**
- * Créer le SECOND compte lié (écran 12, en étant déjà connecté) : pas de
- * mot de passe à saisir, c'est la même connexion — juste un nouveau profil
- * (policy « profiles: je cree mon second compte », 0002).
+ * Créer le SECOND compte lié (écran 12, déjà connecté) : même connexion,
+ * juste un nouveau profil (policy « profiles: je cree mon second compte »,
+ * 0002).
  *
- * LE NOM ET LE TÉLÉPHONE NE SE SAISISSENT PLUS ICI, ILS SE RECOPIENT : ils
- * appartiennent à la connexion, pas au rôle, et les redemander faisait
- * diverger les deux profils d'une même personne dès leur création.
- *
- * C'EST AUSSI UNE QUESTION DE SÉCURITÉ : propager des valeurs saisies ici
- * vers le profil existant contournerait la confirmation par mot de passe
- * — téléphone emprunté trente secondes, second compte créé, nom et numéro
- * du premier réécrits. Recopier la base ne peut rien réécrire.
+ * Le nom et le téléphone se RECOPIENT depuis le profil existant : ils
+ * appartiennent à la connexion, pas au rôle. Les saisir ici permettrait de
+ * réécrire le premier profil sans confirmation par mot de passe.
  */
 export async function createLinkedProfileAction(
   _prevState: ActionState | null,
@@ -109,10 +93,8 @@ export async function createLinkedProfileAction(
   const user = await getSessionUser(supabase);
   if (!user) return { error: "Vous devez être connecté." };
 
-  /* L'identité vient du profil existant, jamais du formulaire. S'il n'y
-     en a pas, c'est qu'on n'est pas dans le cas « second compte » —
-     `/inscription` aurait affiché le mode `new` — et il n'y a rien à
-     recopier. */
+  // L'identité vient du profil existant, jamais du formulaire. Sans
+  // profil, on n'est pas dans le cas « second compte ».
   const profiles = await getMyProfiles(supabase);
   const existant = profiles.find((p) => !p.isDeleted);
   if (!existant) return { error: "Aucun compte à lier. Reconnectez-vous, puis réessayez." };
@@ -123,9 +105,8 @@ export async function createLinkedProfileAction(
       auth_user_id: user.id,
       role,
       full_name: existant.fullName,
-      /* Déjà normalisé au moment où il a été écrit : le repasser par
-         `nettoyerTelephone` ne changerait rien, et laisserait croire que
-         cette valeur vient d'être saisie. */
+      // Déjà normalisé à l'écriture ; le repasser par `nettoyerTelephone`
+      // laisserait croire que cette valeur vient d'être saisie.
       phone: existant.phone,
     });
   if (error) {
@@ -134,9 +115,8 @@ export async function createLinkedProfileAction(
   }
 
   if (role === "merchant") redirect("/inscription/boutique");
-  // Même reprise d'intention que pour une inscription complète : une
-  // connexion qui n'avait qu'un compte commerçant vient peut-être de
-  // créer son compte client POUR écrire à un vendeur.
+  // Même reprise d'intention qu'à l'inscription : ce compte client vient
+  // peut-être d'être créé POUR écrire à un vendeur.
   redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
@@ -150,15 +130,9 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: translateAuthError(error.message) };
 
-  /* Où atterrir. Jamais `/` en dur : une connexion commerçant-seul
-     atterrissait sur le fil client avec sa barre d'onglets, ce que la
-     décision 8 de SPEC interdit — `landingForSession` tranche.
-
-     `next` est suivi s'il appartient à l'espace autorisé : le jeter dès que
-     l'atterrissage n'était pas « / » faisait perdre à un commerçant le lien
-     qu'il venait ouvrir, depuis que le middleware pose lui-même `?next=` sur
-     `/vendeur/*`. Une connexion commerçant-seul ne suit donc `next` que sous
-     `/vendeur` ; un paramètre d'URL ne défait pas la décision 8, il choisit
+  /* Où atterrir : jamais `/` en dur, `landingForSession` tranche
+     (décision 8 de SPEC). `next` n'est suivi que s'il reste dans l'espace
+     autorisé — un paramètre d'URL ne défait pas la décision 8, il choisit
      seulement une destination à l'intérieur. */
   const landing = await landingForSession(supabase);
   const next = safeNextPath(formData.get("next"));
@@ -176,7 +150,7 @@ export async function signOutAction() {
 }
 
 /** Mot de passe oublié — écran 15. Toujours le même message, que le
- * compte existe ou non : voir le commentaire déjà présent sur cet écran. */
+ * compte existe ou non. */
 export async function requestPasswordResetAction(
   _prevState: ActionState | null,
   formData: FormData,
@@ -190,11 +164,9 @@ export async function requestPasswordResetAction(
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/confirm?next=/reinitialiser-mot-de-passe`,
   });
-  // `sent: true` DANS TOUS LES CAS, échec compris : répondre autre chose
-  // pour une adresse inconnue dirait à un inconnu qui a un compte ici.
-  // C'est la protection contre l'énumération des comptes, et elle ne bouge
-  // pas. L'erreur, elle, se journalise : l'échec attendu est le quota du
-  // serveur mail, et c'est dans les journaux qu'on le constate.
+  // `sent: true` dans TOUS les cas : répondre autrement pour une adresse
+  // inconnue révélerait qui a un compte ici. L'erreur se journalise —
+  // l'échec attendu est le quota du serveur mail.
   if (error) console.error("resetPasswordForEmail a échoué :", error.message);
   return { sent: true };
 }
@@ -205,10 +177,8 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-  /* La double saisie compte DOUBLE ici : cet écran s'ouvre depuis un lien
-     reçu par email, et ce lien ne sert qu'une fois. Un mot de passe mal
-     tapé ici oblige à redemander un email, donc à refaire tout le trajet
-     — pour une frappe qu'on n'a jamais pu relire. */
+  // Le lien qui mène ici ne sert qu'une fois : une frappe ratée oblige à
+  // redemander un email et refaire tout le trajet.
   const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -217,20 +187,17 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   if (error) return { error: translateAuthError(error.message) };
 
   // Même aiguillage qu'après une connexion : changer son mot de passe
-  // n'est pas une raison d'atterrir dans l'espace de quelqu'un d'autre.
+  // n'est pas une raison d'atterrir dans un autre espace.
   redirect(await landingForSession(supabase));
 }
 
 /**
  * Changer son mot de passe depuis son compte, en le CONNAISSANT.
  *
- * PAS `updatePasswordAction` : là-bas la preuve est le lien reçu par
- * email, ici c'est le mot de passe actuel. Deux preuves, donc deux
- * actions — les fondre rendrait le contrôle facultatif, donc inexistant.
- *
- * CE QUE ÇA EMPÊCHE : un téléphone emprunté trente secondes. Sans ce
- * contrôle, changer le mot de passe de quelqu'un ferme la porte derrière
- * soi, et la réinitialisation ne le sauve que s'il a encore sa boîte.
+ * Distincte de `updatePasswordAction`, dont la preuve est le lien reçu par
+ * email : deux preuves, donc deux actions — les fondre rendrait le
+ * contrôle facultatif. Ce qu'elle empêche : un téléphone emprunté trente
+ * secondes suffirait à fermer la porte derrière soi.
  */
 export async function changeMyPasswordAction(
   _prevState: ActionState | null,
@@ -240,10 +207,8 @@ export async function changeMyPasswordAction(
   const newPassword = String(formData.get("newPassword") ?? "");
   const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
 
-  /* L'ordre des contrôles suit le coût pour la personne : la forme du
-     nouveau mot de passe d'abord, qui ne coûte rien à vérifier, le mot de
-     passe actuel ensuite, qui demande un aller-retour à Supabase. Refuser
-     tôt ce qui se refuse sans réseau. */
+  // L'ordre suit le coût : la forme du nouveau mot de passe d'abord,
+  // gratuite, le mot de passe actuel ensuite, qui coûte un aller-retour.
   const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -259,9 +224,7 @@ export async function changeMyPasswordAction(
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: translateAuthError(error.message) };
 
-  /* Pas de redirection : le formulaire vit dans un panneau posé sur
-     l'écran de compte, et renvoyer ailleurs donnerait l'impression d'avoir
-     perdu sa place. On rend un succès, le panneau le dit, la personne
-     referme. */
+  // Pas de redirection : le formulaire vit dans un panneau posé sur
+  // l'écran de compte, et renvoyer ailleurs ferait perdre sa place.
   return { sent: true };
 }

@@ -11,13 +11,12 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import { resubmitMerchantAction } from "@/lib/actions/merchants";
 
 /**
- * Écran 21 — boutique refusée.
+ * Écran 21 — boutique refusée. Un refus sans motif est un vendeur perdu
+ * définitivement : l'écran dit POURQUOI, dit QUOI FAIRE, et rassure sur ce
+ * qui est conservé.
  *
- * Un refus sans motif est un vendeur perdu définitivement. L'écran dit
- * POURQUOI, dit CE QU'IL FAUT FAIRE, et rassure sur ce qui est conservé.
- * Le motif vient de `merchants.rejection_reason` (voir docs/REPRISE.md,
- * section 4) : un refus sans motif reste possible côté base (contrainte
- * pas encore posée), d'où le texte de repli ci-dessous.
+ * Le motif vient de `merchants.rejection_reason` ; la base permet encore
+ * un refus sans motif, d'où le texte de repli.
  */
 export default async function RejectedShopPage({
   searchParams,
@@ -28,11 +27,8 @@ export default async function RejectedShopPage({
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
-  /* La suspension n'est plus vérifiée ici : `(vendeur)/layout.tsx` la
-     traite pour TOUT l'espace, via `requireMerchantSpace`. Les quatre
-     copies de cette garde — une par écran, plus une manquante sur la
-     feuille d'actions produit — étaient le défaut que le découpage en
-     groupes de routes vient corriger. */
+  // La suspension est traitée par `(vendeur)/layout.tsx` pour TOUT
+  // l'espace, via `requireMerchantSpace`.
 
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");

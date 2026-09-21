@@ -8,15 +8,13 @@ import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
 
 /** Nom, téléphone et ville de résidence — écran 18. Le bouton
- * « Enregistrer » vit dans la barre du haut de la page (relié par
- * l'attribut HTML `form`), pas ici : la page affiche aussi le mot de
- * passe et la suppression du compte, qui ne doivent pas se retrouver DANS
- * ce formulaire.
+ * « Enregistrer » vit dans la barre du haut (relié par l'attribut HTML
+ * `form`) : la page affiche aussi le mot de passe et la suppression du
+ * compte, qui n'ont rien à faire DANS ce formulaire.
  *
- * La ville reste facultative (option « Non renseignée ») : contrairement
- * au nom et au téléphone, ce n'est pas une information obligatoire pour
- * utiliser l'app, et tous les clients déjà inscrits n'en ont pas encore
- * choisi une (0010_client_profile_city.sql). */
+ * La ville reste facultative (« Non renseignée ») : elle n'est pas
+ * nécessaire pour utiliser l'app, et les clients inscrits avant
+ * `0010_client_profile_city.sql` n'en ont pas. */
 export function ProfileForm({
   id,
   espace,
@@ -26,10 +24,9 @@ export function ProfileForm({
   cities,
 }: {
   id: string;
-  /** IMPOSÉ par la route qui monte cet écran, jamais lu dans l'URL — la
-   *  leçon de `src/lib/espace.ts`. Il décide de deux choses : si la ville
-   *  de résidence est proposée, et dans quel espace l'enregistrement
-   *  ramène. Une action ne fait pas changer d'espace. */
+  /** IMPOSÉ par la route qui monte cet écran, jamais lu dans l'URL (voir
+   *  `src/lib/espace.ts`). Il décide si la ville de résidence est
+   *  proposée, et dans quel espace l'enregistrement ramène. */
   espace: Espace;
   fullName: string;
   phone: string;

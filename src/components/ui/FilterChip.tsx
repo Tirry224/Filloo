@@ -15,30 +15,20 @@ export type FilterOption = {
  * Une puce de filtre qui ouvre ses options par-dessus les résultats, sans
  * une ligne de JavaScript.
  *
- * `<details>` ET PAS UN ÉTAT REACT : zéro octet ajouté au socle, et le
- * panneau s'ouvre AVANT que le JavaScript soit chargé — décisif pendant
- * les longues secondes d'une connexion guinéenne (R3).
+ * `<details>` et non un état React : zéro octet au socle, et le panneau
+ * s'ouvre avant que le JavaScript soit chargé (R3). Un panneau et non une
+ * page : filtrer suppose de voir ce qu'on filtre.
  *
- * UN PANNEAU ET PAS UNE PAGE : filtrer suppose de voir ce qu'on filtre ;
- * une page cacherait les résultats et coûterait deux navigations.
- *
- * EN BAS DE L'ÉCRAN, PAS SOUS SA PUCE : la rangée de puces défile
+ * En bas de l'écran et non sous sa puce : la rangée défile
  * horizontalement, et un parent en `overflow-x: auto` rogne aussi
- * verticalement ce qui dépasse. D'où le panneau en `fixed`, posé en bas
- * comme les `Sheet` : près du pouce, résultats visibles au-dessus.
- * Détaché de sa puce, il doit dire ce qu'il filtre — d'où le titre.
+ * verticalement. Détaché de sa puce, le panneau doit dire ce qu'il
+ * filtre — d'où le titre.
  *
- * FERMER EN TOUCHANT AILLEURS
- * Un `<details>` ne se referme nativement que par sa propre étiquette,
- * alors que sur un téléphone on touche à côté d'une pop-up pour la
- * fermer. `data-panneau` signale ce panneau à `ClosePanels` (posé une
- * fois dans le layout racine), qui le referme au tap extérieur et sur
- * Échap. AMÉLIORATION, pas dépendance : sans JavaScript, la puce ouvre
- * et ferme toujours son panneau.
+ * `data-panneau` le signale à `ClosePanels`, qui le referme au tap
+ * extérieur et sur Échap : une amélioration, pas une dépendance.
  *
- * PAS DE BOUTON « APPLIQUER »
- * Chaque option est un lien : choisir recharge la page, et le panneau
- * repart fermé — un brouillon de filtres serait un état de plus à gérer.
+ * Pas de bouton « Appliquer » : chaque option est un lien, donc choisir
+ * recharge la page et le panneau repart fermé.
  */
 export function FilterChip({
   title,
@@ -60,8 +50,8 @@ export function FilterChip({
     <details data-panneau className="group">
       <summary
         className={cn(
-          /* `list-none` et le pseudo-élément WebKit retirent le triangle
-             par défaut, absent du design system ; le chevron le remplace. */
+          // `list-none` et le pseudo-élément WebKit retirent le triangle
+          // par défaut, absent du design system ; le chevron le remplace.
           "inline-flex shrink-0 cursor-pointer list-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden",
           selected ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink",
         )}

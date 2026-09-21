@@ -2,12 +2,9 @@
  * Les deux espaces de Makiti, et l'adresse de leur messagerie.
  *
  * L'espace est porté par le CHEMIN (`/messages`, `/vendeur/messages`) :
- * deux routes dans deux groupes, derrière deux layouts. Il l'était avant
- * par une query string (`?vue=commercant`), que `redirect`, favori, lien
- * partagé ou retour arrière perdaient — et un commerçant se retrouvait
- * dans sa boîte d'acheteur. Centraliser la fabrication du paramètre n'y
- * changeait rien : la fonction ci-dessous ne rattrape plus rien, elle
- * nomme une constante.
+ * deux routes dans deux groupes, derrière deux layouts. Une query string
+ * (`?vue=commercant`) se perdait au `redirect`, au favori ou au retour
+ * arrière, et renvoyait un commerçant dans sa boîte d'acheteur.
  */
 export type Espace = "client" | "merchant";
 

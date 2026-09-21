@@ -8,12 +8,10 @@ import type { ActionState } from "@/lib/actions/auth";
 /**
  * Enregistrer, oublier, tester : les trois gestes d'un abonnement push.
  *
- * POURQUOI LE CLIENT DE SESSION, ET NON `service_role`
- * Contrairement à l'ENVOI (`src/lib/push.ts`), qui doit lire les appareils
- * de quelqu'un d'autre, ces trois actions ne touchent QUE les appareils de
- * la personne connectée. Le RLS de `0023` suffit donc, et c'est mieux : un
- * bug ici ne peut pas abonner un téléphone au nom d'un tiers, parce que la
- * base refuserait la ligne.
+ * Le client de SESSION, non `service_role` : contrairement à l'envoi
+ * (`src/lib/push.ts`), ces trois actions ne touchent que les appareils de
+ * la personne connectée. Le RLS de `0023` suffit, et un bug ici ne peut
+ * pas abonner un téléphone au nom d'un tiers.
  */
 
 /** Ce que `PushSubscription.toJSON()` rend. Recopié plutôt qu'importé :
@@ -38,20 +36,18 @@ export async function savePushSubscriptionAction(
   const user = await getSessionUser(supabase);
   if (!user) return { error: "Vous devez être connecté." };
 
-  /* `upsert` sur `endpoint` et non `insert` : le même appareil se
-     réabonne régulièrement — après une mise à jour du navigateur, un
-     effacement de données, un changement de compte. Un `insert` échouerait
-     sur la contrainte d'unicité et la personne verrait une erreur pour un
-     geste qui a parfaitement réussi côté navigateur. */
+  /* `upsert` sur `endpoint`, non `insert` : le même appareil se réabonne
+     régulièrement (mise à jour du navigateur, effacement de données), et
+     un `insert` afficherait une erreur pour un geste qui a réussi côté
+     navigateur. */
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
       auth_user_id: user.id,
       endpoint,
       p256dh,
       auth_secret: auth,
-      /* Tronqué : sert à reconnaître un appareil dans une liste, pas à
-         archiver la chaîne complète que certains navigateurs rendent
-         interminable. */
+      // Tronqué : sert à reconnaître un appareil, pas à archiver la
+      // chaîne complète.
       user_agent: userAgent.slice(0, 300) || null,
     },
     { onConflict: "endpoint" },
@@ -68,10 +64,8 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
   const user = await getSessionUser(supabase);
   if (!user) return { error: "Vous devez être connecté." };
 
-  /* Pas de `eq("auth_user_id", …)` : le RLS le fait déjà, et le répéter
-     ici laisserait croire que c'est lui qui protège. Si la policy
-     disparaissait un jour, ce filtre-là ne sauverait rien — c'est en base
-     que la règle doit vivre. */
+  // Pas de `eq("auth_user_id", …)` : le RLS le fait, et le répéter ici
+  // laisserait croire que c'est ce filtre qui protège.
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   if (error) return { error: error.message };
 
@@ -79,13 +73,10 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
 }
 
 /**
- * S'envoyer une notification à soi-même.
- *
- * C'est la seule façon de vérifier la chaîne ENTIÈRE — permission,
- * abonnement, clés VAPID, service de push, service worker — sans avoir
- * besoin d'un deuxième compte et d'un deuxième téléphone. Elle reste dans
- * l'application après la mise au point : le jour où un commerçant dira
- * « je ne reçois rien », ce bouton répondra en trois secondes.
+ * S'envoyer une notification à soi-même : la seule façon de vérifier la
+ * chaîne entière — permission, abonnement, clés VAPID, service de push,
+ * service worker — sans un deuxième compte ni un deuxième téléphone. Elle
+ * reste dans l'application pour répondre à « je ne reçois rien ».
  */
 export async function sendTestPushAction(): Promise<ActionState> {
   const supabase = await createClient();

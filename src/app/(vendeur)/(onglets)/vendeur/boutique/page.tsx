@@ -42,17 +42,15 @@ type MerchantRow = {
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  /* Plus de liste de villes ici : elle ne servait qu'au menu déroulant du
-     formulaire, parti sur `/vendeur/boutique/modifier`. Une requête de
-     moins sur l'écran le plus ouvert (docs/PERFORMANCE.md). */
+  // Pas de liste de villes ici : elle ne sert qu'au formulaire, parti sur
+  // `/vendeur/boutique/modifier`. Une requête de moins (PERFORMANCE.md).
   const [merchantProfile, clientProfile] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getMyProfile(supabase, "client"),
   ]);
-  /* Rôle et suspension sont déjà traités par `(vendeur)/layout.tsx` : les
-     gardes d'ici ont disparu, pas été oubliées. Ce test porte sur la
-     BOUTIQUE, qu'un profil commerçant tout neuf n'a pas encore — le seul
-     cas que le layout laisse passer, et TypeScript veut le voir écrit. */
+  /* Rôle et suspension sont traités par `(vendeur)/layout.tsx`. Ce test
+     porte sur la BOUTIQUE, qu'un profil commerçant neuf n'a pas encore :
+     le seul cas que le layout laisse passer. */
   if (!merchantProfile) redirect("/inscription/boutique");
 
   const { data: row, error } = await supabase
@@ -73,9 +71,9 @@ export default async function EditShopPage() {
     rejectionReason: row.rejection_reason,
   };
 
-  /* Dans l'ordre du formulaire qui les modifie : on retrouve au même rang
-     ce qu'on vient de changer. Un champ vide affiche un tiret — une ligne
-     vide laisse croire à un bug, un tiret dit « pas renseigné ». */
+  /* Dans l'ordre du formulaire qui les modifie, pour retrouver au même
+     rang ce qu'on vient de changer. Un champ vide affiche un tiret : une
+     ligne vide laisse croire à un bug. */
   const infos = [
     { label: "Nom de la boutique", value: merchant.shopName },
     { label: "Ville", value: merchant.city || "—" },
@@ -147,13 +145,10 @@ export default async function EditShopPage() {
               href="/compte"
             />
           ) : (
-            /* Le miroir exact de `/compte` : sans compte client, cet
-               emplacement restait vide et un commerçant n'avait aucun
-               chemin pour s'en créer un — alors qu'il peut parcourir le
-               catalogue mais pas ÉCRIRE à un vendeur. La porte avait été
-               ouverte côté client seulement : corriger la moitié d'une
-               symétrie laisse un défaut qui ressemble à un travail
-               fini. */
+            /* Le miroir exact de `/compte` : sans cette carte, un
+               commerçant n'a aucun chemin pour se créer un compte client,
+               donc peut parcourir le catalogue sans jamais ÉCRIRE à un
+               vendeur. */
             <MenuList>
               <MenuItem icon={ShoppingBag} label="Créer mon compte client" href="/inscription" />
             </MenuList>

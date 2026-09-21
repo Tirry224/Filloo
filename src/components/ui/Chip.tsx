@@ -6,11 +6,9 @@ import type { LucideIcon } from "lucide-react";
  * Filtre ou catégorie sélectionnable : « Conakry », « Alimentation ».
  *
  * Comme pour `Button`, `href` produit un LIEN et son absence un simple
- * libellé. Ici la distinction a une conséquence directe : les filtres de
- * Makiti vivent dans l'URL, donc une puce qui filtre EST un lien — elle se
- * partage, s'ouvre dans un onglet, et le bouton « retour » la défait. Une
- * puce sans `href` ne filtre rien : elle affiche un état (la ville
- * courante, « Récents »).
+ * libellé : les filtres de Makiti vivant dans l'URL, une puce qui filtre
+ * EST un lien — elle se partage, et « retour » la défait. Une puce sans
+ * `href` ne filtre rien, elle affiche un état.
  */
 export function Chip({
   children,
@@ -26,9 +24,8 @@ export function Chip({
   className?: string;
 }) {
   const classes = cn(
-    /* `whitespace-nowrap` : dans une rangée qui défile horizontalement, une
-       puce dont le libellé passe à la ligne casse l'alignement de toute la
-       rangée. Elle doit déborder, pas se replier. */
+    // `whitespace-nowrap` : dans une rangée qui défile, une puce qui se
+    // replie casse l'alignement de toute la rangée.
     "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium",
     selected ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink",
     className,

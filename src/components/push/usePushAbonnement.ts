@@ -11,26 +11,22 @@ import {
  * Tout ce qu'un écran a besoin de savoir et de faire sur l'abonnement
  * push de CET appareil.
  *
- * Deux composants commandent le même abonnement — `PushToggle` dans le
- * panneau « Notifications », `PushInvite` la carte qui le propose. Recopier
- * la séquence (permission, `subscribe`, action serveur, état) dans les deux,
- * c'est se garantir qu'un jour l'un demandera la permission autrement que
- * l'autre : elle vit donc ici, une fois.
+ * `PushToggle` et `PushInvite` commandent le même abonnement : la séquence
+ * (permission, `subscribe`, action serveur, état) vit ici une seule fois,
+ * sinon l'un finirait par demander la permission autrement que l'autre.
  *
- * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE, ET C'EST UNE RÈGLE : rien
- * ici ne s'exécute au chargement, `activer()` ne part que d'un tap. Une
- * demande sans prévenir reçoit un « non » réflexe, et Chrome ne repose
- * JAMAIS la question.
+ * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE : rien ne s'exécute au
+ * chargement, `activer()` ne part que d'un tap. Une demande sans prévenir
+ * reçoit un « non » réflexe, et Chrome ne repose jamais la question.
  */
 
 /**
  * Au-delà, on considère que le service worker ne s'enregistrera pas.
  *
- * `navigator.serviceWorker.ready` ne se rejette JAMAIS : si l'enregistrement
- * a échoué (script introuvable, stockage plein, navigation privée), elle
- * attend indéfiniment. Sans cette borne, toucher « Activer » ne produisait
- * rien du tout — ni erreur, ni message — et un bouton qui ne répond pas est
- * lu comme une application cassée.
+ * `navigator.serviceWorker.ready` ne se rejette JAMAIS : si
+ * l'enregistrement a échoué (script introuvable, stockage plein,
+ * navigation privée), elle attend indéfiniment, et « Activer » resterait
+ * sans réponse ni message.
  */
 const DELAI_SERVICE_WORKER_MS = 10_000;
 
@@ -77,10 +73,8 @@ export function usePushAbonnement(): PushAbonnement {
 
     setPermission(Notification.permission);
 
-    /* Même borne qu'ailleurs : sans elle, un service worker qui ne
-       s'enregistre pas laissait `abonne` à `false` par défaut — ce qui
-       tombait juste par accident, mais n'aurait rien dit d'un appareil
-       DÉJÀ abonné dont le service worker tarde. */
+    // Même borne : sans elle, un appareil déjà abonné dont le service
+    // worker tarde serait affiché comme non abonné.
     let vivant = true;
     enregistrementPret()
       .then(async (enregistrement) => {
@@ -121,10 +115,8 @@ export function usePushAbonnement(): PushAbonnement {
       return;
     }
 
-    /* `userVisibleOnly: true` est OBLIGATOIRE sur Chrome : le navigateur
-       refuse les push silencieux, précisément pour qu'on ne puisse pas
-       réveiller un téléphone en douce. C'est une contrainte qu'on partage
-       — Makiti n'a rien à envoyer qui ne se montre pas. */
+    // `userVisibleOnly: true` est obligatoire sur Chrome, qui refuse les
+    // push silencieux. Contrainte partagée : rien ici ne se cache.
     let abonnement: PushSubscription;
     try {
       abonnement = await enregistrement.pushManager.subscribe({
@@ -132,10 +124,8 @@ export function usePushAbonnement(): PushAbonnement {
         applicationServerKey: cle,
       });
     } catch {
-      /* `subscribe` rejette pour des raisons qu'on ne peut pas distinguer
-         ici (clé refusée, service de push injoignable, quota du
-         navigateur). Le dire platement vaut mieux que laisser un bouton
-         sans effet. */
+      // `subscribe` rejette pour des raisons indistinguables ici (clé
+      // refusée, service injoignable, quota) : mieux vaut le dire.
       setErreur("Abonnement impossible sur cet appareil. Réessayez plus tard.");
       return;
     }
@@ -171,10 +161,9 @@ export function usePushAbonnement(): PushAbonnement {
     }
 
     const endpoint = abonnement.endpoint;
-    /* On se désabonne D'ABORD côté navigateur. L'ordre inverse laisserait,
-       en cas de coupure entre les deux, un téléphone qui reçoit encore des
-       notifications sans aucune ligne en base pour l'expliquer — donc
-       impossible à faire taire depuis l'application. */
+    /* D'abord côté navigateur : l'ordre inverse laisserait, sur une
+       coupure, un téléphone qui reçoit encore sans aucune ligne en base,
+       donc impossible à faire taire depuis l'application. */
     await abonnement.unsubscribe();
     setAbonne(false);
 

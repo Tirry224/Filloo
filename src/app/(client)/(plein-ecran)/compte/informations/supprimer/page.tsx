@@ -6,23 +6,18 @@ import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfiles } from "@/lib/data/session";
 
 /**
- * Confirmation de suppression, absente de la maquette : la suppression est
+ * Confirmation de suppression, absente de la maquette : le geste est
  * irréversible en pratique (anonymisation + bannissement), et redire les
- * conséquences avant le geste final coûte un tap.
+ * conséquences avant coûte un tap.
  *
- * La garde ci-dessous est nécessaire : sans elle, cette page était la
- * SEULE de l'espace compte à s'afficher pour un visiteur non connecté, qui
- * lisait « Supprimer votre compte ? » et un bouton rouge sans avoir de
- * compte. Rien n'était détruisable — `deleteAccountAction` renvoie vers
- * /connexion faute de session — mais l'écran mentait sur l'état du
- * système, et l'échec n'arrivait qu'APRÈS le clic sur le bouton rouge.
+ * Sans la garde ci-dessous, un visiteur non connecté lit « Supprimer votre
+ * compte ? » et un bouton rouge : rien n'est détruisable, mais l'écran
+ * ment sur l'état du système et l'échec n'arrive qu'après le clic.
  */
 export default async function ConfirmDeleteAccountPage() {
   const supabase = await createClient();
-  // Neutre au rôle : la suppression porte sur la CONNEXION entière
-  // (anonymisation de tous les profils + bannissement de `auth.users`).
-  // Exiger un profil client rendait l'écran inatteignable à un commerçant
-  // qui n'en a pas.
+  // Neutre au rôle : la suppression porte sur la CONNEXION entière, donc
+  // exiger un profil client fermerait l'écran à un commerçant seul.
   const profiles = await getMyProfiles(supabase);
   // `clientSpaceFallback` et non `landingForSession` : sans profil
   // utilisable, la personne n'est pas connectée — on l'envoie se

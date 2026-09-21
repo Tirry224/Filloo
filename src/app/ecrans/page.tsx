@@ -14,11 +14,10 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 /**
- * Identifiants RÉELS lus en base, jamais codés en dur : ceux de l'ancien
- * `src/lib/mock.ts` sont morts, et un index dont un tiers des liens mène à
- * « Cette page n'existe pas » fait croire que l'application est cassée. Quand
- * un enregistrement manque, la ligne dit QUOI faire pour l'obtenir plutôt que
- * d'offrir un lien qui échoue — état normal d'une base neuve, pas une erreur.
+ * Identifiants RÉELS lus en base, jamais codés en dur : un index dont les
+ * liens mènent à « Cette page n'existe pas » fait croire que l'application
+ * est cassée. Quand un enregistrement manque, la ligne dit QUOI faire pour
+ * l'obtenir — état normal d'une base neuve, pas une erreur.
  */
 type ScreenIds = {
   produit?: string;
@@ -85,10 +84,9 @@ function screenGroups(ids: ScreenIds): {
     {
       title: "Messagerie",
       screens: [
-        /* `?vue=` n'existe plus : la messagerie du commerçant vit sous
-           `/vendeur`, celle du client à la racine. L'écran 29 (« vide »)
-           n'a pas d'URL propre — c'est l'état des deux autres quand la
-           liste est vide, pas un troisième écran. */
+        /* La messagerie du commerçant vit sous `/vendeur`, celle du client
+           à la racine. L'écran 29 (« vide ») n'a pas d'URL propre : c'est
+           l'état des deux autres quand la liste est vide. */
         ["27", "Messages — commerçant", "/vendeur/messages"],
         ["28", "Messages — client", "/messages"],
         ["30", "Fil de discussion", ids.conversation && `/messages/${ids.conversation}`, MANQUE_FIL],
@@ -187,9 +185,8 @@ export default async function ScreensIndexPage() {
                     {href ? (
                       <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
                     ) : (
-                      /* Distinguer l'écran qui s'affiche tout seul
-                         (« automatique ») de celui qui attend une donnée
-                         réelle évite de chercher un bug qui n'existe pas. */
+                      // Distinguer l'écran automatique de celui qui attend
+                      // une donnée évite de chercher un bug inexistant.
                       <span className="shrink-0 text-2xs text-ink-soft">{manque ?? "automatique"}</span>
                     )}
                   </>

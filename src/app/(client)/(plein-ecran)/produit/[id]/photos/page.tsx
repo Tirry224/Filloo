@@ -7,13 +7,10 @@ import { getProduct } from "@/lib/data/products";
 import { cn } from "@/lib/cn";
 
 /**
- * Écran 9 — galerie plein écran.
- *
- * Seul écran de l'application sur fond sombre : quand on regarde une
- * photo, tout le reste doit disparaître. Les couleurs sont donc écrites
- * ici en clair et non prises dans les tokens — c'est une exception
- * assumée, pas un oubli. Si elle se reproduisait ailleurs, il faudrait en
- * faire des tokens.
+ * Écran 9 — galerie plein écran, seul écran sur fond sombre : quand on
+ * regarde une photo, le reste disparaît. Les couleurs sont écrites en
+ * clair plutôt que prises dans les tokens — exception assumée, à
+ * transformer en tokens si elle se reproduit.
  */
 export default async function GalleryPage({
   params,
@@ -29,9 +26,8 @@ export default async function GalleryPage({
   if (!product) notFound();
 
   const photos = product.imageUrls;
-  /* `?photo=99` ou `?photo=chat` : on ramène dans les bornes plutôt que
-     d'afficher une erreur. Une URL bricolée à la main ne doit pas casser
-     l'écran, juste montrer une photo qui existe. */
+  // `?photo=99` ou `?photo=chat` : on ramène dans les bornes. Une URL
+  // bricolée ne doit pas casser l'écran.
   const current = Math.min(Math.max(Number(photo) || 1, 1), Math.max(photos.length, 1));
 
   return (
@@ -48,9 +44,8 @@ export default async function GalleryPage({
 
       <div className="relative flex flex-1 items-center justify-center text-white/25">
         {photos.length > 0 ? (
-          /* `object-contain` et non `cover` : dans une galerie on veut voir
-             la photo entière, quitte à laisser des bandes noires. Rogner le
-             produit qu'on cherche justement à examiner serait absurde. */
+          // `object-contain` et non `cover` : dans une galerie, la photo
+          // entière, quitte à laisser des bandes noires.
           <Image
             src={photos[current - 1]}
             alt={`${product.title} — photo ${current}`}

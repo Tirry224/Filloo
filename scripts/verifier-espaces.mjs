@@ -2,24 +2,12 @@
  * Vérifie que les deux espaces de Makiti — client et commerçant — restent
  * séparés.
  *
- * POURQUOI CE SCRIPT EXISTE
- * La séparation des espaces est une règle d'ARCHITECTURE, et une règle
- * d'architecture ne se défend pas toute seule. Ni `tsc`, ni `next build`,
- * ni aucun test de sécurité ne signalent qu'un écran client vient
- * d'importer la barre du commerçant, ou qu'un lien en dur ramène un
- * commerçant dans le fil d'achat. Le code compile, la page s'affiche, et
- * les deux espaces se remélangent — exactement comme avant la
- * réorganisation, où la barre d'onglets se choisissait par une prop dont
- * la valeur par défaut était « client ».
- *
- * Ce que ce script protège n'est donc pas une donnée, c'est un PARCOURS.
- * Le RLS et les tests de sécurité couvrent déjà les données ; ils sont
- * parfaitement silencieux sur la navigation.
- *
  *     node scripts/verifier-espaces.mjs
  *
- * Il sort en code 1 à la première règle violée, pour être branché sur
- * l'intégration continue.
+ * Ce script protège un PARCOURS, pas une donnée : le RLS couvre déjà les
+ * données et ne dit rien de la navigation. Ni `tsc` ni `next build` ne
+ * signalent qu'un écran client importe la barre du commerçant. Sort en
+ * code 1 à la première règle violée.
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -44,15 +32,11 @@ const court = (f) => relative(RACINE, f);
 const lire = (f) => readFileSync(f, "utf8");
 
 /**
- * Le texte hors commentaires : une règle qui se déclenche sur un
- * commentaire d'explication est une règle qu'on finit par désactiver.
+ * Le texte hors commentaires : une règle qui se déclenche sur une
+ * explication est une règle qu'on finit par désactiver.
  *
- * Les commentaires sont BLANCHIS, pas supprimés : chaque saut de ligne
- * est conservé, donc la ligne N du résultat reste la ligne N du fichier.
- * La première version les retirait — les numéros de ligne rapportés
- * étaient alors faux, et surtout la dérogation `espaces:autorise`, qui
- * vit dans un commentaire, avait disparu au moment où on la cherchait.
- * Une règle et son échappatoire doivent regarder le même texte.
+ * Les commentaires sont BLANCHIS et non supprimés, pour que la ligne N du
+ * résultat reste la ligne N du fichier.
  */
 function code(source) {
   const blanchir = (m) => m.replace(/[^\n]/g, " ");
@@ -68,9 +52,8 @@ const espaceVendeur = join(APP, "(vendeur)");
 // ---------------------------------------------------------------------
 // 1. Les deux espaces existent, et le commerçant est gardé à sa racine.
 // ---------------------------------------------------------------------
-// Cette garde est LA raison d'être du groupe `(vendeur)` : un layout est
-// le seul point de passage qu'une route enfant ne peut pas contourner.
-// Si elle disparaît, tout le reste de ce fichier devient décoratif.
+// Un layout est le seul point de passage qu'une route enfant ne peut pas
+// contourner. Sans cette garde, tout le reste de ce fichier est décoratif.
 const gardeVendeur = join(espaceVendeur, "layout.tsx");
 if (!existsSync(gardeVendeur)) {
   rate("garde", court(gardeVendeur), "le layout de garde de l'espace commerçant a disparu");
@@ -95,9 +78,8 @@ for (const [espace, dossier, interdit] of [
 // ---------------------------------------------------------------------
 // 3. Seuls les layouts `(onglets)` rendent une barre de navigation.
 // ---------------------------------------------------------------------
-// C'est la correction structurelle : tant qu'un ÉCRAN rend sa propre
-// barre, il peut se tromper de barre. S'il ne la rend pas, il ne peut
-// plus. La règle se vérifie donc sur le rendu, pas sur l'intention.
+// Tant qu'un écran rend sa propre barre, il peut se tromper de barre.
+// La règle se vérifie sur le rendu, pas sur l'intention.
 for (const f of fichiers(APP)) {
   const estLayoutOnglets = f.endsWith(join("(onglets)", "layout.tsx"));
   if (estLayoutOnglets) continue;
@@ -112,9 +94,8 @@ for (const f of fichiers(APP)) {
 // ---------------------------------------------------------------------
 // 4. `?vue=` est mort, et doit le rester.
 // ---------------------------------------------------------------------
-// L'espace actif se lit désormais dans le CHEMIN. Un paramètre qui
-// rejouerait ce rôle ramènerait l'ambiguïté que toute cette organisation
-// sert à supprimer : une même route rendant deux écrans différents.
+// L'espace actif se lit dans le CHEMIN. Un paramètre qui rejouerait ce
+// rôle ferait rendre deux écrans différents à une même route.
 for (const f of fichiers(SRC)) {
   if (code(lire(f)).includes("vue=")) {
     rate("espace", court(f), "`?vue=` est de retour : l'espace redevient une query string");
@@ -124,10 +105,9 @@ for (const f of fichiers(SRC)) {
 // ---------------------------------------------------------------------
 // 5. La messagerie du commerçant vit sous `/vendeur`.
 // ---------------------------------------------------------------------
-// Les composants de fil servent les deux espaces : ils doivent recevoir
-// leur racine (`messagesBase`, `basePath`) et n'écrire aucun chemin en
-// dur, sans quoi un commerçant ressort dans l'espace client au premier
-// lien — c'est le défaut exact qu'on vient de corriger.
+// Les composants de fil servent les deux espaces : ils reçoivent leur
+// racine (`messagesBase`, `basePath`) et n'écrivent aucun chemin en dur,
+// sans quoi un commerçant ressort côté client au premier lien.
 for (const f of fichiers(join(SRC, "components/chat"))) {
   const c = code(lire(f));
   if (/["'`]\/messages\//.test(c)) {
@@ -138,36 +118,28 @@ for (const f of fichiers(join(SRC, "components/chat"))) {
 // ---------------------------------------------------------------------
 // 6. Un écran client n'envoie personne dans l'espace commerçant.
 // ---------------------------------------------------------------------
-// Une seule exception, et elle est explicite : la carte de bascule entre
-// comptes liés (`SwitchSpaceCard`), qui est un geste DEMANDÉ par la
-// personne, pas une redirection subie. Tout autre lien vers `/vendeur`
-// depuis un écran client est un mélange d'espaces.
+// Une seule exception : `SwitchSpaceCard`, un geste demandé par la
+// personne et non une redirection subie.
 for (const f of fichiers(espaceClient)) {
   const source = lire(f);
   const c = code(source);
   if (!/["'`]\/vendeur/.test(c)) continue;
   const lignes = c.split("\n");
-  // La dérogation se cherche dans le texte D'ORIGINE, commentaires
-  // compris — c'est là qu'elle est écrite. Même découpage, mêmes indices.
+  // La dérogation vit dans un commentaire : on la cherche donc dans le
+  // texte d'origine. Même découpage, mêmes indices.
   const lignesSource = source.split("\n");
   for (const [i, ligne] of lignes.entries()) {
     if (!/["'`]\/vendeur/.test(ligne)) continue;
-    /* On remonte jusqu'au BLOC englobant — le commentaire ou l'élément
-       JSX dans lequel ce lien est écrit — plutôt qu'un nombre fixe de
-       lignes. Une fenêtre fixe se règle par tâtonnement et se casse au
-       premier élément un peu long : `<SwitchSpaceCard>` occupait déjà
-       onze lignes. La ligne vide est la frontière que le code se donne
-       lui-même, et c'est celle qu'un relecteur utilise aussi. */
+    /* On remonte jusqu'au bloc englobant plutôt qu'à un nombre fixe de
+       lignes : une fenêtre fixe casse au premier élément un peu long. La
+       ligne vide est la frontière que le code se donne lui-même. */
     let debut = i;
     while (debut > 0 && lignesSource[debut - 1].trim() !== "" && i - debut < 40) debut--;
     const contexte = lignesSource.slice(debut, i + 2).join("\n");
     if (contexte.includes("SwitchSpaceCard")) continue;
-    /* Dérogation explicite. Elle doit être ÉCRITE à côté du lien, avec sa
-       raison : une liste d'exceptions rangée dans ce script serait
-       invisible depuis le code qu'elle autorise, et personne ne la
-       relirait en modifiant l'écran. Ici, qui touche au lien lit la
-       justification, et qui ajoute une dérogation doit l'assumer dans le
-       fichier concerné — pas dans le vérificateur. */
+    /* Dérogation explicite, écrite à côté du lien avec sa raison : une
+       liste d'exceptions rangée ici serait invisible depuis le code
+       qu'elle autorise. */
     if (contexte.includes("espaces:autorise")) continue;
     rate("espace", `${court(f)}:${i + 1}`, `lien vers l'espace commerçant : ${ligne.trim()}`);
   }
@@ -176,17 +148,10 @@ for (const f of fichiers(espaceClient)) {
 // ---------------------------------------------------------------------
 // 7. Un composant de fil qui reçoit `espace` porte sa garde.
 // ---------------------------------------------------------------------
-// Ces composants sont montés par DEUX routes, une par espace. Le chemin
-// emprunté est donc une affirmation — « je suis le côté client de ce
-// fil » — et `getThreadContext` sait si elle est vraie. Sans confronter
-// les deux, un commerçant qui ouvre l'adresse client obtient l'écran
-// habillé en client.
-//
-// La règle existe parce que l'oubli s'est produit : `ThreadScreen`
-// portait cette garde, ses trois feuilles sœurs ne l'avaient pas. C'est
-// le même motif que les sept gardes recopiées de `/vendeur` dont la
-// huitième manquait — une protection écrite à la main sur N écrans
-// finit toujours par manquer sur le N+1.
+// Ces composants sont montés par deux routes, une par espace : le chemin
+// emprunté est une affirmation que seul `getThreadContext` peut confirmer.
+// Sans confrontation, un commerçant qui ouvre l'adresse client obtient
+// l'écran habillé en client.
 for (const f of fichiers(join(SRC, "components/chat"))) {
   const c = code(lire(f));
   if (!/\bespace: Espace\b/.test(c)) continue;

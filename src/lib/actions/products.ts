@@ -37,16 +37,13 @@ function validateProductFields(fields: ReturnType<typeof readProductFields>): st
 }
 
 /**
- * Nouveau produit — écran 24.
+ * Nouveau produit — écran 24. INSERTION EN DEUX TEMPS : le trigger
+ * `products_check_publishable` (0002, élargi par 0018) exige une ligne
+ * `product_images`, impossible à satisfaire dans l'insert qui crée le
+ * produit. Donc `draft`, puis les photos, puis la publication.
  *
- * INSERTION EN DEUX TEMPS, jamais en un seul : le trigger
- * `products_check_publishable` (0002, élargi par 0018) refuse l'entrée au
- * catalogue tant qu'aucune ligne `product_images` ne référence le produit —
- * impossible à satisfaire dans l'insert qui crée ce produit. Donc `draft`,
- * puis les photos, puis la publication.
- *
- * `productId` vient du navigateur : c'est déjà celui sous lequel
- * `PhotoPicker` a rangé les photos dans Storage.
+ * `productId` vient du navigateur, `PhotoPicker` ayant déjà rangé les
+ * photos sous cet identifiant dans Storage.
  */
 export async function createProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const owner = await requireMerchantId();
@@ -92,12 +89,10 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .eq("id", productId)
       .select("id");
     if (publishError) return { error: publishError.message };
-    // DEUX REFUS, DEUX CANAUX : « pas de photo » et « boutique non
-    // validée » viennent du trigger, en français, via `publishError` ; le
-    // succès muet à zéro ligne vient du RLS, qui ne regarde PAS la
-    // validation et n'écarte que compte suspendu, supprimé ou produit
-    // d'autrui. Le message ci-dessous nomme CE cas : accuser la mauvaise
-    // cause envoie chercher une photo à quelqu'un qui est suspendu.
+    // Deux refus, deux canaux : « pas de photo » et « boutique non
+    // validée » remontent par `publishError` ; le succès muet à zéro ligne
+    // vient du RLS, qui n'écarte que compte suspendu, supprimé ou produit
+    // d'autrui. Le message ci-dessous nomme CE cas.
     if (!published || published.length === 0) {
       return { error: "Publication impossible : votre compte commerçant n'est plus actif. Le produit est enregistré en brouillon." };
     }
@@ -121,12 +116,11 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
 
   const supabase = await createClient();
 
-  /* Un produit PUBLIÉ doit garder au moins une photo : le remplacement plus
-     bas (tout supprimer puis réinsérer) le sortirait sinon du catalogue en
-     le laissant `active`, soit une vignette vide dans le fil. Le trigger de
-     0011 garantit déjà l'invariant en repassant le produit en brouillon —
-     mais le commerçant a cliqué « Enregistrer », pas « Dépublier ». La base
-     garantit, ce message explique. */
+  /* Un produit publié doit garder au moins une photo, sinon le
+     remplacement plus bas laisse une vignette vide dans le fil. Le trigger
+     de 0011 garantit l'invariant en repassant en brouillon ; ce message
+     existe parce que le commerçant a cliqué « Enregistrer », pas
+     « Dépublier ». */
   if (fields.imagePaths.length === 0) {
     const { data: current } = await supabase
       .from("products")
@@ -156,13 +150,8 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
 
   // On remplace TOUTES les lignes plutôt que de comparer photo par photo :
   // `unique (product_id, position)` rend ce calcul fragile dès qu'une photo
-  // du milieu part, les suivantes se décalant. L'erreur du `delete` se lit :
-  // écartée par le RLS, les anciennes lignes resteraient et la réinsertion
-  // échouerait sur la contrainte d'unicité, avec un message incompréhensible
-  // pour le commerçant.
-  //
-  // Les chemins d'AVANT sont relus ici : ce sont eux qui diront, une fois la
-  // base à jour, quels fichiers ne sont plus référencés par personne.
+  // du milieu part. Les chemins d'AVANT diront, une fois la base à jour,
+  // quels fichiers ne sont plus référencés.
   const { data: previousImages } = await supabase
     .from("product_images")
     .select("storage_path")
@@ -180,26 +169,19 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     if (imagesError) return { error: imagesError.message };
   }
 
-  /* Le ménage dans Storage vient APRÈS l'écriture en base, jamais avant :
-     `PhotoPicker` supprimait le fichier dès le clic sur « retirer », si
-     bien que quitter l'écran ou perdre le réseau laissait
-     `product_images` pointer sur un fichier détruit — vignette cassée
-     dans le catalogue public, irréparable. La base est la source de
-     vérité, le stockage la suit.
-
-     Best effort assumé : une suppression ratée laisse un orphelin que
-     personne ne référence, la moins chère des deux erreurs. */
+  /* Le ménage dans Storage vient APRÈS l'écriture en base : supprimer
+     d'abord laisserait `product_images` pointer sur un fichier détruit si
+     l'écran est quitté. La base est la source de vérité, le stockage la
+     suit. Best effort assumé : une suppression ratée laisse un orphelin,
+     la moins chère des deux erreurs. */
   const removedPaths = (previousImages ?? [])
     .map((image) => image.storage_path)
     .filter((path) => !fields.imagePaths.includes(path));
 
-  /* Ce fichier est-il encore cité AILLEURS ? `storage_path` n'est unique
-     nulle part et `imagePaths` vient du navigateur : un envoi fabriqué
-     peut faire pointer un produit sur le chemin d'un autre, et supprimer
-     sans regarder laisserait une écriture sur X détruire la photo de Y.
-     Le RLS du stockage borne les dégâts au dossier du commerçant, ce
-     n'est pas une raison de le laisser casser SES annonces. Une requête
-     de plus, seulement quand une photo est retirée. */
+  /* Ce fichier est-il encore cité ailleurs ? `storage_path` n'est unique
+     nulle part et `imagePaths` vient du navigateur : sans ce contrôle, un
+     envoi fabriqué fait détruire la photo de Y en écrivant sur X. Une
+     requête de plus, seulement quand une photo est retirée. */
   if (removedPaths.length > 0) {
     const { data: stillReferenced } = await supabase
       .from("product_images")
@@ -217,27 +199,19 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   redirect("/vendeur/produits");
 }
 
-/**
- * Retour vers « Mes produits », le message d'erreur porté par l'URL. Les
- * lignes de la feuille d'actions sont de vraies `<form>` de composants
- * serveur, sans `useActionState` : elles marchent sans JavaScript, et l'URL
- * est alors le seul canal qui survive à la redirection.
- */
+/** Retour vers « Mes produits », le message d'erreur porté par l'URL : les
+ * lignes de la feuille d'actions sont de vraies `<form>` serveur, et l'URL
+ * est le seul canal qui survive à la redirection. */
 function backToSeller(errorMessage?: string): never {
   redirect(errorMessage ? `/vendeur/produits?erreur=${encodeURIComponent(errorMessage)}` : "/vendeur/produits");
 }
 
 /**
- * Changement de statut : vendu, masqué, republié.
+ * Changement de statut : vendu, masqué, republié. « Pas d'erreur » ne veut
+ * pas dire « fait » — deux façons d'échouer :
  *
- * DEUX FAÇONS D'ÉCHOUER, et « pas d'erreur » ne veut pas dire « fait » :
- *
- * 1. une exception du trigger `products_check_publishable` — « Republier »
- *    boutique non approuvée, ou « Marquer vendu » sur un produit non
- *    publié, `sold` étant un état public depuis 0018 ;
+ * 1. une exception du trigger `products_check_publishable` ;
  * 2. un succès à ZÉRO ligne, quand le RLS l'écarte — d'où `.select("id")`.
- *
- * Sans ces contrôles, « Republier » laissait le produit masqué en silence.
  */
 async function setProductStatus(formData: FormData, status: "active" | "sold" | "hidden") {
   const productId = String(formData.get("productId") ?? "");
@@ -285,9 +259,9 @@ export async function deleteProductAction(formData: FormData) {
   const { data, error } = await supabase.from("products").delete().eq("id", productId).select("id");
 
   if (error) backToSeller(error.message);
-  // Comme `setProductStatus` : une suppression écartée par le RLS ne lève
-  // rien, elle supprime zéro ligne. Se taire sur une action irréversible
-  // serait le pire endroit du projet pour le faire.
+  // Comme `setProductStatus` : écartée par le RLS, la suppression ne lève
+  // rien et supprime zéro ligne. On ne se tait pas sur un geste
+  // irréversible.
   if (!data || data.length === 0) {
     backToSeller("Suppression impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
   }

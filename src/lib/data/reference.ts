@@ -26,14 +26,12 @@ export const FALLBACK_CITY = "Conakry";
 /**
  * La ville de DÉPART de la navigation : celle du profil client
  * (`profiles.city_id`, 0010), sinon Conakry. Un point de départ, jamais un
- * filtre permanent — dès que `?ville=` est dans l'URL, c'est lui qui gagne,
- * et le filtre reste MANUEL (docs/SPEC.md, décision 9) : on ne devine rien,
- * on relit un choix déjà fait.
+ * filtre permanent — `?ville=` gagne toujours, et le filtre reste MANUEL
+ * (docs/SPEC.md, décision 9) : on ne devine rien, on relit un choix fait.
  *
- * Écrite une fois parce que `/recherche` avait son propre "Conakry" en dur :
- * un client de Boké voyait son fil à Boké puis retombait à Conakry en
- * touchant « Rechercher ». `cities` est passée en paramètre, les deux écrans
- * qui s'en servent l'ayant déjà sous la main.
+ * Écrite une fois pour les deux écrans, sinon l'un retombe sur Conakry
+ * quand l'autre respecte la ville du client. `cities` est passée en
+ * paramètre, les deux appelants l'ayant déjà sous la main.
  */
 export async function getDefaultCityName(
   supabase: SupabaseClient<Database>,

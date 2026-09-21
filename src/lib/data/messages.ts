@@ -141,10 +141,8 @@ export type ThreadContext = {
    * suspendu ou supprimé : le fil passe en LECTURE SEULE (0017 côté
    * boutique, 0022 côté client), l'historique restant affiché. */
   isOpen: boolean;
-  /** `true` quand c'est MON compte qui est suspendu. Sert à choisir le
-   * texte du fil gelé : sans cette distinction, un commerçant en règle
-   * dont le client est suspendu lisait « votre compte ne permet plus
-   * d'écrire » — une accusation fausse et incontestable. */
+  /** `true` quand c'est MON compte qui est suspendu. Choisit le texte du
+   * fil gelé : sans cette distinction, on accuse le mauvais compte. */
   iAmSuspended: boolean;
 };
 
@@ -155,26 +153,18 @@ export async function getThreadContext(
   supabase: SupabaseClient<Database>,
   conversationId: string,
 ): Promise<ThreadContext | null> {
-  /* Sans session, il ne faut surtout pas POSER la question :
-     `conversation_is_open` est révoquée à `anon` (0017), donc la RPC
-     ci-dessous répond « permission refusée » à un visiteur, et cette
-     erreur remontait en frontière d'erreur (« Vérifiez votre
-     connexion ») au lieu de la page introuvable attendue — un lien de
-     conversation partagé ou remis en favori faisait croire à une panne.
-
-     Le cas se traite ICI parce qu'aucune page de `/messages` n'exige de
-     session en amont (le middleware ne fait que rafraîchir le cookie) :
-     une ligne couvre les quatre écrans et les trois actions serveur.
-     Gratuit pour une session ouverte, `getSessionUser` étant mis en
-     cache pour la durée de la requête. */
+  /* Sans session, ne pas POSER la question : `conversation_is_open` est
+     révoquée à `anon` (0017), donc la RPC répondrait « permission
+     refusée » à un visiteur, et une frontière d'erreur annoncerait une
+     panne au lieu d'une page introuvable. Traité ici parce qu'aucune page
+     de `/messages` n'exige de session en amont. */
   const user = await getSessionUser(supabase);
   if (!user) return null;
 
   /* L'ouverture du fil est demandée à la BASE (`conversation_is_open`,
-     0017) et non déduite ici : c'est la même fonction qui décide, dans la
-     policy d'envoi, si le message passera. Dédoublée, la règle finirait
-     par diverger — champ de saisie promis puis refusé, ou éteint pour
-     rien. Les deux appels partent ensemble. */
+     0017) : c'est la même fonction qui décide, dans la policy d'envoi, si
+     le message passera. Dédoublée, la règle finirait par promettre un
+     champ de saisie qu'on refuse ensuite. */
   const [{ data, error }, { data: isOpen, error: openError }] = await Promise.all([
     supabase
       .from("conversations")
@@ -199,9 +189,8 @@ export async function getThreadContext(
   const merchantProfile = await getMyProfile(supabase, "merchant");
   const iAmMerchant = merchantProfile?.id === data.merchants.profile_id;
 
-  /* Le profil par lequel JE participe au fil, pour savoir si la
-     suspension qui le gèle est la mienne. Mis en cache pour la durée de
-     la requête : pas d'aller-retour de plus. */
+  // Le profil par lequel JE participe au fil, pour savoir si la
+  // suspension qui le gèle est la mienne. En cache, donc gratuit.
   const myProfile = iAmMerchant ? merchantProfile : await getMyProfile(supabase, "client");
 
   return {
@@ -283,11 +272,9 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
  * de la barre d'onglets (décision 5 de docs/SPEC.md).
  *
  * Jamais global : un commerçant qui range sa boutique n'a pas à voir
- * clignoter les messages de son compte d'acheteur, ni l'inverse.
- * Deux requêtes plutôt qu'une jointure, la seconde en `head` (juste le
- * compte), toutes deux couvertes par le RLS. Renvoie 0 sans rien
- * interroger sans profil pour cet espace — le cas du catalogue public,
- * qui ne doit rien coûter.
+ * clignoter les messages de son compte d'acheteur. Renvoie 0 sans rien
+ * interroger quand l'espace n'a pas de profil — le catalogue public ne
+ * doit rien coûter.
  */
 export async function countUnreadMessages(
   supabase: SupabaseClient<Database>,

@@ -1,20 +1,14 @@
 /**
  * Le texte des conditions d'utilisation, fourni par le porteur du projet
- * le 2026-09-17.
+ * le 2026-09-17. Dans un fichier de données et non dans l'écran : un texte
+ * juridique se relit et se corrige sans traverser du JSX.
  *
- * DANS UN FICHIER DE DONNÉES, PAS DANS L'ÉCRAN : un texte juridique se
- * relit et se corrige sans traverser du JSX, ni risquer l'affichage —
- * même raison que `composeNewMessageEmail`.
+ * SEULES LES APOSTROPHES ONT ÉTÉ UNIFORMISÉES (’). Aucun mot, aucune
+ * clause, aucun ordre : ce texte engage le porteur du projet.
  *
- * SEULES LES APOSTROPHES ONT ÉTÉ MODIFIÉES : la source mélangeait ’ et ',
- * tout est uniformisé en ’, que les téléphones rendent correctement.
- * Aucun mot, aucune clause, aucun ordre — ce texte engage le porteur du
- * projet, il ne s'améliore pas en passant par ici.
- *
- * SA DATE EST DANS LE TEXTE, ET C'EST VOULU : l'article 20 promet que
- * toute nouvelle version « indiquera sa date de mise à jour ». Calculée à
- * l'affichage (`new Date()`), elle tiendrait la promesse en mentant, en
- * changeant chaque jour sans qu'une ligne du texte ne bouge.
+ * Sa date est ÉCRITE dans le texte, jamais calculée : l'article 20 promet
+ * que toute nouvelle version indiquera sa date de mise à jour, et un
+ * `new Date()` tiendrait cette promesse en mentant.
  */
 
 export const CONDITIONS_MISE_A_JOUR = "17 septembre 2026";
@@ -28,8 +22,8 @@ export const CONDITIONS_PREAMBULE = [
 export type BlocConditions = string | string[];
 
 export type ArticleConditions = {
-  /** Numéroté comme dans le texte d'origine : la numérotation sert à s'y
-   *  référer dans un échange, donc elle ne se recalcule pas. */
+  /** Numéroté comme dans le texte d'origine : on s'y réfère dans un
+   *  échange, donc la numérotation ne se recalcule pas. */
   numero: number;
   titre: string;
   blocs: BlocConditions[];

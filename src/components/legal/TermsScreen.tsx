@@ -10,18 +10,14 @@ import {
 /**
  * Conditions d'utilisation — écran 34.
  *
- * UN COMPOSANT, DEUX ROUTES, comme `ThreadScreen` : le texte est le même
- * des deux côtés, le lien de RETOUR non — un commerçant venu de
- * `/vendeur/boutique` doit y revenir, pas atterrir dans son espace
- * d'acheteur. `backHref` est donc IMPOSÉ par la route, jamais lu dans
- * l'URL : un paramètre se perd (favori, lien partagé, retour arrière).
+ * Un composant, deux routes, comme `ThreadScreen` : même texte, lien de
+ * RETOUR différent. `backHref` est IMPOSÉ par la route et jamais lu dans
+ * l'URL, un paramètre se perdant au favori ou au retour arrière.
  *
- * AUCUNE GARDE, et rien à garder : ce composant ne lit aucune donnée.
- * `/conditions` est PUBLIQUE comme le catalogue — l'article 25 fait
- * accepter ces conditions à la création du compte, les cacher derrière
- * une inscription ferait accepter un texte illisible avant.
- * `/vendeur/conditions` hérite de la garde de son espace, restriction sur
- * ce chemin-là et non sur le texte.
+ * Aucune garde, et rien à garder : ce composant ne lit aucune donnée, et
+ * `/conditions` est publique comme le catalogue — l'article 25 fait
+ * accepter ces conditions à la création du compte, les cacher derrière une
+ * inscription les ferait accepter sans les avoir lues.
  */
 export function TermsScreen({ backHref }: { backHref: string }) {
   return (
@@ -50,9 +46,8 @@ export function TermsScreen({ backHref }: { backHref: string }) {
               </h2>
               {article.blocs.map((bloc, i) =>
                 /* Tableau = liste à puces, chaîne = paragraphe. L'index
-                   sert de clé : le texte est figé dans un fichier, donc
-                   jamais réordonné, et deux paragraphes peuvent être
-                   identiques (« Makiti peut : » apparaît trois fois). */
+                   sert de clé : le texte est figé, jamais réordonné, et
+                   deux paragraphes peuvent être identiques. */
                 Array.isArray(bloc) ? (
                   <ul key={i} className="flex list-disc flex-col gap-1.5 pl-5 text-base leading-relaxed">
                     {bloc.map((puce) => (

@@ -42,19 +42,16 @@ export default async function HomePage({
   const { ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
   const supabase = await createClient();
 
-  /* Le fil client n'est pas l'écran d'ouverture d'un commerçant (`docs/SPEC.md`
-     décision 8) : une connexion sans compte client repart chez elle. Corrigé
-     ici EN PLUS de `signInAction`, car cette adresse s'atteint aussi par un
-     favori ou un rechargement — l'aiguillage ne doit pas dépendre du chemin
-     parcouru. `landingForSession` ne renvoie `/vendeur` que pour une connexion
-     QUI N'A QUE le compte commerçant : visiteurs et doubles comptes passent. */
+  /* Le fil client n'est pas l'écran d'ouverture d'un commerçant
+     (docs/SPEC.md, décision 8). Ici EN PLUS de `signInAction` : cette
+     adresse s'atteint aussi par un favori, et l'aiguillage ne doit pas
+     dépendre du chemin parcouru. Visiteurs et doubles comptes passent. */
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
-  // Même résolution que `/recherche`, au même endroit : la règle « ma
-  // ville d'abord, Conakry sinon » était écrite deux fois et appliquée une
-  // seule.
+  // Même résolution que `/recherche`, au même endroit : « ma ville
+  // d'abord, Conakry sinon » ne s'écrit qu'une fois.
   const ville = villeParam ?? (await getDefaultCityName(supabase, cities));
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
 

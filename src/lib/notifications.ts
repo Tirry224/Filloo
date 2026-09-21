@@ -4,41 +4,34 @@ import { sendPushToUser } from "@/lib/push";
 
 /**
  * Prévenir la personne qui vient de recevoir un message, par notification
- * push ET par email. Sans ça, la messagerie est une boîte aux lettres que
- * personne ne relève, et tout le produit repose dessus.
+ * push ET par email.
  *
- * `service_role` parce que l'adresse vit dans `auth.users`, hors RLS : et
- * c'est heureux, l'expéditeur ne doit JAMAIS pouvoir obtenir l'email de son
- * interlocuteur, ce serait contourner la messagerie interne. L'adresse est
- * lue ici et ne repart vers aucun écran.
+ * `service_role` parce que l'adresse vit dans `auth.users`, hors RLS.
+ * L'expéditeur ne doit JAMAIS obtenir l'email de son interlocuteur : elle
+ * est lue ici et ne repart vers aucun écran.
  *
  * Ni trigger en base ni Edge Function : une action serveur fait la même
  * chose avec un aller-retour de moins et un seul système à déployer.
  */
 export async function notifyNewMessage(messageId: string): Promise<void> {
   try {
-    /* DEUX CANAUX, DEUX CONFIGURATIONS, UNE SEULE RÈGLE D'ENVOI. Chacun
-       peut être éteint sans empêcher l'autre ; ce qu'ils partagent, c'est
-       qui prévenir et la règle anti-spam. La dupliquer, c'est se garantir
-       qu'un jour l'une enverra ce que
-       l'autre retient. */
+    /* Deux canaux, deux configurations, une seule règle d'envoi : chacun
+       s'éteint sans emporter l'autre, mais « qui prévenir » et la règle
+       anti-spam restent communs — dédoublés, ils divergeraient. */
     const emailPret = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
     const pushPret = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
-    /* Sans adresse de site, le lien de l'email serait relatif — donc mort
-       dans une boîte mail. Un email qui annonce un message et ne permet
-       pas d'y aller est pire que pas d'email : il fait ouvrir, chercher,
-       et abandonner. Le push, lui, n'en a pas besoin : son lien est
-       relatif et s'ouvre dans l'application, jamais dans une boîte mail. */
+    /* Sans adresse de site, le lien de l'email serait relatif, donc mort
+       dans une boîte mail. Le push n'en a pas besoin : son lien s'ouvre
+       dans l'application. */
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
     if (emailPret && !siteUrl) {
       console.error("[email] NEXT_PUBLIC_SITE_URL absente : email non envoyé.");
     }
     const emailPossible = emailPret && Boolean(siteUrl);
 
-    /* On s'arrête AVANT les requêtes ci-dessous si RIEN ne peut partir :
-       une fonctionnalité éteinte ne doit pas coûter quatre allers-retours
-       en base par message envoyé. */
+    // On s'arrête AVANT les requêtes si rien ne peut partir : une
+    // fonctionnalité éteinte ne doit rien coûter par message envoyé.
     if (!emailPossible && !pushPret) return;
 
     const admin = createAdminClient();
@@ -56,14 +49,11 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }>();
     if (messageError || !message) return;
 
-    /* LA RÈGLE ANTI-SPAM, ET ELLE NE COÛTE AUCUNE COLONNE. On ne prévient
-       que si ce message est le premier non lu du fil : s'il en reste un du
-       même expéditeur, le destinataire a déjà été prévenu et n'est pas
-       revenu. Un second avertissement ne l'informe de rien et mène au
-       courrier indésirable, après quoi plus AUCUNE notification n'arrive.
-       Dix messages échangés produisent donc un seul email ; `read_at` se
-       pose à l'ouverture du fil et le suivant redevient notifiable.
-       Tout tient sur cette colonne, qui existe depuis 0001. */
+    /* La règle anti-spam, et elle ne coûte aucune colonne : on ne prévient
+       que si ce message est le premier non lu du fil. Sinon le destinataire
+       a déjà été prévenu et n'est pas revenu — un second avertissement ne
+       l'informe de rien et mène au courrier indésirable. `read_at` se pose
+       à l'ouverture du fil, et le suivant redevient notifiable. */
     const { count: alreadyWaiting, error: countError } = await admin
       .from("messages")
       .select("id", { count: "exact", head: true })
@@ -87,12 +77,9 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }>();
     if (conversationError || !conversation?.merchants) return;
 
-    /* Qui reçoit, et sous quel nom l'autre apparaît : la même règle que
-       `getThreadContext` — côté client on parle à une BOUTIQUE, côté
-       boutique on parle à une PERSONNE. Un email signé « Aissatou » quand
-       l'écran affiche « Chez Aissatou » sèmerait le doute sur son
-       authenticité, ce qui est précisément ce qu'un email transactionnel
-       ne peut pas se permettre. */
+    /* Même règle que `getThreadContext` : côté client on parle à une
+       BOUTIQUE, côté boutique à une PERSONNE. Un email signé d'un autre
+       nom que celui affiché à l'écran a l'air d'un faux. */
     const merchantProfileId = conversation.merchants.profile_id;
     const senderIsMerchant = message.sender_id === merchantProfileId;
     const recipientProfileId = senderIsMerchant ? conversation.client_id : merchantProfileId;
@@ -106,21 +93,15 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       .eq("id", recipientProfileId)
       .single();
     if (recipientError || !recipient) return;
-    /* Un compte supprimé est banni côté `auth.users` : l'email partirait
-       vers quelqu'un qui ne peut plus se connecter pour lire le message.
-       Un compte SUSPENDU, lui, est prévenu — il garde la lecture, et
-       c'est la décision du 2026-09-15. */
+    // Un compte supprimé est banni côté `auth.users` : il ne peut plus se
+    // connecter pour lire. Un compte SUSPENDU, lui, garde la lecture.
     if (recipient.is_deleted) return;
 
 
-    /* LE PUSH D'ABORD : il arrive en secondes sur un écran verrouillé,
-       l'email met le temps qu'il met, et il ne lève jamais — il ne peut
-       donc pas empêcher l'email qui suit.
-
-       CE QU'IL NE DIT PAS : le corps du message. Un écran verrouillé se lit
-       par-dessus l'épaule ; l'email, lui, demande de déverrouiller son
-       téléphone. Deux expositions, deux
-       contenus. */
+    /* Le push d'abord : il arrive en secondes et ne lève jamais, donc
+       n'empêche pas l'email qui suit. Il ne dit pas le corps du message —
+       un écran verrouillé se lit par-dessus l'épaule, une boîte mail
+       demande de déverrouiller. */
     if (pushPret) {
       await sendPushToUser(recipient.auth_user_id, {
         titre: senderName,
@@ -128,19 +109,16 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
           ? `Nouveau message à propos de : ${message.products.title}`
           : "Vous avez un nouveau message.",
         url: `/messages/${message.conversation_id}`,
-        /* Un `tag` par CONVERSATION : deux messages du même fil
-           remplacent la notification précédente au lieu d'en empiler
-           dix. */
+        // Un `tag` par conversation : la nouvelle remplace la précédente
+        // au lieu d'en empiler dix.
         tag: `conversation-${message.conversation_id}`,
       });
     }
 
     if (!emailPossible) return;
 
-    /* L'ADRESSE N'EST CHERCHÉE QU'ICI : avant le push, un compte sans
-       adresse lisible supprimait AUSSI la notification, qui n'en a aucun
-       besoin. Un canal ne doit jamais tomber à cause de la configuration
-       d'un autre. */
+    // L'adresse n'est cherchée qu'ICI, après le push : un canal ne doit
+    // pas tomber à cause de ce qui manque à l'autre.
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
       recipient.auth_user_id,
     );
@@ -159,21 +137,16 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }),
     );
 
-    /* Un email perdu ne doit pas rester invisible : c'est le seul canal
-       qui ramène un commerçant, et personne ne s'apercevra de son absence
-       en utilisant l'application. Il n'est pas non plus rejoué — un
-       renvoi automatique sur une adresse invalide abîme la réputation du
-       domaine. En v1, on constate ; on rejoue quand il y aura de quoi
-       mesurer. */
+    /* Un email perdu ne doit pas rester invisible : rien dans
+       l'application ne signale son absence. Il n'est pas rejoué pour
+       autant — un renvoi sur une adresse invalide abîme la réputation du
+       domaine. En v1, on constate. */
     if (!outcome.sent && outcome.configured) {
       console.error(`[email] notification non envoyée (message ${messageId}) : ${outcome.reason}`);
     }
   } catch (cause) {
-    /* Rien de ce qui se passe ici ne doit toucher l'envoi du message
-       lui-même : il est déjà écrit en base, confirmé, et affiché. Une
-       notification est un service rendu EN PLUS — la faire échouer
-       bruyamment reviendrait à casser la messagerie parce que le
-       courrier ne part pas. */
+    // Rien ici ne doit toucher l'envoi du message, déjà écrit et affiché :
+    // une notification est un service rendu EN PLUS.
     console.error(`[email] notification impossible (message ${messageId}) :`, cause);
   }
 }
@@ -182,9 +155,8 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
  * sans toucher au transport. */
 function composeNewMessageEmail(input: {
   to: string;
-  /** Résolue par l'appelant, et JAMAIS depuis l'en-tête `Host` : un email
-   * est lu ailleurs, plus tard, et son lien doit désigner le vrai site
-   * même si la requête qui l'a déclenché portait un `Host` falsifié. */
+  /** Résolue par l'appelant, JAMAIS depuis l'en-tête `Host` : le lien doit
+   * désigner le vrai site même si la requête portait un `Host` falsifié. */
   siteUrl: string;
   recipientName: string;
   senderName: string;
@@ -194,11 +166,9 @@ function composeNewMessageEmail(input: {
 }) {
   const link = `${input.siteUrl}/messages/${input.conversationId}`;
 
-  /* Le message est recopié dans l'email plutôt que résumé par « vous avez
-     un nouveau message ». Sur un forfait guinéen, obliger quelqu'un à
-     ouvrir l'application pour découvrir « c'est disponible ? » lui coûte
-     des données pour rien. Tronqué quand même : un email n'est pas
-     l'écran du fil, et la suite est à un clic. */
+  /* Le message est recopié, non résumé : sur un forfait compté, ouvrir
+     l'application pour découvrir « c'est disponible ? » coûte des données
+     pour rien. Tronqué quand même, la suite étant à un clic. */
   const excerpt = input.body.length > 400 ? `${input.body.slice(0, 400)}…` : input.body;
   const about = input.productTitle ? `À propos de : ${input.productTitle}` : "";
 
@@ -212,11 +182,8 @@ function composeNewMessageEmail(input: {
     `Répondre : ${link}`,
   ].join("\n\n");
 
-  /* L'enveloppe est celle de `emailShell` — la même pour les quatre
-     emails du projet. Un email transactionnel qui ne ressemble pas aux
-     autres emails du même domaine ressemble surtout à une tentative
-     d'hameçonnage. Tout ce qui vient d'un humain passe par
-     `escapeHtml`. */
+  // Enveloppe commune aux quatre emails du projet (`emailShell`). Tout ce
+  // qui vient d'un humain passe par `escapeHtml`.
   const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.recipientName)},</p>
       <p style="margin:0 0 16px;"><strong>${escapeHtml(input.senderName)}</strong> vous a envoyé un message sur Makiti.</p>
       ${about ? `<p style="margin:0 0 16px;color:#6b5d52;font-size:14px;">${escapeHtml(about)}</p>` : ""}

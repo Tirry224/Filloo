@@ -64,41 +64,23 @@ function Block({ title, note, children }: { title: string; note?: string; childr
 }
 
 /* Rendu à la requête, pas au build : sinon le résultat de `notFound()`
-   était figé dans une page statique mise en cache.
+   serait figé dans une page statique mise en cache.
 
-   Ce que ce réglage ne corrige PAS, vérifié au `curl` : la réponse reste
-   un **200** portant « Cette page n'existe pas », pas un vrai 404. C'est
-   attendu en Next 16 (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/not-found.md`,
-   « Calling notFound() after streaming has started ») : le `loading.tsx`
-   racine ouvre une frontière `<Suspense>` sur chaque route, donc la
-   réponse est déjà partie quand la garde s'évalue, et un statut ne se
-   change plus le flux ouvert.
-
-   Ce qui suffit ici : Next injecte `<meta name="robots" content="noindex">`,
-   vérifié présent sur cette adresse et absent des pages légitimes — le
-   risque réel, une page de travail trouvée par un moteur, est fermé. Un
-   vrai 404 demanderait de déplacer la garde dans `proxy` (remplaçant de
-   `middleware`), qui s'exécute AVANT le flux : à faire avec cette
-   migration, pas au milieu d'une correction de bugs. */
+   PIÈGE : la réponse reste un 200 portant « Cette page n'existe pas », pas
+   un vrai 404 — attendu en Next 16 quand le flux a commencé avant la garde
+   (`not-found.md`, « Calling notFound() after streaming has started »).
+   Next injecte en échange `<meta name="robots" content="noindex">`, ce qui
+   ferme le risque réel. Un vrai 404 demanderait la garde dans `proxy`
+   (remplaçant de `middleware`), qui s'exécute AVANT le flux. */
 export const dynamic = "force-dynamic";
 
 /**
- * Page de TRAVAIL : accessible en développement, introuvable en
- * production.
+ * Page de TRAVAIL : accessible en développement, introuvable en production
+ * — prérendue, elle partait en ligne ouverte à tous.
  *
- * `README` et `docs/REPRISE.md` prévoyaient de la supprimer une fois
- * l'authentification en place ; elle l'est, et le build prérendait
- * pourtant toujours la page (`○ /styleguide`), donc elle partait en ligne
- * ouverte à tous. La supprimer serait quand même une erreur : l'étape 1
- * de `docs/REPRISE.md` — ouvrir les 33 écrans dans un navigateur — se
- * fait précisément depuis ici.
- *
- * D'où ce `notFound()` conditionnel plutôt qu'un `rm` : l'outil reste
- * entier en local et l'adresse se comporte en production comme une URL
- * inventée. `NODE_ENV` est figé au build, mais la garde, elle, s'exécute
- * à chaque requête (voir `dynamic` ci-dessus).
- *
- * À supprimer pour de bon quand l'étape 1 sera terminée.
+ * `notFound()` conditionnel plutôt qu'un `rm` : l'étape 1 de
+ * `docs/REPRISE.md` (ouvrir les 33 écrans) se fait depuis ici, l'outil
+ * restant entier en local. À supprimer quand cette étape sera terminée.
  */
 export default function StyleguidePage() {
   if (process.env.NODE_ENV === "production") notFound();

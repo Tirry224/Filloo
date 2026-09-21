@@ -7,10 +7,9 @@ import { TopBar } from "@/components/ui/TopBar";
  *
  * `?erreur=lien_invalide` est posé par `/auth/confirm` (échange du jeton
  * échoué) et par `/reinitialiser-mot-de-passe` (aucune session de
- * récupération). Cet écran doit le LIRE : muet, il réaffichait le
- * formulaire à l'identique, sans distinguer un lien expiré d'une erreur de
- * saisie, et la personne redemandait un lien — chaque demande frappant la
- * limite d'envoi du serveur mail de Supabase (docs/REPRISE.md, étape 2).
+ * récupération). Le LIRE est nécessaire : muet, l'écran ne distingue pas
+ * un lien expiré d'une erreur de saisie, et la personne redemande un lien
+ * — chaque demande frappant la limite d'envoi du serveur mail.
  */
 export default async function ForgotPasswordPage({
   searchParams,

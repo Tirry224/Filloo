@@ -47,9 +47,9 @@ export function MenuItem({
     tone === "danger" ? "text-danger" : "text-ink",
   );
 
-  /* Un élément qui navigue est un lien, un élément qui agit est un bouton
-     dans sa propre `<form>`. On ne met pas un `onClick` sur un `<div>` :
-     ni le clavier ni un lecteur d'écran ne sauraient s'en servir. */
+  /* Un élément qui navigue est un lien, un élément qui agit un bouton dans
+     sa propre `<form>` : ni le clavier ni un lecteur d'écran ne savent se
+     servir d'un `onClick` sur un `<div>`. */
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -66,22 +66,18 @@ export function MenuItem({
       </form>
     );
   }
-  /* Ni lien ni action : une ligne d'information, pas un bouton. Elle en
-     rendait un, `cursor-pointer` compris — on touche, rien ne se passe, on
-     croit l'application bloquée. */
+  // Ni lien ni action : une ligne d'information, sans `cursor-pointer`
+  // qui ferait croire à un bouton mort.
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }
 
 /**
  * Une ligne de réglage qui n'emmène nulle part : elle OUVRE un panneau.
  *
- * PAS DE CHEVRON : il promettrait un changement d'écran alors que le
- * panneau remonte du bas — le « retour » du téléphone ne ramènerait pas
- * où la personne croit.
- *
- * UN PANNEAU ET PAS UNE PAGE : l'aller-retour dure quelques secondes et
- * doit laisser exactement où l'on était, quand une page dédiée coûterait
- * un écran de plus dans `docs/ECRANS.md` pour trois champs.
+ * Pas de chevron, qui promettrait un changement d'écran alors que le
+ * panneau remonte du bas — le « retour » du téléphone ne ramènerait pas où
+ * la personne croit. Un panneau et non une page : l'aller-retour doit
+ * laisser exactement où l'on était.
  *
  * Même mécanique que les filtres : un `<details>`, donc sans JavaScript,
  * que `data-panneau` fait refermer par `ClosePanels`.

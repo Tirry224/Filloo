@@ -7,11 +7,10 @@ import { sendMessageAction } from "@/lib/actions/messages";
 import type { ActionState } from "@/lib/actions/auth";
 
 /**
- * Champ de saisie du fil. Contrairement aux formulaires vendeur (étape 2),
- * celui-ci exige du JavaScript : sans `useActionState`, un dépassement de
- * quota ou un blocage échouerait en silence — le formulaire se
- * soumettrait, la page se rafraîchirait, et rien ne dirait pourquoi le
- * message a disparu. Gap déjà documenté dans docs/REPRISE.md.
+ * Champ de saisie du fil. Contrairement aux formulaires vendeur, celui-ci
+ * exige du JavaScript : sans `useActionState`, un dépassement de quota ou
+ * un blocage échouerait en silence, la page se rafraîchissant sans rien
+ * dire du message disparu. Écart documenté dans docs/REPRISE.md.
  */
 export function Composer({
   conversationId,
@@ -21,8 +20,8 @@ export function Composer({
 }: {
   conversationId: string;
   /** Racine de la messagerie de l'espace courant (`/messages` ou
-   *  `/vendeur/messages`) : sans elle, « citer un produit » faisait
-   *  sortir le commerçant de son espace au milieu d'une réponse. */
+   *  `/vendeur/messages`) : sans elle, « citer un produit » sort le
+   *  commerçant de son espace au milieu d'une réponse. */
   basePath: string;
   citingProductId?: string;
   disabled?: boolean;

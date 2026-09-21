@@ -9,15 +9,13 @@ import type { CityOption } from "@/lib/data/reference";
 import type { Merchant } from "@/lib/types";
 
 /**
- * Écran 26 — modifier ma boutique. `merchant.status` ne change jamais ici :
- * voir le commentaire de `updateMerchantAction` sur la promesse de
- * « nouvelle vérification » retirée de cet écran.
+ * Écran 26 — modifier ma boutique. `merchant.status` ne change jamais ici
+ * (voir `updateMerchantAction`).
  *
- * Pas de `<ScreenBody>`/`<ScreenFooter>` : c'est la page qui pose le
- * cadre, ce composant ne rend que les champs. Le bouton « Enregistrer »
- * vit dans la barre du haut et rejoint cette `<form>` par l'attribut HTML
- * `form` — un bouton de la barre du haut ne peut pas être un enfant du
- * formulaire qu'il envoie.
+ * Pas de `<ScreenBody>`/`<ScreenFooter>` : la page pose le cadre, ce
+ * composant ne rend que les champs. Le bouton « Enregistrer » vit dans la
+ * barre du haut et rejoint cette `<form>` par l'attribut HTML `form`, ne
+ * pouvant pas être son enfant.
  */
 export function ShopEditForm({
   merchant,

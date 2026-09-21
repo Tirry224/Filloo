@@ -1,15 +1,12 @@
 /**
- * Mesure le poids réel de l'application.
- *
- * Un budget qu'on ne mesure pas est un vœu. Ce script lit la sortie de
- * `npm run build` et compare le poids transféré aux budgets de
- * docs/PERFORMANCE.md. Il sort en erreur si un budget est dépassé, pour
- * qu'un jour il puisse tourner avant chaque mise en ligne.
+ * Mesure le poids réel de l'application : lit la sortie de `npm run build`
+ * et la compare aux budgets de docs/PERFORMANCE.md, en sortant en erreur
+ * si l'un est dépassé.
  *
  *   npm run build && npm run poids
  *
- * Les tailles sont données en gzip, la compression que sert Vercel.
- * Brotli, réellement utilisé en production, retire encore 15 à 20 %.
+ * Tailles en gzip, la compression que sert Vercel ; Brotli, réellement
+ * utilisé en production, retire encore 15 à 20 %.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
@@ -36,16 +33,12 @@ if (!existsSync(".next")) {
 
 // Le socle : l'INTERSECTION des ressources des pages pré-rendues.
 //
-// ATTENTION, CE CHIFFRE SOUS-COMPTE, mesuré le 2026-09-20 : `_global-error`
-// ne référence AUCUN CSS, et comme elle entre dans l'intersection, elle en
-// éjecte la feuille de style entière et trois chunks présents partout —
-// environ 30 Ko. Une vraie première visite pèse donc ~195 Ko, pas 165, et
-// quatre routes (messagerie, ajout de produit) dépassent les 200 Ko du
-// budget sans que rien ne le signale.
-//
-// Corriger la mesure ferait échouer le build sur ces routes : c'est le but,
-// mais c'est un chantier à part. En attendant, ce chiffre est un plancher,
-// pas un total.
+// ATTENTION, CE CHIFFRE SOUS-COMPTE. `_global-error` ne référence aucun
+// CSS et, entrant dans l'intersection, en éjecte la feuille de style et
+// trois chunks présents partout (~30 Ko). Une vraie première visite pèse
+// ~195 Ko, pas 165, et quatre routes dépassent les 200 Ko du budget sans
+// que rien ne le signale. Corriger la mesure est un chantier à part ; d'ici
+// là, ce chiffre est un plancher.
 const pages = walk(".next/server/app").filter((f) => extname(f) === ".html");
 const refsPar = pages.map(
   (f) => new Set(readFileSync(f, "utf8").match(/\/_next\/static\/[^"']+\.(?:js|css)/g) ?? []),

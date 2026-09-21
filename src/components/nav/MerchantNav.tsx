@@ -8,19 +8,14 @@ import { cn } from "@/lib/cn";
 /**
  * La barre d'onglets de l'espace COMMERÇANT — quatre onglets comme le
  * prototype (`design/`) : avec trois, « Ma boutique » cumulait tableau de
- * bord et liste de produits, chacun noyant l'autre. « Rechercher » est absent
- * volontairement : chercher est un geste de client, et on bascule d'espace
- * explicitement (`SwitchSpaceCard`).
+ * bord et liste de produits. « Rechercher » est absent volontairement,
+ * chercher étant un geste de client (on bascule par `SwitchSpaceCard`).
  *
- * TOUS LES LIENS RESTENT DANS `/vendeur` : un lien qui n'y commence pas est
- * un bug, visible d'un coup d'œil. « Messages » pointait avant sur
- * `/messages?vue=commercant` — un écran client rendu marchand par une query
- * string, que le moindre favori ou retour arrière perdait, renvoyant le
- * commerçant dans sa boîte d'ACHETEUR.
+ * TOUS les liens restent dans `/vendeur` : un lien qui n'y commence pas est
+ * un bug, visible d'un coup d'œil.
  */
 /* Les quatre `match` sont volontairement DISJOINTS : deux onglets allumés
-   à la fois, c'est une barre qui ment sur l'endroit où l'on est. D'où
-   `/vendeur` testé à l'identique, jamais en préfixe. */
+   à la fois font mentir la barre. D'où `/vendeur` testé à l'identique. */
 const TABS = [
   {
     label: "Accueil",
@@ -46,8 +41,8 @@ const TABS = [
     label: "Boutique",
     href: "/vendeur/boutique",
     icon: Store,
-    /* « Boutique » et non « Compte » : l'écran édite d'abord la boutique
-       (nom, ville, WhatsApp, description), les réglages viennent après. */
+    // « Boutique » et non « Compte » : l'écran édite d'abord la boutique,
+    // les réglages viennent après.
     match: (p: string) => p.startsWith("/vendeur/boutique"),
   },
 ] as const;

@@ -13,8 +13,8 @@ function read(): string[] {
     const list: unknown = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list.filter((v): v is string => typeof v === "string") : [];
   } catch {
-    /* Navigation privée, stockage plein, cookies refusés : pas d'historique,
-       ce n'est pas une raison pour casser l'écran. */
+    // Navigation privée, stockage plein, cookies refusés : pas
+    // d'historique, mais pas d'écran cassé non plus.
     return [];
   }
 }
@@ -29,14 +29,13 @@ const classes = {
 };
 
 /**
- * Les dernières recherches, gardées DANS LE NAVIGATEUR — jamais en base : le
- * catalogue se consulte sans compte, lier l'historique à un compte en
+ * Les dernières recherches, gardées DANS LE NAVIGATEUR — jamais en base :
+ * le catalogue se consulte sans compte, et lier l'historique à un compte en
  * priverait la moitié des visiteurs. `localStorage` ne coûte ni requête ni
  * table et ne quitte jamais l'appareil.
  *
  * Sert aussi de mémoire silencieuse (`show={false}`) sur l'écran de
- * résultats : c'est là qu'une recherche mérite d'être retenue, puisqu'elle a
- * été réellement lancée.
+ * résultats, où une recherche a réellement été lancée.
  */
 export function RecentSearches({ q, show }: { q: string; show: boolean }) {
   const [recent, setRecent] = useState<string[]>([]);

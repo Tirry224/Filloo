@@ -7,11 +7,10 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import { getCategories } from "@/lib/data/reference";
 
 /**
- * « Modifier le produit », ouvert depuis l'écran 25. RLS ("products: je
- * gere mes produits") ne laisse de toute façon lire que ses propres
- * produits ; `notFound()` couvre aussi bien « n'existe pas » que
- * « appartient à quelqu'un d'autre » — comme pour la fiche produit
- * publique, ce n'est pas à cet écran de distinguer les deux.
+ * « Modifier le produit », ouvert depuis l'écran 25. Le RLS ("products: je
+ * gere mes produits") ne laisse lire que ses propres produits, et
+ * `notFound()` couvre aussi bien « n'existe pas » que « appartient à
+ * quelqu'un d'autre » : ce n'est pas à cet écran de les distinguer.
  */
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

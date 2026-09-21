@@ -31,11 +31,9 @@ export default async function SearchPage({
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
 
-  /* Cet écran avait son propre "Conakry" en dur : un client de Boké voyait
-     son fil à Boké puis se retrouvait à Conakry en touchant « Rechercher »,
-     sa ville perdue en changeant d'onglet. La ville de départ est désormais
-     résolue au même endroit pour les deux écrans (`getDefaultCityName`) ;
-     `?ville=` gagne toujours et se choisit dans le panneau de la puce. */
+  /* La ville de départ est résolue au même endroit pour les deux écrans
+     (`getDefaultCityName`), sinon on perd sa ville en changeant d'onglet.
+     `?ville=` gagne toujours, et se choisit dans le panneau de la puce. */
   const defaultVille = await getDefaultCityName(supabase, cities);
   const ville = villeParam ?? defaultVille;
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
@@ -52,29 +50,23 @@ export default async function SearchPage({
   const elsewhereCount =
     results.length === 0 ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null }) : 0;
 
-  /* « Filtre actif » veut dire « différent de ce qu'on aurait sans rien
-     toucher », pas « différent de Conakry » : pour un client de Boké, sa
-     propre ville n'est pas un filtre qu'il a posé. Le chiffre suit donc la
-     ville de départ, comme le reste de l'écran. */
+  // « Filtre actif » = différent de ce qu'on aurait sans rien toucher :
+  // pour un client de Boké, sa propre ville n'est pas un filtre posé.
   const activeFilterCount = (ville !== defaultVille ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
-  // Écran de repos : rien à afficher, tout à proposer. Le fil d'accueil
-  // montre déjà des produits ; en montrer ici ferait croire à des résultats.
+  // Écran de repos : montrer des produits ici les ferait passer pour des
+  // résultats.
   const resting = !q && categorie === "Tout";
 
-  /* Ces deux liens gardent la recherche tapée — sinon on efface aussi ce
-     que la personne cherchait, ce qui n'est pas ce que « filtres » veut
-     dire. Deux boutons parce que ce sont deux gestes différents : changer
-     de ville en gardant la catégorie choisie, ou tout remettre à zéro. */
+  /* Les deux gardent la recherche tapée : « filtres » ne veut pas dire ce
+     qu'on cherchait. Deux boutons pour deux gestes : changer de ville en
+     gardant la catégorie, ou tout remettre à zéro. */
   const searchInConakryHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(FALLBACK_CITY)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`;
-  // « Effacer les filtres » remet la ville de DÉPART, pas Conakry : effacer
-  // un filtre qu'on n'a pas posé reviendrait à déplacer quelqu'un de chez
-  // lui pour lui rendre service.
+  // « Effacer les filtres » remet la ville de DÉPART, pas Conakry : on
+  // n'efface pas un filtre que la personne n'a pas posé.
   const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
 
-  /* Une seule fonction construit TOUTES les URL de filtre : recopiées à la
-     main, l'une d'elles oublierait un jour de reporter `q`, et effacer la
-     recherche de quelqu'un qui change de ville ne se remarque qu'en
-     production. */
+  // Une seule fonction pour TOUTES les URL de filtre : recopiées, l'une
+  // oublierait de reporter `q`, ce qui ne se remarque qu'en production.
   const lien = (modifs: { ville?: string; categorie?: string; tri?: string }) => {
     const params = new URLSearchParams({
       q,
@@ -89,15 +81,10 @@ export default async function SearchPage({
     <>
       <TopBar
         title={
-          /* Cette barre AFFICHAIT la recherche sans permettre de la taper :
-             aucun <input>, aucun <form>, alors que la croix « Effacer la
-             recherche » apparaissait dès que `q` était rempli. `q` ne se
-             renseignait qu'en écrivant l'URL à la main, et `search_products`
-             restait inatteignable depuis l'écran qui existe pour elle.
-             `method="get"` sur un vrai <form> : la recherche marche sans
-             JavaScript et reste dans l'URL, donc partageable. Les trois champs
-             cachés reportent ville, catégorie et tri — chercher ne doit pas
-             réinitialiser ce qu'on avait réglé. */
+          /* `method="get"` sur un vrai <form> : la recherche marche sans
+             JavaScript et reste dans l'URL, donc partageable. Les trois
+             champs cachés reportent ville, catégorie et tri — chercher ne
+             doit pas réinitialiser ce qu'on avait réglé. */
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
             <input type="hidden" name="ville" value={ville} />
             <input type="hidden" name="categorie" value={categorie} />

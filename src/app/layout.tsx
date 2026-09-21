@@ -6,17 +6,16 @@ import { ClosePanels } from "@/components/ui/ClosePanels";
 import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
 
 /**
- * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md) : la seconde, pour les
- * titres et le logotype, pesait 40,3 Ko — le double — pour une différence
- * à peine visible sur un téléphone. En ajouter une est une décision.
+ * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md) : la seconde pesait 40,3 Ko
+ * pour une différence à peine visible sur un téléphone. En ajouter une est
+ * une décision.
  *
- * PIÈGE : `preload: false` remettrait le budget au vert sans économiser
- * un octet, `scripts/poids.mjs` ne comptant que les polices PRÉCHARGÉES ;
- * la police arriverait juste plus tard, avec un saut de lettres visible.
+ * PIÈGE : `preload: false` remettrait le budget au vert sans économiser un
+ * octet, `scripts/poids.mjs` ne comptant que les polices PRÉCHARGÉES — la
+ * police arriverait plus tard, avec un saut de lettres visible.
  *
- * Next l'héberge lui-même, donc aucun appel à Google ; `variable` la
- * publie en variable CSS que tokens.css récupère, et les composants ne
- * connaissent jamais le nom d'une police.
+ * Next l'héberge lui-même, donc aucun appel à Google ; `variable` la publie
+ * en variable CSS que tokens.css récupère.
  */
 
 const body = Figtree({
@@ -30,10 +29,9 @@ export const metadata: Metadata = {
   description:
     "Makiti aide à trouver des produits et les commerçants qui les vendent, en Guinée. Parcourez le catalogue librement et contactez le vendeur pour conclure la vente.",
   /* `apple-touch-icon` est le SEUL format qu'iOS lit pour l'écran
-     d'accueil : il ignore les icônes du manifeste. Sans cette ligne,
-     l'application installée depuis un iPhone porterait une capture de la
-     page au lieu du logo — et sur iPhone, l'installation est justement la
-     condition pour recevoir un push. */
+     d'accueil, les icônes du manifeste étant ignorées. Sans lui,
+     l'application installée porte une capture de la page — et sur iPhone
+     l'installation est la condition pour recevoir un push. */
   appleWebApp: { capable: true, title: "Makiti", statusBarStyle: "default" },
   icons: { apple: "/icons/icone-180.png" },
 };

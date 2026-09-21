@@ -5,15 +5,12 @@ import { cn } from "@/lib/cn";
 import type { Thread } from "@/lib/types";
 
 /**
- * Ligne de la liste des messages.
- *
- * Elle rappelle le produit sous le nom : un fil unique par personne n'est
- * lisible que si le commerçant voit de quoi il s'agit sans l'ouvrir.
+ * Ligne de la liste des messages. Elle rappelle le produit sous le nom :
+ * un fil unique par personne n'est lisible que si le commerçant voit de
+ * quoi il s'agit sans l'ouvrir.
  *
  * `basePath` plutôt qu'un `/messages/` en dur : cette ligne sert les deux
- * messageries, et celle du commerçant vit sous `/vendeur/messages`. Le
- * chemin écrit en dur ici renvoyait un commerçant dans l'espace client
- * dès qu'il touchait un de ses fils — la liste était bonne, le lien non.
+ * messageries, et celle du commerçant vit sous `/vendeur/messages`.
  */
 export function ThreadRow({ thread, basePath }: { thread: Thread; basePath: string }) {
   const unread = thread.unreadCount > 0;

@@ -4,14 +4,11 @@
  *   npm run build && npm start        (dans un terminal)
  *   npm run parcours                  (dans un autre)
  *
- * Deux passages : avec JavaScript, puis SANS. Le second est le plus
- * important — c'est l'état d'une connexion guinéenne pendant les premières
- * secondes, et c'est lui qui a révélé que cinq écrans sur sept restaient
- * bloqués sur un squelette (voir docs/PERFORMANCE.md, règle R7). Un test
- * qui ne tourne qu'avec JavaScript n'aurait rien vu.
+ * Deux passages : avec JavaScript, puis SANS. Le second compte le plus —
+ * c'est l'état d'une connexion guinéenne pendant les premières secondes
+ * (docs/PERFORMANCE.md, règle R7).
  *
- * Playwright n'est PAS une dépendance du projet : il ne part jamais dans
- * le navigateur des utilisateurs. À installer une fois, à la main :
+ * Playwright n'est PAS une dépendance du projet. À installer à la main :
  *   npm i -D playwright-core && npx playwright install chromium
  * Le chemin du navigateur se donne par CHROMIUM= si besoin.
  */
@@ -58,8 +55,8 @@ const ok = (c, m) => { if (!c) echecs++; console.log((c ? '  OK   ' : ' ÉCHEC '
   let requetes = 0;
   p.on('request', (r) => { if (r.method() === 'POST') requetes++; });
 
-  // Un formulaire vide ne part même pas : le navigateur le retient. Zéro
-  // octet dépensé pour une faute que l'on sait détecter sur place.
+  // Un formulaire vide ne part pas : le navigateur le retient, zéro octet
+  // dépensé.
   await p.goto(B + '/inscription');
   await p.click('button[type=submit]');
   await p.waitForTimeout(1000);
@@ -84,8 +81,8 @@ const ok = (c, m) => { if (!c) echecs++; console.log((c ? '  OK   ' : ' ÉCHEC '
   ok(!p.url().includes('motdepasse'), "le mot de passe n'est JAMAIS dans l'URL");
 
   await p.fill('#email', 'mariama@exemple.com');
-  // Le mot de passe a disparu avec la redirection — et c'est voulu : il ne
-  // voyage jamais dans l'URL. On le retape, comme le ferait la personne.
+  // Le mot de passe ne voyage jamais dans l'URL : on le retape, comme le
+  // ferait la personne.
   ok((await p.locator('#motdepasse').inputValue()) === '', "le mot de passe n'est pas réaffiché après un refus");
   await p.fill('#motdepasse', 'motdepasse1');
   await p.click('text=Vendre');
@@ -163,10 +160,9 @@ const ok = (c, m) => { if (!c) echecs++; console.log((c ? '  OK   ' : ' ÉCHEC '
 
   // ── Ce que l'action CHANGE à l'écran ────────────────────────────────
   //
-  // Les vérifications précédentes regardent où l'on atterrit. Elles
-  // passaient toutes alors que publier un produit ne le faisait apparaître
-  // nulle part : un formulaire qui accepte puis oublie est pire qu'un
-  // bouton mort. Celles-ci regardent l'écran d'après.
+  // Les vérifications précédentes regardent où l'on atterrit ; celles-ci
+  // regardent l'écran d'après. Un formulaire qui accepte puis oublie est
+  // pire qu'un bouton mort.
   console.log('\n── Ce que l\'action change à l\'écran ──');
   const u = await b.newContext({ viewport: { width: 390, height: 844 } });
   const e = await u.newPage();

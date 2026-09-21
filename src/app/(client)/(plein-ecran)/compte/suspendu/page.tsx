@@ -23,38 +23,24 @@ import { clientSpaceFallback, getMyProfiles, landingForSession } from "@/lib/dat
 export default async function SuspendedPage() {
   const supabase = await createClient();
 
-  // Cet écran cherchait UNIQUEMENT un profil client, et c'était la moitié
-  // d'une règle : la suspension vit sur `profiles`, donc elle frappe un
-  // commerçant exactement pareil. Un commerçant suspendu qu'on aurait
-  // envoyé ici aurait été renvoyé vers son espace, qui l'aurait renvoyé
-  // ici — une boucle. D'où la recherche par SUSPENSION plutôt que par
-  // rôle : c'est la propriété qui compte, pas le rôle qui la porte.
+  // Recherche par SUSPENSION et non par rôle : elle vit sur `profiles`,
+  // donc frappe un commerçant pareil. Chercher un profil client renverrait
+  // un commerçant suspendu vers son espace, qui le renverrait ici.
   const profiles = await getMyProfiles(supabase);
   const suspended = profiles.find((p) => p.isSuspended && !p.isDeleted);
-  // Deux sorties distinctes, parce que ce sont deux situations
-  // distinctes : sans profil du tout on n'est pas connecté et on va se
-  // connecter ; avec un profil non suspendu, on n'a rien à faire ici et
-  // on repart vers son écran d'ouverture.
+  // Deux situations distinctes : sans profil on n'est pas connecté ; avec
+  // un profil non suspendu, on n'a rien à faire ici.
   if (profiles.length === 0) redirect(await clientSpaceFallback(supabase));
   if (!suspended) redirect(await landingForSession(supabase));
 
   /* La suspension frappe un PROFIL, jamais une connexion (docs/SPEC.md,
-     décision 8 : « suspendre le compte client ne gèle pas la boutique »).
-     Cet écran l'affirmait dans son commentaire et le démentait à l'écran :
-     quelqu'un dont le compte client est suspendu mais dont la boutique
-     tourne n'avait ici qu'un bouton « Voir les produits », c'est-à-dire
-     aucune mention du seul espace qui lui reste ouvert. Il en concluait
-     que tout était bloqué.
-
-     La bascule n'est pas un raccourci de confort : c'est ce qui rend la
-     règle visible. Même carte que `/compte` et `/vendeur/boutique`, pour
-     que changer d'espace se reconnaisse partout au même geste. */
-  /* espaces:autorise — la suspension frappe un PROFIL, pas la connexion.
-     Quelqu'un dont le compte commerçant est suspendu mais dont le compte
-     client reste actif (et l'inverse) doit pouvoir rejoindre celui qui
-     lui reste : c'est un geste de bascule, comme `SwitchSpaceCard`, pas
-     une redirection subie. Le refuser enfermerait la personne sur un
-     écran d'impasse — et cet écran promet justement le contraire. */
+     décision 8). La bascule n'est donc pas un confort : sans elle,
+     quelqu'un dont seul le compte client est suspendu croit tout bloqué.
+     Même carte que `/compte` et `/vendeur/boutique`, pour que changer
+     d'espace se reconnaisse au même geste partout. */
+  /* espaces:autorise — la suspension frappe un PROFIL, pas la connexion :
+     qui garde un espace actif doit pouvoir le rejoindre. Geste de bascule
+     comme `SwitchSpaceCard`, pas une redirection subie. */
   const stillActive = profiles.find((p) => !p.isSuspended && !p.isDeleted);
 
   return (

@@ -8,18 +8,16 @@ import { cn } from "@/lib/cn";
 /**
  * La barre d'onglets de l'espace CLIENT — et elle ne sert que lui.
  *
- * DEUX COMPOSANTS PLUTÔT QU'UN AVEC UNE PROP `space` : l'ancien `BottomNav`
- * choisissait d'après une prop qui valait « client » par DÉFAUT, donc tout
- * écran oubliant `space="merchant"` affichait la barre du client sans l'avoir
- * décidé — invisible à la relecture, visible en production quand un
- * commerçant touche « Rechercher » et se retrouve dans le fil d'achat. Ici
- * c'est le LAYOUT qui rend l'une ou l'autre : un écran de `(client)` n'a
- * aucun moyen de demander celle du commerçant (décision 8 de docs/SPEC.md).
+ * Deux composants plutôt qu'un avec une prop `space` : une prop a une
+ * valeur par défaut, donc un écran qui l'oublie affiche la mauvaise barre
+ * sans que la relecture le voie. Ici c'est le LAYOUT qui rend l'une ou
+ * l'autre, et un écran de `(client)` n'a aucun moyen de demander celle du
+ * commerçant (décision 8 de docs/SPEC.md).
  *
- * Composant client pour lire l'onglet actif dans le chemin (`usePathname`),
- * sans exiger de JavaScript : Next le rend sur le serveur au premier
- * chargement, donc `aria-current` et la couleur sont corrects dans le HTML
- * initial et les onglets restent des `<a>` (R7 de docs/PERFORMANCE.md).
+ * Composant client pour lire l'onglet actif (`usePathname`), sans exiger de
+ * JavaScript : Next le rend sur le serveur au premier chargement, donc
+ * `aria-current` et la couleur sont corrects dans le HTML initial et les
+ * onglets restent des `<a>` (R7 de docs/PERFORMANCE.md).
  */
 const TABS = [
   { label: "Accueil", href: "/", icon: House, match: (p: string) => p === "/" },

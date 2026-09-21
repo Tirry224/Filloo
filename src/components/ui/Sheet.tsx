@@ -5,10 +5,9 @@ import { cn } from "@/lib/cn";
  * Feuille glissée depuis le bas : près du pouce, et l'écran d'origine
  * reste visible, ce qu'une boîte de dialogue centrée ne donne pas.
  *
- * Chaque feuille est une VRAIE ADRESSE (`/produit/p-riz/signaler`), pas un
- * état caché dans la page : le bouton « retour » du téléphone la referme
- * sans une ligne de code, et elle se partage par lien. Le voile est un
- * lien vers `closeHref` — taper à côté referme.
+ * Chaque feuille est une VRAIE ADRESSE et non un état caché dans la page :
+ * le bouton « retour » du téléphone la referme sans une ligne de code. Le
+ * voile est un lien vers `closeHref`.
  */
 export function Sheet({
   title,

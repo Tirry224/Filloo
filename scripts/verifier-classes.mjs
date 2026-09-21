@@ -1,22 +1,14 @@
 /**
- * Vérifie que CHAQUE classe Tailwind écrite dans src/ produit réellement du
- * CSS.
- *
- * Pourquoi ce script existe : une classe Tailwind qui n'existe pas ne
- * provoque AUCUNE erreur. Ni `tsc`, ni `next build`, ni le navigateur ne
- * signalent quoi que ce soit — le style disparaît simplement, en silence.
- * C'est ainsi que `border-6` (une largeur de bordure qui n'existe pas dans
- * Tailwind) est resté des semaines sur l'écran d'inscription sans que la
- * pastille sélectionnée ne s'affiche jamais.
- *
- * Depuis que les tokens définissent un vocabulaire fermé (`gap-hair`,
- * `px-gutter`, `size-mark`…), le risque augmente : une faute de frappe dans
- * un nom produit exactement le même silence. Ce script le rompt.
+ * Vérifie que CHAQUE classe Tailwind écrite dans src/ produit réellement
+ * du CSS.
  *
  *     node scripts/verifier-classes.mjs
  *
- * Il sort en code 1 si une classe est introuvable, ce qui permet de le
- * brancher un jour sur l'intégration continue.
+ * Une classe Tailwind inexistante ne provoque aucune erreur : ni `tsc`, ni
+ * `next build`, ni le navigateur ne disent rien, le style disparaît en
+ * silence. Le vocabulaire fermé des tokens (`gap-hair`, `px-gutter`…)
+ * aggrave le risque, une faute de frappe produisant le même silence. Sort
+ * en code 1 si une classe est introuvable.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -30,10 +22,9 @@ const RACINE = resolve(import.meta.dirname, "..");
 const IGNORER = new Set(["group", "peer", "dark", "container"]);
 
 /**
- * Racines d'utilitaires Tailwind. Un mot dont la racine n'est pas dans
- * cette liste n'est pas considéré comme une classe : c'est ainsi qu'on
- * écarte `lucide-react`, `current-password` ou « inscrivez-vous », qui sont
- * des chaînes de caractères ordinaires et non du style.
+ * Racines d'utilitaires Tailwind. Un mot dont la racine n'y est pas n'est
+ * pas une classe : c'est ce qui écarte `lucide-react`, `current-password`
+ * ou « inscrivez-vous ».
  */
 const RACINES = new Set(
   `p px py pt pb pl pr ps pe m mx my mt mb ml mr gap space size w h min max
@@ -57,35 +48,31 @@ function fichiersTsx(dossier) {
 }
 
 /**
- * Récupère les classes candidates. On lit toutes les chaînes de caractères
- * des fichiers plutôt que les seuls attributs `className` : depuis la
- * refonte, l'essentiel des classes vit dans des tables `const STYLE = {…}`
- * en haut des composants, hors de tout attribut.
+ * Toutes les chaînes des fichiers, et non les seuls attributs `className` :
+ * l'essentiel des classes vit dans des tables `const STYLE = {…}`.
  */
 function classesCandidates(texte, nomsDeTokens) {
   const trouvees = new Set();
   for (const [, contenu] of texte.matchAll(/["'`]([^"'`\n]*)["'`]/g)) {
     const mots = contenu.trim().split(/\s+/).filter(Boolean);
     for (const brut of mots) {
-      /* Les chaînes de l'application contiennent aussi du français, et
-         une phrase qui cite une classe l'accompagne d'une ponctuation :
-         « … py-section. » ou « gap-, p-, m- ». On la retire, et on écarte
-         ce qui reste ouvert sur un tiret : ce n'est pas une classe. */
+      /* Les chaînes contiennent aussi du français, ponctuation comprise :
+         « … py-section. », « gap-, p-, m- ». On la retire, et ce qui reste
+         ouvert sur un tiret n'est pas une classe. */
       const mot = brut.trim().replace(/[.,;:!?)»]+$/, "");
       if (!mot || mot.length > 60 || mot.endsWith("-")) continue;
-      // Une classe utilitaire : lettres, chiffres, et les signes que
-      // Tailwind autorise. On exclut tout ce qui ressemble à du texte.
+      // Lettres, chiffres et signes autorisés par Tailwind ; tout ce qui
+      // ressemble à du texte est exclu.
       if (!/^-?[a-z][-a-z0-9:/.[\]()%#_]*$/.test(mot)) continue;
       if (!/[-/]/.test(mot)) continue;
       // La racine est le premier segment, variantes et signe négatif retirés.
       const nu = mot.replace(/^-/, "").replace(/^((?:[a-z-]+:)+)/, "");
       const racine = nu.split("-")[0];
       if (!RACINES.has(racine)) continue;
-      /* Une chaîne d'un seul mot est ambiguë : « p-gutter » est une classe,
-         « p-riz » est l'identifiant d'un produit de démonstration. On ne la
-         retient que si son suffixe est un nom déclaré dans tokens.css, ou
-         si elle porte un chiffre, une variante ou une fraction — trois
-         choses qu'un identifiant de données n'a jamais. */
+      /* Une chaîne d'un seul mot est ambiguë : « p-gutter » est une
+         classe, « p-riz » un identifiant de produit. On ne la retient que
+         si son suffixe est déclaré dans tokens.css, ou qu'elle porte un
+         chiffre, une variante ou une fraction. */
       if (mots.length === 1) {
         const suffixe = nu.slice(racine.length + 1);
         const reconnaissable = /[0-9:[\]/.]/.test(mot) || nomsDeTokens.has(suffixe);

@@ -7,20 +7,18 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import { getCategories } from "@/lib/data/reference";
 
 /**
- * Écran 24 — ajouter un produit. Une boutique en attente peut déjà
- * préparer des produits (ils resteront en brouillon) ; seule la
- * publication exige une boutique approuvée, et c'est
- * `products_check_publishable` (0002) qui tranche, pas cet écran.
+ * Écran 24 — ajouter un produit. Une boutique en attente peut préparer des
+ * produits (ils resteront en brouillon) ; seule la publication exige une
+ * boutique approuvée, et c'est `products_check_publishable` (0002) qui
+ * tranche, pas cet écran.
  *
- * Cet écran n'AUTORISE donc rien : il évite seulement de proposer ce que
- * la base refusera. `canPublish` est un affichage, jamais un droit, et le
- * statut n'est lu qu'ICI : le formulaire ne reçoit que la réponse.
+ * Il n'AUTORISE donc rien, il évite de proposer ce que la base refusera :
+ * `canPublish` est un affichage, jamais un droit, et le statut n'est lu
+ * qu'ici — le formulaire ne reçoit que la réponse.
  *
- * UNE BOUTIQUE REFUSÉE N'EST PAS UNE BOUTIQUE EN ATTENTE : un commerçant
- * REFUSÉ arrivé ici recevait « publication disponible après validation »,
- * qui lui annonce une validation en cours. D'où la redirection plutôt
- * qu'un second message : l'écran 21 dit déjà tout (motif, corrections,
- * renvoi), et le dupliquer en créerait une version qui divergerait.
+ * Une boutique REFUSÉE est redirigée plutôt que de lire « publication
+ * disponible après validation », qui lui annoncerait une validation en
+ * cours : l'écran 21 dit déjà tout (motif, corrections, renvoi).
  */
 export default async function NewProductPage() {
   const supabase = await createClient();

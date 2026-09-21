@@ -1,38 +1,32 @@
 /**
- * Envoi d'emails transactionnels, par l'API HTTP de Resend.
+ * Envoi d'emails transactionnels, par l'API HTTP de Resend — pas le SDK,
+ * qui n'ajouterait qu'un POST JSON à nos neuf dépendances.
  *
- * Pas le SDK `resend` : c'est un POST avec un en-tête et du JSON, et le
- * projet tient à neuf dépendances de production justifiées une à une.
- *
- * CETTE FONCTION NE LÈVE JAMAIS : elle est appelée depuis `after()` (voir
+ * `sendEmail` NE LÈVE JAMAIS : appelée depuis `after()` (voir
  * `src/lib/notifications.ts`), donc après le départ de la réponse, où une
- * promesse rejetée ne remonte à aucun écran. Elle rend compte de ce qui
- * s'est passé au lieu d'échouer.
+ * promesse rejetée ne remonterait à aucun écran.
  */
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-/** Au-delà, on considère que Resend ne répondra pas : sans cette borne, un
- * appel qui pend retient l'invocation serverless jusqu'à sa durée
- * maximale — une minute payée pour un email perdu. */
+/** Sans cette borne, un appel qui pend retient l'invocation serverless
+ * jusqu'à sa durée maximale : une minute payée pour un email perdu. */
 const TIMEOUT_MS = 10_000;
 
 export type EmailOutcome =
-  /** Resend a accepté l'email. Accepté n'est pas « reçu » : la
-   * distribution, elle, ne se constate que dans le tableau de bord
-   * Resend. C'est une limite connue de la v1, pas un oubli. */
+  /** Accepté par Resend — ce qui n'est pas « reçu » : la distribution ne
+   * se constate que dans leur tableau de bord. Limite connue de la v1. */
   | { sent: true; id: string }
-  /** L'envoi n'a pas eu lieu. `configured: false` distingue « service non
-   * branché » (normal tant que la clé n'est pas posée) d'une vraie panne :
-   * sans cette nuance, les journaux se remplissent d'alertes pour une
-   * configuration volontairement absente, et on cesse de les lire. */
+  /** `configured: false` distingue « service non branché », normal tant
+   * que la clé n'est pas posée, d'une vraie panne — sans quoi les journaux
+   * s'emplissent d'alertes qu'on cesse de lire. */
   | { sent: false; configured: boolean; reason: string };
 
 type EmailToSend = {
   to: string;
   subject: string;
   /** Toujours fourni : certains clients mail, et la plupart des
-   * passerelles SMS-vers-email, n'affichent que celui-là. */
+   * passerelles SMS-vers-email, n'affichent que lui. */
   text: string;
   html: string;
 };
@@ -65,9 +59,8 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
-    /* Le corps porte le motif du refus (domaine non vérifié, clé révoquée,
-       destinataire invalide…) : sans lui, comprendre un 403 oblige à
-       rouvrir le tableau de bord Resend. */
+    // Le corps porte le motif du refus (domaine non vérifié, clé révoquée,
+    // destinataire invalide…) ; sans lui, un 403 est indéchiffrable.
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
       return {
@@ -92,11 +85,9 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
 /**
  * Échappe ce qui vient d'un humain avant de le coller dans du HTML.
  *
- * Corps de message et nom de boutique sont saisis par des inconnus. Sans
- * cet échappement, un message contenant `<a href="...">` arrive comme un
- * VRAI lien signé par notre domaine : de l'hameçonnage offert, payé par
- * la réputation d'envoi de Makiti. Les clients mail n'exécutent pas de
- * JavaScript, mais ils rendent très bien liens et images.
+ * Les clients mail n'exécutent pas de JavaScript mais rendent très bien
+ * liens et images : sans cet échappement, un message contenant
+ * `<a href="...">` devient un vrai lien signé par notre domaine.
  */
 export function escapeHtml(raw: string): string {
   return raw
@@ -108,17 +99,12 @@ export function escapeHtml(raw: string): string {
 }
 
 /**
- * L'enveloppe HTML commune à tous les emails de Makiti : des copies du
- * même `<!doctype html>` divergeraient au premier changement de couleur,
- * et un email qui ne ressemble pas aux autres du même domaine ressemble à
- * de l'hameçonnage.
+ * L'enveloppe HTML commune à tous les emails de Makiti : un email qui ne
+ * ressemble pas aux autres du même domaine ressemble à de l'hameçonnage.
+ * Volontairement pauvre — une `div`, ni style externe, ni image, ni
+ * police — c'est ce que tous les clients mail rendent pareil.
  *
- * Volontairement pauvre — une `div`, pas de style externe, d'image ni de
- * police : c'est ce que tous les clients mail rendent pareil, et ça reste
- * léger sur un forfait compté.
- *
- * ATTENTION : `content` doit arriver DÉJÀ ÉCHAPPÉ (`escapeHtml`), cette
- * fonction ne peut pas distinguer ce qui vient d'un humain. */
+ * ATTENTION : `content` doit arriver DÉJÀ échappé (`escapeHtml`). */
 export function emailShell(content: string): string {
   return `<!doctype html>
 <html lang="fr">
@@ -130,15 +116,14 @@ ${content}
 </html>`;
 }
 
-/** Le bouton d'action, à doubler par l'adresse en clair dans la version
- * texte : tous les clients mail n'affichent pas les liens stylés. */
+/** À doubler par l'adresse en clair dans la version texte : tous les
+ * clients mail n'affichent pas les liens stylés. */
 export function emailButton(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" style="display:inline-block;background:#c1613a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">${escapeHtml(label)}</a>`;
 }
 
-/** Le pied de page, qui dit POURQUOI cet email arrive : sans cette phrase,
- * des gens qui ne se souviennent pas s'être inscrits le signalent comme
- * indésirable, et c'est le domaine entier qui le paie. */
+/** Dit POURQUOI cet email arrive : sans cette phrase, qui ne se souvient
+ * pas s'être inscrit le signale comme indésirable, et le domaine le paie. */
 export function emailFooter(reason: string): string {
   return `<p style="margin:24px 0 0;color:#6b5d52;font-size:13px;">${escapeHtml(reason)}</p>`;
 }

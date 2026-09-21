@@ -2,22 +2,18 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 
 /**
- * « Enregistrer » qui demande d'abord le mot de passe, dans un panneau.
+ * « Enregistrer » qui demande d'abord le mot de passe, dans un panneau
+ * plutôt qu'en bas du formulaire : hors de vue, le champ faisait arriver
+ * le refus « confirmez avec votre mot de passe » sans qu'on voie de quoi
+ * il parlait.
  *
- * LE CHAMP N'EST PLUS EN BAS DU FORMULAIRE : dernier d'une liste de six,
- * on le remplissait avant même d'avoir décidé d'enregistrer, et le bouton
- * de la barre du haut restait à portée de pouce quand le champ qu'il
- * exige était hors de vue — le refus « confirmez avec votre mot de
- * passe » arrivait sans qu'on voie de quoi il parlait.
+ * UN SEUL CHEMIN vers l'enregistrement : le bouton de la barre du haut
+ * n'enregistre plus, il OUVRE — deux boutons « Enregistrer » laisseraient
+ * croire que le premier a tout fait.
  *
- * UN SEUL CHEMIN VERS L'ENREGISTREMENT : le bouton de la barre du haut
- * n'enregistre plus, il OUVRE. Deux boutons « Enregistrer » laisseraient
- * croire que le premier a déjà tout fait.
- *
- * L'attribut `form` relie le champ au formulaire sans en être le parent,
- * ce qui évite de dupliquer celui-ci. C'est un `<details>`, donc sans
- * JavaScript ; `data-panneau` le fait refermer par `ClosePanels` au tap
- * extérieur, confort jamais condition.
+ * L'attribut `form` relie le champ au formulaire sans en être le parent.
+ * C'est un `<details>`, donc sans JavaScript ; `data-panneau` le fait
+ * refermer par `ClosePanels`, confort jamais condition.
  */
 export function ConfirmPasswordSave({
   formId,

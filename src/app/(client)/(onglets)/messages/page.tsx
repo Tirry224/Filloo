@@ -9,22 +9,14 @@ import { requireClientSpace } from "@/lib/data/session";
 import { getMyThreadsAsClient } from "@/lib/data/messages";
 
 /**
- * Mes messages — côté CLIENT, et uniquement lui. Écrans 28 et 29 de
- * docs/ECRANS.md.
- *
- * Cet écran servait les deux rôles, distingués par `?vue=commercant` :
- * un même chemin rendait deux écrans (un favori ou un retour arrière
- * changeait d'espace sous les pieds), `?vue=` absent valait « client »
- * (un commerçant aux deux comptes tombait dans sa boîte d'ACHETEUR), et
- * tout l'écran portait des `asClient ? … : …`.
- *
- * La boîte du commerçant est maintenant `/vendeur/messages`, derrière une
- * autre garde : plus aucune branche à écrire ici.
+ * Mes messages — côté CLIENT uniquement. Écrans 28 et 29 de
+ * docs/ECRANS.md ; la boîte du commerçant est `/vendeur/messages`, derrière
+ * sa propre garde, ce qui évite toute branche `asClient ? … : …` ici.
  */
 export default async function ClientMessagesPage() {
   const supabase = await createClient();
-  // Pas de compte client, pas d'écran : la garde d'avant laissait entrer
-  // un commerçant SANS compte client, qui voyait « Aucune conversation ».
+  // Pas de compte client, pas d'écran : sinon un commerçant sans compte
+  // client entre et lit « Aucune conversation ».
   await requireClientSpace(supabase);
 
   const list = await getMyThreadsAsClient(supabase);

@@ -11,38 +11,31 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 
 /**
- * Mes produits — écran 22 de docs/ECRANS.md, devenu un onglet à part.
+ * Mes produits — écran 22 de docs/ECRANS.md, onglet à part de `/vendeur` :
+ * deux gestes distincts, voir où l'on en est et tenir son stock, donc deux
+ * écrans.
  *
- * ELLE A QUITTÉ `/vendeur` parce qu'elle y gênait les chiffres
- * d'activité : les cartes repoussaient le catalogue vers le bas, et trente
- * produits noyaient les chiffres. Deux gestes — voir où l'on en est,
- * tenir son stock — donc deux écrans.
- *
- * LE BOUTON « AJOUTER » EST EN HAUT : dans un `ScreenFooter`, il
- * recouvrait en permanence le dernier produit de la liste, justement
- * celui qu'on vient de créer.
+ * Le bouton « Ajouter » est EN HAUT : dans un `ScreenFooter`, il recouvre
+ * le dernier produit de la liste, justement celui qu'on vient de créer.
  */
 export default async function MerchantProductsPage({
   searchParams,
 }: {
-  /* Même canal que les autres écrans de l'espace : une action produit qui
-     échoue redirige en portant son message dans l'URL (voir `Notice`). */
+  // Même canal que le reste de l'espace : le message d'erreur voyage dans
+  // l'URL (voir `Notice`).
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
 
-  /* La garde de rôle et la suspension sont traitées par
-     `(vendeur)/layout.tsx` pour tout l'espace. Ne reste ici que ce que ce
-     layout laisse volontairement passer : un profil commerçant tout neuf,
-     qui n'a pas encore de boutique. */
+  // Rôle et suspension sont traités par `(vendeur)/layout.tsx` ; ne reste
+  // ici que le profil commerçant qui n'a pas encore de boutique.
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
 
   /* Une boutique non validée n'a pas sa place dans les onglets de gestion :
-     `/vendeur/attente` et `/vendeur/refusee` sont ses écrans. On reprend
-     l'aiguillage de `/vendeur`, en portant le message d'erreur avec lui —
-     sans ces lignes, il mourrait ici. */
+     `/vendeur/attente` et `/vendeur/refusee` sont ses écrans. Le message
+     d'erreur voyage avec la redirection, sinon il meurt ici. */
   const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
   if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
   if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);

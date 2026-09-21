@@ -6,10 +6,9 @@ import { productImageUrl } from "@/lib/storage";
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
 
 /**
- * Traduit une ligne de `search_products` (schéma réel, snake_case) vers
- * le type `Product` que lisent les écrans (camelCase). Un seul endroit qui
- * connaît les deux formes : si demain la fonction SQL change de forme, ce
- * fichier est le seul à corriger, pas les ~15 écrans qui affichent un produit.
+ * Traduit une ligne de `search_products` (snake_case) vers le type
+ * `Product` que lisent les écrans (camelCase). Seul endroit qui connaît
+ * les deux formes, donc seul à corriger si la fonction SQL change.
  */
 function mapRow(row: SearchRow): Product {
   return {
@@ -19,8 +18,7 @@ function mapRow(row: SearchRow): Product {
       shopName: row.shop_name,
       city: row.city_name,
       addressHint: null,
-      // `search_products` ne remonte pas le numéro : la liste n'en a pas
-      // besoin, seule la FICHE propose d'appeler. Nul ici veut donc dire
+      // `search_products` ne remonte pas le numéro : nul ici veut dire
       // « non chargé », pas « la boutique n'en a pas ».
       whatsappPhone: null,
     },
@@ -32,22 +30,19 @@ function mapRow(row: SearchRow): Product {
     status: row.status,
     isFeatured: row.is_featured,
     contactCount: row.contact_count,
-    /* `image_path` est déclaré non-nul par les types générés alors que la
-       jointure SQL est un LEFT JOIN : un produit sans photo renvoie NULL.
-       On garde donc le test, que le type juge inutile. */
+    /* Les types générés déclarent `image_path` non-nul, mais la jointure
+       SQL est un LEFT JOIN : un produit sans photo renvoie NULL. */
     imageUrls: row.image_path ? [productImageUrl(row.image_path)] : [],
   };
 }
 
 /**
- * Fil d'accueil et recherche partagent la même fonction SQL (voir
- * 0003_search_and_seed.sql) ; ce module partage donc le même point d'entrée
- * côté app. `cityId` reste obligatoire pour le FIL affiché : contrairement à
- * la catégorie, il n'y a pas de fil « toutes villes » — décision 9 de
- * docs/SPEC.md, jamais de filtrage automatique. `cityId` omis sert
- * uniquement à CHIFFRER un résultat vide (« 3 produits ailleurs »), jamais à
- * afficher une liste : la décision reste manuelle, seul le compte est
- * automatique.
+ * Fil d'accueil et recherche partagent la même fonction SQL
+ * (0003_search_and_seed.sql), donc le même point d'entrée ici.
+ *
+ * `cityId` est obligatoire pour toute liste AFFICHÉE : il n'y a pas de fil
+ * « toutes villes » (décision 9 de docs/SPEC.md). Omis, il ne sert qu'à
+ * CHIFFRER un résultat vide (« 3 produits ailleurs »).
  */
 type ProductDetailRow = {
   id: string;
@@ -92,10 +87,8 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
 
 /**
  * Fiche produit (écrans 7, 8, 9). Deux requêtes plutôt qu'un embed
- * `product_images(...)` : plus simple à lire, et une fiche produit n'est
- * jamais consultée en liste — le coût d'un aller-retour de plus est
- * invisible ici, contrairement à `search_products` qui, elle, sert une
- * grille de vingt cartes.
+ * `product_images(...)` : une fiche ne se consulte jamais en liste, donc
+ * l'aller-retour de plus est invisible ici.
  */
 export async function getProduct(supabase: SupabaseClient<Database>, id: string): Promise<Product | null> {
   const [{ data: row, error }, { data: images }] = await Promise.all([
@@ -114,14 +107,10 @@ export async function getProduct(supabase: SupabaseClient<Database>, id: string)
   ]);
   if (error) throw error;
   if (!row) return null;
-  /* Un produit sans sa boutique n'est pas une fiche produit : `mapDetailRow`
-     remplissait alors `merchant.id` avec une chaîne vide, et l'écran
-     continuait comme si de rien n'était — lien « boutique » vers
-     `/boutique/`, et « Contacter le vendeur » partant créer une
-     conversation avec un identifiant qui n'existe pas. Le cas ne devrait
-     pas se produire (le RLS montre toujours la boutique d'un produit
-     visible), mais « ne devrait pas » n'est pas une garantie : faute de
-     vendeur, il n'y a rien à afficher, donc rien à trouver. */
+  /* Un produit sans sa boutique n'est pas une fiche produit : sans ce
+     refus, `merchant.id` vaut la chaîne vide et « Contacter le vendeur »
+     part créer une conversation avec un identifiant inexistant. Le RLS
+     rend le cas improbable, ce qui n'est pas une garantie. */
   if (!row.merchants) return null;
   return mapDetailRow(row, (images ?? []).map((i) => productImageUrl(i.storage_path)));
 }
@@ -147,10 +136,9 @@ export async function searchProducts(
   return data.map(mapRow);
 }
 
-/** Compte les résultats d'une recherche sans filtre de ville — sert
- * uniquement à chiffrer un écran vide (« N produits ailleurs »), jamais à
- * les lister : la décision 9 de docs/SPEC.md interdit tout filtrage
- * automatique, seul le CHIFFRE l'est. */
+/** Compte les résultats sans filtre de ville, pour chiffrer un écran vide
+ * (« N produits ailleurs ») — jamais pour les lister : la décision 9 de
+ * docs/SPEC.md interdit tout filtrage automatique. */
 export async function countProductsElsewhere(
   supabase: SupabaseClient<Database>,
   opts: { query?: string; categoryId?: number | null },

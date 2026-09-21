@@ -9,15 +9,13 @@ import { conversationReportReasons } from "@/lib/mock";
 import { messagesBase, type Espace } from "@/lib/espace";
 
 /**
- * Écran 32b — signaler une conversation. La feuille d'actions (écran 32)
- * appelait l'action serveur avec un motif figé ; le motif se choisit ici.
+ * Écran 32b — signaler une conversation, avec le choix du motif.
  *
  * Composant serveur et `<form>` classique, sans `useActionState` :
  * `reportConversationAction` redirige vers le fil en portant son message
- * dans l'URL, donc l'écran fonctionne sans JavaScript (PERFORMANCE.md).
- * Les motifs sont de vraies cases radio natives, comme dans `ReportForm` —
- * la sélection doit voyager dans le formulaire, pas dépendre d'un état
- * client.
+ * dans l'URL, donc l'écran marche sans JavaScript (PERFORMANCE.md). Les
+ * motifs sont de vraies cases radio natives : la sélection voyage dans le
+ * formulaire, elle ne dépend pas d'un état client.
  */
 export async function ReportThreadScreen({
   espace,
@@ -36,11 +34,9 @@ export async function ReportThreadScreen({
   if (!context) notFound();
 
   /* La même garde que `ThreadScreen` : un fil a deux côtés,
-     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté
-     doit y correspondre. Elle manquait ici — le fil était gardé, ses
-     feuilles non : un commerçant obtenait cette feuille habillée en
-     client, et ne rentrait dans son espace qu'au coup d'après. La garde
-     écrite sur un écran et oubliée sur ses voisins. */
+     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
+     y correspondre. Sans elle, un commerçant obtient cette feuille habillée
+     en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/signaler`);
 

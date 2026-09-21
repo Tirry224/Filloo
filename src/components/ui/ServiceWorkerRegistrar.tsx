@@ -5,19 +5,17 @@ import { useEffect } from "react";
 /**
  * Installe le service worker — et sait le désinstaller.
  *
- * INSTALLATION SÉPARÉE DE LA PERMISSION : l'enregistrement ne demande
- * RIEN et dort jusqu'à ce qu'un abonnement push existe. La permission de
- * notifier ne se demande qu'au tap sur l'interrupteur, jamais au
- * chargement : demandée trop tôt, elle reçoit un « non » définitif que
- * Chrome ne repose plus.
+ * L'installation est séparée de la PERMISSION : l'enregistrement ne demande
+ * rien et dort jusqu'à ce qu'un abonnement push existe. La permission ne se
+ * demande qu'au tap sur l'interrupteur — trop tôt, elle reçoit un « non »
+ * définitif que Chrome ne repose plus.
  *
- * `?sw=off` désinstalle au lieu d'installer : le recours local des trois
- * décrits en tête de `public/sw.js`, pour un téléphone qu'on a sous la
- * main. Le recours général reste de vider `sw.js` et de déployer.
+ * `?sw=off` désinstalle au lieu d'installer : le recours local décrit en
+ * tête de `public/sw.js`, pour un téléphone qu'on a sous la main.
  *
- * APRÈS `load` : l'enregistrement déclenche un téléchargement, et le
- * faire pendant la construction de la page vole de la bande passante à ce
- * que la personne attend (`docs/PERFORMANCE.md`).
+ * Après `load` : l'enregistrement télécharge, et le faire pendant la
+ * construction de la page vole de la bande passante à ce que la personne
+ * attend (`docs/PERFORMANCE.md`).
  */
 export function ServiceWorkerRegistrar() {
   useEffect(() => {
@@ -35,9 +33,8 @@ export function ServiceWorkerRegistrar() {
 
     const installer = () => {
       navigator.serviceWorker.register("/sw.js").catch((cause) => {
-        /* Un échec n'empêche RIEN : sans service worker, seules les
-           notifications manquent. Journalisé sans rien montrer — une
-           alerte pour une option inquiéterait pour rien. */
+        // Un échec n'empêche rien : seules les notifications manquent.
+        // Journalisé sans rien montrer, une alerte inquiéterait pour rien.
         console.error("[sw] enregistrement impossible :", cause);
       });
     };

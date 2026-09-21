@@ -3,11 +3,10 @@ import { cn } from "@/lib/cn";
 /**
  * Le cadre de tout écran de l'application.
  *
- * `max-w-app` centre une colonne de largeur téléphone sur les grands
- * écrans plutôt que d'étirer l'interface : une ligne de texte de 1400 px
- * de large ne se lit pas. `min-h-dvh` utilise la hauteur RÉELLE de la
- * zone visible sur mobile — contrairement à `100vh`, qui ignore la barre
- * d'adresse du navigateur et fait dépasser le contenu.
+ * `max-w-app` centre une colonne de largeur téléphone plutôt que d'étirer
+ * l'interface : une ligne de texte de 1400 px ne se lit pas. `min-h-dvh`
+ * prend la hauteur RÉELLE de la zone visible, là où `100vh` ignore la
+ * barre d'adresse et fait dépasser le contenu.
  */
 export function Screen({ children, className }: { children: React.ReactNode; className?: string }) {
   return (

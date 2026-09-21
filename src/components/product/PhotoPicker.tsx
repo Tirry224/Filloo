@@ -19,13 +19,13 @@ type Slot = {
 /**
  * Sélecteur de 1 à 3 photos — écran 24, décision 15 de docs/SPEC.md.
  *
- * Cas d'école de la règle R3 : compression dans le navigateur, dans un worker
- * pour ne pas geler un téléphone d'entrée de gamme, envoi direct vers Storage
- * sans relais par le serveur Next. Seul le CHEMIN voyage dans le formulaire.
+ * Règle R3 : compression dans le navigateur, dans un worker pour ne pas
+ * geler un téléphone d'entrée de gamme, envoi direct vers Storage sans
+ * relais par le serveur Next. Seul le CHEMIN voyage dans le formulaire.
  *
  * `productId` est généré par `ProductForm` avant l'envoi : le chemin imposé
- * par le RLS du stockage (`{merchant_id}/{product_id}/…`, 0004) n'attend donc
- * pas que la ligne `products` existe.
+ * par le RLS du stockage (`{merchant_id}/{product_id}/…`, 0004) n'attend
+ * donc pas que la ligne `products` existe.
  */
 export function PhotoPicker({
   merchantId,
@@ -89,18 +89,14 @@ export function PhotoPicker({
   }
 
   /**
-   * Retirer une photo du formulaire — et RIEN d'autre.
+   * Retirer une photo du formulaire — et RIEN d'autre : supprimer le
+   * fichier ici casserait la vignette d'un produit publié dès qu'on quitte
+   * l'écran sans enregistrer. C'est l'ENREGISTREMENT qui tranche
+   * (`updateProductAction`).
    *
-   * Le fichier était supprimé de Storage au clic : sur un produit qu'on
-   * modifie, ses photos sont déjà référencées par `product_images`, donc
-   * retirer une photo puis quitter sans enregistrer détruisait le fichier en
-   * laissant la ligne — produit publié, vignette cassée, irréparable. C'est
-   * l'ENREGISTREMENT qui tranche désormais : `updateProductAction` remplace
-   * les lignes puis supprime les fichiers que plus aucune ne référence.
-   *
-   * Le cas symétrique reste ouvert et bénin : une photo envoyée puis retirée
-   * avant enregistrement laisse un orphelin dans Storage. Un octet en trop ne
-   * casse aucun écran, une référence morte si.
+   * Cas symétrique assumé : une photo envoyée puis retirée avant
+   * enregistrement laisse un orphelin. Un octet en trop ne casse aucun
+   * écran, une référence morte si.
    */
   function removeSlot(id: string) {
     setSlots((s) => s.filter((x) => x.id !== id));

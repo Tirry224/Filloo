@@ -4,10 +4,9 @@ import { cn } from "@/lib/cn";
 /**
  * Enveloppe d'un champ : intitulé au-dessus, aide en dessous.
  *
- * L'intitulé est un vrai `<label>` relié au champ par `htmlFor`, ce qui
- * fait deux choses : un lecteur d'écran annonce « Nom complet, zone de
- * saisie », et taper sur l'intitulé place le curseur dans le champ. Un
- * simple `<div>` stylé en gras ne fait ni l'un ni l'autre.
+ * Un vrai `<label>` relié par `htmlFor` : un lecteur d'écran annonce « Nom
+ * complet, zone de saisie », et taper sur l'intitulé place le curseur dans
+ * le champ. Un `<div>` en gras ne fait ni l'un ni l'autre.
  */
 export function Field({
   label,

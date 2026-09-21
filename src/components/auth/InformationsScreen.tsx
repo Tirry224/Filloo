@@ -14,18 +14,15 @@ import type { Espace } from "@/lib/espace";
 /**
  * Mes informations — écran 18, monté par les DEUX espaces.
  *
- * UN COMPOSANT, DEUX ROUTES, comme `TermsScreen` : même contenu, chemin
- * de RETOUR différent — un commerçant qui corrige son numéro ne doit pas
- * ressortir dans son espace d'acheteur.
+ * Un composant, deux routes, comme `TermsScreen` : même contenu, chemin de
+ * RETOUR différent.
  *
- * Pas derrière la garde « profil CLIENT » de `/compte/informations`, où
- * un commerçant sans compte client lié ne pourrait jamais corriger son
- * nom : ce qui appartient à la CONNEXION ne vit pas derrière la porte
- * d'un seul rôle (même trou que le mot de passe et la suppression).
+ * Pas derrière la garde « profil CLIENT » : ce qui appartient à la
+ * CONNEXION ne vit pas derrière la porte d'un seul rôle, sans quoi un
+ * commerçant sans compte client lié ne pourrait jamais corriger son nom.
  *
- * Profils dérivés : on affiche le CLIENT s'il existe, seul modifiable
- * jusqu'ici, donc seul porteur des corrections — l'inverse recopierait
- * une vieille valeur par-dessus dès le premier enregistrement.
+ * On affiche le profil CLIENT s'il existe : seul modifiable jusqu'ici,
+ * donc seul porteur des corrections.
  */
 export async function InformationsScreen({ espace }: { espace: Espace }) {
   const supabase = await createClient();
@@ -38,8 +35,8 @@ export async function InformationsScreen({ espace }: { espace: Espace }) {
   const client = profiles.find((p) => p.role === "client");
   const commercant = profiles.find((p) => p.role === "merchant");
   const identite = client ?? commercant;
-  /* Aucun profil utilisable : personne n'est connecté. `clientSpaceFallback`
-     distingue ce cas d'un rôle manquant et envoie se connecter. */
+  // Aucun profil utilisable : `clientSpaceFallback` distingue ce cas d'un
+  // rôle manquant et envoie se connecter.
   if (!identite || !user) redirect(await clientSpaceFallback(supabase));
 
   const retour = espace === "merchant" ? "/vendeur/boutique" : "/compte";

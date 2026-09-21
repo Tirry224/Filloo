@@ -2,19 +2,13 @@
  * Les deux parcours, rôle par rôle : qui entre où, et où part celui qu'on
  * refuse.
  *
- * POURQUOI CE TEST TOURNE SANS BASE NI NAVIGATEUR
- * La règle vérifiée ici — « un client n'entre jamais dans l'espace
- * commerçant, et réciproquement » — ne dépend ni de Supabase ni de Next :
- * c'est une fonction des profils que porte la connexion. Elle vit donc
- * dans `src/lib/data/espace-decision.ts`, isolée exprès de la base et de
- * `redirect()`, et ce fichier l'exerce sur TOUTES les combinaisons.
- *
- * Ce n'est pas un substitut au parcours en navigateur (`npm run
- * parcours`), qui vérifie autre chose : que les écrans s'affichent et que
- * les formulaires partent. C'est le complément qui manquait — la table de
- * vérité des refus, que personne ne relit jamais à la main.
- *
  *     node scripts/verifier-gardes.mjs
+ *
+ * Tourne sans base ni navigateur : la règle vérifiée est une fonction des
+ * profils que porte la connexion, isolée dans
+ * `src/lib/data/espace-decision.ts`, et ce fichier l'exerce sur TOUTES les
+ * combinaisons. Complément de `npm run parcours`, qui vérifie l'affichage
+ * des écrans, pas la table de vérité des refus.
  */
 
 import { refusEspaceClient, refusEspaceCommercant } from "../src/lib/data/espace-decision.ts";
@@ -33,10 +27,9 @@ const lesDeuxCommercantSuspendu = [
   { role: "merchant", isSuspended: true },
 ];
 
-/* `attendu` : `null` = on entre. Une chaîne = le chemin de refus.
-   Chaque ligne dit AUSSI pourquoi, parce qu'une table de vérité sans ses
-   raisons se « corrige » un jour dans le mauvais sens pour faire passer
-   un test. */
+/* `attendu` : `null` = on entre. Une chaîne = le chemin de refus. Chaque
+   ligne dit aussi POURQUOI : une table de vérité sans ses raisons finit
+   « corrigée » dans le mauvais sens pour faire passer un test. */
 const cas = [
   // --- ESPACE COMMERÇANT ------------------------------------------------
   ["commerçant", anonyme, "/connexion",
@@ -88,11 +81,9 @@ for (const [espace, profils, attendu, pourquoi] of cas) {
   if (!ok) console.log(`         OBTENU : ${obtenu === null ? "ENTRE" : `→ ${obtenu}`}`);
 }
 
-/* L'invariant qui résume le critère de réussite, et qu'aucune ligne
-   ci-dessus ne peut contredire sans le dire : une connexion qui ne porte
-   PAS le profil d'un espace n'y entre jamais. Écrit à part parce qu'une
-   table se relit ligne à ligne, et qu'on peut en casser le sens général
-   sans qu'aucune ligne n'ait l'air fausse. */
+/* L'invariant, écrit à part de la table : une connexion qui ne porte PAS
+   le profil d'un espace n'y entre jamais. On peut casser le sens général
+   d'une table sans qu'aucune de ses lignes n'ait l'air fausse. */
 const toutesLesCombinaisons = [
   anonyme, client, clientSuspendu, commercant, commercantSuspendu,
   lesDeux, lesDeuxCommercantSuspendu,

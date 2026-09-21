@@ -16,15 +16,12 @@ export type SessionProfile = {
 };
 
 /**
- * `auth.getUser()`, pas `auth.getSession()` : la première revalide le jeton
- * auprès de Supabase, la seconde lit le cookie sans le vérifier —
- * suffisant pour de l'affichage, pas pour une décision de sécurité.
+ * `auth.getUser()` et non `auth.getSession()` : seul le premier revalide le
+ * jeton auprès de Supabase, et c'est une décision de sécurité.
  *
- * Cette revalidation est un aller-retour réseau, et plusieurs écrans
- * appellent cette fonction deux ou trois fois : `cache()` de React mémorise
- * le résultat pour la durée d'UNE requête, donc seul le premier appel paie.
- * Le middleware garde le sien, dans une exécution Edge séparée que ce cache
- * ne couvre pas.
+ * `cache()` évite de repayer cet aller-retour réseau aux écrans qui
+ * appellent plusieurs fois par requête. Le middleware a le sien, dans une
+ * exécution Edge que ce cache ne couvre pas.
  */
 export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): Promise<User | null> => {
   const {
@@ -32,24 +29,16 @@ export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): 
     error,
   } = await supabase.auth.getUser();
 
-  // `error` ÉTAIT IGNORÉ, et c'était le défaut le plus coûteux du projet :
-  // `getUser()` renvoie `user: null` AUSSI quand il n'a pas pu joindre le
-  // serveur, pas seulement quand personne n'est connecté. Les deux cas
-  // étaient traités comme « visiteur anonyme », donc `/messages` annonçait
-  // « Aucune conversation » à quelqu'un qui n'avait pas pu regarder — et,
-  // sur un réseau instable, une déconnexion apparente à chaque coupure.
-  //
-  // « Pas de session » est une réponse ; tout le reste est une panne, et une
-  // panne se propage pour que la frontière d'erreur dise « Pas de
-  // connexion ».
+  // `getUser()` renvoie `user: null` aussi bien quand personne n'est
+  // connecté que quand le serveur est injoignable. « Pas de session » est
+  // une réponse ; tout le reste est une panne et doit se propager, sinon
+  // une coupure réseau se lit comme une déconnexion.
   if (error && !isAuthSessionMissingError(error)) throw error;
   return user;
 });
 
-/** Les 1 ou 2 profils (client, commerçant) de la connexion active. Mis en
- * cache pour la même raison que `getSessionUser` : `getMyProfile("client")`
- * et `getMyProfile("merchant")` appelés sur la même page ne doivent
- * interroger `profiles` qu'une seule fois. */
+/** Les 1 ou 2 profils (client, commerçant) de la connexion active, en
+ * cache pour n'interroger `profiles` qu'une fois par requête. */
 export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): Promise<SessionProfile[]> => {
   const user = await getSessionUser(supabase);
   if (!user) return [];
@@ -70,21 +59,11 @@ export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): P
 });
 
 /**
- * Où envoyer quelqu'un qui demande un écran de l'espace CLIENT sans avoir
- * de compte client. Deux situations que le code confondait :
- *
- * - personne n'est connecté → `/connexion` ;
- * - une connexion existe mais n'a qu'un compte commerçant → son propre
- *   espace, `/vendeur/boutique`.
- *
- * Le second cas était un vrai bug : un commerçant sans compte client qui
- * parcourt le catalogue — public, il a toute raison d'y être — et touche
- * « Compte » atterrissait sur l'écran de CONNEXION alors qu'il était déjà
- * connecté, et pouvait tourner en rond.
- *
- * La décision vit ici et non dans la barre d'onglets : corriger la
- * DESTINATION règle aussi le cas d'une URL mise en favori ou d'un lien
- * partagé, qui ne passent par aucune barre.
+ * Où envoyer quelqu'un qui demande l'espace CLIENT sans compte client :
+ * `/connexion` si personne n'est connecté, `/vendeur/boutique` si la
+ * connexion n'a qu'un compte commerçant — la renvoyer vers `/connexion`
+ * la ferait tourner en rond. Ici et non dans la barre d'onglets, pour
+ * couvrir aussi les favoris et les liens partagés.
  */
 export async function clientSpaceFallback(supabase: SupabaseClient<Database>): Promise<string> {
   const profiles = await getMyProfiles(supabase);
@@ -92,39 +71,20 @@ export async function clientSpaceFallback(supabase: SupabaseClient<Database>): P
 }
 
 /**
- * L'écran d'OUVERTURE de la connexion active : `/vendeur` pour une
- * connexion qui n'a QUE un compte commerçant, `/` sinon.
- *
- * Ce n'est pas du confort mais la décision 8 de SPEC : les deux rôles n'ont
- * ni la même barre d'onglets, ni le même écran d'ouverture. `signInAction`
- * renvoyait TOUJOURS vers `/`, donc un commerçant se connectait et voyait
- * « Aucun produit à Conakry » au lieu de sa boutique.
- *
- * « N'a QUE » : une personne qui possède les deux comptes a un espace
- * client légitime et bascule quand elle le décide (`SwitchSpaceCard`).
+ * L'écran d'ouverture de la connexion active : `/vendeur` si elle n'a QUE
+ * un compte commerçant, `/` sinon (décision 8 de `docs/SPEC.md`). Qui
+ * possède les deux comptes bascule quand elle le décide
+ * (`SwitchSpaceCard`).
  */
 export async function landingForSession(supabase: SupabaseClient<Database>): Promise<string> {
   const profiles = await getMyProfiles(supabase);
   const merchant = profiles.find((p) => p.role === "merchant");
   const onlyMerchant = Boolean(merchant) && !profiles.some((p) => p.role === "client");
 
-  /* Une BOUCLE, et la boucle exacte que `/compte/suspendu` cherchait déjà
-     à éviter de son côté :
-
-       /compte/suspendu → « Voir les produits » → / → /vendeur →
-       /compte/suspendu → …
-
-     Un commerçant suspendu SANS compte client était renvoyé chez lui par
-     cette fonction, et `/vendeur` le renvoyait aussitôt sur l'écran de
-     suspension, qui lui promet précisément de pouvoir encore consulter le
-     catalogue. Le seul bouton de cet écran ne menait donc nulle part.
-
-     La suspension coupe l'écriture, pas la lecture (voir
-     `/compte/suspendu`) : le catalogue public est l'endroit où cette
-     personne a le droit d'être, et c'est donc là qu'elle atterrit tant
-     que sa boutique lui est fermée. Elle y voit la barre d'onglets du
-     client, comme tout visiteur du catalogue — et son espace commerçant
-     ne lui est pas présenté comme utilisable alors qu'il ne l'est pas. */
+  /* Sans ce cas, boucle : /compte/suspendu → « Voir les produits » → / →
+     /vendeur → /compte/suspendu. La suspension coupe l'écriture, pas la
+     lecture : le catalogue public est là où cette personne a le droit
+     d'être tant que sa boutique lui est fermée. */
   if (onlyMerchant && merchant?.isSuspended) return "/";
 
   return onlyMerchant ? "/vendeur" : "/";
@@ -142,30 +102,21 @@ export async function getMyProfile(
 
 /**
  * La garde de l'espace COMMERÇANT, appelée par `(vendeur)/layout.tsx` et
- * par lui seul : c'est tout l'intérêt.
+ * par lui seul : une route enfant ne peut pas contourner un layout, alors
+ * qu'une garde recopiée par écran finit par manquer quelque part. Le RLS
+ * protège les données, pas la navigation.
  *
- * Avant, chaque écran de `/vendeur` refaisait ce contrôle. Sept écrans,
- * sept copies d'une décision de sécurité — et la huitième manquait :
- * `/vendeur/produits/[id]/actions` n'en avait AUCUNE. Le RLS protège les
- * DONNÉES, mais ne dit rien de la navigation : un client authentifié qui
- * tapait cette URL obtenait la feuille d'actions, vide mais habillée en
- * commerçant. Une garde qu'on recopie est une garde qu'on oubliera ; dans
- * un layout, une route enfant ne peut pas la contourner.
- *
- * CE QU'ELLE NE FAIT PAS, VOLONTAIREMENT : regarder `merchants.status`.
- * `/vendeur/attente` et `/vendeur/refusee` sont DANS cet espace et doivent
- * rester joignables. Elle ne vérifie pas non plus l'existence de la
- * boutique : un profil commerçant sans boutique est un état normal, et
- * `/vendeur/page.tsx` envoie alors sur `/inscription/boutique`.
+ * Volontairement, elle ne regarde ni `merchants.status` — `/vendeur/attente`
+ * et `/vendeur/refusee` vivent dans cet espace — ni l'existence de la
+ * boutique, état normal que `/vendeur/page.tsx` traite.
  */
 export async function requireMerchantSpace(
   supabase: SupabaseClient<Database>,
 ): Promise<SessionProfile> {
   const profiles = await getMyProfiles(supabase);
 
-  // La décision vit dans `espace-decision.ts`, où elle se teste sans base
-  // ni contexte Next — voir `scripts/verifier-gardes.mjs`. Ici ne reste
-  // que le trajet : lire les profils, appliquer, rediriger.
+  // La décision vit dans `espace-decision.ts`, testable sans base ni
+  // contexte Next (`scripts/verifier-gardes.mjs`). Ici, que le trajet.
   const refus = refusEspaceCommercant(profiles);
   if (refus) redirect(refus);
 
@@ -175,13 +126,8 @@ export async function requireMerchantSpace(
 /**
  * La garde symétrique, pour l'espace CLIENT authentifié (`/compte`,
  * `/messages`). Le catalogue public — `/`, `/recherche`, `/produit`,
- * `/boutique` — n'est PAS derrière elle : il est lisible sans compte, et
- * c'est une décision du projet, pas un oubli.
- *
- * Elle reprend `clientSpaceFallback`, qui savait déjà distinguer « nul
- * n'est connecté » de « connecté, mais sans compte client » ; elle lui
- * ajoute seulement le contrôle de suspension, que les deux écrans
- * appelants faisaient chacun de leur côté.
+ * `/boutique` — n'est pas derrière elle : il se lit sans compte, et c'est
+ * une décision du projet.
  */
 export async function requireClientSpace(
   supabase: SupabaseClient<Database>,

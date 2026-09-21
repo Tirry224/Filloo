@@ -7,25 +7,18 @@ import { getProduct } from "@/lib/data/products";
 import { markSoldAction, hideProductAction, republishProductAction, deleteProductAction } from "@/lib/actions/products";
 
 /**
- * Écran 25 — actions sur un produit.
+ * Écran 25 — actions sur un produit. Chaque action dit sa CONSÉQUENCE :
+ * « Masquer » et « Supprimer » se ressemblent dans une liste, ce qu'ils
+ * font aux données non. Les actions proposées suivent l'état réel du
+ * produit.
  *
- * Chaque action dit sa CONSÉQUENCE : « Masquer » et « Supprimer » se
- * ressemblent dans une liste, ce qu'ils font aux données non.
- *
- * LES ACTIONS SUIVENT L'ÉTAT RÉEL DU PRODUIT : un brouillon n'avait pas
- * de « Publier » (il fallait « Masquer » puis « Republier »), et se
- * voyait proposer « Marquer comme vendu ».
- *
- * CE QUE CETTE PAGE NE PROTÈGE PAS : retirer une ligne ne ferme rien,
+ * CETTE PAGE NE PROTÈGE RIEN : retirer une ligne ne ferme rien,
  * `markSoldAction` restant appelable par une requête forgée. La faille
- * `draft → sold` — un brouillon sans photo entrant au catalogue parce que
- * `check_product_publishable` ne regardait que `active` — est fermée EN
- * BASE par 0020. Ici, on ne fait que cesser de proposer ce que la base
- * refusera.
+ * `draft → sold` est fermée EN BASE par 0020 ; ici on cesse seulement de
+ * proposer ce que la base refusera.
  *
- * Aucune action nouvelle : publier un brouillon et republier un produit
- * masqué sont la MÊME écriture (`status = 'active'`), donc le même
- * `republishProductAction` ; seul l'intitulé change.
+ * Publier un brouillon et republier un produit masqué sont la MÊME
+ * écriture (`status = 'active'`) : même action, seul l'intitulé change.
  */
 export default async function ProductActionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

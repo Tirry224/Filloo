@@ -18,10 +18,9 @@ import { messagesBase, type Espace } from "@/lib/espace";
  * Fil de discussion — écran 30 de docs/ECRANS.md.
  *
  * Un seul composant pour `/messages/[id]` et `/vendeur/messages/[id]` : un
- * fil se dessine pareil des deux côtés, le dupliquer créerait deux versions
- * qui divergeraient au premier correctif. Seuls la route, le layout, la
- * barre d'onglets et la garde ci-dessous sont séparés ; l'espace est imposé
- * par le chemin emprunté, puis confronté à la conversation.
+ * fil se dessine pareil des deux côtés. Seuls la route, le layout et la
+ * barre d'onglets diffèrent ; l'espace est imposé par le chemin emprunté,
+ * puis confronté à la conversation par la garde ci-dessous.
  */
 export async function ThreadScreen({
   espace,
@@ -47,10 +46,9 @@ export async function ThreadScreen({
 
   // Marquer comme lu ce que je viens de voir — seuls les messages reçus,
   // jamais les miens (policy "messages: marquer comme lu", 0002).
-  /* L'erreur est journalisée plutôt que levée : rater le marquage « lu »
-     ne doit pas empêcher d'AFFICHER le fil, ce serait échanger un badge de
-     non-lus faux contre un écran vide. Mais elle est inspectée : sans ça,
-     l'échec laisse le badge faux indéfiniment sans que rien ne le signale. */
+  // Journalisée plutôt que levée : rater le marquage « lu » ne doit pas
+  // empêcher d'afficher le fil. Mais inspectée, sinon le badge reste faux
+  // indéfiniment sans que rien ne le signale.
   const { error: readError } = await supabase
     .from("messages")
     .update({ read_at: new Date().toISOString() })
@@ -59,29 +57,23 @@ export async function ThreadScreen({
     .neq("sender_id", context.myParticipantId);
   if (readError) console.error("marquage lu impossible :", readError.message);
 
-  /* LA GARDE DE CE FIL, dans les deux sens. Le côté réel est un FAIT que
-     `getThreadContext` connaît : il ne se lit pas dans l'URL. Si le chemin
-     emprunté ne lui correspond pas, on renvoie sur le même fil dans le bon
-     espace — un commerçant qui ouvre un favori vers `/messages/xxx`
-     atterrit sur `/vendeur/messages/xxx`, avec sa barre d'onglets.
+  /* La garde de ce fil, dans les deux sens : le côté réel est un FAIT que
+     `getThreadContext` connaît, il ne se lit pas dans l'URL. Un commerçant
+     qui ouvre un favori vers `/messages/xxx` atterrit donc sur
+     `/vendeur/messages/xxx`, avec sa barre d'onglets.
 
-     Le RLS reste seul maître des DONNÉES : `getThreadContext` renvoie déjà
-     `null` — donc `notFound()` — pour un fil qui ne nous concerne pas.
-     Cette garde protège le PARCOURS : sans elle, les deux espaces se
-     remélangeaient au premier lien. */
+     Le RLS reste seul maître des DONNÉES ; cette garde protège le
+     PARCOURS. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}`);
 
   const base = messagesBase(espace);
 
   const blockedByPeer = context.blockedBy !== null && context.blockedBy !== context.myParticipantId;
-  /* Fil gelé : un compte suspendu ou supprimé en face (0017). Décision :
-     lecture seule, jamais suppression — le fil reste lisible, mais plus
-     personne n'y écrit, le commerçant suspendu compris.
-
-     Sans cet état le champ restait allumé et la base refusait l'envoi : le
-     message tapé était perdu contre un « new row violates row-level
-     security policy » illisible. Dire NON avant la frappe coûte une ligne. */
+  /* Fil gelé : un compte suspendu ou supprimé en face (0017). Lecture
+     seule, jamais suppression. Sans cet état, le champ resterait allumé et
+     le message tapé serait perdu contre un refus du RLS illisible — dire
+     non avant la frappe coûte une ligne. */
   const frozen = !context.isOpen;
   // Le premier message d'un fil DOIT citer un produit (trigger
   // `check_message_product`, 0002) : sans citation en attente sur un fil
@@ -140,11 +132,9 @@ export async function ThreadScreen({
           </div>
         ) : mustCiteFirst ? (
           /* Fil vide et rien de cité : l'état où l'on revient après avoir
-             touché « Contacter le vendeur » puis quitté avant d'écrire, le
-             produit voyageant dans `?produit=` disparaît avec l'URL. La
-             règle vient de la base (`check_message_product`, 0002) et ne
-             bouge pas ; ce qui manquait, c'est de la DIRE et d'ouvrir
-             l'écran 31, « citer un produit ». */
+             quitté sans écrire, `?produit=` disparaissant avec l'URL. La
+             règle vient de la base (`check_message_product`, 0002) : on la
+             DIT, et on ouvre l'écran 31. */
           <Link
             href={`${base}/${id}/citer`}
             className="flex items-center gap-2 rounded-lg border border-accent bg-accent-soft px-3 py-2 text-xs text-accent-hover"
@@ -157,13 +147,11 @@ export async function ThreadScreen({
         ) : null}
 
         {frozen ? (
-          /* TROIS textes depuis que `0022` gèle le fil dans les deux sens :
-             il faut savoir DE QUI vient la sanction. Ma propre suspension se
-             dit franchement ; celle d'en face, jamais — la sanction d'un
-             tiers ne se publie pas (même raison que `merchant_is_public`,
-             0013), on dit seulement que la personne n'est plus joignable.
-             Sans ce tri, le commerçant en règle dont le client vient d'être
-             suspendu lisait une accusation fausse. */
+          /* Trois textes, parce que `0022` gèle le fil dans les deux sens
+             et qu'il faut savoir DE QUI vient la sanction. La mienne se dit
+             franchement ; celle d'en face jamais — la sanction d'un tiers
+             ne se publie pas (même raison que `merchant_is_public`, 0013),
+             on dit seulement que la personne n'est plus joignable. */
           <p className="py-2 text-center text-sm text-ink-soft">
             {context.iAmSuspended
               ? "Votre compte ne permet plus d'écrire. Vos conversations restent consultables."

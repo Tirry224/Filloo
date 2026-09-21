@@ -30,16 +30,10 @@ export async function ThreadActionsScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen`, pour la même raison : un fil a deux
-     côtés, `getThreadContext` sait lequel est le nôtre, et le chemin
-     emprunté doit correspondre à ce fait. Elle manquait ici — le fil
-     était gardé, ses trois feuilles ne l'étaient pas. Un commerçant
-     ouvrant `/messages/<id>/actions` obtenait donc cette feuille habillée
-     en client, dont le bouton de fermeture ne le ramenait dans son espace
-     qu'au coup d'après, par le rattrapage de `ThreadScreen`.
-
-     C'est exactement le motif que cette réorganisation corrigeait
-     ailleurs : la garde écrite sur un écran et oubliée sur ses voisins. */
+  /* La même garde que `ThreadScreen` : un fil a deux côtés,
+     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
+     y correspondre. Sans elle, un commerçant ouvrant
+     `/messages/<id>/actions` obtient cette feuille habillée en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/actions`);
 
@@ -73,15 +67,10 @@ export async function ThreadActionsScreen({
           <ActionRow
             icon={Ban}
             label="Bloquer cette personne"
-            // « Le fil reste consultable » se lisait comme un geste doux
-            // et réversible. Il ne l'est pas : la policy « conversations:
-            // je bloque mon interlocuteur » n'autorise qu'à POSER
-            // `blocked_by`, jamais à l'effacer, et aucun écran ne propose
-            // de débloquer — c'est une décision assumée de v1
-            // (docs/REPRISE.md section 4). Sur un marché où l'on se
-            // recroise, un blocage par erreur ferme définitivement le
-            // seul canal de contact avec un vendeur. La décision reste,
-            // l'écran cesse de la cacher.
+            // Le blocage est DÉFINITIF : la policy « conversations: je
+            // bloque mon interlocuteur » n'autorise qu'à POSER
+            // `blocked_by`, et aucun écran ne débloque (décision de v1,
+            // docs/REPRISE.md §4). L'écran doit le dire.
             description="Elle ne pourra plus vous écrire. Le fil reste consultable. C'est définitif : on ne peut pas débloquer."
             tone="danger"
             action={blockPeerAction}

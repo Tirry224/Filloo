@@ -1,13 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 
 /**
- * État vide.
- *
- * Le composant le plus important de la bibliothèque, et celui qu'on écrit
- * en dernier dans la plupart des projets. Il impose par sa signature qu'un
- * écran vide explique POURQUOI il est vide (`title`, `description`) et
- * propose une SORTIE (`children`). Une application qui affiche une page
- * blanche paraît cassée, pas vide.
+ * État vide. Sa signature impose qu'un écran vide explique POURQUOI il
+ * l'est (`title`, `description`) et propose une SORTIE (`children`) : une
+ * page blanche paraît cassée, pas vide.
  */
 export function EmptyState({
   icon: Icon,

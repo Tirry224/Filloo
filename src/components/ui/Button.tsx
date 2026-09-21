@@ -5,11 +5,8 @@ import type { LucideIcon } from "lucide-react";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "md" | "sm";
 
-/**
- * Les variantes vivent dans un objet, pas dans une suite de `if`. Ajouter
- * une variante devient une ligne, et TypeScript refuse ensuite tout nom
- * qui n'existe pas dans cet objet.
- */
+/** Dans un objet et non une suite de `if` : ajouter une variante est une
+ * ligne, et TypeScript refuse tout nom absent de cet objet. */
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-accent text-on-accent hover:bg-accent-hover",
   secondary: "bg-surface text-ink border border-line hover:border-line-strong",
@@ -19,8 +16,8 @@ const VARIANTS: Record<Variant, string> = {
 
 /**
  * `h-control` (52px) et `h-tap` (44px) viennent des tokens. 44px est la
- * hauteur MINIMALE d'une cible tactile : en dessous, on la rate au pouce.
- * Il n'existe donc volontairement aucune taille plus petite.
+ * hauteur MINIMALE d'une cible tactile : aucune taille plus petite
+ * n'existe, volontairement.
  */
 const SIZES: Record<Size, string> = {
   md: "h-control text-base",
@@ -38,13 +35,10 @@ type CommonProps = {
 };
 
 /**
- * `href` produit un LIEN, son absence produit un BOUTON.
- *
- * La distinction n'est pas cosmétique. Un lien mène quelque part : il
- * s'ouvre dans un nouvel onglet au clic du milieu, se copie, se
- * référence. Un bouton agit sur la page courante. Emboîter l'un dans
- * l'autre — un `<button>` dans un `<a>` — produit du HTML invalide et un
- * comportement imprévisible au clavier. Le composant tranche à ta place.
+ * `href` produit un LIEN, son absence un BOUTON — la distinction n'est pas
+ * cosmétique : un lien s'ouvre dans un nouvel onglet, se copie, se
+ * référence ; un bouton agit sur la page courante. Emboîter l'un dans
+ * l'autre produit du HTML invalide.
  */
 type ButtonProps = CommonProps &
   ({ href: string } & Omit<React.ComponentProps<typeof Link>, "href" | "className">

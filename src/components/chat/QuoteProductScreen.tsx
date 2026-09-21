@@ -10,13 +10,12 @@ import { getThreadContext, getCitableProducts } from "@/lib/data/messages";
 import { messagesBase, type Espace } from "@/lib/espace";
 
 /**
- * Écran 31 — citer un produit dans un fil.
+ * Écran 31 — citer un produit dans un fil. C'est ce qui rend viable « un
+ * seul fil par client » : le fil ne portant pas de produit, chaque message
+ * doit pouvoir dire de quoi il parle.
  *
- * C'est la pièce qui rend viable le choix « un seul fil par client » :
- * puisque le fil ne porte plus de produit, chaque message doit pouvoir
- * dire de quoi il parle. Chaque ligne est un LIEN qui repose la citation
- * sur `/messages/{id}` (même principe que les feuilles de filtre de
- * recherche) : pas de bouton « valider » séparé, choisir EST valider.
+ * Chaque ligne est un LIEN qui repose la citation sur `/messages/{id}` :
+ * pas de bouton « valider », choisir EST valider.
  */
 export async function QuoteProductScreen({
   espace,
@@ -34,16 +33,10 @@ export async function QuoteProductScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen`, pour la même raison : un fil a deux
-     côtés, `getThreadContext` sait lequel est le nôtre, et le chemin
-     emprunté doit correspondre à ce fait. Elle manquait ici — le fil
-     était gardé, ses trois feuilles ne l'étaient pas. Un commerçant
-     ouvrant `/messages/<id>/actions` obtenait donc cette feuille habillée
-     en client, dont le bouton de fermeture ne le ramenait dans son espace
-     qu'au coup d'après, par le rattrapage de `ThreadScreen`.
-
-     C'est exactement le motif que cette réorganisation corrigeait
-     ailleurs : la garde écrite sur un écran et oubliée sur ses voisins. */
+  /* La même garde que `ThreadScreen` : un fil a deux côtés,
+     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
+     y correspondre. Sans elle, un commerçant obtient cette feuille habillée
+     en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/citer`);
 

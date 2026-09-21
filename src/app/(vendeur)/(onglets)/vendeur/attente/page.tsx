@@ -20,24 +20,16 @@ import { getMyMerchant } from "@/lib/data/merchants";
 export default async function PendingShopPage({
   searchParams,
 }: {
-  /* Même canal que les autres écrans de l'espace : une action produit qui
-     échoue redirige vers `/vendeur/produits?erreur=…`, et cet écran-là
-     fait suivre le message jusqu'ici quand la boutique n'est pas encore
-     validée. Sans cette lecture, le refus arrivait bien à destination et
-     n'y était affiché par personne.
-
-     Le chemin a changé avec le passage à quatre onglets : la liste des
-     produits — d'où part chaque action — a quitté `/vendeur` pour
-     `/vendeur/produits`. Les deux écrans font suivre le message. */
+  /* Même canal que le reste de l'espace : une action produit qui échoue
+     redirige vers `/vendeur/produits?erreur=…`, qui fait suivre le message
+     jusqu'ici tant que la boutique n'est pas validée. Sans cette lecture,
+     le refus arrive à destination sans être affiché. */
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
-  /* La suspension n'est plus vérifiée ici : `(vendeur)/layout.tsx` la
-     traite pour TOUT l'espace, via `requireMerchantSpace`. Les quatre
-     copies de cette garde — une par écran, plus une manquante sur la
-     feuille d'actions produit — étaient le défaut que le découpage en
-     groupes de routes vient corriger. */
+  // La suspension est traitée par `(vendeur)/layout.tsx` pour TOUT
+  // l'espace, via `requireMerchantSpace`.
 
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");

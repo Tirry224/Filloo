@@ -3,17 +3,13 @@ import { Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * Photo de produit, ou son emplacement quand il n'y en a pas.
+ * Photo de produit, ou son emplacement quand il n'y en a pas : les deux cas
+ * dans le même composant, pour qu'un produit sans photo occupe exactement
+ * la même place dans la grille.
  *
- * Les deux cas vivent dans le même composant à dessein : un produit sans
- * photo ne doit pas casser la grille, il doit occuper exactement la même
- * place. Sans `src`, on affiche une plaque grise honnête plutôt qu'un vide.
- *
- * `next/image` n'est pas un luxe ici : il redimensionne l'image côté
- * serveur et ne charge que ce qui est visible. Sur un téléphone en 3G à
- * Conakry, servir la photo d'origine de 2 Mo pour l'afficher dans une
- * vignette de 160 px, c'est la différence entre un fil qui s'ouvre et un
- * fil qu'on abandonne.
+ * `next/image` redimensionne côté serveur et ne charge que le visible : en
+ * 3G, servir une photo de 2 Mo dans une vignette de 160 px fait la
+ * différence entre un fil qui s'ouvre et un fil qu'on abandonne.
  */
 export function Photo({
   ratio = "square",
@@ -40,8 +36,8 @@ export function Photo({
   } as const;
 
   /* Ce que le navigateur doit télécharger selon l'emplacement : la fiche
-     produit occupe toute la largeur, la vignette du fil une colonne sur
-     deux. Sans cette indication, Next sert la plus grande taille possible. */
+     occupe toute la largeur, la vignette une colonne sur deux. Sans cette
+     indication, Next sert la plus grande taille possible. */
   const SIZES = {
     square: "100vw",
     card: "50vw",

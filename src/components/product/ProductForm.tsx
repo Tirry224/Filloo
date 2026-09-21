@@ -16,15 +16,12 @@ type ProductFormProps = {
 } & (
   | {
       mode: "create";
-      /** La boutique est-elle validée ? UNE question, pas le statut
-       * complet : ce formulaire n'a pas à connaître les valeurs de
-       * `merchant_status`. La réponse est calculée côté serveur par
-       * l'écran 24, seule source de vérité.
+      /** UNE question, pas le statut complet : ce formulaire n'a pas à
+       * connaître les valeurs de `merchant_status`.
        *
-       * Ce booléen vient du navigateur, donc il ne PROTÈGE rien : il
-       * décide de ce qui s'affiche. La publication reste refusée en base
-       * par `products_check_publishable` (0002), requête forgée comprise.
-       * L'écran évite une impasse, la base interdit. */
+       * Venant du navigateur, ce booléen ne PROTÈGE rien, il décide de ce
+       * qui s'affiche : la publication reste refusée en base par
+       * `products_check_publishable` (0002). */
       canPublish: boolean;
     }
   | {
@@ -48,13 +45,10 @@ type ProductFormProps = {
  * `updateProductAction`), créer ne propose de publier qu'à une boutique
  * qui en a le droit.
  *
- * LE BOUTON DISPARAÎT AU LIEU D'ÊTRE GRISÉ
- * Une boutique en attente voyait « Publier le produit » en action
- * PRINCIPALE, alors que la base refuse la publication tant qu'elle n'est
- * pas validée : le refus, correct, arrivait APRÈS le clic. Un bouton
- * grisé aurait gardé le même défaut en plus discret — annoncer une
- * capacité absente sans dire quand elle revient. D'où l'action qui, elle,
- * MARCHE (enregistrer le brouillon) et une phrase qui dit ce qui manque.
+ * Le bouton de publication DISPARAÎT au lieu d'être grisé : un bouton
+ * grisé annonce une capacité absente sans dire quand elle revient. On
+ * montre l'action qui marche — enregistrer le brouillon — et une phrase
+ * qui dit ce qui manque.
  */
 export function ProductForm(props: ProductFormProps) {
   const { merchantId, categories } = props;
@@ -62,9 +56,8 @@ export function ProductForm(props: ProductFormProps) {
   const canPublish = props.mode === "create" && props.canPublish;
   const initial = isEdit ? props.initial : undefined;
 
-  // Généré une seule fois côté navigateur : `PhotoPicker` construit le
-  // chemin de chaque photo avec cet id AVANT que la ligne `products`
-  // n'existe (voir `createProductAction`).
+  // Généré côté navigateur : `PhotoPicker` construit le chemin de chaque
+  // photo avec cet id AVANT que la ligne `products` n'existe.
   const [productId] = useState(() => (isEdit ? props.productId : crypto.randomUUID()));
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? true);
 
@@ -146,12 +139,9 @@ export function ProductForm(props: ProductFormProps) {
             </Button>
           </>
         ) : (
-          /* Boutique en attente, et seulement elle : une boutique
-             REFUSÉE n'arrive pas jusqu'ici, l'écran 24 l'envoie sur
-             `/vendeur/refusee`. Cette phrase peut donc parler d'attente
-             sans mentir. Elle est au-dessus du bouton, là où se pose la
-             question « pourquoi je ne peux pas publier ? », et le
-             brouillon devient l'action principale. */
+          /* Boutique en attente, et seulement elle : une boutique REFUSÉE
+             n'arrive pas ici, l'écran 24 l'envoie sur `/vendeur/refusee`.
+             La phrase peut donc parler d'attente sans mentir. */
           <>
             <p className="text-center text-xs text-ink-soft">
               Publication disponible après validation de votre boutique.

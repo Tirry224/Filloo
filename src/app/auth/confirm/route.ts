@@ -13,13 +13,10 @@ import { safeNextPath } from "@/lib/next-param";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  /* `next` vient du lien reçu par email, donc d'une URL que n'importe qui
-     peut réécrire avant de la faire suivre. Recollé tel quel à `origin`,
-     il ouvrait une redirection vers un site tiers : `?next=@exemple.gn`
-     donne l'adresse `https://makiti…@exemple.gn`, dont le vrai domaine
-     est `exemple.gn` — tout ce qui précède le `@` n'est qu'un nom
-     d'utilisateur. La victime cliquait un lien Makiti, voyait Makiti
-     échanger son jeton, et se retrouvait sur une copie du site.
+  /* `next` vient du lien reçu par email, donc d'une URL réécrivable par
+     quiconque la fait suivre. Recollé tel quel à `origin`, il ouvre une
+     redirection vers un tiers : `?next=@exemple.gn` donne
+     `https://makiti…@exemple.gn`, dont le vrai domaine est `exemple.gn`.
 
      Même liste blanche que les écrans d'authentification
      (`safeNextPath`) : un chemin interne, ou le défaut. */

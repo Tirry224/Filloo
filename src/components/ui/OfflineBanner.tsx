@@ -6,27 +6,23 @@ import { WifiOff } from "lucide-react";
 /**
  * Bandeau « Pas de connexion » — écran 4 de `docs/ECRANS.md`.
  *
- * COMPOSANT CLIENT par nécessité, pas par confort : seul le navigateur
- * sait si le téléphone a du réseau. Quelques centaines d'octets pour
- * éviter qu'on croie Makiti cassé quand c'est le réseau qui est tombé.
+ * Composant CLIENT par nécessité : seul le navigateur sait si le téléphone
+ * a du réseau.
  *
- * SON TEXTE NE PROMET RIEN : sans service worker, une page non chargée
- * reste inaccessible, et la version d'origine (« vous voyez les produits
- * déjà consultés ») mentait, rien n'étant mis en cache.
+ * Son texte ne promet RIEN : rien n'est mis en cache, donc une page non
+ * chargée reste inaccessible.
  *
- * `navigator.onLine` ment dans un cas : il dit « en ligne » sur un réseau
- * qui ne mène nulle part. Il voit la coupure franche, pas le réseau
- * poussif — le mesurer consommerait les données de quelqu'un qui n'en a
- * déjà plus.
+ * `navigator.onLine` voit la coupure franche, pas le réseau poussif — il
+ * dit « en ligne » sur un réseau qui ne mène nulle part, et le mesurer
+ * consommerait les données de quelqu'un qui n'en a plus.
  */
 export function OfflineBanner() {
   const [horsLigne, setHorsLigne] = useState(false);
 
   useEffect(() => {
     const relever = () => setHorsLigne(!navigator.onLine);
-    /* Un premier relevé à la monture : l'application peut très bien être
-       ouverte depuis un onglet resté en arrière-plan, sans qu'aucun
-       événement `offline` ne soit passé pendant ce temps. */
+    // Un premier relevé à la monture : l'onglet a pu rester en
+    // arrière-plan sans qu'aucun événement `offline` ne passe.
     relever();
     window.addEventListener("online", relever);
     window.addEventListener("offline", relever);
@@ -39,9 +35,8 @@ export function OfflineBanner() {
   if (!horsLigne) return null;
 
   return (
-    /* `role="status"` et non `alert` : l'information est utile, pas
-       urgente, et un lecteur d'écran ne doit pas interrompre la lecture en
-       cours pour l'annoncer. */
+    // `role="status"` et non `alert` : utile, pas urgent — un lecteur
+    // d'écran ne doit pas interrompre la lecture en cours.
     <p
       role="status"
       className="flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-xs font-semibold text-warn-ink"
