@@ -13,7 +13,12 @@ conclut hors de l'application.
 
 - [x] Spécification validée
 - [x] Schéma de base de données, règles métier et sécurité (RLS)
-- [x] Tests de sécurité (153 vérifications, voir `supabase/tests/`)
+- [x] Tests de sécurité — **158 vérifications, exécutées et au vert le
+      2026-09-22** sur un PostgreSQL 16 local portant les 24 migrations.
+      Le chiffre sort du script, il ne se recopie plus d'un document à
+      l'autre (l'ancien, 153, circulait sans que personne ne l'ait vu)
+- [x] Tests de la couche applicative — `npm run tests`, 25 cas, sans
+      aucune dépendance (`node --test`)
 - [x] Budgets de performance mesurés (`npm run poids`, voir `docs/PERFORMANCE.md`)
 - [x] Projet Supabase créé et migrations exécutées
 - [x] Design system et bibliothèque de composants (`src/styles/`, `src/components/`)
@@ -29,10 +34,28 @@ conclut hors de l'application.
       validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
 - [x] SMTP Resend côté Supabase — mot de passe oublié et confirmation
       d'inscription partent par Resend depuis le 2026-09-17
-- [ ] `CRON_SECRET` sur Vercel, sans laquelle `/api/notifications` refuse
-      tout et aucune décision d'administration n'est annoncée
+- [ ] **La chaîne d'envoi des décisions d'administration est CASSÉE, et
+      c'est constaté, pas supposé** : la file `notifications` de la base
+      de production portait le 2026-09-21 une ligne `merchant_approved`
+      créée le 17 et jamais envoyée. Le cron passe tous les jours à 7 h,
+      il a donc échoué quatre fois. Deux causes possibles, toutes deux à
+      vérifier sur le tableau de bord Vercel : `CRON_SECRET` absente
+      (`/api/notifications` refuse alors tout), ou l'adresse du site
+      absente — ce second cas est désormais couvert par un repli
+      automatique sur `VERCEL_PROJECT_PRODUCTION_URL`
 - [ ] Confirmation d'email à ACTIVER côté Supabase (décidée, le code la
-      gère déjà) — possible maintenant que le SMTP fonctionne
+      gère déjà) — possible maintenant que le SMTP fonctionne, et sans
+      risque de perdre l'intention depuis que `signUpAction` passe un
+      `emailRedirectTo`
+- [x] Partage et référencement : Open Graph sur les fiches produit et
+      boutique, `sitemap.xml`, `robots.txt`
+- [x] Politique de confidentialité (`/confidentialite`) et écran de
+      contact (`/contact`) — les deux promesses des articles 19 et 24 des
+      conditions. **Reste à remplir `EDITEUR_NOM`** dans
+      `src/content/confidentialite.ts`
+- [x] Compteurs d'usage : onze événements mesurés côté serveur, sans
+      JavaScript envoyé au téléphone et sans donnée identifiante
+      (migration `0024`)
 - [x] Conditions d'utilisation — texte fourni le 2026-09-17, écran 34
       (`/conditions` et `/vendeur/conditions`), les deux lignes de menu
       mènent enfin quelque part
@@ -41,7 +64,20 @@ conclut hors de l'application.
 
 Les règles de sécurité sont couvertes par des tests exécutables sur un
 PostgreSQL local : voir [`supabase/tests/README.md`](supabase/tests/README.md).
-À lancer après toute modification d'une policy.
+À lancer après toute modification d'une policy. Dernière exécution réelle :
+**158 vérifications au vert, le 2026-09-22.**
+
+La couche applicative a ses propres tests, sans aucune dépendance à
+installer — Node 22 exécute `node --test` et lit le TypeScript tel quel :
+
+```bash
+npm run tests
+```
+
+Ils couvrent d'abord ce qui fait mal quand il casse : `safeNextPath`, seul
+endroit qui décide si une adresse de reprise est sûre, les règles de
+saisie vérifiées côté serveur, et l'adresse du site dont dépendent tous
+les liens partant en email.
 
 ## Démarrer l'application
 

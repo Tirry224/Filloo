@@ -15,9 +15,24 @@ décision a été prise, et quelle erreur a coûté une journée.
 
 **État en une phrase :** l'application est complète, branchée sur la
 vraie base et en ligne ; ce qui la sépare d'un vrai commerçant n'est plus
-du code mais trois constats à faire de tes propres yeux — un email reçu,
-un parcours fait sur un téléphone, et des libellés de catégories
-arrêtés.
+du code mais deux constats à faire de tes propres yeux — un email reçu et
+un parcours fait sur un téléphone.
+
+**Mise à jour du 2026-09-22.** Une session a repris ce fichier après avoir
+corrigé les six défauts listés plus bas, ajouté le partage (Open Graph,
+sitemap, robots), la politique de confidentialité, l'écran de contact, les
+compteurs d'usage et les premiers tests de la couche applicative. Elle a
+aussi EXÉCUTÉ, pour la première fois depuis une session, les tests de
+sécurité SQL : **158 vérifications, toutes au vert**, sur un PostgreSQL 16
+local portant les 24 migrations. Le chiffre ne se recopie plus d'un
+document à l'autre — il sort du script.
+
+**Et une preuve qui change le statut d'un blocage.** La file
+`notifications` de la base de production portait, le 2026-09-21, une ligne
+`merchant_approved` créée le 17 et **jamais envoyée — quatre jours
+d'attente**. Le cron tourne tous les jours à 7 h : il a donc échoué quatre
+fois. « À constater » n'est plus le bon mot : la chaîne d'envoi est
+CASSÉE, et un commerçant validé n'a jamais appris qu'il l'était.
 
 **Ce qui a été vérifié pour écrire ce fichier, et ce qui ne l'a pas
 été.** Tout ce qui porte sur le dépôt a été relu dans le code le
@@ -66,19 +81,22 @@ tenus, celui de la page la plus lourde de justesse.
   sur le premier écran de l'application : c'est la première chose qu'un
   visiteur lit, et elle n'est pas décidée.
 
-### Deux promesses écrites que rien ne tient
+### Les deux promesses écrites sont tenues depuis le 2026-09-22
 
-Les conditions d'utilisation engagent la plateforme, et deux de leurs
-articles renvoient à ce qui n'existe pas :
+- **Article 19 → une Politique de confidentialité** : écrite
+  (`src/content/confidentialite.ts`), servie par `/confidentialite` et
+  `/vendeur/confidentialite`, atteignable depuis les deux menus « Mon
+  compte » et citée sous le bouton d'inscription.
+- **Article 24 → un moyen de contact** : `/contact` et `/vendeur/contact`,
+  avec l'adresse `bouliwelltirry@gmail.com` — la même que celle qui reçoit
+  les réponses aux emails de refus de boutique.
 
-- **Article 19 → une Politique de confidentialité** qui n'est écrite
-  nulle part.
-- **Article 24 → un « moyen de contact indiqué sur la plateforme »**
-  qui n'est indiqué sur aucun écran.
-
-C'est exactement le défaut que le texte des conditions venait réparer,
-déplacé d'un cran : une promesse écrite noir sur blanc vaut moins qu'un
-silence, parce qu'elle se vérifie.
+**Il reste UNE case à remplir**, et elle est bloquante pour un document
+juridique : `EDITEUR_NOM` dans `src/content/confidentialite.ts` est vide.
+Une politique de confidentialité doit nommer le responsable du traitement.
+L'écran s'adapte — il tait le bloc plutôt que d'afficher un nom inventé,
+ce qui rendrait le document entier suspect — mais la promesse n'est
+complète qu'une fois ces deux chaînes remplies (nom civil, puis ville).
 
 ### À faire sur un vrai téléphone, par toi
 
@@ -97,36 +115,81 @@ l'enregistrement correspondant existe. **Noter les défauts au fil de
 l'eau plutôt que les corriger un par un** — ils se traitent mieux en
 lot, et corriger en cours de parcours fait perdre le fil du parcours.
 
-### Six défauts réels, trouvés en relisant le code, aucun corrigé
+### Les six défauts : cinq corrigés le 2026-09-22, un laissé ouvert
 
-Ils sont écrits ici pour ne pas être retrouvés une troisième fois.
+Ils étaient écrits ici pour ne pas être retrouvés une troisième fois. Ce
+qui suit dit ce qui a été fait, pour ne pas les chercher une quatrième.
 
-- **`countProductsElsewhere` affiche un chiffre faux** : elle demande
-  `p_limit: 500` alors que `search_products` plafonne à
-  `least(coalesce(p_limit,24), 50)`. L'écran de recherche vide annonce
-  donc au maximum « 50 produits ailleurs », quel que soit le vrai
-  nombre.
-- **Supprimer un produit abandonne ses photos pour toujours** :
-  `deleteProductAction` supprime la ligne, la cascade de `0001` efface
-  `product_images` — qui portait les chemins — donc plus rien ne permet
-  de retrouver les fichiers dans le stockage. `updateProductAction` fait
-  pourtant ce ménage avec soin.
-- **Publier un produit est impossible sans JavaScript** : `PhotoPicker`
-  téléverse depuis le navigateur et `check_product_publishable`
-  (`0002`, 3.2) exige au moins une photo. Le geste central du commerçant
-  est donc JS-seul — ce n'est pas « à moitié fait », c'est un trou.
-- **Un échec partiel de création de produit est sans issue** : le
-  `productId` est figé dans un `useState`, donc le réessai bute sur un
-  `duplicate key` brut, en anglais.
-- **Aucune interface d'administration n'existe**, alors que
-  `reportConversationAction` promet « notre équipe va lire cette
-  conversation ». Valider, refuser, suspendre et lire les signalements
-  se font tous à la main dans Supabase.
-- **Le commentaire de la migration `0023` est faux** : il compte sur une
-  cascade depuis `auth.users` qui ne se déclenchait pas, puisque
-  `deleteAccountAction` bannissait au lieu de supprimer. Le code est
-  corrigé, la migration non — **on ne réécrit pas une migration déjà
-  appliquée** (section 4), donc le rectificatif vit ici.
+- **`countProductsElsewhere` affichait un chiffre faux** — CORRIGÉ. Elle
+  demandait `p_limit: 500` là où `search_products` plafonne à 50. Elle
+  rend maintenant `{ nombre, atteintLePlafond }`, et l'écran écrit « 50
+  produits ou plus » plutôt qu'un total qu'il ne connaît pas.
+- **Supprimer un produit abandonnait ses photos pour toujours** —
+  CORRIGÉ. `deleteProductAction` lit les chemins AVANT le `delete` (la
+  cascade efface `product_images`, seul endroit où ils vivent), puis fait
+  le même ménage que `updateProductAction`, contrôle des fichiers encore
+  cités par un autre produit compris.
+- **Un échec partiel de création de produit était sans issue** — CORRIGÉ.
+  Le réessai tombait sur un `duplicate key` brut, en anglais, sans porte
+  de sortie : `ProductForm` fige l'identifiant, donc recharger ne changeait
+  rien. `createProductAction` traite désormais le code `23505` comme ce
+  qu'il est — la REPRISE d'un brouillon — et met à jour au lieu de refuser.
+- **Publier un produit reste impossible sans JavaScript** — NON CORRIGÉ,
+  et c'est le seul du lot. `PhotoPicker` téléverse depuis le navigateur et
+  `check_product_publishable` exige une photo. Y remédier demande un
+  chemin de téléversement côté serveur (route multipart, validation du
+  type et du poids, écriture dans Storage), c'est-à-dire un vrai
+  développement et non un correctif — à décider, pas à bâcler.
+- **Aucune interface d'administration n'existe** — c'est une DÉCISION de
+  v1 (section 4), pas un défaut. Elle reste vraie.
+- **Le commentaire de la migration `0023` est faux** — le rectificatif vit
+  ici, et une migration appliquée ne se réécrit pas.
+
+### Ce que la session du 2026-09-22 a ajouté
+
+- **Le partage.** `generateMetadata` sur la fiche produit (titre, prix,
+  photo) et sur la fiche boutique, plus `metadataBase`. Sans elles, un
+  lien collé dans WhatsApp — le canal de diffusion réel en Guinée —
+  s'affichait avec le titre générique du site, sans photo ni prix.
+  **Les balises ne sont PAS posées à la racine** : mesuré, `og:type` et
+  `og:site_name` seuls coûtaient 0,2 Ko sur CHAQUE écran et faisaient
+  passer `/conditions` de 12,0 à 12,2 Ko, au-dessus du budget de
+  `npm run poids`. Payer sur trente-huit écrans ce qui n'en sert que deux
+  était le mauvais sens du calcul.
+- **`sitemap.ts` et `robots.ts`.** Le plan du site est construit avec un
+  client ANONYME (`src/lib/supabase/public.ts`) : c'est le RLS qui décide
+  de la liste, donc un produit masqué, en brouillon, supprimé ou d'une
+  boutique refusée en disparaît sans qu'aucune condition ne soit écrite
+  deux fois. Un produit vendu y reste mais porte un `noindex`.
+- **La politique de confidentialité et l'écran de contact**, les deux
+  promesses des articles 19 et 24 que rien ne tenait. Écrites à partir du
+  CODE : l'article « Supprimer votre compte » dit que la suppression
+  anonymise et bannit, et n'efface ni les messages passés ni l'adresse
+  email — parce que c'est ce que fait `deleteAccountAction`.
+- **L'inscription nomme enfin les conditions.** L'article 25 fait reposer
+  leur acceptation sur le bouton « Créer mon compte », et cet écran n'en
+  disait pas un mot : on faisait accepter un texte sans jamais le montrer.
+- **Les compteurs d'usage** (`0024`, `src/lib/analytics.ts`) : onze
+  événements, mesurés côté SERVEUR, zéro octet de JavaScript envoyé au
+  téléphone, aucune bannière de consentement, aucune donnée identifiante.
+  La table refuse `anon` et `authenticated` des DEUX côtés — RLS sans
+  policy et privilèges révoqués — ce qui a été vérifié en `set role anon`,
+  pas supposé.
+- **Les premiers tests de la couche applicative** : `npm run tests`, 25
+  cas sans aucune dépendance (`node --test`). Les quinze cas qui avaient
+  trouvé le contournement de `safeNextPath` vivaient dans `/tmp` et
+  pouvaient donc disparaître ; ils sont maintenant dans le dépôt. Un de
+  ces tests a d'ailleurs trouvé une erreur d'attente de son auteur, pas du
+  code — c'est précisément à ça qu'ils servent.
+- **Une seule façon de connaître l'adresse du site** (`src/lib/site-url.ts`)
+  au lieu de deux, et surtout un FILET : à défaut de
+  `NEXT_PUBLIC_SITE_URL`, elle se rabat sur
+  `VERCEL_PROJECT_PRODUCTION_URL`, que Vercel pose seul. Oublier la
+  variable n'éteint donc plus tous les emails en silence.
+- **`?next=` traverse désormais le parcours « mot de passe oublié »** en
+  entier, et `signUpAction` passe un `emailRedirectTo`. Les deux chemins
+  par lesquels l'intention se perdait sont fermés — le second était
+  bloquant le jour de l'activation de la confirmation d'email.
 
 ### Deux gestes de ménage, non bloquants
 
@@ -157,8 +220,15 @@ trompera.
 
 ### Dettes techniques connues, aucune bloquante
 
-- **Zéro test automatisé côté front.** Deux mille lignes de tests
-  couvrent le SQL, aucune ne couvre la couche applicative — c'est-à-dire
+- **La couche applicative est désormais testée, mais à peine.**
+  `npm run tests` couvre 25 cas : `safeNextPath`, les règles de saisie et
+  l'adresse du site. C'est le socle, pas la couverture — les actions
+  serveur, elles, n'ont toujours aucun test, et c'est là que vivent les
+  écritures. La phrase qui suit reste vraie et explique pourquoi ce
+  déséquilibre coûte cher.
+
+  *Ancien état, conservé pour la leçon :* deux mille lignes de tests
+  couvraient le SQL, aucune ne couvrait la couche applicative — c'est-à-dire
   là où TOUS les bugs de terrain ont été trouvés. C'est le déséquilibre
   de fond du projet : la couche la mieux testée n'est pas celle qui casse.
   Les quinze cas qui ont trouvé le contournement de `safeNextPath` ont
@@ -166,13 +236,19 @@ trompera.
   défaut peut revenir sans que rien ne le dise. Node 22 exécute
   `node --test` sans installer quoi que ce soit — il n'y a même plus
   l'excuse de la dépendance.
-- **`?next=` se perd sur deux chemins**, tous deux vérifiés le
+- ~~**`?next=` se perd sur deux chemins**~~ — CORRIGÉ le 2026-09-22 :
+  `signUpAction` passe un `emailRedirectTo` et le lien « Mot de passe
+  oublié ? » emporte `next` sur tout le parcours. Conservé ci-dessous
+  parce que la description dit ce qui était en jeu. Vérifié le
   2026-09-21 : `signUpAction` ne passe pas d'`emailRedirectTo`
   (`src/lib/actions/auth.ts:72`), et le lien « Mot de passe oublié ? »
   de `LoginForm` ne transporte pas `next`. Latent tant que la
   confirmation d'email est désactivée — et bloquant le jour où on
   l'active.
-- **L'origine des liens de réinitialisation vient de l'en-tête `Host`**
+- ~~**L'origine des liens de réinitialisation vient de l'en-tête
+  `Host`**~~ — CORRIGÉ le 2026-09-22 : `src/lib/site-url.ts` est le seul
+  endroit qui décide de cette adresse, et il ne lit aucune requête. Le
+  texte d'origine
   (`src/lib/actions/auth.ts:185`), qui n'est pas validé. Non exploitable
   — Supabase filtre `redirectTo` — mais la protection vit dans un
   réglage de tableau de bord au lieu du dépôt. **Et le correctif est
@@ -197,9 +273,10 @@ trompera.
   `npx @next/codemod@canary middleware-to-proxy .`. Le faire débloquerait
   aussi un vrai 404 sur `/ecrans`, aujourd'hui un 200 qui porte la page
   « n'existe pas ».
-- **`postcss` n'est pas déclaré dans `package.json`** alors que
-  `scripts/verifier-classes.mjs` l'importe : ça marche par dépendance
-  transitive de `@tailwindcss/postcss`, donc par accident.
+- ~~**`postcss` n'est pas déclaré dans `package.json`**~~ — CORRIGÉ le
+  2026-09-22 : il est maintenant une dépendance de développement
+  déclarée, et ne tient plus par accident à la dépendance transitive de
+  `@tailwindcss/postcss`.
 - **Une vingtaine de commentaires de code renvoient à ce fichier par
   un numéro** (« étape 2 », « section 7 », « point 9 »). Ces numéros
   désignaient un plan disparu depuis plusieurs réécritures : ils sont
@@ -327,6 +404,7 @@ npm run espaces                # étanchéité des deux espaces
 npm run gardes                 # gardes de route
 npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
 npm run parcours               # mesure d'un parcours
+npm run tests                  # couche applicative (node --test, sans dépendance)
 ```
 
 ---
