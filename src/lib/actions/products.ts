@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
 import type { ActionState } from "@/lib/actions/auth";
+import { compter } from "@/lib/analytics";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -73,9 +74,50 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     is_negotiable: fields.isNegotiable,
     status: "draft",
   });
-  if (insertError) return { error: insertError.message };
+
+  /* 23505 = ce `productId` existe déjà. Ce n'est pas une faute de saisie :
+     c'est le RÉESSAI d'un envoi dont l'insertion avait réussi et la suite
+     échoué (photos, publication). `ProductForm` fige l'identifiant dans un
+     `useState` — volontairement, puisque `PhotoPicker` a déjà rangé les
+     fichiers sous ce nom — donc réessayer retombe forcément dessus. Sans
+     ce rattrapage, le commerçant lit « duplicate key value violates unique
+     constraint » en anglais et n'a plus aucune issue : ni réessayer, ni
+     recharger, la page reprenant le même identifiant.
+
+     On REPREND donc le brouillon au lieu de refuser. Le `update` passe par
+     le RLS, qui n'autorise que ses propres produits : un identifiant
+     appartenant à un autre commerçant ne ramène zéro ligne et se dit
+     autrement. */
+  if (insertError) {
+    if (insertError.code !== "23505") return { error: insertError.message };
+
+    const { data: repris, error: repriseError } = await supabase
+      .from("products")
+      .update({
+        category_id: fields.categoryId,
+        title: fields.title,
+        description: fields.description || null,
+        price_gnf: fields.priceGnf,
+        is_negotiable: fields.isNegotiable,
+      })
+      .eq("id", productId)
+      .select("id");
+    if (repriseError) return { error: repriseError.message };
+    if (!repris || repris.length === 0) {
+      return { error: "Ce produit existe déjà et n'est pas le vôtre. Rechargez la page pour en créer un nouveau." };
+    }
+  }
 
   if (fields.imagePaths.length > 0) {
+    /* Le réessai rejoue les mêmes chemins : sans ce nettoyage, l'insertion
+       bute sur `unique (product_id, position)` et l'impasse se déplace
+       d'un cran. Remplacer est aussi ce que fait `updateProductAction`. */
+    const { error: clearError } = await supabase
+      .from("product_images")
+      .delete()
+      .eq("product_id", productId);
+    if (clearError) return { error: clearError.message };
+
     const { error: imagesError } = await supabase.from("product_images").insert(
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),
     );
@@ -97,6 +139,12 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       return { error: "Publication impossible : votre compte commerçant n'est plus actif. Le produit est enregistré en brouillon." };
     }
   }
+
+  /* Ici et pas plus haut : on ne compte un produit qu'une fois toutes les
+     écritures passées. Un brouillon enregistré compte aussi — c'est un
+     commerçant qui a fait le geste, et distinguer les deux demanderait
+     deux événements pour une question que personne ne se pose encore. */
+  compter("produit_cree", { role: "merchant", merchantId: owner.merchantId, categoryId: fields.categoryId });
 
   redirect("/vendeur/produits");
 }
@@ -256,6 +304,17 @@ export async function deleteProductAction(formData: FormData) {
   if (!productId) backToSeller("Formulaire invalide, rechargez la page.");
 
   const supabase = await createClient();
+
+  /* Les chemins se lisent AVANT la suppression : la cascade de 0001 efface
+     `product_images`, qui est le seul endroit où ils sont écrits. Après le
+     `delete`, plus rien ne permet de retrouver les fichiers — ils
+     resteraient dans le stockage pour toujours, facturés et invisibles.
+     `updateProductAction` fait ce ménage ; la suppression l'oubliait. */
+  const { data: imagesAvant } = await supabase
+    .from("product_images")
+    .select("storage_path")
+    .eq("product_id", productId);
+
   const { data, error } = await supabase.from("products").delete().eq("id", productId).select("id");
 
   if (error) backToSeller(error.message);
@@ -265,5 +324,25 @@ export async function deleteProductAction(formData: FormData) {
   if (!data || data.length === 0) {
     backToSeller("Suppression impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
   }
+
+  /* Même précaution que dans `updateProductAction` : `storage_path` n'est
+     unique nulle part, donc un fichier encore cité par un AUTRE produit ne
+     se détruit pas. Best effort assumé, et après la base : un orphelin
+     coûte moins cher qu'une vignette vide. */
+  const cheminsRetires = (imagesAvant ?? []).map((image) => image.storage_path);
+  if (cheminsRetires.length > 0) {
+    const { data: encoreCites } = await supabase
+      .from("product_images")
+      .select("storage_path")
+      .in("storage_path", cheminsRetires);
+    const cites = new Set((encoreCites ?? []).map((image) => image.storage_path));
+    const orphelins = cheminsRetires.filter((chemin) => !cites.has(chemin));
+
+    if (orphelins.length > 0) {
+      const { error: storageError } = await supabase.storage.from("product-images").remove(orphelins);
+      if (storageError) console.error("photos du produit supprimé restées dans le stockage :", storageError.message);
+    }
+  }
+
   backToSeller();
 }
