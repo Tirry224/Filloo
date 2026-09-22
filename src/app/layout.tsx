@@ -4,6 +4,7 @@ import "@/styles/index.css";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ClosePanels } from "@/components/ui/ClosePanels";
 import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
+import { siteUrl } from "@/lib/site-url";
 
 /**
  * UNE SEULE POLICE (R4 de docs/PERFORMANCE.md) : la seconde pesait 40,3 Ko
@@ -24,7 +25,22 @@ const body = Figtree({
   display: "swap",
 });
 
+const adresse = siteUrl();
+
 export const metadata: Metadata = {
+  /* `metadataBase` est la condition pour que les balises Open Graph
+     portent une adresse ABSOLUE. Sans elle, Next écrit une image relative
+     (`/…`) — et WhatsApp, Facebook et Messenger, qui lisent la page depuis
+     leurs propres serveurs, n'ont rien contre quoi la résoudre : le lien
+     partagé s'affiche alors sans aperçu, sans photo et sans prix.
+
+     C'est le canal de diffusion principal de Makiti en Guinée : un produit
+     se partage dans une conversation WhatsApp, pas depuis un moteur de
+     recherche. Un aperçu vide y coûte plus qu'un mauvais référencement.
+
+     `null` quand aucune adresse n'est configurée : Next se contente alors
+     des balises relatives, comme avant — on ne devine pas un domaine. */
+  metadataBase: adresse ? new URL(adresse) : null,
   title: "Makiti — Trouvez des produits et des commerçants près de chez vous",
   description:
     "Makiti aide à trouver des produits et les commerçants qui les vendent, en Guinée. Parcourez le catalogue librement et contactez le vendeur pour conclure la vente.",
@@ -34,6 +50,24 @@ export const metadata: Metadata = {
      l'installation est la condition pour recevoir un push. */
   appleWebApp: { capable: true, title: "Makiti", statusBarStyle: "default" },
   icons: { apple: "/icons/icone-180.png" },
+
+  /* PAS d'`openGraph` ICI, et c'est un arbitrage mesuré, pas un oubli.
+     Des balises posées à la racine sont recopiées dans le `<head>` de
+     CHAQUE écran : `og:type` et `og:site_name` seuls coûtaient 0,2 Ko par
+     page et faisaient passer `/conditions` de 12,0 à 12,2 Ko, au-dessus
+     du budget de `npm run poids`. Or elles n'ajoutaient rien à l'aperçu :
+     sans `og:title`, WhatsApp et Facebook retombent sur `<title>` et
+     `<meta name="description">`, qui sont déjà là.
+
+     Le partage se joue sur DEUX écrans — la fiche produit et la fiche
+     boutique — et c'est là que les balises complètes sont posées, image
+     comprise (`generateMetadata`). Payer sur trente-huit écrans ce qui
+     n'en sert que deux était le mauvais sens du calcul.
+
+     `metadataBase` reste, lui : il n'écrit aucune balise par lui-même, il
+     donne seulement à ces deux écrans l'origine dont ils ont besoin pour
+     produire une URL d'image absolue. */
+
 };
 
 export const viewport: Viewport = {

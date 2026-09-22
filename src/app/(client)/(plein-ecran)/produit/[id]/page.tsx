@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +10,69 @@ import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
+import { formatGnf } from "@/lib/format";
 import Link from "next/link";
+import { compter } from "@/lib/analytics";
+
+/**
+ * L'APERÇU DU LIEN PARTAGÉ — la seule chose que verront la plupart des
+ * gens avant de décider d'ouvrir Makiti.
+ *
+ * Un produit se diffuse ici en étant collé dans une conversation WhatsApp,
+ * pas en étant trouvé par un moteur de recherche. Sans ces balises, ce
+ * lien s'affichait avec le titre générique du site, aucune photo et aucun
+ * prix : impossible de distinguer deux produits partagés côte à côte.
+ *
+ * `getProduct` est appelé ici ET dans la page ; le `cache()` de
+ * `createClient` plus la déduplication de requêtes de Next évitent le
+ * double aller-retour.
+ *
+ * Un produit hors catalogue (brouillon, masqué, boutique non approuvée)
+ * n'arrive jamais ici : le RLS l'écarte, `getProduct` rend `null`, et la
+ * page répond « n'existe pas ». L'indexation suit donc la visibilité
+ * réelle sans qu'aucune règle séparée n'ait à être tenue à jour — une
+ * seconde liste aurait dérivé.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const product = await getProduct(supabase, id);
+
+  if (!product) {
+    // Rien à annoncer, et surtout rien à indexer.
+    return { title: "Produit introuvable", robots: { index: false, follow: false } };
+  }
+
+  const vendu = product.status === "sold";
+  const titre = `${product.title} — ${formatGnf(product.priceGnf)}${vendu ? " (vendu)" : ""}`;
+  /* La description dit OÙ et CHEZ QUI : c'est ce qui décide d'un contact,
+     le prix étant déjà dans le titre. */
+  const description =
+    product.description?.slice(0, 200) ||
+    `${product.title} chez ${product.merchant.shopName}, à ${product.merchant.city}. Contactez le commerçant sur Makiti.`;
+
+  return {
+    title: titre,
+    description,
+    openGraph: {
+      type: "website",
+      title: titre,
+      description,
+      /* Une seule photo : les aperçus n'en affichent qu'une, et les
+         suivantes ne feraient qu'alourdir la page lue par le robot. */
+      images: product.imageUrls.length > 0 ? [{ url: product.imageUrls[0], alt: product.title }] : undefined,
+    },
+    /* Un produit vendu reste lisible (décisions 0008 et 0020) mais ne
+       mérite pas d'être proposé par un moteur de recherche : personne ne
+       cherche à acheter ce qui ne l'est plus. Le lien déjà partagé
+       continue de fonctionner — c'est `noindex`, pas une disparition. */
+    robots: vendu ? { index: false, follow: true } : undefined,
+  };
+}
 
 /** Fiche produit — écrans 7 et 8 de docs/ECRANS.md. */
 export default async function ProductPage({
@@ -37,6 +100,8 @@ export default async function ProductPage({
   const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
 
   const sold = product.status === "sold";
+
+  compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
   return (
     <Screen>

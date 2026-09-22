@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Check, MapPin } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -8,6 +9,40 @@ import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
+import { compter } from "@/lib/analytics";
+
+/**
+ * L'aperçu du lien partagé — même raison que sur la fiche produit : une
+ * boutique se recommande en envoyant son adresse dans une conversation.
+ *
+ * Pas d'image : une boutique n'a pas de photo à elle dans le modèle de
+ * données, seulement un `Avatar` dessiné à partir de son nom. Mettre la
+ * photo d'un de ses produits ferait passer ce produit pour la boutique.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const merchant = await getMerchant(supabase, id);
+
+  if (!merchant) {
+    return { title: "Boutique introuvable", robots: { index: false, follow: false } };
+  }
+
+  const titre = `${merchant.shopName} — ${merchant.city}`;
+  const description =
+    merchant.description?.slice(0, 200) ||
+    `Découvrez les produits de ${merchant.shopName}, à ${merchant.city}, et contactez le commerçant sur Makiti.`;
+
+  return {
+    title: titre,
+    description,
+    openGraph: { type: "website", title: titre, description },
+  };
+}
 
 /** Boutique publique — écran 11 de docs/ECRANS.md. */
 export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +52,8 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   if (!merchant) notFound();
 
   const catalogue = await getMerchantProducts(supabase, merchant);
+
+  compter("boutique_vue", { merchantId: merchant.id });
 
   return (
     <>
