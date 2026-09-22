@@ -1,4 +1,5 @@
 import { Screen } from "@/components/ui/Screen";
+import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { MerchantNav } from "@/components/nav/MerchantNav";
 import { createClient } from "@/lib/supabase/server";
 import { countUnreadMessages } from "@/lib/data/messages";
@@ -25,6 +26,7 @@ export default async function MerchantTabsLayout({ children }: { children: React
     <Screen>
       {children}
       <MerchantNav unreadCount={unreadCount} />
+      <InstallPrompt />
     </Screen>
   );
 }
