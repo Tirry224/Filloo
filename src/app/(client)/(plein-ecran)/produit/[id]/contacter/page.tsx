@@ -9,6 +9,7 @@ import { getProduct } from "@/lib/data/products";
 import { getMyProfile } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { findOrCreateConversation } from "@/lib/actions/messages";
+import { compter } from "@/lib/analytics";
 
 /**
  * Écran 16 — compte requis.
@@ -53,6 +54,17 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
      « Vérifiez votre connexion », il ferait réessayer toute la journée un
      geste refusé. Aucune conversation n'est créée, le trigger précédant
      l'insertion (0002, 3.4). */
+  /* L'INTENTION de contacter, comptée avant de savoir si elle aboutit :
+     placée après, elle manquerait exactement les cas qui intéressent —
+     celui qui renonce devant la demande de compte, et celui que le quota
+     refuse. L'écart entre `contact_ouvert` et `contact_abouti` EST le
+     taux de conversion de Makiti. */
+  compter("contact_ouvert", {
+    productId: product.id,
+    merchantId: product.merchant.id,
+    role: clientProfile ? "client" : "anon",
+  });
+
   const outcome = clientProfile
     ? await findOrCreateConversation(supabase, clientProfile.id, product.merchant.id)
     : null;

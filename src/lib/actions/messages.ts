@@ -10,6 +10,7 @@ import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
+import { compter } from "@/lib/analytics";
 
 /** Retour vers un fil, le message porté par l'URL (même raison que
  * `backToSeller`). `iAmMerchant` vient de `getThreadContext` : une action
@@ -69,6 +70,12 @@ export async function findOrCreateConversation(
      insertions. C'est `unique (client_id, merchant_id)` (0001), pas ce
      code, qui garantit un seul fil par couple ; une course perdue (23505)
      n'est pas un échec, il suffit de relire. */
+  /* `contact_abouti` se pose ICI, sur la branche qui CRÉE le fil, et
+     jamais sur celle qui en retrouve un existant : compter les deux
+     ferait remonter le taux de conversion à chaque fois qu'un client
+     rouvre une discussion commencée la semaine dernière. */
+  if (!createError) compter("contact_abouti", { role: "client", merchantId });
+
   if (createError) {
     /* P0001 = `raise exception` d'un trigger ; ici le quota de 20 par
        jour, dont le texte français se relaie tel quel. `before insert`,
@@ -131,6 +138,12 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
      envoyée, redirect compris. Attendre Resend ferait payer l'aller-retour
      à l'expéditeur, et une panne Resend casserait un envoi réussi. */
   after(() => notifyNewMessage(inserted.id));
+
+  /* Le CONTENU du message n'est jamais écrit dans la mesure (0024) : seul
+     compte qu'un message soit parti, et de quel côté. C'est ce qui dit si
+     les commerçants répondent — la question qui décide de la survie d'une
+     place de marché de mise en relation. */
+  compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
 
   backToThread(conversationId, context.iAmMerchant);
 }

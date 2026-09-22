@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
 import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
 import Link from "next/link";
+import { compter } from "@/lib/analytics";
 
 /**
  * Recherche — écrans 5 et 6 de docs/ECRANS.md.
@@ -47,8 +48,23 @@ export default async function SearchPage({
   // Un résultat vide dû au filtre de ville, pas à la recherche elle-même,
   // se chiffre plutôt que de laisser croire au catalogue vide — jamais
   // affiché sans ce chiffre (décision 9 : filtre manuel, jamais automatique).
-  const elsewhereCount =
-    results.length === 0 ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null }) : 0;
+  const ailleurs =
+    results.length === 0
+      ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null })
+      : { nombre: 0, atteintLePlafond: false };
+  const elsewhereCount = ailleurs.nombre;
+
+  /* La mesure la plus utile du lot : une recherche à zéro résultat nomme
+     un commerçant à aller chercher. Seulement quand quelque chose a été
+     réellement demandé — l'écran de repos n'est pas une recherche. */
+  if (q || category) {
+    compter("recherche", {
+      query: q || null,
+      categoryId: category?.id ?? null,
+      cityId: city?.id ?? null,
+      resultCount: results.length,
+    });
+  }
 
   // « Filtre actif » = différent de ce qu'on aurait sans rien toucher :
   // pour un client de Boké, sa propre ville n'est pas un filtre posé.
@@ -186,7 +202,10 @@ export default async function SearchPage({
                 title={q ? `Aucun résultat pour « ${q} »` : "Aucun produit ici"}
                 description={
                   elsewhereCount > 0
-                    ? `${elsewhereCount} produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
+                    ? /* « et plus » quand le compte touche le plafond de
+                         `search_products` : au-delà, le nombre exact n'est
+                         pas connu, et l'annoncer serait inventer. */
+                      `${elsewhereCount}${ailleurs.atteintLePlafond ? " produits ou plus correspondent" : ` produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""}`} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
                     : "Essayez un mot plus court, ou changez de ville."
                 }
               >

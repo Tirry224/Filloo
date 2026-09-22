@@ -12,6 +12,11 @@
  * les types du domaine de `types.ts` (camelCase). La traduction entre les
  * deux se fait à un seul endroit : `data.ts`.
  *
+ * Régénéré le 2026-09-21, après l'application de `0024` : la table
+ * `analytics_events` vient donc bien de la base déployée. Ce passage n'a
+ * fait apparaître aucun autre écart — le reste du fichier est identique,
+ * caractère pour caractère, à ce que le générateur produit aujourd'hui.
+ *
  * Régénéré le 2026-09-17, après l'application de `0021` : la table
  * `notifications` et l'énuméré `notification_kind` viennent donc bien de
  * la base déployée, et non d'une main. Ce passage-là n'a fait apparaître
@@ -43,6 +48,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          actor_role: string | null
+          category_id: number | null
+          city_id: number | null
+          id: number
+          merchant_id: string | null
+          name: string
+          occurred_at: string
+          product_id: string | null
+          result_count: number | null
+          search_query: string | null
+        }
+        Insert: {
+          actor_role?: string | null
+          category_id?: number | null
+          city_id?: number | null
+          id?: never
+          merchant_id?: string | null
+          name: string
+          occurred_at?: string
+          product_id?: string | null
+          result_count?: number | null
+          search_query?: string | null
+        }
+        Update: {
+          actor_role?: string | null
+          category_id?: number | null
+          city_id?: number | null
+          id?: never
+          merchant_id?: string | null
+          name?: string
+          occurred_at?: string
+          product_id?: string | null
+          result_count?: number | null
+          search_query?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           id: number

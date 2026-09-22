@@ -6,6 +6,7 @@ import { passwordIsValid } from "@/lib/supabase/verify";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
+import { compter } from "@/lib/analytics";
 
 /** Écran 13 — création de la boutique, étape 2 de l'inscription commerçant.
  * La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
@@ -43,6 +44,11 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
     if (error.code === "23505") return { error: "Vous avez déjà une boutique." };
     return { error: error.message };
   }
+
+  /* La boutique existe en `pending` : c'est bien une création, même si la
+     validation viendra plus tard. Compter à l'approbation mesurerait le
+     rythme de l'administrateur, pas celui des commerçants. */
+  compter("boutique_creee", { role: "merchant", cityId: cityId });
 
   redirect("/vendeur/attente");
 }

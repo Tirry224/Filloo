@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
 import { landingForSession } from "@/lib/data/session";
 import { searchProducts } from "@/lib/data/products";
+import { compter } from "@/lib/analytics";
 
 /**
  * Fil d'accueil — écrans 1 et 2 de docs/ECRANS.md.
@@ -63,6 +64,12 @@ export default async function HomePage({
   const triHref = (valeur: string) =>
     `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
+
+  /* APRÈS l'aiguillage vers `/vendeur` : compter avant gonflerait les
+     visites de tous les commerçants renvoyés ailleurs, qui n'ont jamais
+     vu cet écran. `visite` est le dénominateur de toutes les autres
+     mesures — s'il est faux, tous les taux le sont. */
+  compter("visite", { cityId: city?.id ?? null });
 
   return (
     <>

@@ -1,13 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { siteUrlOuLocalhost } from "@/lib/site-url";
 import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
+import { compter } from "@/lib/analytics";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -56,12 +57,38 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
   const supabase = await createClient();
+
+  /* L'INTENTION DOIT SURVIVRE AU LIEN DE CONFIRMATION. Sans
+     `emailRedirectTo`, Supabase ramène à la racine du site : quelqu'un qui
+     s'inscrit depuis « Contacter le vendeur » perd le produit qu'il
+     voulait justement contacter, et se retrouve sur l'accueil sans
+     comprendre pourquoi. On repasse donc par `/auth/confirm`, qui échange
+     le jeton puis suit `next` — le même chemin que la réinitialisation de
+     mot de passe.
+
+     Latent tant que la confirmation d'email est désactivée côté Supabase,
+     et bloquant le jour où on l'active : c'est pour ce jour-là que ces
+     trois lignes existent. */
+  const apresConfirmation = safeNextPath(formData.get("next"));
+  const retour = `${siteUrlOuLocalhost()}/auth/confirm${
+    apresConfirmation ? `?next=${encodeURIComponent(apresConfirmation)}` : ""
+  }`;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { role, full_name: fullName, phone: nettoyerTelephone(phone) } },
+    options: {
+      data: { role, full_name: fullName, phone: nettoyerTelephone(phone) },
+      emailRedirectTo: retour,
+    },
   });
   if (error) return { error: translateAuthError(error.message) };
+
+  /* Le compte EXISTE dès ici, confirmation par email ou non : compter
+     après la session manquerait toutes les inscriptions en attente de
+     confirmation le jour où elle sera activée — c'est-à-dire, ce jour-là,
+     la totalité d'entre elles. */
+  compter("inscription", { role });
 
   // `data.session` est null quand la confirmation par email est activée
   // (réglage Supabase) : le compte existe, mais aucune session tant que le
@@ -114,10 +141,37 @@ export async function createLinkedProfileAction(
     return { error: error.message };
   }
 
+  // Un second compte lié est une inscription aussi : ne pas le compter
+  // ferait disparaître des mesures le parcours « je veux aussi vendre ».
+  compter("inscription", { role });
+
   if (role === "merchant") redirect("/inscription/boutique");
   // Même reprise d'intention qu'à l'inscription : ce compte client vient
   // peut-être d'être créé POUR écrire à un vendeur.
   redirect(safeNextPath(formData.get("next")) ?? "/");
+}
+
+/**
+ * Où atterrir après s'être authentifié — connexion OU réinitialisation de
+ * mot de passe. Jamais `/` en dur : `landingForSession` tranche
+ * (décision 8 de SPEC), et `next` ne fait que CHOISIR une destination à
+ * l'intérieur de l'espace autorisé, il ne défait pas la décision.
+ *
+ * Partagée par les deux actions depuis que `next` traverse aussi le
+ * parcours « mot de passe oublié » : recopiée, la règle de l'espace aurait
+ * fini par ne valoir que d'un côté — et c'est le côté non maintenu qui
+ * laisse entrer.
+ */
+async function destinationApresAuthentification(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  brut: FormDataEntryValue | null,
+): Promise<string> {
+  const landing = await landingForSession(supabase);
+  const next = safeNextPath(brut);
+  const espaceCommercantSeul = landing === "/vendeur";
+  const autorise =
+    next && (!espaceCommercantSeul || next === "/vendeur" || next.startsWith("/vendeur/"));
+  return autorise ? next : landing;
 }
 
 /** Connexion — écran 14. */
@@ -134,12 +188,7 @@ export async function signInAction(_prevState: ActionState | null, formData: For
      (décision 8 de SPEC). `next` n'est suivi que s'il reste dans l'espace
      autorisé — un paramètre d'URL ne défait pas la décision 8, il choisit
      seulement une destination à l'intérieur. */
-  const landing = await landingForSession(supabase);
-  const next = safeNextPath(formData.get("next"));
-  const espaceCommercantSeul = landing === "/vendeur";
-  const nextAutorise =
-    next && (!espaceCommercantSeul || next === "/vendeur" || next.startsWith("/vendeur/"));
-  redirect(nextAutorise ? next : landing);
+  redirect(await destinationApresAuthentification(supabase, formData.get("next")));
 }
 
 /** Déconnexion. Utilisée depuis /compte et /vendeur/boutique. */
@@ -159,10 +208,24 @@ export async function requestPasswordResetAction(
   if (!email) return { sent: true };
 
   const supabase = await createClient();
-  const host = (await headers()).get("host");
-  const origin = `${process.env.NODE_ENV === "development" ? "http" : "https"}://${host}`;
+  /* L'origine vient de la configuration, plus de l'en-tête `Host` : celui-ci
+     est envoyé par le CLIENT, donc c'était lui qui décidait où pointait le
+     lien de réinitialisation. Rien n'était exploitable — Supabase refuse
+     un `redirectTo` hors de sa liste d'URL autorisées — mais la protection
+     vivait entièrement dans un réglage de tableau de bord, invisible
+     depuis le dépôt. Elle est maintenant écrite ici aussi. */
+  const origin = siteUrlOuLocalhost();
+  /* `next` traverse DEUX redirections avant de servir : `/auth/confirm`
+     échange le jeton, puis envoie sur `/reinitialiser-mot-de-passe`, qui
+     le repasse à son formulaire. D'où l'encodage imbriqué — et
+     `safeNextPath` des deux côtés, à l'aller comme au retour, parce que ce
+     chemin voyage dans un email que n'importe qui peut réécrire. */
+  const suite = safeNextPath(formData.get("next"));
+  const apresReinitialisation = suite
+    ? `/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`
+    : "/reinitialiser-mot-de-passe";
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm?next=/reinitialiser-mot-de-passe`,
+    redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(apresReinitialisation)}`,
   });
   // `sent: true` dans TOUS les cas : répondre autrement pour une adresse
   // inconnue révélerait qui a un compte ici. L'erreur se journalise —
@@ -186,9 +249,10 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: translateAuthError(error.message) };
 
-  // Même aiguillage qu'après une connexion : changer son mot de passe
-  // n'est pas une raison d'atterrir dans un autre espace.
-  redirect(await landingForSession(supabase));
+  // Même aiguillage qu'après une connexion — la même fonction, pas une
+  // copie : changer son mot de passe n'est pas une raison d'atterrir dans
+  // un autre espace, ni d'oublier ce qu'on était venu faire.
+  redirect(await destinationApresAuthentification(supabase, formData.get("next")));
 }
 
 /**
