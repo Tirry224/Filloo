@@ -29,19 +29,19 @@ export const CONFIDENTIALITE_MISE_A_JOUR = "21 septembre 2026";
 export const CONTACT_EMAIL = "bouliwelltirry@gmail.com";
 
 /**
- * Le nom civil de l'éditeur, responsable du traitement.
+ * Le nom civil de l'éditeur, responsable du traitement — fourni par le
+ * porteur du projet le 2026-09-22.
  *
- * VIDE TANT QU'IL N'EST PAS FOURNI, et l'écran s'adapte : il nomme alors
- * « l'éditeur de Makiti » et donne l'adresse de contact, sans inventer
- * d'identité. Un nom fabriqué dans un document juridique serait une faute
- * plus grave que l'absence de nom — c'est le document entier qui
- * deviendrait suspect.
+ * L'écran s'adapte si ces chaînes sont vides : il tait le bloc plutôt que
+ * d'afficher un nom inventé, ce qui rendrait le document entier suspect.
  *
- * À COMPLÉTER AVANT LE LANCEMENT : nom et prénom, puis la ville. Deux
- * chaînes, rien d'autre à changer ailleurs.
+ * La ville n'est pas en Guinée, et c'est exact : le service s'adresse au
+ * marché guinéen, l'éditeur réside à Montréal. Les deux informations sont
+ * distinctes et aucune ne remplace l'autre — c'est l'éditeur qu'un
+ * utilisateur doit pouvoir situer pour exercer ses droits, pas le marché.
  */
-export const EDITEUR_NOM = "";
-export const EDITEUR_VILLE = "Conakry, Guinée";
+export const EDITEUR_NOM = "Boubacar Sow";
+export const EDITEUR_VILLE = "Montréal, Canada";
 
 export type BlocConfidentialite = string | string[];
 
