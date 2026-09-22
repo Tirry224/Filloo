@@ -1,0 +1,31 @@
+-- =====================================================================
+-- 0025 — Un catalogue sans fourre-tout
+-- =====================================================================
+-- « Autre » disparaît, sur décision du porteur du projet le 2026-09-22.
+--
+-- La migration 0003 l'avait créée « pour éviter qu'un produit ne soit pas
+-- publiable du tout ». L'intention était bonne et le résultat inverse :
+-- une catégorie fourre-tout est toujours le choix le moins coûteux au
+-- moment de publier, donc elle se remplit — et les neuf autres perdent
+-- leur sens à mesure qu'elle grossit. Sur un catalogue qui se parcourt par
+-- catégories, c'est le mode de navigation principal qui se vide.
+--
+-- La décision 3 de docs/SPEC.md l'avait d'ailleurs écrit dès le départ :
+-- « dix catégories, sur un seul niveau, sans "Autre" ». La base et la
+-- spécification se contredisaient depuis 0003 ; c'est la spécification
+-- qui gagne.
+--
+-- CONSÉQUENCE À CONNAÎTRE : il reste NEUF catégories, pas dix. Nommer une
+-- dixième catégorie réelle est une décision de produit, pas une migration
+-- — et mieux vaut neuf catégories qui veulent dire quelque chose qu'une
+-- dixième inventée pour tenir un compte.
+--
+-- Vérifié sur la base de production avant écriture : `autre` ne portait
+-- AUCUN produit. Le `delete` ci-dessous ne peut donc rien casser
+-- aujourd'hui — et si un produit y était rattaché, la clé étrangère
+-- `products_category_id_fkey` (0001), sans `on delete`, ferait échouer la
+-- migration plutôt que de déplacer des produits en silence. C'est le bon
+-- comportement : un produit qui change de catégorie sans que personne ne
+-- l'ait décidé est un produit qu'on ne retrouve plus.
+
+delete from public.categories where slug = 'autre';

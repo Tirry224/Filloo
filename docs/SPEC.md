@@ -15,7 +15,7 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 |---|-------|----------|
 | 1 | Authentification | Email + mot de passe. Téléphone obligatoire mais **non vérifié** (pas de SMS, pas de coût). **Confirmation d'email OBLIGATOIRE** (décision du 2026-09-17) : l'email est à la fois identifiant de connexion et canal de notification, donc sans confirmation quelqu'un peut s'inscrire avec l'adresse d'un tiers, qui recevra ses messages. La friction est assumée. **Ne s'active qu'une fois le SMTP de production posé côté Supabase** — activée avant, elle rend l'inscription impossible pour tout le monde. |
 | 2 | Navigation | Catalogue **libre sans compte**. Compte obligatoire uniquement pour envoyer un message. |
-| 3 | Catégories | Liste **fixe** de 10 catégories, gérée par l'administrateur. **Confirmé le 2026-09-17 : 10, et non 8** — la base en porte déjà 10, donc cette décision ne coûte aucune migration. |
+| 3 | Catégories | Liste **fixe**, gérée par l'administrateur. **Révisé le 2026-09-22 : 9, après suppression d'« Autre » (migration 0025).** La base en portait 10 dont un fourre-tout, que cette décision excluait pourtant depuis l'origine — la contradiction a vécu depuis 0003. Une catégorie fourre-tout est toujours le choix le moins coûteux au moment de publier : elle se remplit, et vide les autres de leur sens. Nommer une dixième catégorie RÉELLE reste possible ; neuf qui veulent dire quelque chose valent mieux qu'une dixième inventée pour tenir un compte. |
 | 4 | Classement du fil | Pas de notation. Tri : *à la une* (manuel) → *populaires* (nb de conversations) → *récents*. |
 | 5 | Notification commerçant | v1 : badge de non-lus + email. Push web reporté en v2. |
 | 5b | Structure des fils | **Un seul fil par couple (client, boutique).** Chaque message référence le produit dont il parle ; le premier message d'un fil en porte obligatoirement un. |
@@ -72,7 +72,7 @@ produit à la une.
 
 ## 5. Questions encore ouvertes
 
-- Liste définitive des **10 catégories** et des **villes** — le NOMBRE est
+- Liste définitive des **9 catégories** et des **villes** — le NOMBRE est
   tranché (10), les libellés ne le sont pas.
 - Conditions générales d'utilisation à rédiger avant la mise en ligne.
 
