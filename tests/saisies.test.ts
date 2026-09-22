@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { erreurTelephone, estTelephone, nettoyerTelephone } from "../src/lib/telephone.ts";
+import { erreurTelephone, estTelephone, lienWhatsApp, nettoyerTelephone } from "../src/lib/telephone.ts";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "../src/lib/password.ts";
 import { formatGnf, formatPhone } from "../src/lib/format.ts";
 
@@ -92,4 +92,31 @@ test("un numéro s'affiche groupé, et reste tel quel s'il ne fait pas neuf chif
   // Ne jamais découper ce qu'on ne reconnaît pas : un regroupement faux se
   // recopie faux.
   assert.equal(formatPhone("12345"), "12345");
+});
+
+test("LE LIEN WHATSAPP PORTE L'INDICATIF, sinon il ne mène nulle part", () => {
+  /* Le défaut qui a vécu jusqu'au 2026-09-22 : les liens étaient bâtis à
+     la main par `numero.replace(/\D/g, "")`, donc `wa.me/622334455` —
+     neuf chiffres, sans indicatif. L'adresse est bien formée, elle ne
+     désigne simplement aucun compte : le bouton existait et ouvrait un
+     écran d'erreur. Rien ne pouvait le signaler, ni un type, ni un build,
+     ni un test — parce qu'il n'y en avait pas. Celui-ci le fige. */
+  assert.equal(lienWhatsApp("622334455"), "https://wa.me/224622334455");
+});
+
+test("le lien accepte toutes les écritures d'un même numéro", () => {
+  // La base stocke neuf chiffres, mais un numéro saisi à la main depuis le
+  // tableau de bord peut arriver sous n'importe quelle forme.
+  for (const ecriture of ["622 33 44 55", "+224 622 33 44 55", "00224622334455"]) {
+    assert.equal(lienWhatsApp(ecriture), "https://wa.me/224622334455", ecriture);
+  }
+});
+
+test("un numéro absent ou fautif ne produit AUCUN lien", () => {
+  /* Un bouton absent se comprend, un bouton mort se réessaie — c'est la
+     règle déjà suivie par les écrans. Mieux vaut donc `null` qu'une
+     adresse vers un numéro qui n'existe pas. */
+  for (const inutilisable of [null, undefined, "", "12345", "522334455", "abc"]) {
+    assert.equal(lienWhatsApp(inutilisable), null, String(inutilisable));
+  }
 });

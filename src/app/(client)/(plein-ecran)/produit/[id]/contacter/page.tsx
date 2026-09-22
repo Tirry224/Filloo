@@ -10,6 +10,7 @@ import { getMyProfile } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { findOrCreateConversation } from "@/lib/actions/messages";
 import { compter } from "@/lib/analytics";
+import { lienWhatsApp } from "@/lib/telephone";
 
 /**
  * Écran 16 — compte requis.
@@ -25,7 +26,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   const product = await getProduct(supabase, id);
   if (!product) notFound();
 
-  const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
+  const waHref = lienWhatsApp(product.merchant.whatsappPhone);
 
   const clientProfile = await getMyProfile(supabase, "client");
 
@@ -87,9 +88,9 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
         <Button variant="secondary" size="sm" href={`/produit/${product.id}`}>
           Revenir au produit
         </Button>
-        {waNumber ? (
+        {waHref ? (
           <a
-            href={`https://wa.me/${waNumber}`}
+            href={waHref}
             className="text-center text-xs text-ink-soft underline underline-offset-2"
           >
             Ou appelez directement le vendeur sur WhatsApp.
@@ -124,9 +125,9 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
           présente WhatsApp comme l'échappatoire — le chemin le plus crédible
           en Guinée. Elle ne s'affiche plus sans numéro : une porte de sortie
           annoncée sans être ouverte est pire que pas de porte. */}
-      {waNumber ? (
+      {waHref ? (
         <a
-          href={`https://wa.me/${waNumber}`}
+          href={waHref}
           className="text-center text-xs text-ink-soft underline underline-offset-2"
         >
           Ou appelez directement le vendeur sur WhatsApp.

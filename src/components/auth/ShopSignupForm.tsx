@@ -60,7 +60,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           <Field
             label="Numéro WhatsApp"
             htmlFor="whatsappPhone"
-            hint="Affiché sur vos produits, en plus de la messagerie."
+            hint="Affiché sur vos produits, en plus de la messagerie. Laissez vide pour utiliser le numéro de votre compte."
           >
             <Input id="whatsappPhone" name="whatsappPhone" type="tel" inputMode="tel" placeholder="622 33 44 55" />
           </Field>

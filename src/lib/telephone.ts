@@ -45,3 +45,41 @@ export function erreurTelephone(valeur: string, obligatoire: boolean, champ = "t
   }
   return null;
 }
+
+/**
+ * L'indicatif de la Guinée. Les numéros sont ENREGISTRÉS sans lui —
+ * `nettoyerTelephone` le retire pour que « 622 33 44 55 » et
+ * « +224622334455 » se comparent — mais tout ce qui SORT de
+ * l'application doit le reposer : un numéro national ne désigne personne
+ * hors du pays.
+ */
+export const INDICATIF_GUINEE = "224";
+
+/**
+ * L'adresse WhatsApp d'un numéro guinéen, ou `null` si le numéro est
+ * inutilisable.
+ *
+ * CE QUE CETTE FONCTION RÉPARE. Les liens étaient construits à la main,
+ * par `numero.replace(/\D/g, "")`, ce qui donnait `wa.me/622334455` —
+ * neuf chiffres, sans indicatif. WhatsApp exige un numéro AU FORMAT
+ * INTERNATIONAL : sans le « 224 », il ne résout aucun compte et ouvre un
+ * écran d'erreur. Le bouton « Ou appelez directement le vendeur sur
+ * WhatsApp » était donc mort depuis toujours, sur chaque fiche produit et
+ * sur chaque écran de contact — et un bouton mort se réessaie, là où un
+ * bouton absent se comprend.
+ *
+ * Rien ne pouvait le signaler : le lien est bien formé, il mène
+ * simplement nulle part. C'est le genre de défaut qu'on ne trouve qu'en
+ * appuyant sur le bouton avec un vrai téléphone.
+ *
+ * Le numéro est REVALIDÉ ici plutôt que supposé propre : il vient de la
+ * base, où il a pu être écrit avant que `erreurTelephone` n'existe, ou à
+ * la main depuis le tableau de bord. Un lien vers un numéro fautif est
+ * pire que pas de lien.
+ */
+export function lienWhatsApp(numero: string | null | undefined): string | null {
+  if (!numero) return null;
+  const nettoye = nettoyerTelephone(numero);
+  if (!estTelephone(nettoye)) return null;
+  return `https://wa.me/${INDICATIF_GUINEE}${nettoye}`;
+}

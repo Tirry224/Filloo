@@ -13,6 +13,7 @@ import { getProduct } from "@/lib/data/products";
 import { formatGnf } from "@/lib/format";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
+import { lienWhatsApp } from "@/lib/telephone";
 
 /**
  * L'APERÇU DU LIEN PARTAGÉ — la seule chose que verront la plupart des
@@ -93,11 +94,10 @@ export default async function ProductPage({
   const product = await getProduct(supabase, id);
   if (!product) notFound();
 
-  /* wa.me n'accepte que des chiffres, indicatif compris et sans « + ».
-     Les commerçants saisissent leur numéro comme ils l'écrivent — avec
-     espaces, tirets ou « +224 » — donc on ne garde que les chiffres. Un
-     champ qui n'en contient aucun est traité comme absent. */
-  const waNumber = product.merchant.whatsappPhone?.replace(/\D/g, "") || null;
+  /* `lienWhatsApp` pose l'indicatif « 224 », que la base ne stocke pas.
+     Sans lui, l'adresse était `wa.me/622334455` — bien formée, mais ne
+     désignant aucun compte : le bouton existait et ne menait nulle part. */
+  const waHref = lienWhatsApp(product.merchant.whatsappPhone);
 
   const sold = product.status === "sold";
 
@@ -183,11 +183,11 @@ export default async function ProductPage({
                 Il disparaît quand la boutique n'a pas donné de numéro,
                 plutôt que de rester affiché sans rien faire : un bouton
                 absent se comprend, un bouton mort se réessaie. */}
-            {waNumber ? (
+            {waHref ? (
               <Button
                 variant="secondary"
                 fullWidth={false}
-                href={`https://wa.me/${waNumber}`}
+                href={waHref}
                 aria-label={`Contacter ${product.merchant.shopName} sur WhatsApp`}
                 className="w-control shrink-0 text-success"
               >

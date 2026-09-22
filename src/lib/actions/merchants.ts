@@ -32,12 +32,25 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return { error: "Vous devez d'abord créer un compte commerçant." };
 
+  /* LAISSÉ VIDE = LE NUMÉRO DU COMPTE. Le commerçant a déjà donné un
+     numéro à l'inscription ; le redemander est une friction qui se paie
+     cher, parce que le champ sauté fait DISPARAÎTRE le bouton WhatsApp de
+     ses fiches produit — sans que rien ne le lui dise. En Guinée, c'est la
+     sortie de secours quand la messagerie interne reste sans réponse :
+     l'oublier coûte des ventes au commerçant, pas à nous.
+
+     Il reste libre d'en mettre un AUTRE : beaucoup séparent le numéro
+     personnel du numéro de commerce, et ce choix-là doit rester possible.
+     Ce n'est donc pas un lien automatique entre les deux champs, c'est
+     une valeur par défaut au moment de la création. */
+  const numeroWhatsapp = nettoyerTelephone(whatsappPhone) || merchantProfile.phone || null;
+
   const { error } = await supabase.from("merchants").insert({
     profile_id: merchantProfile.id,
     shop_name: shopName,
     city_id: cityId,
     address_hint: addressHint || null,
-    whatsapp_phone: nettoyerTelephone(whatsappPhone) || null,
+    whatsapp_phone: numeroWhatsapp,
     description: description || null,
   });
   if (error) {
