@@ -136,18 +136,33 @@ export async function searchProducts(
   return data.map(mapRow);
 }
 
+/**
+ * Plafond DUR de `search_products` : la fonction termine par
+ * `limit least(coalesce(p_limit, 24), 50)` (0007). Demander davantage ne
+ * ramène pas une ligne de plus — c'est ce qui faisait annoncer un chiffre
+ * faux quand `countProductsElsewhere` demandait 500.
+ */
+export const PLAFOND_RESULTATS = 50;
+
 /** Compte les résultats sans filtre de ville, pour chiffrer un écran vide
  * (« N produits ailleurs ») — jamais pour les lister : la décision 9 de
- * docs/SPEC.md interdit tout filtrage automatique. */
+ * docs/SPEC.md interdit tout filtrage automatique.
+ *
+ * `atteintLePlafond` dit que le compte est une BORNE BASSE, pas un total :
+ * au-delà de 50, la base ne sait pas compter plus loin sans une seconde
+ * fonction, et l'écran doit écrire « 50 et plus » plutôt qu'un nombre
+ * qu'il ne connaît pas. Un chiffre faux sur le premier écran d'un visiteur
+ * coûte plus cher que l'absence de chiffre.
+ */
 export async function countProductsElsewhere(
   supabase: SupabaseClient<Database>,
   opts: { query?: string; categoryId?: number | null },
-): Promise<number> {
+): Promise<{ nombre: number; atteintLePlafond: boolean }> {
   const { data, error } = await supabase.rpc("search_products", {
     p_query: opts.query || undefined,
     p_category_id: opts.categoryId ?? undefined,
-    p_limit: 500,
+    p_limit: PLAFOND_RESULTATS,
   });
   if (error) throw error;
-  return data.length;
+  return { nombre: data.length, atteintLePlafond: data.length >= PLAFOND_RESULTATS };
 }
