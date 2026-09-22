@@ -10,6 +10,13 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    /* Les tests de `tests/` importent en `.ts` explicite, parce que c'est
+       ce qu'exige `node --experimental-strip-types`, qui les exécute sans
+       compilation ni dépendance. Sans cette option, `tsc` refuse
+       l'extension et le typecheck échoue sur des fichiers pourtant
+       corrects. Sans danger ici : rien n'est émis (`noEmit`), et Next
+       compile le code applicatif par sa propre chaîne. */
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

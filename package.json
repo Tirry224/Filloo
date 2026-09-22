@@ -11,7 +11,8 @@
     "parcours": "node scripts/parcours.mjs",
     "classes": "node scripts/verifier-classes.mjs",
     "espaces": "node scripts/verifier-espaces.mjs",
-    "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs"
+    "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
+    "tests": "node --experimental-strip-types --test 'tests/*.test.ts'"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -31,6 +32,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/web-push": "^3.6.4",
+    "postcss": "^8.5.6",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.7.0"
   }
