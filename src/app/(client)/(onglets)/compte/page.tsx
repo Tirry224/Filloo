@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BellRing, FileText, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
+import { BellRing, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -98,6 +98,12 @@ export default async function AccountPage() {
               </>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
+            {/* Les deux promesses des conditions — l'article 19 renvoie à
+                une politique de confidentialité, l'article 24 à « un moyen
+                de contact indiqué sur la plateforme ». Elles ne valaient
+                rien tant qu'aucun écran ne les atteignait. */}
+            <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />
+            <MenuItem icon={LifeBuoy} label="Nous contacter" href="/contact" />
           </MenuList>
 
           <MenuList>

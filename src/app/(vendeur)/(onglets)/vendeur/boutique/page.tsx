@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, FileText, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
+import { BellRing, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
@@ -184,6 +184,10 @@ export default async function EditShopPage() {
               <ChangePasswordForm />
             </MenuPanel>
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
+            {/* Mêmes deux lignes que côté client, vers l'espace commerçant :
+                les deux espaces ne se mélangent jamais. */}
+            <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/vendeur/confidentialite" />
+            <MenuItem icon={LifeBuoy} label="Nous contacter" href="/vendeur/contact" />
           </MenuList>
 
           {/* La suppression n'était atteignable que depuis

@@ -1,5 +1,6 @@
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
+import { Articles } from "@/components/legal/Articles";
 import {
   CONDITIONS,
   CONDITIONS_MISE_A_JOUR,
@@ -39,29 +40,7 @@ export function TermsScreen({ backHref }: { backHref: string }) {
             </p>
           ))}
 
-          {CONDITIONS.map((article) => (
-            <section key={article.numero} className="flex flex-col gap-2.5">
-              <h2 className="text-base font-semibold">
-                {article.numero}. {article.titre}
-              </h2>
-              {article.blocs.map((bloc, i) =>
-                /* Tableau = liste à puces, chaîne = paragraphe. L'index
-                   sert de clé : le texte est figé, jamais réordonné, et
-                   deux paragraphes peuvent être identiques. */
-                Array.isArray(bloc) ? (
-                  <ul key={i} className="flex list-disc flex-col gap-1.5 pl-5 text-base leading-relaxed">
-                    {bloc.map((puce) => (
-                      <li key={puce}>{puce}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p key={i} className="text-base leading-relaxed">
-                    {bloc}
-                  </p>
-                ),
-              )}
-            </section>
-          ))}
+          <Articles articles={CONDITIONS} />
 
           <p className="text-sm text-ink-soft">{CONDITIONS_PIED}</p>
         </Section>

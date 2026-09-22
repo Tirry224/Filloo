@@ -194,6 +194,27 @@ export function SignupForm({
         {pending ? "Création…" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
       </Button>
 
+      {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce
+          bouton, et cet écran n'en disait rien : on faisait donc accepter
+          un texte sans jamais le montrer ni même le nommer. Une phrase
+          sous le bouton, pas une case à cocher — une case de plus sur un
+          formulaire déjà long se coche sans lire, et ne prouve rien de
+          plus qu'une mention lisible.
+
+          Les liens s'ouvrent dans un nouvel onglet : les suivre ici ferait
+          perdre tout ce qui vient d'être saisi. */}
+      <p className="text-center text-sm leading-normal text-ink-soft">
+        En créant un compte, vous acceptez les{" "}
+        <Link href="/conditions" target="_blank" className="font-semibold text-accent underline">
+          conditions d&apos;utilisation
+        </Link>{" "}
+        et la{" "}
+        <Link href="/confidentialite" target="_blank" className="font-semibold text-accent underline">
+          politique de confidentialité
+        </Link>
+        .
+      </p>
+
       {mode === "new" ? (
         <p className="text-center text-base text-ink-soft">
           Déjà un compte ?{" "}
