@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
+import { siteUrl as adresseDuSite } from "@/lib/site-url";
 
 /**
  * Prévenir la personne qui vient de recevoir un message, par notification
@@ -24,9 +25,11 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
     /* Sans adresse de site, le lien de l'email serait relatif, donc mort
        dans une boîte mail. Le push n'en a pas besoin : son lien s'ouvre
        dans l'application. */
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+    const siteUrl = adresseDuSite();
     if (emailPret && !siteUrl) {
-      console.error("[email] NEXT_PUBLIC_SITE_URL absente : email non envoyé.");
+      console.error(
+        "[email] Aucune adresse de site (ni NEXT_PUBLIC_SITE_URL, ni VERCEL_PROJECT_PRODUCTION_URL) : email non envoyé.",
+      );
     }
     const emailPossible = emailPret && Boolean(siteUrl);
 
@@ -115,7 +118,11 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       });
     }
 
-    if (!emailPossible) return;
+    /* `!siteUrl` est redondant avec `emailPossible` pour un lecteur, mais
+       pas pour TypeScript, qui ne suit pas la déduction à travers un
+       booléen intermédiaire. L'écrire ici plutôt que de forcer le type
+       plus bas : un `!` non nul se contente de faire taire l'analyse. */
+    if (!emailPossible || !siteUrl) return;
 
     // L'adresse n'est cherchée qu'ICI, après le push : un canal ne doit
     // pas tomber à cause de ce qui manque à l'autre.

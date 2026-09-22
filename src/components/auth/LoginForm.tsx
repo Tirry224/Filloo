@@ -23,7 +23,14 @@ export function LoginForm({ next }: { next?: string }) {
         <Input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" />
       </Field>
 
-      <Link href="/mot-de-passe-oublie" className="-mt-1 self-end text-sm font-semibold text-accent">
+      {/* Le lien emporte `next` : sans lui, l'intention meurt ici. Quelqu'un
+          venu pour écrire à un vendeur, qui a oublié son mot de passe,
+          revenait sur l'accueil après la réinitialisation — le produit
+          perdu, et sans savoir pourquoi. */}
+      <Link
+        href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
+        className="-mt-1 self-end text-sm font-semibold text-accent"
+      >
         Mot de passe oublié ?
       </Link>
 

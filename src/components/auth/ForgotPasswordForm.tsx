@@ -7,11 +7,12 @@ import { Field, Input } from "@/components/ui/Field";
 import { requestPasswordResetAction, type ActionState } from "@/lib/actions/auth";
 
 /** Mot de passe oublié — écran 15. */
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(requestPasswordResetAction, null);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Email" htmlFor="email">
         <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
       </Field>

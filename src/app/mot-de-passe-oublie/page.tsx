@@ -1,6 +1,7 @@
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
+import { safeNextPath } from "@/lib/next-param";
 
 /**
  * Mot de passe oublié — écran 15 de docs/ECRANS.md.
@@ -14,13 +15,20 @@ import { TopBar } from "@/components/ui/TopBar";
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; next?: string }>;
 }) {
-  const { erreur } = await searchParams;
+  const { erreur, next } = await searchParams;
+  /* Filtré ici plutôt qu'au moment de l'envoi : ce qui descend dans le
+     formulaire doit déjà être sûr, sinon la garde se retrouve à devoir
+     être répétée par chaque appelant. */
+  const suite = safeNextPath(next);
 
   return (
     <Screen>
-      <TopBar title="Mot de passe oublié" backHref="/connexion" />
+      <TopBar
+        title="Mot de passe oublié"
+        backHref={suite ? `/connexion?next=${encodeURIComponent(suite)}` : "/connexion"}
+      />
       <ScreenBody>
         <Section className="gap-4 py-6">
           {erreur === "lien_invalide" ? (
@@ -35,7 +43,7 @@ export default async function ForgotPasswordPage({
             nouveau mot de passe.
           </p>
 
-          <ForgotPasswordForm />
+          <ForgotPasswordForm next={suite ?? undefined} />
         </Section>
       </ScreenBody>
     </Screen>

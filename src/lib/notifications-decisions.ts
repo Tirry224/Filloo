@@ -8,6 +8,7 @@ import {
   type EmailOutcome,
 } from "@/lib/email";
 import { sendPushToUser, type ContenuPush } from "@/lib/push";
+import { siteUrl as adresseDuSite } from "@/lib/site-url";
 
 /**
  * Annoncer — par notification ET par email — les trois décisions prises
@@ -62,7 +63,7 @@ export async function drainNotifications(): Promise<DrainReport> {
      canal éteint ne doit pas emporter l'autre. L'email exige `siteUrl` en
      plus, ses liens étant lus dans une boîte mail donc absolus ; ceux du
      push sont relatifs et s'ouvrent dans l'application. */
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+  const siteUrl = adresseDuSite();
   const emailPossible = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && siteUrl);
   const pushPret = Boolean(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,

@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
 
 /**
  * L'envoi d'une notification push, côté serveur.
@@ -25,7 +26,7 @@ function configurer(): boolean {
      qui s'en sert pour nous joindre en cas d'abus. On donne l'URL du site,
      jamais une adresse personnelle : elle partirait chez Google, Apple et
      Mozilla sans raison. */
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+  const site = siteUrl();
   if (!site) {
     /* Le repli est faux et doit se voir : `makiti.app` n'appartient pas au
        projet. On continue — le sujet VAPID n'empêche aucune distribution —
