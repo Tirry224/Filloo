@@ -46,7 +46,22 @@ de tes utilisateurs**, et là que nos décisions comptent vraiment.
 | Vignette produit | ≤ 15 Ko | à la revue |
 | Photo pleine taille | ≤ 120 Ko | à la revue |
 | Un écran de fil complet | ≤ 250 Ko, photos comprises | à la revue |
-| Tout écran doit marcher sans JavaScript | oui | `npm run parcours` |
+
+**Retiré le 2026-09-22 : « tout écran doit marcher sans JavaScript ».**
+Cette exigence figurait ici comme un budget à tenir ; le porteur du projet
+l'a écartée. Ce qu'elle coûtait n'était pas théorique : elle rendait le
+geste central du commerçant — publier un produit avec ses photos —
+impossible à finir, puisqu'une compression d'image dans le navigateur ne
+s'écrit pas sans script, et qu'un produit sans photo n'est pas publiable.
+Le projet a donc vécu avec un trou permanent dans son parcours principal
+pour tenir une règle que personne ne pouvait satisfaire.
+
+Ce qui demeure, et qui n'est PAS la même chose : le socle JavaScript reste
+plafonné (200 Ko), les liens de liste ne préchargent pas, les filtres
+restent en `<details>` natif parce que c'est plus léger, et le serveur
+revalide toujours tout — un contrôle de formulaire côté navigateur se
+contourne en trois secondes. Alléger le JavaScript reste une règle ;
+fonctionner entièrement sans lui n'en est plus une.
 
 ## 3. Les règles, par ordre d'impact décroissant
 
@@ -156,28 +171,27 @@ lettres visible à l'écran. Un chiffre au vert n'est pas un gain.
 - La recherche n'interroge le serveur **qu'à la validation**, pas à chaque
   frappe : une recherche à la frappe, c'est huit requêtes pour un mot.
 
-### R7 — Pas de frontière `loading.tsx` (pour l'instant)
+### R7 — Les frontières `loading.tsx`, à peser au cas par cas
 
-Une frontière de chargement envoie d'abord un squelette, puis le contenu —
-et c'est le **JavaScript du navigateur** qui remplace l'un par l'autre.
-Sans lui, la page reste un squelette pour toujours.
+**Révisée le 2026-09-22**, en même temps que le retrait de l'exigence
+« sans JavaScript » — c'était sa seule justification.
 
-Ce n'est pas une hypothèse : le projet avait un `loading.tsx` à la racine,
-et **cinq écrans sur sept ne montraient jamais leur contenu** sans
-JavaScript — le fil d'accueil compris. Personne ne l'avait vu parce que
-personne n'avait testé sans JavaScript. Les deux frontières sont retirées ;
-`scripts/parcours.mjs` teste désormais chaque parcours dans les deux
-conditions.
+Le raisonnement d'origine : une frontière de chargement envoie d'abord un
+squelette, puis le contenu, et c'est le JavaScript du navigateur qui
+remplace l'un par l'autre ; sans lui, la page reste un squelette pour
+toujours. Ce n'était pas une hypothèse — le projet avait un `loading.tsx`
+à la racine, et cinq écrans sur sept ne montraient jamais leur contenu.
+
+Ce cas ne se produit plus qu'en cas d'échec de chargement du script, pas
+par conception. La règle devient donc : **une frontière de chargement se
+justifie par une attente réelle et mesurée**, pas par principe, et le
+squelette doit ressembler à la page — un squelette qui ne lui ressemble
+pas fait « sauter » l'écran au remplacement, ce qui est pire que
+l'attente. Deux frontières existent aujourd'hui, dans les deux espaces à
+onglets.
 
 Le composant `Skeleton` reste utilisable DANS une page, pour un bloc que
-l'on remplit réellement plus tard. C'est la frontière de route qui est
-écartée tant que les pages répondent vite.
-
-**Ce qui rouvrirait la question :** quand les pages liront Supabase, une
-requête lente rendra l'attente visible. Une frontière de chargement devient
-alors payante *pour les visiteurs déjà chargés* — mais il faudra vérifier
-qu'un visiteur sans JavaScript reçoit toujours le contenu, pas le squelette.
-À remesurer avec `npm run parcours` ce jour-là, pas à décider par principe.
+l'on remplit réellement plus tard.
 
 ### R8 — Les contraintes de formulaire d'abord dans le navigateur
 
@@ -250,7 +264,7 @@ formulaires écrits coûterait deux fois plus cher.
 
 ```
 npm run build && npm run poids     # le poids
-npm start & npm run parcours       # les parcours, avec ET sans JavaScript
+npm start & npm run parcours       # les parcours (second passage sans JS : informatif)
 ```
 
 À faire avant chaque mise en ligne. Sur le terrain, la vraie mesure reste

@@ -4,9 +4,18 @@
  *   npm run build && npm start        (dans un terminal)
  *   npm run parcours                  (dans un autre)
  *
- * Deux passages : avec JavaScript, puis SANS. Le second compte le plus —
- * c'est l'état d'une connexion guinéenne pendant les premières secondes
- * (docs/PERFORMANCE.md, règle R7).
+ * Deux passages : avec JavaScript, puis SANS. Le second est INFORMATIF
+ * depuis le 2026-09-22 : l'exigence « tout écran doit marcher sans
+ * JavaScript » a été retirée des règles du projet (docs/PERFORMANCE.md).
+ * Il reste utile — il montre ce que voit quelqu'un dont le script n'a pas
+ * fini de charger — mais un échec de ce passage n'est plus un défaut à
+ * corriger, c'est une information.
+ *
+ * ⚠️ CE SCRIPT NE TOURNE PLUS EN L'ÉTAT. Il désigne des enregistrements
+ * de démonstration (`p-parfum`, `t-mariama`) supprimés de la base le
+ * 2026-09-12, et Playwright n'est pas une dépendance du projet. À
+ * réécrire sur de vraies données avant de s'y fier — le laisser croire
+ * qu'il vérifie quelque chose serait pire que son absence.
  *
  * Playwright n'est PAS une dépendance du projet. À installer à la main :
  *   npm i -D playwright-core && npx playwright install chromium

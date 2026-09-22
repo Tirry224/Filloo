@@ -134,12 +134,13 @@ qui suit dit ce qui a été fait, pour ne pas les chercher une quatrième.
   de sortie : `ProductForm` fige l'identifiant, donc recharger ne changeait
   rien. `createProductAction` traite désormais le code `23505` comme ce
   qu'il est — la REPRISE d'un brouillon — et met à jour au lieu de refuser.
-- **Publier un produit reste impossible sans JavaScript** — NON CORRIGÉ,
-  et c'est le seul du lot. `PhotoPicker` téléverse depuis le navigateur et
-  `check_product_publishable` exige une photo. Y remédier demande un
-  chemin de téléversement côté serveur (route multipart, validation du
-  type et du poids, écriture dans Storage), c'est-à-dire un vrai
-  développement et non un correctif — à décider, pas à bâcler.
+- **Publier un produit est impossible sans JavaScript** — CE N'EST PLUS UN
+  DÉFAUT. Le porteur du projet a retiré, le 2026-09-22, l'exigence « tout
+  écran doit marcher sans JavaScript » (voir docs/PERFORMANCE.md). Elle
+  était intenable sur ce geste précis : une compression d'image dans le
+  navigateur ne s'écrit pas sans script, et un produit sans photo n'est
+  pas publiable. Le projet a vécu avec un trou permanent dans son parcours
+  principal pour tenir une règle que personne ne pouvait satisfaire.
 - **Aucune interface d'administration n'existe** — c'est une DÉCISION de
   v1 (section 4), pas un défaut. Elle reste vraie.
 - **Le commentaire de la migration `0023` est faux** — le rectificatif vit
@@ -380,15 +381,22 @@ Chiffres comptés dans le dépôt le 2026-09-21, pas recopiés.
   navigation. Assumé — une marketplace de mise en relation n'est pas une
   messagerie instantanée.
 
-### Les formulaires sans JavaScript — moins avancés qu'on ne le croyait
+### Les formulaires sans JavaScript — l'exigence a été retirée
 
 Les champs texte et les actions produit fonctionnent sans script ; le
-`Toggle` « prix négociable » non, et **`PhotoPicker` non plus — ce qui
-rend la publication d'un produit impossible sans JavaScript**, puisque
-`check_product_publishable` exige au moins une photo. Le geste central
-du commerçant est donc JS-seul. **Sur un réseau guinéen instable, un
-formulaire qui exige que le script soit chargé est un formulaire qui
-échoue** — et c'est ici le formulaire dont dépend tout le catalogue.
+`Toggle` « prix négociable » non, et `PhotoPicker` non plus.
+
+**Ce n'est plus un manque depuis le 2026-09-22** : l'exigence « tout écran
+doit marcher sans JavaScript » a été écartée par le porteur du projet, et
+la raison est bonne — elle rendait impossible à finir le geste central du
+commerçant, pour un cas de figure qui ne se produit plus qu'en cas d'échec
+de chargement du script.
+
+Ce qui demeure et n'a pas changé : le socle JavaScript reste plafonné à
+200 Ko, les liens de liste ne préchargent pas, les filtres restent en
+`<details>` natif parce que c'est plus léger, et le serveur revalide
+toujours tout. **Alléger le JavaScript reste une règle ; s'en passer
+entièrement n'en est plus une.**
 
 ### Déploiement et commandes
 
