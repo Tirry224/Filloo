@@ -19,7 +19,7 @@ type BaseProps = {
  *   une par ligne, pour que chaque bouton ne fasse qu'une chose plutôt que
  *   de fondre la feuille en un formulaire unique.
  * - ni l'un ni l'autre : un bouton inerte, pour les écrans pas encore
- *   branchés (voir docs/REPRISE.md).
+ *   branchés (voir docs/MEMOIRE.md).
  */
 type ActionRowProps =
   | (BaseProps & { href: string; action?: undefined; hiddenFields?: undefined })

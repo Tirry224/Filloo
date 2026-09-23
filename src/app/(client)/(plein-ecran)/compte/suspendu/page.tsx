@@ -18,7 +18,7 @@ import { clientSpaceFallback, getMyProfiles, landingForSession } from "@/lib/dat
  * `profiles` n'a pas de colonne « motif de suspension » — seulement
  * `suspended_at`. La maquette inventait « à la suite de signalements » ;
  * retiré plutôt que simulé, comme le reste des champs sans colonne réelle
- * trouvés cette session (voir docs/REPRISE.md).
+ * trouvés cette session (docs/MEMOIRE.md, « Pièges rencontrés »).
  */
 export default async function SuspendedPage() {
   const supabase = await createClient();

@@ -27,9 +27,8 @@ import { compter } from "@/lib/analytics";
  * « retour » défait le filtre, et l'écran vide est atteignable pour de vrai.
  *
  * Sans `?ville=`, le défaut est la ville de résidence du client connecté
- * (`profiles.city_id`) plutôt que "Conakry" en dur (docs/REPRISE.md,
- * étape 4) ; un visiteur, un compte sans profil client ou une ville non
- * renseignée retombent sur "Conakry". L'URL gagne toujours : ceci fixe un
+ * (`profiles.city_id`) plutôt que "Conakry" en dur ; un visiteur, un compte
+ * sans profil client ou une ville non renseignée retombent sur "Conakry". L'URL gagne toujours : ceci fixe un
  * point de départ, pas un filtre permanent.
  *
  * Un seul appel réseau : `inCity` rapporte toute la ville, la catégorie ne

@@ -340,7 +340,7 @@ function rejectionEmail(input: {
   const subject = `Votre boutique ${input.shopName} n'a pas été validée`;
 
   /* Le motif est le seul contenu utile de cet email : un refus sans motif
-     est un vendeur perdu définitivement (docs/REPRISE.md). Le repli existe
+     est un vendeur perdu définitivement (docs/MEMOIRE.md). Le repli existe
      parce que la base n'impose ce motif que depuis 0012. */
   const motif =
     input.reason?.trim() ||

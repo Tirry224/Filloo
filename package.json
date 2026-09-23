@@ -12,7 +12,8 @@
     "classes": "node scripts/verifier-classes.mjs",
     "espaces": "node scripts/verifier-espaces.mjs",
     "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
-    "tests": "node --experimental-strip-types --test 'tests/*.test.ts'"
+    "tests": "node --experimental-strip-types --test 'tests/*.test.ts'",
+    "memoire": "node scripts/memoire.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

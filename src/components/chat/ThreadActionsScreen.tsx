@@ -70,7 +70,7 @@ export async function ThreadActionsScreen({
             // Le blocage est DÉFINITIF : la policy « conversations: je
             // bloque mon interlocuteur » n'autorise qu'à POSER
             // `blocked_by`, et aucun écran ne débloque (décision de v1,
-            // docs/REPRISE.md §4). L'écran doit le dire.
+            // docs/MEMOIRE.md, « Décisions prises »). L'écran doit le dire.
             description="Elle ne pourra plus vous écrire. Le fil reste consultable. C'est définitif : on ne peut pas débloquer."
             tone="danger"
             action={blockPeerAction}

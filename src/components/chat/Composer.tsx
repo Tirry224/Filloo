@@ -10,7 +10,8 @@ import type { ActionState } from "@/lib/actions/auth";
  * Champ de saisie du fil. Contrairement aux formulaires vendeur, celui-ci
  * exige du JavaScript : sans `useActionState`, un dépassement de quota ou
  * un blocage échouerait en silence, la page se rafraîchissant sans rien
- * dire du message disparu. Écart documenté dans docs/REPRISE.md.
+ * dire du message disparu. Écart documenté dans docs/MEMOIRE.md
+ * (« JavaScript : alléger reste une règle, s'en passer n'en est plus une »).
  */
 export function Composer({
   conversationId,

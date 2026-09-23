@@ -78,7 +78,7 @@ qu'il implique. Pas un paragraphe, pas un seul mot : une phrase.
 
 Écrire en prose ce qui pouvait s'énumérer oblige le lecteur à
 reconstituer la liste lui-même — et c'est exactement ce qui était arrivé
-à `docs/REPRISE.md` avant sa réécriture.
+à l'ancien `docs/REPRISE.md`, remplacé depuis par `docs/MEMOIRE.md`.
 
 Cette règle porte sur la FORME des comptes rendus, pas sur le reste :
 une explication technique, un raisonnement ou une réponse à une question

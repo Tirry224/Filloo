@@ -7,8 +7,8 @@
  * façon la plus rapide de servir une version morte de l'application à des
  * téléphones qu'on ne peut plus joindre : la page est servie depuis le
  * cache, donc le nouveau code n'arrive jamais, donc le correctif qui
- * réparerait le cache n'arrive pas non plus. `docs/REPRISE.md` (section 5)
- * garde cette leçon, payée par la v1 du projet.
+ * réparerait le cache n'arrive pas non plus. `docs/MEMOIRE.md` (« Pièges
+ * rencontrés ») garde cette leçon, payée par la v1 du projet.
  *
  * Un service worker existe ici pour UNE raison : recevoir un push. Le
  * navigateur n'accepte pas de notification sans lui, même application

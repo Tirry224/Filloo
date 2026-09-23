@@ -122,9 +122,9 @@ export const dynamic = "force-dynamic";
  * Page de TRAVAIL : accessible en développement, introuvable en production —
  * elle partait en ligne ouverte à tous tant qu'elle était prérendue.
  *
- * `notFound()` conditionnel plutôt qu'un `rm` : l'étape 1 de
- * `docs/REPRISE.md` (ouvrir les 33 écrans) se fait depuis ici, l'outil restant
- * entier en local. À supprimer quand cette étape sera terminée.
+ * `notFound()` conditionnel plutôt qu'un `rm` : le parcours « À faire sur un
+ * vrai téléphone » de `docs/MEMOIRE.md` se fait depuis ici, l'outil restant
+ * entier en local. À supprimer quand ce parcours sera terminé.
  */
 export default async function ScreensIndexPage() {
   if (process.env.NODE_ENV === "production") notFound();

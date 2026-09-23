@@ -141,8 +141,8 @@ export function findProduct(id: string): Product | undefined {
 
 /**
  * Les 5 catégories des produits de démonstration — PAS la liste définitive
- * des 10 de la décision 3 de SPEC.md, encore ouverte (REPRISE.md, §5). Les
- * valeurs doivent rester identiques à `Product["category"]`.
+ * des 9 de la décision 3 de SPEC.md. Les valeurs doivent rester identiques
+ * à `Product["category"]`.
  */
 export const categories = [
   "Tout",

@@ -20,7 +20,7 @@ type MessageRow = {
 
 /**
  * Un seul aller-retour pour TOUS les fils : vingt fils ne doivent pas
- * coûter vingt requêtes (leçon de `auth.getUser()`, docs/REPRISE.md §7).
+ * coûter vingt requêtes (leçon de `auth.getUser()`, docs/MEMOIRE.md, « Pièges rencontrés »).
  * Les messages sont lus une fois, du plus récent au plus ancien, puis
  * regroupés en mémoire.
  */

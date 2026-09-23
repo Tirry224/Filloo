@@ -97,7 +97,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
 
 /**
  * Supprimer mon compte — écran 18 : anonymisation, jamais un vrai DELETE
- * (section 4 point 3 de docs/REPRISE.md). Le client RLS ne peut pas le
+ * (docs/ECRANS.md, « Ce que cet inventaire a révélé »). Le client RLS ne peut pas le
  * faire — `is_deleted`/`deleted_at` sont hors de la liste blanche de 0002
  * partie 4 — et couper l'accès à `auth.users` exige `service_role` ; les
  * deux doivent arriver ENSEMBLE, d'où la connexion `admin`.

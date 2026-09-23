@@ -90,7 +90,7 @@ export async function resubmitMerchantAction() {
  * nom ou la ville ne déclenche PAS de nouvelle vérification, et en ajouter
  * une ferait disparaître du catalogue les produits en ligne (la policy
  * "products: catalogue public" exige `approved`). Contradiction avec la
- * maquette encore ouverte — voir docs/REPRISE.md.
+ * maquette encore ouverte — voir docs/MEMOIRE.md, « Dettes techniques ».
  */
 export async function updateMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const shopName = String(formData.get("shopName") ?? "").trim();

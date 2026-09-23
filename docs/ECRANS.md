@@ -68,7 +68,7 @@ Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
 ## Ce que cet inventaire a révélé
 
 Trois besoins qui n'existaient nulle part dans la spécification. Les trois
-sont maintenant résolus (voir `docs/REPRISE.md`, section 4) :
+sont maintenant résolus (voir `docs/MEMOIRE.md`, « Décisions prises ») :
 
 1. ~~**Blocage entre personnes**~~ — écran 32. Résolu :
    `conversations.blocked_by`.
