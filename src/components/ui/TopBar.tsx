@@ -2,11 +2,6 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/**
- * Barre du haut. `backHref` produit un vrai lien plutôt qu'un bouton qui
- * appelle `history.back()` : le lien fonctionne au clic du milieu, à
- * l'ouverture dans un nouvel onglet, et il indique une destination réelle.
- */
 export function TopBar({
   title,
   backHref,
@@ -44,7 +39,6 @@ export function TopBar({
   );
 }
 
-/** Le nom de Makiti, en tête des écrans principaux. */
 export function Wordmark({ size = "md" }: { size?: "md" | "lg" }) {
   return (
     <span

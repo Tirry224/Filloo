@@ -6,13 +6,6 @@ import { PriceTag } from "./PriceTag";
 import { cn } from "@/lib/cn";
 import type { Product } from "@/lib/types";
 
-/**
- * La vignette du fil, en grille de deux colonnes.
- *
- * Elle ne reçoit qu'un `Product` : tout ce qu'elle affiche vient de cet
- * objet. Si demain la carte doit montrer la date, on change ce fichier et
- * les quarante endroits qui l'utilisent suivent.
- */
 export function ProductCard({ product }: { product: Product }) {
   const sold = product.status === "sold";
 

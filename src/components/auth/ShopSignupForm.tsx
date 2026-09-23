@@ -8,13 +8,6 @@ import { createMerchantAction } from "@/lib/actions/merchants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
 
-/**
- * Écran 13 — inscription du commerçant, étape 2.
- *
- * Ce sont ces informations que l'équipe vérifie à la main avant
- * d'approuver une boutique : le repère sert au client à venir acheter, le
- * numéro WhatsApp sert à vérifier que la boutique est réelle.
- */
 export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(createMerchantAction, null);
 

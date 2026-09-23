@@ -16,14 +16,6 @@ import { compter } from "@/lib/analytics";
 import { lienWhatsApp } from "@/lib/telephone";
 
 /**
- * L'APERÇU DU LIEN PARTAGÉ — la seule chose que verront la plupart des
- * gens avant de décider d'ouvrir Makiti.
- *
- * Un produit se diffuse ici en étant collé dans une conversation WhatsApp,
- * pas en étant trouvé par un moteur de recherche. Sans ces balises, ce
- * lien s'affichait avec le titre générique du site, aucune photo et aucun
- * prix : impossible de distinguer deux produits partagés côte à côte.
- *
  * `getProduct` est appelé ici ET dans la page ; le `cache()` de
  * `createClient` plus la déduplication de requêtes de Next évitent le
  * double aller-retour.
@@ -44,14 +36,11 @@ export async function generateMetadata({
   const product = await getProduct(supabase, id);
 
   if (!product) {
-    // Rien à annoncer, et surtout rien à indexer.
     return { title: "Produit introuvable", robots: { index: false, follow: false } };
   }
 
   const vendu = product.status === "sold";
   const titre = `${product.title} — ${formatGnf(product.priceGnf)}${vendu ? " (vendu)" : ""}`;
-  /* La description dit OÙ et CHEZ QUI : c'est ce qui décide d'un contact,
-     le prix étant déjà dans le titre. */
   const description =
     product.description?.slice(0, 200) ||
     `${product.title} chez ${product.merchant.shopName}, à ${product.merchant.city}. Contactez le commerçant sur Makiti.`;
@@ -67,23 +56,15 @@ export async function generateMetadata({
          suivantes ne feraient qu'alourdir la page lue par le robot. */
       images: product.imageUrls.length > 0 ? [{ url: product.imageUrls[0], alt: product.title }] : undefined,
     },
-    /* Un produit vendu reste lisible (décisions 0008 et 0020) mais ne
-       mérite pas d'être proposé par un moteur de recherche : personne ne
-       cherche à acheter ce qui ne l'est plus. Le lien déjà partagé
-       continue de fonctionner — c'est `noindex`, pas une disparition. */
     robots: vendu ? { index: false, follow: true } : undefined,
   };
 }
 
-/** Fiche produit — écrans 7 et 8 de docs/ECRANS.md. */
 export default async function ProductPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  /* `?info=` est posé par `reportProductAction` : sans lui, signaler un
-     produit refermait la feuille sans rien dire, là où signaler une
-     conversation confirmait. */
   searchParams: Promise<{ info?: string }>;
 }) {
   /* Depuis Next 15, `params` est une promesse : la page peut commencer à
@@ -173,16 +154,6 @@ export default async function ProductPage({
             <Button icon={MessageCircle} href={`/produit/${product.id}/contacter`}>
               Contacter le vendeur
             </Button>
-            {/* Ce bouton n'avait NI href NI onClick : rendu en <button
-                type="button"> inerte, il était donc une promesse que rien
-                ne tenait — et sur un écran sans compte, WhatsApp est
-                présenté comme l'échappatoire la plus crédible en Guinée.
-                Le numéro existait pourtant en base ; il n'était
-                simplement pas remonté jusqu'ici par `getProduct`.
-
-                Il disparaît quand la boutique n'a pas donné de numéro,
-                plutôt que de rester affiché sans rien faire : un bouton
-                absent se comprend, un bouton mort se réessaie. */}
             {waHref ? (
               <Button
                 variant="secondary"

@@ -10,20 +10,9 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
 
-/**
- * Écran 20 — boutique en cours de vérification.
- *
- * L'écran donne une TÂCHE au lieu de faire patienter. Un commerçant qui
- * attend 48 heures devant une page inerte ne revient pas ; un commerçant
- * qui a préparé quatre brouillons a déjà investi quelque chose.
- */
 export default async function PendingShopPage({
   searchParams,
 }: {
-  /* Même canal que le reste de l'espace : une action produit qui échoue
-     redirige vers `/vendeur/produits?erreur=…`, qui fait suivre le message
-     jusqu'ici tant que la boutique n'est pas validée. Sans cette lecture,
-     le refus arrive à destination sans être affiché. */
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;

@@ -1,14 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-/**
- * Feuille glissée depuis le bas : près du pouce, et l'écran d'origine
- * reste visible, ce qu'une boîte de dialogue centrée ne donne pas.
- *
- * Chaque feuille est une VRAIE ADRESSE et non un état caché dans la page :
- * le bouton « retour » du téléphone la referme sans une ligne de code. Le
- * voile est un lien vers `closeHref`.
- */
 export function Sheet({
   title,
   description,

@@ -11,9 +11,6 @@ import type { Database } from "@/lib/database.types";
 const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages"];
 
 /**
- * Rafraîchit le cookie de session à chaque requête, et refuse au bord les
- * espaces privés aux visiteurs anonymes.
- *
  * `supabaseResponse` est reconstruit après `getUser()` : `setAll` doit
  * écrire sur la MÊME réponse que celle envoyée au navigateur, sinon les
  * cookies rafraîchis ne partent jamais.

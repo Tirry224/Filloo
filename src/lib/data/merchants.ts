@@ -49,11 +49,6 @@ export async function getMerchant(supabase: SupabaseClient<Database>, id: string
  * La boutique de la connexion active avec son statut RÉEL, contrairement à
  * `getMerchant` : seul son propriétaire a le droit de savoir où elle en
  * est.
- *
- * En cache pour la durée d'une requête : les écrans vendeur l'appellent
- * deux fois, une pour la page, une pour `countUnreadMessages`.
- * `createClient` étant aussi en cache, les deux appels partagent la même
- * clé.
  */
 export const getMyMerchant = cache(async (supabase: SupabaseClient<Database>): Promise<Merchant | null> => {
   const merchantProfile = await getMyProfile(supabase, "merchant");

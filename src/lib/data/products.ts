@@ -5,11 +5,6 @@ import { productImageUrl } from "@/lib/storage";
 
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
 
-/**
- * Traduit une ligne de `search_products` (snake_case) vers le type
- * `Product` que lisent les écrans (camelCase). Seul endroit qui connaît
- * les deux formes, donc seul à corriger si la fonction SQL change.
- */
 function mapRow(row: SearchRow): Product {
   return {
     id: row.product_id,
@@ -36,14 +31,6 @@ function mapRow(row: SearchRow): Product {
   };
 }
 
-/**
- * Fil d'accueil et recherche partagent la même fonction SQL
- * (0003_search_and_seed.sql), donc le même point d'entrée ici.
- *
- * `cityId` est obligatoire pour toute liste AFFICHÉE : il n'y a pas de fil
- * « toutes villes » (décision 9 de docs/SPEC.md). Omis, il ne sert qu'à
- * CHIFFRER un résultat vide (« 3 produits ailleurs »).
- */
 type ProductDetailRow = {
   id: string;
   title: string;
@@ -85,11 +72,6 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
   };
 }
 
-/**
- * Fiche produit (écrans 7, 8, 9). Deux requêtes plutôt qu'un embed
- * `product_images(...)` : une fiche ne se consulte jamais en liste, donc
- * l'aller-retour de plus est invisible ici.
- */
 export async function getProduct(supabase: SupabaseClient<Database>, id: string): Promise<Product | null> {
   const [{ data: row, error }, { data: images }] = await Promise.all([
     supabase
@@ -151,8 +133,7 @@ export const PLAFOND_RESULTATS = 50;
  * `atteintLePlafond` dit que le compte est une BORNE BASSE, pas un total :
  * au-delà de 50, la base ne sait pas compter plus loin sans une seconde
  * fonction, et l'écran doit écrire « 50 et plus » plutôt qu'un nombre
- * qu'il ne connaît pas. Un chiffre faux sur le premier écran d'un visiteur
- * coûte plus cher que l'absence de chiffre.
+ * qu'il ne connaît pas.
  */
 export async function countProductsElsewhere(
   supabase: SupabaseClient<Database>,

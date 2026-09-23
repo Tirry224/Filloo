@@ -1,7 +1,4 @@
 /**
- * Envoi d'emails transactionnels, par l'API HTTP de Resend — pas le SDK,
- * qui n'ajouterait qu'un POST JSON à nos neuf dépendances.
- *
  * `sendEmail` NE LÈVE JAMAIS : appelée depuis `after()` (voir
  * `src/lib/notifications.ts`), donc après le départ de la réponse, où une
  * promesse rejetée ne remonterait à aucun écran.
@@ -17,9 +14,6 @@ export type EmailOutcome =
   /** Accepté par Resend — ce qui n'est pas « reçu » : la distribution ne
    * se constate que dans leur tableau de bord. Limite connue de la v1. */
   | { sent: true; id: string }
-  /** `configured: false` distingue « service non branché », normal tant
-   * que la clé n'est pas posée, d'une vraie panne — sans quoi les journaux
-   * s'emplissent d'alertes qu'on cesse de lire. */
   | { sent: false; configured: boolean; reason: string };
 
 type EmailToSend = {
@@ -59,8 +53,6 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
-    // Le corps porte le motif du refus (domaine non vérifié, clé révoquée,
-    // destinataire invalide…) ; sans lui, un 403 est indéchiffrable.
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
       return {
@@ -73,7 +65,6 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
     const body = (await response.json()) as { id?: string };
     return { sent: true, id: body.id ?? "" };
   } catch (cause) {
-    // Réseau injoignable, DNS, ou le délai ci-dessus dépassé.
     return {
       sent: false,
       configured: true,
@@ -83,8 +74,6 @@ export async function sendEmail(email: EmailToSend): Promise<EmailOutcome> {
 }
 
 /**
- * Échappe ce qui vient d'un humain avant de le coller dans du HTML.
- *
  * Les clients mail n'exécutent pas de JavaScript mais rendent très bien
  * liens et images : sans cet échappement, un message contenant
  * `<a href="...">` devient un vrai lien signé par notre domaine.
@@ -99,11 +88,6 @@ export function escapeHtml(raw: string): string {
 }
 
 /**
- * L'enveloppe HTML commune à tous les emails de Makiti : un email qui ne
- * ressemble pas aux autres du même domaine ressemble à de l'hameçonnage.
- * Volontairement pauvre — une `div`, ni style externe, ni image, ni
- * police — c'est ce que tous les clients mail rendent pareil.
- *
  * ATTENTION : `content` doit arriver DÉJÀ échappé (`escapeHtml`). */
 export function emailShell(content: string): string {
   return `<!doctype html>
@@ -122,8 +106,6 @@ export function emailButton(href: string, label: string): string {
   return `<a href="${escapeHtml(href)}" style="display:inline-block;background:#c1613a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">${escapeHtml(label)}</a>`;
 }
 
-/** Dit POURQUOI cet email arrive : sans cette phrase, qui ne se souvient
- * pas s'être inscrit le signale comme indésirable, et le domaine le paie. */
 export function emailFooter(reason: string): string {
   return `<p style="margin:24px 0 0;color:#6b5d52;font-size:13px;">${escapeHtml(reason)}</p>`;
 }

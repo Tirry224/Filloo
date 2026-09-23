@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
 
-/** Écran 13 — inscription du commerçant, étape 2. */
 export default async function ShopSignupPage() {
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");

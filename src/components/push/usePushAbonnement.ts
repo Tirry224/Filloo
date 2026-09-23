@@ -8,13 +8,6 @@ import {
 } from "@/lib/actions/push";
 
 /**
- * Tout ce qu'un écran a besoin de savoir et de faire sur l'abonnement
- * push de CET appareil.
- *
- * `PushToggle` et `PushInvite` commandent le même abonnement : la séquence
- * (permission, `subscribe`, action serveur, état) vit ici une seule fois,
- * sinon l'un finirait par demander la permission autrement que l'autre.
- *
  * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE : rien ne s'exécute au
  * chargement, `activer()` ne part que d'un tap. Une demande sans prévenir
  * reçoit un « non » réflexe, et Chrome ne repose jamais la question.
@@ -43,12 +36,10 @@ const SERVICE_WORKER_ABSENT =
   "Les notifications ne sont pas prêtes sur cet appareil. Rechargez la page, puis réessayez.";
 
 export type PushAbonnement = {
-  /** `null` tant que la vérification initiale n'a pas eu lieu : rien ne
-   *  doit s'afficher avant, ni interrupteur ni invitation. */
+  /** `null` tant que la vérification initiale n'a pas eu lieu. */
   supporte: boolean | null;
   permission: NotificationPermission;
   abonne: boolean;
-  /** Un appel est en cours ; les boutons se désactivent. */
   enCours: boolean;
   erreur: string | null;
   message: string | null;

@@ -12,28 +12,20 @@ import { compter } from "@/lib/analytics";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
-/** Messages Supabase traduits pour les cas qu'un utilisateur rencontre
- * vraiment ; le reste (rare, souvent un problème réseau ou de config)
- * garde le message d'origine plutôt qu'un texte français générique qui
- * cacherait l'information utile en cas de bug. */
 function translateAuthError(message: string): string {
   if (message.includes("already registered") || message.includes("already exists")) {
-    // Dire la suite, sinon qui veut « aussi vendre » repart avec un
-    // deuxième email — et deux comptes ne se fusionnent pas.
     return "Un compte existe déjà avec cet email. Connectez-vous : vous pourrez ajouter votre second compte depuis « Mon compte », sans changer d'adresse.";
   }
   if (message.includes("Invalid login credentials")) {
     return "Email ou mot de passe incorrect.";
   }
   if (message.includes("Password should be at least")) {
-    // Même constante que nos propres contrôles : deux textes annonçant des
-    // longueurs différentes rendraient le refus incompréhensible.
     return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
   }
   return message;
 }
 
-/** Inscription — écran 12. Premier compte de la connexion : le trigger
+/** Premier compte de la connexion : le trigger
  * `handle_new_user` (0002_rules_and_security.sql) crée le profil à partir
  * des métadonnées envoyées ici. */
 export async function signUpAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
@@ -47,12 +39,8 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (!fullName || !phone || !email || !password) {
     return { error: "Tous les champs sont obligatoires." };
   }
-  // Vérifié AVANT la création : un numéro injoignable ne se corrige que
-  // dans « Mes informations », un écran que personne ne rouvre.
   const erreurNumero = erreurTelephone(phone, true);
   if (erreurNumero) return { error: erreurNumero };
-  // Double saisie : seul champ qu'on ne peut pas relire, et mal tapé il
-  // enferme dehors — la faute coûte une réinitialisation par email.
   const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -84,10 +72,6 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   });
   if (error) return { error: translateAuthError(error.message) };
 
-  /* Le compte EXISTE dès ici, confirmation par email ou non : compter
-     après la session manquerait toutes les inscriptions en attente de
-     confirmation le jour où elle sera activée — c'est-à-dire, ce jour-là,
-     la totalité d'entre elles. */
   compter("inscription", { role });
 
   // `data.session` est null quand la confirmation par email est activée
@@ -132,8 +116,6 @@ export async function createLinkedProfileAction(
       auth_user_id: user.id,
       role,
       full_name: existant.fullName,
-      // Déjà normalisé à l'écriture ; le repasser par `nettoyerTelephone`
-      // laisserait croire que cette valeur vient d'être saisie.
       phone: existant.phone,
     });
   if (error) {
@@ -141,13 +123,9 @@ export async function createLinkedProfileAction(
     return { error: error.message };
   }
 
-  // Un second compte lié est une inscription aussi : ne pas le compter
-  // ferait disparaître des mesures le parcours « je veux aussi vendre ».
   compter("inscription", { role });
 
   if (role === "merchant") redirect("/inscription/boutique");
-  // Même reprise d'intention qu'à l'inscription : ce compte client vient
-  // peut-être d'être créé POUR écrire à un vendeur.
   redirect(safeNextPath(formData.get("next")) ?? "/");
 }
 
@@ -156,11 +134,6 @@ export async function createLinkedProfileAction(
  * mot de passe. Jamais `/` en dur : `landingForSession` tranche
  * (décision 8 de SPEC), et `next` ne fait que CHOISIR une destination à
  * l'intérieur de l'espace autorisé, il ne défait pas la décision.
- *
- * Partagée par les deux actions depuis que `next` traverse aussi le
- * parcours « mot de passe oublié » : recopiée, la règle de l'espace aurait
- * fini par ne valoir que d'un côté — et c'est le côté non maintenu qui
- * laisse entrer.
  */
 async function destinationApresAuthentification(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -174,7 +147,6 @@ async function destinationApresAuthentification(
   return autorise ? next : landing;
 }
 
-/** Connexion — écran 14. */
 export async function signInAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -191,7 +163,6 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   redirect(await destinationApresAuthentification(supabase, formData.get("next")));
 }
 
-/** Déconnexion. Utilisée depuis /compte et /vendeur/boutique. */
 export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -226,11 +197,7 @@ export async function requestPasswordResetAction(
      motif `https://site/**` ne couvre pas un `?` de façon fiable. Une URL
      rejetée ne produit pas d'erreur : Supabase retombe en silence sur le
      « Site URL » du tableau de bord — l'accueil — et la personne ne voit
-     jamais le formulaire. Le cas est arrivé en production.
-
-     Ce paramètre ne servait de toute façon qu'à répéter un défaut :
-     `/auth/confirm` vise déjà `/reinitialiser-mot-de-passe` quand `next`
-     est absent. Le chemin le plus court est donc aussi le plus sûr. */
+     jamais le formulaire. Le cas est arrivé en production. */
   const redirectTo = suite
     ? `${origin}/auth/confirm?next=${encodeURIComponent(`/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`)}`
     : `${origin}/auth/confirm`;
@@ -242,14 +209,12 @@ export async function requestPasswordResetAction(
   return { sent: true };
 }
 
-/** Nouveau mot de passe — après le lien de /mot-de-passe-oublie. Suppose
- * une session "recovery" déjà active (échangée par /auth/confirm). */
+/** Suppose une session "recovery" déjà active (échangée par
+ * /auth/confirm). */
 export async function updatePasswordAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-  // Le lien qui mène ici ne sert qu'une fois : une frappe ratée oblige à
-  // redemander un email et refaire tout le trajet.
   const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -257,9 +222,6 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: translateAuthError(error.message) };
 
-  // Même aiguillage qu'après une connexion — la même fonction, pas une
-  // copie : changer son mot de passe n'est pas une raison d'atterrir dans
-  // un autre espace, ni d'oublier ce qu'on était venu faire.
   redirect(await destinationApresAuthentification(supabase, formData.get("next")));
 }
 
@@ -279,8 +241,6 @@ export async function changeMyPasswordAction(
   const newPassword = String(formData.get("newPassword") ?? "");
   const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
 
-  // L'ordre suit le coût : la forme du nouveau mot de passe d'abord,
-  // gratuite, le mot de passe actuel ensuite, qui coûte un aller-retour.
   const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
   if (erreurMotDePasse) return { error: erreurMotDePasse };
 
@@ -296,7 +256,5 @@ export async function changeMyPasswordAction(
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: translateAuthError(error.message) };
 
-  // Pas de redirection : le formulaire vit dans un panneau posé sur
-  // l'écran de compte, et renvoyer ailleurs ferait perdre sa place.
   return { sent: true };
 }

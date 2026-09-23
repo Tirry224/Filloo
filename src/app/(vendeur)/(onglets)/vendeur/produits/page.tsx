@@ -10,19 +10,9 @@ import { ProductRow } from "@/components/product/ProductRow";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 
-/**
- * Mes produits — écran 22 de docs/ECRANS.md, onglet à part de `/vendeur` :
- * deux gestes distincts, voir où l'on en est et tenir son stock, donc deux
- * écrans.
- *
- * Le bouton « Ajouter » est EN HAUT : dans un `ScreenFooter`, il recouvre
- * le dernier produit de la liste, justement celui qu'on vient de créer.
- */
 export default async function MerchantProductsPage({
   searchParams,
 }: {
-  // Même canal que le reste de l'espace : le message d'erreur voyage dans
-  // l'URL (voir `Notice`).
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;

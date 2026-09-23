@@ -2,15 +2,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 
 /**
- * « Enregistrer » qui demande d'abord le mot de passe, dans un panneau
- * plutôt qu'en bas du formulaire : hors de vue, le champ faisait arriver
- * le refus « confirmez avec votre mot de passe » sans qu'on voie de quoi
- * il parlait.
- *
- * UN SEUL CHEMIN vers l'enregistrement : le bouton de la barre du haut
- * n'enregistre plus, il OUVRE — deux boutons « Enregistrer » laisseraient
- * croire que le premier a tout fait.
- *
  * L'attribut `form` relie le champ au formulaire sans en être le parent.
  * C'est un `<details>`, donc sans JavaScript ; `data-panneau` le fait
  * refermer par `ClosePanels`, confort jamais condition.
@@ -20,7 +11,6 @@ export function ConfirmPasswordSave({
   title = "Confirmer l'enregistrement",
   hint,
 }: {
-  /** L'identifiant du `<form>` que ce panneau envoie. */
   formId: string;
   title?: string;
   hint?: string;

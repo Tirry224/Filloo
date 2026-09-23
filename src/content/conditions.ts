@@ -1,14 +1,9 @@
 /**
- * Le texte des conditions d'utilisation, fourni par le porteur du projet
- * le 2026-09-17. Dans un fichier de données et non dans l'écran : un texte
- * juridique se relit et se corrige sans traverser du JSX.
+ * NE PAS RÉÉCRIRE CE TEXTE : aucun mot, aucune clause, aucun ordre — il
+ * engage le porteur du projet.
  *
- * SEULES LES APOSTROPHES ONT ÉTÉ UNIFORMISÉES (’). Aucun mot, aucune
- * clause, aucun ordre : ce texte engage le porteur du projet.
- *
- * Sa date est ÉCRITE dans le texte, jamais calculée : l'article 20 promet
- * que toute nouvelle version indiquera sa date de mise à jour, et un
- * `new Date()` tiendrait cette promesse en mentant.
+ * Sa date est ÉCRITE, jamais calculée : l'article 20 promet que toute
+ * nouvelle version indiquera sa date de mise à jour.
  */
 
 export const CONDITIONS_MISE_A_JOUR = "17 septembre 2026";
@@ -18,12 +13,9 @@ export const CONDITIONS_PREAMBULE = [
   "En créant un compte ou en utilisant Makiti, vous reconnaissez avoir lu et accepté ces Conditions.",
 ];
 
-/** Un bloc est soit un paragraphe, soit une liste à puces. */
 export type BlocConditions = string | string[];
 
 export type ArticleConditions = {
-  /** Numéroté comme dans le texte d'origine : on s'y réfère dans un
-   *  échange, donc la numérotation ne se recalcule pas. */
   numero: number;
   titre: string;
   blocs: BlocConditions[];

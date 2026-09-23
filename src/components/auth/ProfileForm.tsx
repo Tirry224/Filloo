@@ -7,14 +7,6 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
 
-/** Nom, téléphone et ville de résidence — écran 18. Le bouton
- * « Enregistrer » vit dans la barre du haut (relié par l'attribut HTML
- * `form`) : la page affiche aussi le mot de passe et la suppression du
- * compte, qui n'ont rien à faire DANS ce formulaire.
- *
- * La ville reste facultative (« Non renseignée ») : elle n'est pas
- * nécessaire pour utiliser l'app, et les clients inscrits avant
- * `0010_client_profile_city.sql` n'en ont pas. */
 export function ProfileForm({
   id,
   espace,
@@ -50,12 +42,6 @@ export function ProfileForm({
       <Field label="Téléphone" htmlFor="phone">
         <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={phone} />
       </Field>
-      {/* LA VILLE N'EST PAS UNE INFORMATION DE COMMERÇANT.
-          `profiles.city_id` est la ville de RÉSIDENCE d'un client
-          (migration `0010`). Celle d'un commerçant est la ville de sa
-          BOUTIQUE : elle vit dans `merchants.city_id`, elle est publique,
-          et elle se modifie sur `/vendeur/boutique/modifier`. Proposer ce
-          menu ici ferait croire qu'on déplace sa boutique. */}
       {espace === "client" ? (
         <Field label="Ville de résidence" htmlFor="cityId">
           <Select id="cityId" name="cityId" defaultValue={cityId ?? ""}>
@@ -68,15 +54,9 @@ export function ProfileForm({
           </Select>
         </Field>
       ) : null}
-      {/* LA CONFIRMATION PAR MOT DE PASSE N'EST PAS DANS CE FORMULAIRE
-          Le nom et le téléphone d'un compte client sont ce par quoi un
-          commerçant le rappelle après une commande : les réécrire depuis
-          un téléphone emprunté détournerait ces rappels. Le mot de passe
-          actuel est donc exigé pour écrire — mais il se demande AU MOMENT
-          d'enregistrer, dans le panneau de `ConfirmPasswordSave`, et non
-          en bas d'une liste de champs qu'on remplit avant même d'avoir
-          décidé. Le champ y porte `form="profile-form"`, ce qui le relie
-          à ce formulaire sans y être imbriqué. */}
+      {/* Le mot de passe actuel est exigé pour écrire : il se demande AU
+          MOMENT d'enregistrer, dans le panneau de `ConfirmPasswordSave`,
+          dont le champ porte `form="profile-form"`. */}
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
     </form>

@@ -1,15 +1,5 @@
 import type { Espace } from "@/lib/espace";
 
-/**
- * QUI A LE DROIT D'ÊTRE OÙ — la décision, séparée de sa plomberie.
- *
- * Les gardes de `session.ts` dépendent de Supabase et du `redirect()` de
- * Next, donc d'une base joignable et d'un contexte de requête. Isolée ici,
- * la décision est une fonction pure de ses arguments, que
- * `scripts/verifier-gardes.mjs` peut vérifier.
- */
-
-/** Ce qu'une garde a besoin de savoir d'un profil, et rien de plus. */
 export type ProfilPourDecision = {
   role: Espace;
   isSuspended: boolean;
@@ -40,7 +30,6 @@ export function refusEspaceCommercant(profils: ProfilPourDecision[]): string | n
 /**
  * Le pendant client, pour les écrans qui exigent un compte (`/compte`,
  * `/messages`) ; le catalogue public n'est pas derrière cette porte.
- *
  * L'asymétrie avec la fonction ci-dessus est voulue : une connexion
  * commerçant-seule qui demande `/compte` part sur `/vendeur/boutique`, son
  * propre écran de compte, et non sur `/connexion`.

@@ -5,14 +5,6 @@ import { PriceTag } from "@/components/product/PriceTag";
 import { cn } from "@/lib/cn";
 import type { Product } from "@/lib/types";
 
-/**
- * Le produit cité par un message.
- *
- * C'est la pièce qui rend viable le choix « un seul fil par client » : le
- * fil ne porte plus de produit, donc chaque message doit dire de quoi il
- * parle. Un produit vendu apparaît grisé avec la mention, ce qui évite au
- * client d'attendre une réponse qui ne viendra pas.
- */
 export function ProductRef({
   product,
 }: {

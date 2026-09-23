@@ -1,6 +1,4 @@
 /**
- * Formate un montant en francs guinéens : 450000 → « 450 000 GNF ».
- *
  * Le montant est un ENTIER de francs, jamais un nombre à virgule : on ne
  * représente pas de l'argent avec un flottant (voir le commentaire de
  * `products.price_gnf` dans la migration 0001).
@@ -17,15 +15,12 @@ export function formatGnf(amount: number): string {
   );
 }
 
-/** « 620 45 12 87 » à partir de « 620451287 ». */
 export function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (digits.length !== 9) return raw;
   return `${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
 }
 
-/** « 14:03 » aujourd'hui, « Hier » la veille, « 3 sept. » avant : le format
- * le plus court qui reste sans ambiguïté, pour la liste des messages. */
 export function formatMessageTime(iso: string): string {
   const date = new Date(iso);
   const now = new Date();

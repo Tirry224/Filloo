@@ -1,7 +1,4 @@
 /**
- * La règle d'un mot de passe qu'on CRÉE ou qu'on change, écrite une fois
- * pour les trois écrans qui en créent un.
- *
  * La vérification est CÔTÉ SERVEUR, seul endroit où elle garantit quelque
  * chose : les formulaires marchent sans JavaScript (docs/PERFORMANCE.md,
  * R7) et une requête forgée ne passe par aucun champ.
@@ -11,11 +8,6 @@
  *  projet en demande 8 partout. */
 export const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
-/**
- * `null` = acceptable. Une chaîne = le message à afficher tel quel. La
- * LONGUEUR d'abord : sinon « 1234 » tapé deux fois passe le premier
- * contrôle et échoue au second, deux allers-retours pour un seul défaut.
- */
 export function erreurNouveauMotDePasse(motDePasse: string, confirmation: string): string | null {
   if (motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {
     return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;

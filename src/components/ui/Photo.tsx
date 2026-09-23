@@ -2,15 +2,6 @@ import Image from "next/image";
 import { Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/**
- * Photo de produit, ou son emplacement quand il n'y en a pas : les deux cas
- * dans le même composant, pour qu'un produit sans photo occupe exactement
- * la même place dans la grille.
- *
- * `next/image` redimensionne côté serveur et ne charge que le visible : en
- * 3G, servir une photo de 2 Mo dans une vignette de 160 px fait la
- * différence entre un fil qui s'ouvre et un fil qu'on abandonne.
- */
 export function Photo({
   ratio = "square",
   src,
@@ -35,9 +26,6 @@ export function Photo({
     free: "",
   } as const;
 
-  /* Ce que le navigateur doit télécharger selon l'emplacement : la fiche
-     occupe toute la largeur, la vignette une colonne sur deux. Sans cette
-     indication, Next sert la plus grande taille possible. */
   const SIZES = {
     square: "100vw",
     card: "50vw",

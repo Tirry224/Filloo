@@ -11,18 +11,12 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import { resubmitMerchantAction } from "@/lib/actions/merchants";
 
 /**
- * Écran 21 — boutique refusée. Un refus sans motif est un vendeur perdu
- * définitivement : l'écran dit POURQUOI, dit QUOI FAIRE, et rassure sur ce
- * qui est conservé.
- *
  * Le motif vient de `merchants.rejection_reason` ; la base permet encore
  * un refus sans motif, d'où le texte de repli.
  */
 export default async function RejectedShopPage({
   searchParams,
 }: {
-  /* `erreur` est posé par `resubmitMerchantAction` quand la base refuse le
-     renvoi — même canal que les actions produit vers `/vendeur`. */
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
@@ -61,16 +55,6 @@ export default async function RejectedShopPage({
             </p>
           </Card>
 
-          {/* Deux gestes, et le second manquait entièrement. Cet écran
-              annonçait « puis renvoyez votre boutique » sans offrir nulle
-              part de quoi le faire : corriger ses informations ne changeait
-              pas `merchants.status`, donc la boutique restait refusée quoi
-              qu'on corrige, et le commerçant tournait entre ces deux écrans
-              sans jamais repartir vers la vérification.
-
-              L'ordre compte : on corrige D'ABORD, on renvoie ENSUITE. Le
-              renvoi est donc le bouton secondaire — renvoyer sans rien
-              changer ferait refuser la boutique une seconde fois. */}
           <Button href="/vendeur/boutique">Corriger ma boutique</Button>
           <form action={resubmitMerchantAction}>
             <Button type="submit" variant="secondary">

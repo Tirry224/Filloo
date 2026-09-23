@@ -6,8 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 
-/** Inscription — écran 12 de docs/ECRANS.md. `?next=` : voir
- * `safeNextPath` et l'écran 16, d'où l'on arrive le plus souvent. */
 export default async function SignupPage({
   searchParams,
 }: {
@@ -17,7 +15,6 @@ export default async function SignupPage({
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
 
-  // Déjà les deux comptes liés : rien à créer de plus ici.
   if (profiles.length >= 2) redirect("/compte");
 
   const mode = profiles.length > 0 ? "linked" : "new";
@@ -25,9 +22,6 @@ export default async function SignupPage({
 
   return (
     <Screen>
-      {/* Le retour ramène là d'où l'on vient (la fiche produit, presque
-          toujours) plutôt qu'au fil d'accueil : renoncer à créer un compte
-          ne doit pas non plus faire perdre le produit. */}
       <TopBar title="Créer un compte" backHref={next ?? "/"} />
 
       <ScreenBody>

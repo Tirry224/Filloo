@@ -4,13 +4,8 @@ import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
 
 /**
- * Bandeau « Pas de connexion » — écran 4 de `docs/ECRANS.md`.
- *
  * Composant CLIENT par nécessité : seul le navigateur sait si le téléphone
  * a du réseau.
- *
- * Son texte ne promet RIEN : rien n'est mis en cache, donc une page non
- * chargée reste inaccessible.
  *
  * `navigator.onLine` voit la coupure franche, pas le réseau poussif — il
  * dit « en ligne » sur un réseau qui ne mène nulle part, et le mesurer
@@ -35,8 +30,6 @@ export function OfflineBanner() {
   if (!horsLigne) return null;
 
   return (
-    // `role="status"` et non `alert` : utile, pas urgent — un lecteur
-    // d'écran ne doit pas interrompre la lecture en cours.
     <p
       role="status"
       className="flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-xs font-semibold text-warn-ink"

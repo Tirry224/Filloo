@@ -4,14 +4,6 @@ import { Photo } from "@/components/ui/Photo";
 import { cn } from "@/lib/cn";
 import type { Thread } from "@/lib/types";
 
-/**
- * Ligne de la liste des messages. Elle rappelle le produit sous le nom :
- * un fil unique par personne n'est lisible que si le commerçant voit de
- * quoi il s'agit sans l'ouvrir.
- *
- * `basePath` plutôt qu'un `/messages/` en dur : cette ligne sert les deux
- * messageries, et celle du commerçant vit sous `/vendeur/messages`.
- */
 export function ThreadRow({ thread, basePath }: { thread: Thread; basePath: string }) {
   const unread = thread.unreadCount > 0;
   return (

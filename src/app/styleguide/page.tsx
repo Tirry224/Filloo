@@ -20,15 +20,6 @@ import { ProductRef } from "@/components/chat/ProductRef";
 import { ThreadRow } from "@/components/chat/ThreadRow";
 import { conversation, findProduct, products, threads } from "@/lib/mock";
 
-/**
- * Catalogue vivant du design system, à l'adresse /styleguide.
- *
- * Tout composant y apparaît isolé de tout écran : voir ce qui existe déjà
- * avant d'en écrire un de plus, repérer une incohérence (deux gris
- * presque identiques), et vérifier qu'un changement dans tokens.css n'a
- * rien cassé ailleurs.
- */
-
 const COLORS = [
   ["paper", "bg-paper"], ["surface", "bg-surface"], ["placeholder", "bg-placeholder"],
   ["ink", "bg-ink"], ["ink-soft", "bg-ink-soft"], ["line", "bg-line"],
@@ -78,9 +69,8 @@ export const dynamic = "force-dynamic";
  * Page de TRAVAIL : accessible en développement, introuvable en production
  * — prérendue, elle partait en ligne ouverte à tous.
  *
- * `notFound()` conditionnel plutôt qu'un `rm` : le parcours « À faire sur
- * un vrai téléphone » de `docs/MEMOIRE.md` se fait depuis ici, l'outil
- * restant entier en local. À supprimer quand ce parcours sera terminé.
+ * À supprimer quand le parcours « À faire sur un vrai téléphone » de
+ * `docs/MEMOIRE.md` sera terminé.
  */
 export default function StyleguidePage() {
   if (process.env.NODE_ENV === "production") notFound();

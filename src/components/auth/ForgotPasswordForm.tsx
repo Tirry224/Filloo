@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { requestPasswordResetAction, type ActionState } from "@/lib/actions/auth";
 
-/** Mot de passe oublié — écran 15. */
 export function ForgotPasswordForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(requestPasswordResetAction, null);
 

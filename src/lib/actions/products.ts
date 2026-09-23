@@ -38,7 +38,7 @@ function validateProductFields(fields: ReturnType<typeof readProductFields>): st
 }
 
 /**
- * Nouveau produit — écran 24. INSERTION EN DEUX TEMPS : le trigger
+ * INSERTION EN DEUX TEMPS : le trigger
  * `products_check_publishable` (0002, élargi par 0018) exige une ligne
  * `product_images`, impossible à satisfaire dans l'insert qui crée le
  * produit. Donc `draft`, puis les photos, puis la publication.
@@ -140,19 +140,14 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  /* Ici et pas plus haut : on ne compte un produit qu'une fois toutes les
-     écritures passées. Un brouillon enregistré compte aussi — c'est un
-     commerçant qui a fait le geste, et distinguer les deux demanderait
-     deux événements pour une question que personne ne se pose encore. */
   compter("produit_cree", { role: "merchant", merchantId: owner.merchantId, categoryId: fields.categoryId });
 
   redirect("/vendeur/produits");
 }
 
 /**
- * Modifier un produit — écran 25 (« Modifier le produit »). Ne touche
- * jamais `status` : un produit vendu ou masqué le reste après une
- * correction de prix, ce sont des actions séparées (voir plus bas).
+ * Ne touche jamais `status` : un produit vendu ou masqué le reste après
+ * une correction de prix, ce sont des actions séparées (voir plus bas).
  */
 export async function updateProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
@@ -279,18 +274,16 @@ async function setProductStatus(formData: FormData, status: "active" | "sold" | 
   backToSeller();
 }
 
-/** Marquer vendu — le produit reste visible, barré (écran 25). */
 export async function markSoldAction(formData: FormData) {
   await setProductStatus(formData, "sold");
 }
 
-/** Masquer du catalogue — réversible, contrairement à la suppression. */
 export async function hideProductAction(formData: FormData) {
   await setProductStatus(formData, "hidden");
 }
 
-/** Republier un produit masqué. Repasse par le même trigger que la
- * publication initiale : refusé si la boutique n'est plus approuvée. */
+/** Repasse par le même trigger que la publication initiale : refusé si la
+ * boutique n'est plus approuvée. */
 export async function republishProductAction(formData: FormData) {
   await setProductStatus(formData, "active");
 }

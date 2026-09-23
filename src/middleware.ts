@@ -7,10 +7,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Toutes les routes sauf les fichiers statiques et images : pas besoin
-     * de rafraîchir une session pour servir un fichier CSS.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

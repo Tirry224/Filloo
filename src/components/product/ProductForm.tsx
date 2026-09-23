@@ -38,18 +38,6 @@ type ProductFormProps = {
     }
 );
 
-/**
- * Formulaire produit — écrans 24 (nouveau) et « Modifier le produit »
- * (depuis l'écran 25). Tout est commun sauf l'action appelée et les
- * boutons du bas : modifier ne touche jamais au statut (voir
- * `updateProductAction`), créer ne propose de publier qu'à une boutique
- * qui en a le droit.
- *
- * Le bouton de publication DISPARAÎT au lieu d'être grisé : un bouton
- * grisé annonce une capacité absente sans dire quand elle revient. On
- * montre l'action qui marche — enregistrer le brouillon — et une phrase
- * qui dit ce qui manque.
- */
 export function ProductForm(props: ProductFormProps) {
   const { merchantId, categories } = props;
   const isEdit = props.mode === "edit";
@@ -139,9 +127,6 @@ export function ProductForm(props: ProductFormProps) {
             </Button>
           </>
         ) : (
-          /* Boutique en attente, et seulement elle : une boutique REFUSÉE
-             n'arrive pas ici, l'écran 24 l'envoie sur `/vendeur/refusee`.
-             La phrase peut donc parler d'attente sans mentir. */
           <>
             <p className="text-center text-xs text-ink-soft">
               Publication disponible après validation de votre boutique.

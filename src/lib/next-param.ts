@@ -27,7 +27,6 @@ export function safeNextPath(value: unknown): string | null {
   try {
     resolue = new URL(next, ORIGINE_DE_TEST);
   } catch {
-    // Une adresse que l'analyseur refuse n'ira nulle part de bon.
     return null;
   }
   if (resolue.origin !== ORIGINE_DE_TEST) return null;

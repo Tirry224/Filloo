@@ -4,13 +4,6 @@ import type { LucideIcon } from "lucide-react";
 import { Card } from "./Card";
 import { cn } from "@/lib/cn";
 
-/**
- * Liste de réglages : une icône, un intitulé, éventuellement une valeur.
- *
- * Le séparateur est posé par `last:border-b-0` plutôt qu'en calculant
- * l'index de la dernière ligne : le composant reste indifférent au nombre
- * d'éléments et à leur ordre.
- */
 export function MenuList({ children }: { children: React.ReactNode }) {
   return <Card className="px-3.5">{children}</Card>;
 }
@@ -27,7 +20,6 @@ export function MenuItem({
   label: string;
   value?: string;
   href?: string;
-  /** Action serveur (ex. déconnexion) — rend sa propre petite `<form>`. */
   action?: () => void | Promise<void>;
   tone?: "default" | "danger";
 }) {
@@ -47,9 +39,6 @@ export function MenuItem({
     tone === "danger" ? "text-danger" : "text-ink",
   );
 
-  /* Un élément qui navigue est un lien, un élément qui agit un bouton dans
-     sa propre `<form>` : ni le clavier ni un lecteur d'écran ne savent se
-     servir d'un `onClick` sur un `<div>`. */
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -66,22 +55,9 @@ export function MenuItem({
       </form>
     );
   }
-  // Ni lien ni action : une ligne d'information, sans `cursor-pointer`
-  // qui ferait croire à un bouton mort.
   return <div className={cn(className, "text-ink-soft")}>{content}</div>;
 }
 
-/**
- * Une ligne de réglage qui n'emmène nulle part : elle OUVRE un panneau.
- *
- * Pas de chevron, qui promettrait un changement d'écran alors que le
- * panneau remonte du bas — le « retour » du téléphone ne ramènerait pas où
- * la personne croit. Un panneau et non une page : l'aller-retour doit
- * laisser exactement où l'on était.
- *
- * Même mécanique que les filtres : un `<details>`, donc sans JavaScript,
- * que `data-panneau` fait refermer par `ClosePanels`.
- */
 export function MenuPanel({
   icon: Icon,
   label,
@@ -90,7 +66,6 @@ export function MenuPanel({
 }: {
   icon: LucideIcon;
   label: string;
-  /** Le titre du panneau ouvert — la ligne n'est plus visible à ce moment-là. */
   title: string;
   children: React.ReactNode;
 }) {
@@ -101,10 +76,6 @@ export function MenuPanel({
         <span className="flex-1">{label}</span>
       </summary>
 
-      {/* `fixed` : la carte qui contient cette liste a ses propres marges
-          et son propre arrondi ; un panneau posé dedans en hériterait.
-          `z-20` pour passer devant la barre de navigation du bas, qui ne
-          déclare aucun plan. */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[85vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
         <p className="shrink-0 px-4.5 pt-3.5 pb-1 text-base font-bold">{title}</p>
         <div className="overflow-y-auto px-4.5 pt-3 pb-5">{children}</div>

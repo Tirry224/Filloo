@@ -8,9 +8,6 @@
  */
 
 /**
- * Retire espaces, points, tirets, parenthèses et l'indicatif pays sous ses
- * deux écritures.
- *
  * On normalise avant d'ENREGISTRER, pas seulement avant de vérifier :
  * « 622 33 44 55 » et « +224622334455 » doivent se comparer, et `wa.me`
  * exige un format unique. Rattraper plus tard coûterait une migration.
@@ -28,13 +25,6 @@ export function estTelephone(valeur: string): boolean {
   return /^6\d{8}$/.test(nettoyerTelephone(valeur));
 }
 
-/**
- * `null` = acceptable. Une chaîne = le message à afficher tel quel ; il dit
- * quoi faire, pas ce qui est faux.
- *
- * `obligatoire` : le téléphone d'un compte l'est, le WhatsApp d'une
- * boutique non — tous les commerçants n'en ont pas.
- */
 export function erreurTelephone(valeur: string, obligatoire: boolean, champ = "téléphone"): string | null {
   const nettoye = nettoyerTelephone(valeur);
   if (!nettoye) {
@@ -56,22 +46,6 @@ export function erreurTelephone(valeur: string, obligatoire: boolean, champ = "t
 export const INDICATIF_GUINEE = "224";
 
 /**
- * L'adresse WhatsApp d'un numéro guinéen, ou `null` si le numéro est
- * inutilisable.
- *
- * CE QUE CETTE FONCTION RÉPARE. Les liens étaient construits à la main,
- * par `numero.replace(/\D/g, "")`, ce qui donnait `wa.me/622334455` —
- * neuf chiffres, sans indicatif. WhatsApp exige un numéro AU FORMAT
- * INTERNATIONAL : sans le « 224 », il ne résout aucun compte et ouvre un
- * écran d'erreur. Le bouton « Ou appelez directement le vendeur sur
- * WhatsApp » était donc mort depuis toujours, sur chaque fiche produit et
- * sur chaque écran de contact — et un bouton mort se réessaie, là où un
- * bouton absent se comprend.
- *
- * Rien ne pouvait le signaler : le lien est bien formé, il mène
- * simplement nulle part. C'est le genre de défaut qu'on ne trouve qu'en
- * appuyant sur le bouton avec un vrai téléphone.
- *
  * Le numéro est REVALIDÉ ici plutôt que supposé propre : il vient de la
  * base, où il a pu être écrit avant que `erreurTelephone` n'existe, ou à
  * la main depuis le tableau de bord. Un lien vers un numéro fautif est

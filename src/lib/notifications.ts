@@ -4,21 +4,12 @@ import { sendPushToUser } from "@/lib/push";
 import { siteUrl as adresseDuSite } from "@/lib/site-url";
 
 /**
- * Prévenir la personne qui vient de recevoir un message, par notification
- * push ET par email.
- *
  * `service_role` parce que l'adresse vit dans `auth.users`, hors RLS.
  * L'expéditeur ne doit JAMAIS obtenir l'email de son interlocuteur : elle
  * est lue ici et ne repart vers aucun écran.
- *
- * Ni trigger en base ni Edge Function : une action serveur fait la même
- * chose avec un aller-retour de moins et un seul système à déployer.
  */
 export async function notifyNewMessage(messageId: string): Promise<void> {
   try {
-    /* Deux canaux, deux configurations, une seule règle d'envoi : chacun
-       s'éteint sans emporter l'autre, mais « qui prévenir » et la règle
-       anti-spam restent communs — dédoublés, ils divergeraient. */
     const emailPret = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
     const pushPret = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
@@ -33,8 +24,6 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
     }
     const emailPossible = emailPret && Boolean(siteUrl);
 
-    // On s'arrête AVANT les requêtes si rien ne peut partir : une
-    // fonctionnalité éteinte ne doit rien coûter par message envoyé.
     if (!emailPossible && !pushPret) return;
 
     const admin = createAdminClient();
@@ -80,9 +69,6 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }>();
     if (conversationError || !conversation?.merchants) return;
 
-    /* Même règle que `getThreadContext` : côté client on parle à une
-       BOUTIQUE, côté boutique à une PERSONNE. Un email signé d'un autre
-       nom que celui affiché à l'écran a l'air d'un faux. */
     const merchantProfileId = conversation.merchants.profile_id;
     const senderIsMerchant = message.sender_id === merchantProfileId;
     const recipientProfileId = senderIsMerchant ? conversation.client_id : merchantProfileId;
@@ -124,8 +110,6 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
        plus bas : un `!` non nul se contente de faire taire l'analyse. */
     if (!emailPossible || !siteUrl) return;
 
-    // L'adresse n'est cherchée qu'ICI, après le push : un canal ne doit
-    // pas tomber à cause de ce qui manque à l'autre.
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
       recipient.auth_user_id,
     );
@@ -144,22 +128,14 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       }),
     );
 
-    /* Un email perdu ne doit pas rester invisible : rien dans
-       l'application ne signale son absence. Il n'est pas rejoué pour
-       autant — un renvoi sur une adresse invalide abîme la réputation du
-       domaine. En v1, on constate. */
     if (!outcome.sent && outcome.configured) {
       console.error(`[email] notification non envoyée (message ${messageId}) : ${outcome.reason}`);
     }
   } catch (cause) {
-    // Rien ici ne doit toucher l'envoi du message, déjà écrit et affiché :
-    // une notification est un service rendu EN PLUS.
     console.error(`[email] notification impossible (message ${messageId}) :`, cause);
   }
 }
 
-/** Le texte de l'email. Séparé de l'envoi pour être relu — et modifié —
- * sans toucher au transport. */
 function composeNewMessageEmail(input: {
   to: string;
   /** Résolue par l'appelant, JAMAIS depuis l'en-tête `Host` : le lien doit
@@ -173,9 +149,6 @@ function composeNewMessageEmail(input: {
 }) {
   const link = `${input.siteUrl}/messages/${input.conversationId}`;
 
-  /* Le message est recopié, non résumé : sur un forfait compté, ouvrir
-     l'application pour découvrir « c'est disponible ? » coûte des données
-     pour rien. Tronqué quand même, la suite étant à un clic. */
   const excerpt = input.body.length > 400 ? `${input.body.slice(0, 400)}…` : input.body;
   const about = input.productTitle ? `À propos de : ${input.productTitle}` : "";
 

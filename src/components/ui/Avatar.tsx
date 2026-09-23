@@ -1,11 +1,6 @@
 import { Package } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/**
- * Deux formes d'interlocuteur : une personne (ses initiales) ou une
- * boutique (une icône). Les initiales évitent d'avoir à gérer des photos
- * de profil, que personne ne remplira au lancement.
- */
 export function Avatar({
   name,
   kind = "person",

@@ -1,10 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 
-/**
- * État vide. Sa signature impose qu'un écran vide explique POURQUOI il
- * l'est (`title`, `description`) et propose une SORTIE (`children`) : une
- * page blanche paraît cassée, pas vide.
- */
 export function EmptyState({
   icon: Icon,
   title,

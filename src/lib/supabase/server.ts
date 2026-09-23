@@ -4,8 +4,7 @@ import { cookies } from "next/headers";
 import type { Database } from "@/lib/database.types";
 
 /**
- * Client Supabase pour les composants serveur (voir
- * src/components/README.md). Un client PAR REQUÊTE, jamais un singleton :
+ * Un client PAR REQUÊTE, jamais un singleton :
  * les cookies de session diffèrent, un client partagé mélangerait les
  * utilisateurs.
  *

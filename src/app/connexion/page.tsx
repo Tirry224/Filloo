@@ -4,11 +4,6 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { Wordmark } from "@/components/ui/TopBar";
 import { safeNextPath } from "@/lib/next-param";
 
-/** Connexion — écran 14 de docs/ECRANS.md.
- *
- * `?next=` est posé par l'écran 16 (« Créez un compte pour écrire ») :
- * quelqu'un qui arrive ici depuis un produit doit repartir vers CE
- * produit, pas vers le fil d'accueil. Voir `safeNextPath`. */
 export default async function LoginPage({
   searchParams,
 }: {

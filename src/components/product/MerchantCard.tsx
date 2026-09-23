@@ -4,7 +4,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import type { Merchant } from "@/lib/types";
 
-/** Encart « qui vend ce produit », sur la fiche produit. */
 export function MerchantCard({
   merchant,
 }: {

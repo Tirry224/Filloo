@@ -6,31 +6,8 @@ import { TopBar } from "@/components/ui/TopBar";
 import { CONTACT_EMAIL } from "@/content/confidentialite";
 
 /**
- * « Nous contacter » — l'article 24 des conditions promet « le moyen de
- * contact indiqué sur la plateforme », et aucun écran ne l'indiquait.
- *
- * Une promesse écrite noir sur blanc sans rien derrière vaut moins qu'un
- * silence, parce qu'elle se vérifie : quelqu'un dont la boutique est
- * refusée lit l'article 24, cherche l'adresse, ne la trouve pas, et en
- * conclut qu'il n'y a personne au bout. Cet écran existe pour qu'il y ait
- * quelqu'un au bout.
- *
- * VOLONTAIREMENT SANS FORMULAIRE. Un formulaire de contact demanderait une
- * table, une file d'envoi, une protection anti-spam et un écran pour lire
- * ce qui arrive — quatre choses à construire et à surveiller. Un lien
- * `mailto:` ouvre l'application mail du téléphone, arrive dans une boîte
- * qu'un humain relève déjà (c'est la même que celle des réponses aux
- * emails de refus), et ne peut pas tomber en panne silencieusement.
- *
- * `prefixe` vaut "" côté client et "/vendeur" côté commerçant : les deux
- * espaces ne se mélangent JAMAIS sur un même écran (décision de SPEC), et
- * un lien codé en dur vers `/conditions` aurait renvoyé un commerçant
- * dans son espace d'acheteur au milieu d'une lecture.
- *
- * Il dit aussi ce que Makiti NE FAIT PAS : c'est ici qu'arrivent les
- * réclamations sur une commande, et elles n'ont pas d'objet — la vente se
- * conclut entre deux personnes, hors de la plateforme. Le dire sur cet
- * écran évite une déception au moment où elle coûte le plus cher.
+ * L'article 24 des conditions promet « le moyen de contact indiqué sur la
+ * plateforme » : cet écran est ce moyen.
  */
 export function ContactScreen({ backHref, prefixe = "" }: { backHref: string; prefixe?: string }) {
   return (

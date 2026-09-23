@@ -13,21 +13,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { countUnreadMessages, getMyThreadsAsMerchant } from "@/lib/data/messages";
 
-/**
- * Accueil commerçant — l'écran d'ouverture de l'espace. La liste complète
- * des produits vit sur `/vendeur/produits` : ici, la lecture seulement.
- *
- * Le prototype affiche « vues boutique », qu'aucune table ne compte : un
- * chiffre inventé ferait une image, pas un tableau de bord. À sa place, une
- * donnée que la base tient déjà — la somme des `products.contact_count`,
- * soit les clients DISTINCTS ayant posé une question (`bump_contact_count`,
- * 0002 partie 3.3).
- */
 export default async function MerchantHomePage({
   searchParams,
 }: {
-  // `erreur` est posé par les actions de `src/lib/actions/products.ts` ;
-  // voir `Notice` pour pourquoi le message passe par l'URL.
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const { erreur } = await searchParams;
@@ -52,7 +40,6 @@ export default async function MerchantHomePage({
 
   const published = catalogue.filter((p) => p.status === "active").length;
   const contacts = catalogue.reduce((total, p) => total + p.contactCount, 0);
-  // Trois suffisent : au-delà, on recopierait `/vendeur/messages`.
   const dernieres = threads.slice(0, 3);
 
   return (
@@ -78,9 +65,6 @@ export default async function MerchantHomePage({
 
           <div className="flex flex-col gap-2.5">
             <SectionLabel>Votre activité</SectionLabel>
-            {/* Les deux cartes qui MÈNENT quelque part sont des liens ;
-                celle qui ne fait que compter n'en est pas un — un bloc
-                cliquable qui ne réagit pas apprend à ne plus rien toucher. */}
             <div className="flex gap-2.5">
               <Link href="/vendeur/produits" className="flex-1">
                 <Card className="flex h-full flex-col gap-0.5 p-3">
@@ -113,8 +97,6 @@ export default async function MerchantHomePage({
           </div>
 
           {catalogue.length === 0 ? (
-            // Trois zéros diraient « il ne se passe rien » sans dire quoi
-            // faire : l'appel à l'action est le seul geste utile ici.
             <EmptyState
               icon={Plus}
               title="Votre boutique est vide"
@@ -141,9 +123,6 @@ export default async function MerchantHomePage({
                           <span className="truncate text-base font-semibold">{thread.peerName}</span>
                           <span className="truncate text-xs text-ink-soft">{thread.lastProductTitle}</span>
                         </div>
-                        {/* Deux états, pas trois : le troisième du prototype
-                            (« À répondre ») supposerait de savoir QUI a
-                            écrit en dernier, que `Thread` ne porte pas. */}
                         {thread.unreadCount > 0 ? (
                           <Badge tone="accent">Nouveau</Badge>
                         ) : (

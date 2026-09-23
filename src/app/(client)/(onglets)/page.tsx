@@ -19,21 +19,6 @@ import { landingForSession } from "@/lib/data/session";
 import { searchProducts } from "@/lib/data/products";
 import { compter } from "@/lib/analytics";
 
-/**
- * Fil d'accueil — écrans 1 et 2 de docs/ECRANS.md.
- *
- * Ville et catégorie passent par l'URL (`/?ville=Boké&categorie=…`) et non
- * par un état caché : le fil filtré se partage par lien, le bouton
- * « retour » défait le filtre, et l'écran vide est atteignable pour de vrai.
- *
- * Sans `?ville=`, le défaut est la ville de résidence du client connecté
- * (`profiles.city_id`) plutôt que "Conakry" en dur ; un visiteur, un compte
- * sans profil client ou une ville non renseignée retombent sur "Conakry". L'URL gagne toujours : ceci fixe un
- * point de départ, pas un filtre permanent.
- *
- * Un seul appel réseau : `inCity` rapporte toute la ville, la catégorie ne
- * fait que filtrer en mémoire (limite dure de 50 dans `search_products`).
- */
 export default async function HomePage({
   searchParams,
 }: {
@@ -42,16 +27,10 @@ export default async function HomePage({
   const { ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
   const supabase = await createClient();
 
-  /* Le fil client n'est pas l'écran d'ouverture d'un commerçant
-     (docs/SPEC.md, décision 8). Ici EN PLUS de `signInAction` : cette
-     adresse s'atteint aussi par un favori, et l'aiguillage ne doit pas
-     dépendre du chemin parcouru. Visiteurs et doubles comptes passent. */
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
-  // Même résolution que `/recherche`, au même endroit : « ma ville
-  // d'abord, Conakry sinon » ne s'écrit qu'une fois.
   const ville = villeParam ?? (await getDefaultCityName(supabase, cities));
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
 
@@ -64,10 +43,6 @@ export default async function HomePage({
     `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
 
-  /* APRÈS l'aiguillage vers `/vendeur` : compter avant gonflerait les
-     visites de tous les commerçants renvoyés ailleurs, qui n'ont jamais
-     vu cet écran. `visite` est le dénominateur de toutes les autres
-     mesures — s'il est faux, tous les taux le sont. */
   compter("visite", { cityId: city?.id ?? null });
 
   return (
@@ -79,8 +54,6 @@ export default async function HomePage({
 
       <ScreenBody>
         <Section className="gap-3 pb-1">
-          {/* `overflow-x-auto` : la rangée de catégories défile au doigt
-              plutôt que de passer à la ligne et de manger l'écran. */}
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
             <Link href={`/?ville=${encodeURIComponent(ville)}&categorie=Tout`}>
               <Chip selected={categorie === "Tout"}>Tout</Chip>
@@ -145,15 +118,6 @@ export default async function HomePage({
         ) : null}
 
         <Section className="gap-2 pt-3.5">
-          {/* « Populaires » était un <span> en couleur d'accent, posé là où
-              les autres listes mettent un lien : on le touchait, rien ne
-              bougeait, et le fil restait figé sur `recent` alors que
-              `search_products` sait trier par popularité (décision 4 de
-              docs/SPEC.md). Désormais seul le tri INACTIF est un lien, en
-              couleur d'accent ; l'actif reste un `SectionLabel` neutre — la
-              couleur redevient une information au lieu d'un ornement. Le lien
-              garde ville et catégorie : changer l'ordre ne défait pas le
-              filtre. */}
           <div className="flex items-baseline justify-between">
             {sort === "popular" ? (
               <Link href={triHref("recent")} className="text-sm font-semibold text-accent">

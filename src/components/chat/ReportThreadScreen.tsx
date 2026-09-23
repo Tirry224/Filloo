@@ -8,15 +8,6 @@ import { reportConversationAction } from "@/lib/actions/messages";
 import { conversationReportReasons } from "@/lib/mock";
 import { messagesBase, type Espace } from "@/lib/espace";
 
-/**
- * Écran 32b — signaler une conversation, avec le choix du motif.
- *
- * Composant serveur et `<form>` classique, sans `useActionState` :
- * `reportConversationAction` redirige vers le fil en portant son message
- * dans l'URL, donc l'écran marche sans JavaScript (PERFORMANCE.md). Les
- * motifs sont de vraies cases radio natives : la sélection voyage dans le
- * formulaire, elle ne dépend pas d'un état client.
- */
 export async function ReportThreadScreen({
   espace,
   params,
@@ -33,10 +24,6 @@ export async function ReportThreadScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen` : un fil a deux côtés,
-     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
-     y correspondre. Sans elle, un commerçant obtient cette feuille habillée
-     en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/signaler`);
 

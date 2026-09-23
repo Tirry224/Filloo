@@ -44,8 +44,6 @@ export default async function GalleryPage({
 
       <div className="relative flex flex-1 items-center justify-center text-white/25">
         {photos.length > 0 ? (
-          // `object-contain` et non `cover` : dans une galerie, la photo
-          // entière, quitte à laisser des bandes noires.
           <Image
             src={photos[current - 1]}
             alt={`${product.title} — photo ${current}`}

@@ -4,40 +4,6 @@ import { useEffect, useState } from "react";
 import { Download, Share, SquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-/**
- * Propose, à l'entrée dans l'application, de l'installer sur le téléphone.
- *
- * « Installer » et non « télécharger » : Makiti n'est pas sur un store. Le
- * navigateur l'ajoute à l'écran d'accueil grâce au manifeste
- * (`src/app/manifest.ts`) ; elle s'ouvre ensuite en plein écran, et sur
- * iPhone c'est la SEULE façon de recevoir les notifications.
- *
- * DEUX CHEMINS, parce que les navigateurs ne se ressemblent pas :
- *   - Android (Chrome, Edge, Samsung) émet `beforeinstallprompt` quand
- *     l'application est installable. On le retient et on ne montre la
- *     question QUE s'il arrive : sans lui, le bouton « Installer » ne
- *     ferait rien.
- *   - iPhone n'a aucune API d'installation. On ne peut qu'expliquer le
- *     geste : Partager, puis « Sur l'écran d'accueil ».
- * Ailleurs (Firefox, ordinateur sans l'événement), rien ne s'affiche :
- * une question à laquelle on ne peut pas donner suite est une nuisance.
- *
- * UN « PLUS TARD » EST RESPECTÉ. La réponse est gardée dans
- * `localStorage` et la question ne revient pas avant `DELAI_APRES_REFUS`.
- * La redemander à chaque visite apprendrait surtout à la fermer sans lire.
- *
- * OÙ ELLE VIT : dans les deux layouts `(onglets)`, pas à la racine. Ce
- * sont les écrans par lesquels on entre (accueil, recherche, boutique, et
- * leurs pendants vendeur). À la racine, sa référence client alourdissait
- * CHAQUE page, et `/conditions`, déjà au plafond, sortait du budget de
- * `npm run poids`. Une fiche produit ouverte depuis WhatsApp ne la montre
- * pas non plus : ce n'est pas le moment d'interrompre.
- *
- * Aucun voile sur l'écran : la personne voit ce qu'elle est venue voir et
- * peut ignorer la carte. Bloquer l'entrée pour poser une question serait
- * faire passer notre intérêt avant le sien.
- */
-
 /** Pas dans les types DOM de TypeScript : l'événement n'est pas standard. */
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -63,7 +29,6 @@ function retenirRefus() {
   try {
     localStorage.setItem(CLE_REFUS, String(Date.now()));
   } catch {
-    // Sans stockage, la question reviendra à la prochaine visite. Tant pis.
   }
 }
 

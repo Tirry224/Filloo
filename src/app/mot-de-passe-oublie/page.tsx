@@ -3,24 +3,12 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { safeNextPath } from "@/lib/next-param";
 
-/**
- * Mot de passe oublié — écran 15 de docs/ECRANS.md.
- *
- * `?erreur=lien_invalide` est posé par `/auth/confirm` (échange du jeton
- * échoué) et par `/reinitialiser-mot-de-passe` (aucune session de
- * récupération). Le LIRE est nécessaire : muet, l'écran ne distingue pas
- * un lien expiré d'une erreur de saisie, et la personne redemande un lien
- * — chaque demande frappant la limite d'envoi du serveur mail.
- */
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ erreur?: string; next?: string }>;
 }) {
   const { erreur, next } = await searchParams;
-  /* Filtré ici plutôt qu'au moment de l'envoi : ce qui descend dans le
-     formulaire doit déjà être sûr, sinon la garde se retrouve à devoir
-     être répétée par chaque appelant. */
   const suite = safeNextPath(next);
 
   return (

@@ -3,9 +3,7 @@ import type { Database } from "@/lib/database.types";
 
 /**
  * Client Supabase pour le navigateur. À utiliser uniquement dans un
- * composant `"use client"` — inexistant partout ailleurs pour l'instant
- * (voir src/components/README.md : aucune interactivité avant d'avoir une
- * vraie action à brancher).
+ * composant `"use client"`.
  */
 export function createClient() {
   return createBrowserClient<Database>(

@@ -28,15 +28,6 @@ const classes = {
   label: "flex-1 truncate text-base",
 };
 
-/**
- * Les dernières recherches, gardées DANS LE NAVIGATEUR — jamais en base :
- * le catalogue se consulte sans compte, et lier l'historique à un compte en
- * priverait la moitié des visiteurs. `localStorage` ne coûte ni requête ni
- * table et ne quitte jamais l'appareil.
- *
- * Sert aussi de mémoire silencieuse (`show={false}`) sur l'écran de
- * résultats, où une recherche a réellement été lancée.
- */
 export function RecentSearches({ q, show }: { q: string; show: boolean }) {
   const [recent, setRecent] = useState<string[]>([]);
 
@@ -52,7 +43,6 @@ export function RecentSearches({ q, show }: { q: string; show: boolean }) {
     try {
       localStorage.setItem(KEY, JSON.stringify(list));
     } catch {
-      /* Ne pas pouvoir se souvenir n'empêche pas de chercher. */
     }
   }, [q]);
 
@@ -61,7 +51,6 @@ export function RecentSearches({ q, show }: { q: string; show: boolean }) {
     try {
       localStorage.removeItem(KEY);
     } catch {
-      /* Idem. */
     }
   }
 

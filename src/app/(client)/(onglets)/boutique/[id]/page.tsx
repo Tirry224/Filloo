@@ -11,14 +11,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { compter } from "@/lib/analytics";
 
-/**
- * L'aperçu du lien partagé — même raison que sur la fiche produit : une
- * boutique se recommande en envoyant son adresse dans une conversation.
- *
- * Pas d'image : une boutique n'a pas de photo à elle dans le modèle de
- * données, seulement un `Avatar` dessiné à partir de son nom. Mettre la
- * photo d'un de ses produits ferait passer ce produit pour la boutique.
- */
 export async function generateMetadata({
   params,
 }: {
@@ -44,7 +36,6 @@ export async function generateMetadata({
   };
 }
 
-/** Boutique publique — écran 11 de docs/ECRANS.md. */
 export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -80,17 +71,6 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
               <MapPin size={17} strokeWidth={1.8} className="shrink-0 text-ink-soft" aria-hidden />
               {merchant.addressHint} · {merchant.city}
             </p>
-            {/* « Répond en général dans la journée » a été retiré le
-                2026-09-13 : c'était un texte FIXE, identique pour toutes
-                les boutiques, qu'aucune colonne ni aucune requête ne
-                mesure — y compris pour un vendeur qui ne répond jamais.
-                Un client le lit comme une promesse du service.
-
-                Même raison que « Ma ville » retirée de /compte et que le
-                motif de suspension inventé par la maquette : on ne
-                simule pas une donnée qui n'existe pas. Le jour où
-                `messages` permettra de calculer un vrai délai médian par
-                boutique, la ligne reviendra avec un chiffre derrière. */}
           </Card>
 
           <SectionLabel>

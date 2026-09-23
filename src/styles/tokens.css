@@ -1,72 +1,24 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   MAKITI — TOKENS
-   ═══════════════════════════════════════════════════════════════════════
-   C'est LE fichier à modifier pour changer l'apparence de l'application.
-   Chaque valeur y est écrite une seule fois. Changer --color-accent ici
-   change la couleur de tous les boutons, de tous les badges et de tous les
-   liens de l'application, sans toucher à un seul composant.
-
-   Règle absolue : AUCUNE valeur de couleur, de taille de texte ou de rayon
-   ne doit apparaître ailleurs que dans ce fichier. Si tu écris un jour
-   `color: #c0562f` dans un composant, tu viens de casser le système.
-
-   ─────────────────────────────────────────────────────────────────────
-   COMMENT ÇA MARCHE
-   ─────────────────────────────────────────────────────────────────────
-   Le bloc `@theme` n'est pas du CSS ordinaire : Tailwind le lit et fabrique
-   automatiquement les classes correspondantes.
-
-       --color-accent      →  bg-accent   text-accent   border-accent
-       --text-lg           →  text-lg
-       --radius-xl         →  rounded-xl
-       --container-app     →  max-w-app
-
-   Une ligne ici crée donc une famille de classes utilisables partout.
-
-   La ligne `--color-*: initial;` efface toute la palette par défaut de
-   Tailwind. C'est volontaire : après ça, écrire `bg-blue-500` ne produit
-   plus rien. Impossible d'introduire une couleur hors charte par distraction.
-   ═══════════════════════════════════════════════════════════════════════ */
-
 @theme {
-  /* ═══ COULEURS ══════════════════════════════════════════════════════
-     Les noms décrivent un RÔLE, jamais une teinte. « accent » et non
-     « orange » : le jour où l'accent devient vert, le nom reste juste et
-     tu n'as qu'une ligne à changer. Nommer une variable --orange est
-     l'erreur la plus fréquente et la plus coûteuse d'un design system.
-
-     Les couleurs sont en oklch(clarté chroma teinte). Contrairement à
-     l'hexadécimal, deux couleurs de même clarté y paraissent réellement
-     aussi lumineuses à l'œil, ce qui rend les variantes prévisibles. */
-
   --color-*: initial;
 
   --color-white: oklch(1 0 0);
   --color-black: oklch(0 0 0);
 
-  /* Fonds */
   --color-paper: oklch(0.981 0.008 80);   /* fond de l'application, blanc chaud */
   --color-surface: oklch(1 0 0);          /* cartes, barres, feuilles */
   --color-placeholder: oklch(0.935 0.013 75); /* emplacement d'image vide */
 
-  /* Texte */
   --color-ink: oklch(0.245 0.018 60);     /* texte principal */
   --color-ink-soft: oklch(0.545 0.014 60);/* texte secondaire, légendes */
   --color-on-accent: oklch(1 0 0);        /* texte posé sur un fond accent */
 
-  /* Traits */
   --color-line: oklch(0.902 0.012 75);        /* bordures et séparateurs */
   --color-line-strong: oklch(0.82 0.012 75);  /* bordure appuyée */
 
-  /* Accent — l'identité de Makiti. Terre cuite.
-     Change cette teinte (le 3e nombre, 42) et toute l'application suit :
-     150 pour du vert, 250 pour du bleu. */
   --color-accent: oklch(0.55 0.15 42);
   --color-accent-hover: oklch(0.45 0.15 42);
   --color-accent-soft: oklch(0.955 0.028 42);
 
-  /* États. Même clarté et même chroma que l'accent, seule la teinte
-     change : c'est ce qui les fait appartenir à la même famille visuelle. */
   --color-success: oklch(0.55 0.15 150);
   --color-success-soft: oklch(0.955 0.028 150);
   --color-success-ink: oklch(0.4 0.06 150);
@@ -78,182 +30,78 @@
   --color-danger: oklch(0.5 0.17 27);
   --color-danger-soft: oklch(0.95 0.03 27);
 
-  /* Voile posé sous une feuille modale */
   --color-overlay: oklch(0.245 0.018 60 / 0.45);
 
-  /* Fond de la galerie photo plein écran. Presque noir, mais chaud : un
-     noir pur à côté du papier de l'application ferait tache. Cette valeur
-     était écrite en dur (`bg-[#12100e]`) dans l'écran de la galerie — la
-     seule couleur de l'application qui échappait encore aux tokens. */
   --color-viewer: oklch(0.17 0.008 70);
 
-  /* ═══ TYPOGRAPHIE ═══════════════════════════════════════════════════
-     UNE SEULE FAMILLE : Figtree, faite pour être lue en petit sur un
-     téléphone. Elle est renseignée par Next dans layout.tsx, qui héberge
-     la police lui-même — aucun appel à Google au chargement de la page.
-
-     LE JETON --font-display SURVIT À LA SECONDE POLICE, ET C'EST VOULU.
-     Les titres, les prix et le logotype s'écrivent toujours avec la classe
-     `font-display` ou avec `h1`–`h4` (voir base.css) : six composants et
-     treize fichiers en dépendent. Garder le jeton, en le faisant pointer
-     vers la même famille que le texte, évite de toucher à tous ces
-     fichiers — et laisse la porte ouverte à une police de titres le jour
-     où le budget le permettra. Ce qui distingue un titre aujourd'hui,
-     c'est sa graisse et son interlettrage (base.css), pas sa famille.
-
-     POURQUOI IL N'ENCHAÎNE PLUS SUR LA VARIABLE DE LA POLICE DE TITRES :
-     une variable CSS absente ne fait PAS glisser sur la valeur suivante de
-     la liste. Elle rend la déclaration entière invalide, et `font-family`
-     retombe alors sur l'héritage. Le rendu aurait donc été juste par
-     accident — on écrit la famille voulue plutôt que de compter sur un
-     repli qui n'existe pas. (L'audit du 2026-09-20 affirmait le
-     contraire ; vérifié : tort sur le mécanisme, raison sur le
-     résultat.) */
+  /* Une variable CSS absente ne fait PAS glisser sur la valeur suivante de
+     la liste : elle rend la déclaration entière invalide, et `font-family`
+     retombe sur l'héritage. D'où la famille écrite en toutes lettres
+     plutôt qu'un enchaînement de variables. */
 
   --font-sans: var(--font-body-src), "Segoe UI", system-ui, sans-serif;
   --font-display: var(--font-body-src), "Segoe UI", system-ui, sans-serif;
 
-  /* Échelle de tailles : 8 marches, et pas une de plus.
-     La maquette a été dessinée à main levée et contenait 21 tailles
-     différentes (11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15...). C'est
-     normal pour un dessin, et intenable dans du code : personne ne sait
-     plus laquelle choisir, et l'application devient visuellement floue.
-     Rationaliser en une échelle est précisément le travail d'un design
-     system. Si une taille te manque, la bonne réaction est presque
-     toujours d'en réutiliser une existante. */
-
   --text-*: initial;
 
-  --text-2xs: 0.6875rem;  /* 11px — badges, horodatage */
+  --text-2xs: 0.6875rem;  /* 11px */
   --text-2xs--line-height: 1.35;
-  --text-xs: 0.75rem;     /* 12px — aides, légendes */
+  --text-xs: 0.75rem;     /* 12px */
   --text-xs--line-height: 1.4;
-  --text-sm: 0.8125rem;   /* 13px — texte secondaire, métadonnées */
+  --text-sm: 0.8125rem;   /* 13px */
   --text-sm--line-height: 1.45;
-  --text-base: 0.9375rem; /* 15px — texte courant, champs, boutons */
+  --text-base: 0.9375rem; /* 15px */
   --text-base--line-height: 1.45;
-  --text-lg: 1.0625rem;   /* 17px — titres de barre, titres de section */
+  --text-lg: 1.0625rem;   /* 17px */
   --text-lg--line-height: 1.3;
-  --text-xl: 1.25rem;     /* 20px — titres d'écran */
+  --text-xl: 1.25rem;     /* 20px */
   --text-xl--line-height: 1.22;
-  --text-2xl: 1.4375rem;  /* 23px — logo, gros titres */
+  --text-2xl: 1.4375rem;  /* 23px */
   --text-2xl--line-height: 1.18;
-  --text-3xl: 1.6875rem;  /* 27px — prix sur la fiche produit */
+  --text-3xl: 1.6875rem;  /* 27px */
   --text-3xl--line-height: 1.15;
 
   --leading-*: initial;
   --leading-tight: 1.2;
   --leading-snug: 1.35;
   --leading-normal: 1.45;
-  --leading-relaxed: 1.6;   /* paragraphes de plusieurs lignes */
-
-  /* ═══ RAYONS ════════════════════════════════════════════════════════
-     Une échelle courte suffit. Le rayon dit la taille de l'élément :
-     petit badge, petit rayon ; grande feuille modale, grand rayon. */
+  --leading-relaxed: 1.6;
 
   --radius-*: initial;
-  --radius-xs: 0.25rem;   /*  4px — le coin vif d'une bulle de message */
-  --radius-sm: 0.375rem;  /*  6px — badges */
-  --radius-md: 0.5625rem; /*  9px — vignettes */
-  --radius-lg: 0.75rem;   /* 12px — cartes, boutons, champs */
-  --radius-xl: 0.875rem;  /* 14px — grands encarts */
-  --radius-2xl: 1.25rem;  /* 20px — feuilles modales */
-  --radius-full: 999px;   /* pastilles, avatars */
+  --radius-xs: 0.25rem;   /*  4px */
+  --radius-sm: 0.375rem;  /*  6px */
+  --radius-md: 0.5625rem; /*  9px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 0.875rem;  /* 14px */
+  --radius-2xl: 1.25rem;  /* 20px */
+  --radius-full: 999px;
 
-  /* ═══ ESPACEMENTS ═══════════════════════════════════════════════════
-     SIX MARCHES, nommées par ce qu'elles SÉPARENT et non par un chiffre.
+  --spacing-hair: 0.25rem;     /*  4px */
+  --spacing-tight: 0.5rem;     /*  8px */
+  --spacing-snug: 0.75rem;     /* 12px */
+  --spacing-gutter: 1rem;      /* 16px */
+  --spacing-section: 1.5rem;   /* 24px */
+  --spacing-air: 2rem;         /* 32px */
 
-     Avant ce vocabulaire, l'application utilisait 27 valeurs d'espacement
-     différentes, dont des demi-pas : gap-2.5 (10px), gap-3.5 (14px),
-     px-4.5 (18px), p-7 (28px). Personne ne pouvait choisir entre gap-2.5
-     et gap-3 sur un critère — et c'est exactement ce qui rend un projet
-     pénible à modifier plus tard : on ne sait plus ce qui est intentionnel.
+  --spacing-tap: 2.75rem;      /* 44px — hauteur MINIMALE d'une zone
+                                  tactile, en dessous de laquelle on rate
+                                  la cible avec le pouce. */
+  --spacing-control: 3.25rem;  /* 52px */
+  --spacing-nav: 4rem;         /* 64px */
+  --spacing-rail: 15rem;       /* 240px */
 
-     Un nom, lui, se choisit sur un critère. « Est-ce que ces deux éléments
-     appartiennent au même bloc, ou à deux blocs différents ? » a une
-     réponse ; « est-ce 10 ou 12 pixels ? » n'en a pas.
+  --spacing-mark: 1.5rem;      /* 24px */
+  --spacing-thumb-xs: 1.25rem; /* 20px */
+  --spacing-thumb-sm: 2.25rem; /* 36px */
+  --spacing-thumb: 3.5rem;     /* 56px */
+  --spacing-thumb-lg: 4rem;   /* 64px */
+  --spacing-emblem: 4rem;      /* 64px */
 
-         gap-hair     px-gutter    py-section    p-snug
+  --spacing-photo-card: 8rem;  /* 128px */
+  --spacing-photo-hero: 18rem; /* 288px */
 
-     RÈGLE : ces six noms sont le vocabulaire NORMAL de Makiti. L'échelle
-     numérique de Tailwind (p-2, gap-5, mt-7…) reste active, mais elle est
-     réservée aux EXCEPTIONS — la géométrie d'un objet dessiné, comme la
-     poignée d'une feuille modale ou la course d'un interrupteur. Une
-     valeur numérique dans du code de mise en page doit porter un
-     commentaire qui dit pourquoi. C'est ce qui la rend visible dans un
-     diff au lieu de la laisser passer pour la norme. */
-
-  --spacing-hair: 0.25rem;     /*  4px — un cheveu : icône ↔ intitulé,
-                                  deux lignes d'une même étiquette */
-  --spacing-tight: 0.5rem;     /*  8px — éléments liés dans un même bloc */
-  --spacing-snug: 0.75rem;     /* 12px — intérieur d'une carte, hauteur
-                                  d'une ligne de liste */
-  --spacing-gutter: 1rem;      /* 16px — la gouttière : marge latérale de
-                                  tout écran, intérieur des grands blocs */
-  --spacing-section: 1.5rem;   /* 24px — entre deux sections d'un écran */
-  --spacing-air: 2rem;         /* 32px — respiration d'un écran vide */
-
-  /* ── Hauteurs de commande ────────────────────────────────────────── */
-
-  --spacing-tap: 2.75rem;      /* 44px — HAUTEUR MINIMALE d'une zone
-                                  tactile. En dessous, on rate la cible
-                                  avec le pouce. Ce n'est pas une
-                                  préférence, c'est une règle. */
-  --spacing-control: 3.25rem;  /* 52px — hauteur des boutons et des champs */
-  --spacing-nav: 4rem;         /* 64px — hauteur de la barre du bas */
-  --spacing-rail: 15rem;       /* 240px — largeur de cette même barre quand
-                                  elle passe à la verticale sur grand
-                                  écran. Assez pour « Messages » suivi de
-                                  son compteur sans que l'intitulé se
-                                  coupe. */
-
-  /* ── Objets carrés ───────────────────────────────────────────────────
-     Mêmes causes, mêmes effets que pour les espacements : l'application
-     contenait size-4.5, size-5.5, size-6.5, size-9.5, size-11, size-14 et
-     size-16, sans qu'aucune de ces valeurs ne se justifie l'une par
-     rapport à l'autre. Cinq noms les remplacent. */
-
-  --spacing-mark: 1.5rem;      /* 24px — pastille de sélection, compteur */
-  --spacing-thumb-xs: 1.25rem; /* 20px — vignette dans une ligne de fil */
-  --spacing-thumb-sm: 2.25rem; /* 36px — vignette citée dans un message */
-  --spacing-thumb: 3.5rem;     /* 56px — vignette de « Mes produits » */
-  --spacing-thumb-lg: 4rem;   /* 64px — vignette de la galerie photo */
-  --spacing-emblem: 4rem;      /* 64px — icône ronde d'un écran vide */
-
-  /* ── Photos ──────────────────────────────────────────────────────────
-     Deux hauteurs, et pas une de plus : la vignette du fil et la photo de
-     la fiche produit. Toute autre photo est carrée (aspect-square). */
-
-  --spacing-photo-card: 8rem;  /* 128px — vignette du fil */
-  --spacing-photo-hero: 18rem; /* 288px — photo de la fiche produit */
-
-  /* ═══ LARGEUR DE PAGE ═══════════════════════════════════════════════
-     L'application est pensée pour le téléphone, et le TEXTE garde cette
-     largeur partout : une ligne de 1400 px est illisible, quel que soit
-     l'écran qui l'affiche. Ce qui s'élargit sur grand écran, c'est ce qui
-     se PARCOURT — une grille de produits, une liste de conversations —
-     jamais un formulaire ni un paragraphe.
-
-     D'où deux largeurs, et deux seulement :
-
-     - `app` : la colonne téléphone. Tout ce qui se lit ou se remplit.
-       Les écrans `(plein-ecran)` et les pages d'authentification n'en
-       sortent jamais, même sur un écran de 27 pouces.
-     - `wide` : le cadre des écrans à onglets sur grand écran, barre
-       latérale comprise. 72rem parce qu'au-delà, la grille de produits
-       dépasse quatre colonnes et les vignettes deviennent des timbres. */
-
-  --container-app: 28rem;  /* 448px — la colonne téléphone */
-  --container-wide: 72rem; /* 1152px — le cadre des écrans à onglets */
-
-  /* ═══ OMBRES ════════════════════════════════════════════════════════
-     Makiti se dessine avec des BORDURES, pas des ombres : c'est plus net
-     sur un écran bon marché, plus lisible en plein soleil, et moins lourd
-     à afficher. Une seule ombre existe, pour détacher du fond ce qui
-     remonte depuis le bas de l'écran : une feuille modale, ou le panneau
-     d'un filtre. Un `--shadow-panel` orienté vers le bas a existé une
-     demi-journée, le temps que les panneaux s'ouvrent sous leur puce ;
-     ils s'ouvrent désormais par le bas, et l'ombre de la feuille suffit. */
+  --container-app: 28rem;  /* 448px */
+  --container-wide: 72rem; /* 1152px */
 
   --shadow-*: initial;
   --shadow-sheet: 0 -8px 32px oklch(0.245 0.018 60 / 0.14);

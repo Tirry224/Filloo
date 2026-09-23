@@ -7,13 +7,6 @@ import { getThreadContext } from "@/lib/data/messages";
 import { blockPeerAction } from "@/lib/actions/messages";
 import { messagesBase, type Espace } from "@/lib/espace";
 
-/**
- * Écran 32 — actions sur une conversation.
- *
- * « Voir sa fiche » n'a de sens QUE côté client (vers la boutique
- * publique, `/boutique/[id]`) : il n'existe pas de fiche publique pour un
- * client, la messagerie interne étant le seul contact prévu avec lui.
- */
 export async function ThreadActionsScreen({
   espace,
   params,
@@ -30,10 +23,6 @@ export async function ThreadActionsScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen` : un fil a deux côtés,
-     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
-     y correspondre. Sans elle, un commerçant ouvrant
-     `/messages/<id>/actions` obtient cette feuille habillée en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/actions`);
 

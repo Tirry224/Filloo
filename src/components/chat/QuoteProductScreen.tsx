@@ -9,14 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getThreadContext, getCitableProducts } from "@/lib/data/messages";
 import { messagesBase, type Espace } from "@/lib/espace";
 
-/**
- * Écran 31 — citer un produit dans un fil. C'est ce qui rend viable « un
- * seul fil par client » : le fil ne portant pas de produit, chaque message
- * doit pouvoir dire de quoi il parle.
- *
- * Chaque ligne est un LIEN qui repose la citation sur `/messages/{id}` :
- * pas de bouton « valider », choisir EST valider.
- */
 export async function QuoteProductScreen({
   espace,
   params,
@@ -33,10 +25,6 @@ export async function QuoteProductScreen({
   const context = await getThreadContext(supabase, id);
   if (!context) notFound();
 
-  /* La même garde que `ThreadScreen` : un fil a deux côtés,
-     `getThreadContext` sait lequel est le nôtre, et le chemin emprunté doit
-     y correspondre. Sans elle, un commerçant obtient cette feuille habillée
-     en client. */
   const espaceReel: Espace = context.iAmMerchant ? "merchant" : "client";
   if (espaceReel !== espace) redirect(`${messagesBase(espaceReel)}/${id}/citer`);
 

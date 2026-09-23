@@ -6,12 +6,9 @@ import { Field, Input } from "@/components/ui/Field";
 import { changeMyPasswordAction, type ActionState } from "@/lib/actions/auth";
 
 /**
- * Changer son mot de passe en le connaissant — panneau de l'écran compte.
- *
  * Le mot de passe ACTUEL prouve que c'est bien la personne : sans lui, un
  * téléphone emprunté trente secondes suffit à enfermer son propriétaire
- * dehors. Le NOUVEAU se tape deux fois, sa faute de frappe ne se
- * découvrant qu'à la connexion suivante.
+ * dehors.
  *
  * `autoComplete` distingue les deux rôles (`current-password` puis
  * `new-password`), sans quoi le gestionnaire du téléphone enregistre l'un

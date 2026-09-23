@@ -9,20 +9,12 @@ import { productImageUrl } from "@/lib/storage";
 type Slot = {
   id: string;
   previewUrl: string;
-  /** Chemin dans Storage une fois l'envoi terminé ; `null` en cours d'envoi
-   * ou en cas d'échec. */
   path: string | null;
   uploading: boolean;
   error: string | null;
 };
 
 /**
- * Sélecteur de 1 à 3 photos — écran 24, décision 15 de docs/SPEC.md.
- *
- * Règle R3 : compression dans le navigateur, dans un worker pour ne pas
- * geler un téléphone d'entrée de gamme, envoi direct vers Storage sans
- * relais par le serveur Next. Seul le CHEMIN voyage dans le formulaire.
- *
  * `productId` est généré par `ProductForm` avant l'envoi : le chemin imposé
  * par le RLS du stockage (`{merchant_id}/{product_id}/…`, 0004) n'attend
  * donc pas que la ligne `products` existe.
@@ -93,10 +85,6 @@ export function PhotoPicker({
    * fichier ici casserait la vignette d'un produit publié dès qu'on quitte
    * l'écran sans enregistrer. C'est l'ENREGISTREMENT qui tranche
    * (`updateProductAction`).
-   *
-   * Cas symétrique assumé : une photo envoyée puis retirée avant
-   * enregistrement laisse un orphelin. Un octet en trop ne casse aucun
-   * écran, une référence morte si.
    */
   function removeSlot(id: string) {
     setSlots((s) => s.filter((x) => x.id !== id));

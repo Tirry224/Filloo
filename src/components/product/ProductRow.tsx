@@ -12,7 +12,6 @@ const STATUS: Record<ProductStatus, { label: string; tone: "success" | "neutral"
   hidden: { label: "Masqué", tone: "neutral" },
 };
 
-/** Ligne de la liste « Mes produits », côté commerçant. */
 export function ProductRow({ product }: { product: Product }) {
   const status = STATUS[product.status];
   return (

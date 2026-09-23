@@ -12,9 +12,6 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import { compter } from "@/lib/analytics";
 
-/** Retour vers un fil, le message porté par l'URL (même raison que
- * `backToSeller`). `iAmMerchant` vient de `getThreadContext` : une action
- * ne fait pas changer d'espace. */
 function backToThread(
   conversationId: string,
   iAmMerchant: boolean,
@@ -38,12 +35,6 @@ export type ConversationOutcome =
   | { kind: "ready"; conversationId: string }
   | { kind: "refused"; reason: string };
 
-/**
- * Ouvrir ou retrouver le fil avec une boutique — « Contacter le vendeur »
- * (écran 16/30). Appelée depuis le composant serveur de la page et non
- * depuis un formulaire : SPEC ne prévoit qu'un seul écran d'interruption.
- * Un seul fil par couple (client, boutique).
- */
 export async function findOrCreateConversation(
   supabase: SupabaseClient<Database>,
   clientProfileId: string,
@@ -70,10 +61,6 @@ export async function findOrCreateConversation(
      insertions. C'est `unique (client_id, merchant_id)` (0001), pas ce
      code, qui garantit un seul fil par couple ; une course perdue (23505)
      n'est pas un échec, il suffit de relire. */
-  /* `contact_abouti` se pose ICI, sur la branche qui CRÉE le fil, et
-     jamais sur celle qui en retrouve un existant : compter les deux
-     ferait remonter le taux de conversion à chaque fois qu'un client
-     rouvre une discussion commencée la semaine dernière. */
   if (!createError) compter("contact_abouti", { role: "client", merchantId });
 
   if (createError) {
@@ -96,7 +83,7 @@ export async function findOrCreateConversation(
 }
 
 /**
- * Envoyer un message — écran 30. Les messages des triggers
+ * Les messages des triggers
  * (`0002_rules_and_security.sql`, 3.4/3.4 bis) sont déjà rédigés en
  * français et se relaient tels quels, contrairement à ceux de `auth.ts`.
  */
@@ -140,27 +127,21 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   after(() => notifyNewMessage(inserted.id));
 
   /* Le CONTENU du message n'est jamais écrit dans la mesure (0024) : seul
-     compte qu'un message soit parti, et de quel côté. C'est ce qui dit si
-     les commerçants répondent — la question qui décide de la survie d'une
-     place de marché de mise en relation. */
+     compte qu'un message soit parti, et de quel côté. */
   compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
 
   backToThread(conversationId, context.iAmMerchant);
 }
 
-/** Bloquer mon interlocuteur — écran 32. Je ne peux désigner que MOI-MÊME
+/** Je ne peux désigner que MOI-MÊME
  * comme bloqueur (policy "conversations: je bloque mon interlocuteur") :
  * bloquer veut dire « je me protège », pas « je le fais taire ». */
 export async function blockPeerAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
-  // Aucun fil, donc aucun espace à déduire : repli sur l'écran d'ouverture
-  // plutôt que `/messages`, qui sortirait un commerçant de son espace.
   if (!conversationId) redirect(await landingForSession(await createClient()));
 
   const supabase = await createClient();
   const context = await getThreadContext(supabase, conversationId);
-  // Espace indéductible : repli côté client, la garde de `ThreadScreen`
-  // corrigera si besoin.
   if (!context) backToThread(conversationId, false, "Conversation introuvable.");
 
   const { data, error } = await supabase
@@ -176,12 +157,6 @@ export async function blockPeerAction(formData: FormData) {
   backToThread(conversationId, context.iAmMerchant);
 }
 
-/**
- * Signaler une conversation — écran 32b. La feuille a sa propre liste de
- * motifs (on ne signale pas une personne pour « photo trompeuse ») : sans
- * motif, l'équipe doit relire tout le fil. Les précisions facultatives
- * sont recollées au motif, `reports.reason` étant du texte libre.
- */
 export async function reportConversationAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
@@ -216,7 +191,7 @@ export async function reportConversationAction(formData: FormData) {
   backToThread(conversationId, context.iAmMerchant, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
 }
 
-/** Signaler un produit — écran 10. N'importe lequel de mes profils actifs
+/** N'importe lequel de mes profils actifs
  * convient : "reports: je signale" ne distingue pas le rôle. */
 export async function reportProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
@@ -240,12 +215,9 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
     })
     .select("id");
   if (error) return { error: error.message };
-  // Même raison que le signalement d'une conversation, juste au-dessus.
   if (!data || data.length === 0) {
     return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  // Même `?info=` que le fil : deux écrans qui font la même chose rendent
-  // compte de la même façon.
   redirect(`/produit/${productId}?info=${encodeURIComponent("Signalement envoyé. Notre équipe va examiner ce produit.")}`);
 }

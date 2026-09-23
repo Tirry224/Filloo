@@ -6,8 +6,6 @@ import { sendPushToUser } from "@/lib/push";
 import type { ActionState } from "@/lib/actions/auth";
 
 /**
- * Enregistrer, oublier, tester : les trois gestes d'un abonnement push.
- *
  * Le client de SESSION, non `service_role` : contrairement à l'envoi
  * (`src/lib/push.ts`), ces trois actions ne touchent que les appareils de
  * la personne connectée. Le RLS de `0023` suffit, et un bug ici ne peut
@@ -46,8 +44,6 @@ export async function savePushSubscriptionAction(
       endpoint,
       p256dh,
       auth_secret: auth,
-      // Tronqué : sert à reconnaître un appareil, pas à archiver la
-      // chaîne complète.
       user_agent: userAgent.slice(0, 300) || null,
     },
     { onConflict: "endpoint" },
@@ -72,12 +68,6 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
   return { sent: true };
 }
 
-/**
- * S'envoyer une notification à soi-même : la seule façon de vérifier la
- * chaîne entière — permission, abonnement, clés VAPID, service de push,
- * service worker — sans un deuxième compte ni un deuxième téléphone. Elle
- * reste dans l'application pour répondre à « je ne reçois rien ».
- */
 export async function sendTestPushAction(): Promise<ActionState> {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);

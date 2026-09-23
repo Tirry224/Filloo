@@ -14,14 +14,6 @@ import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 
-/**
- * Recherche — écrans 5 et 6 de docs/ECRANS.md.
- *
- * `search_products` (0003_search_and_seed.sql) porte toute la logique —
- * titre, description et nom de boutique, sans accent ni casse, ville,
- * catégorie — vérifiée par `supabase/tests/security_test.sql`. Cette page ne
- * fait que résoudre les noms de l'URL en identifiants et afficher le résultat.
- */
 export default async function SearchPage({
   searchParams,
 }: {
@@ -32,9 +24,6 @@ export default async function SearchPage({
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
 
-  /* La ville de départ est résolue au même endroit pour les deux écrans
-     (`getDefaultCityName`), sinon on perd sa ville en changeant d'onglet.
-     `?ville=` gagne toujours, et se choisit dans le panneau de la puce. */
   const defaultVille = await getDefaultCityName(supabase, cities);
   const ville = villeParam ?? defaultVille;
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
@@ -45,18 +34,12 @@ export default async function SearchPage({
     ? await searchProducts(supabase, { query: q, cityId: city.id, categoryId: category?.id ?? null, sort, limit: 50 })
     : [];
 
-  // Un résultat vide dû au filtre de ville, pas à la recherche elle-même,
-  // se chiffre plutôt que de laisser croire au catalogue vide — jamais
-  // affiché sans ce chiffre (décision 9 : filtre manuel, jamais automatique).
   const ailleurs =
     results.length === 0
       ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null })
       : { nombre: 0, atteintLePlafond: false };
   const elsewhereCount = ailleurs.nombre;
 
-  /* La mesure la plus utile du lot : une recherche à zéro résultat nomme
-     un commerçant à aller chercher. Seulement quand quelque chose a été
-     réellement demandé — l'écran de repos n'est pas une recherche. */
   if (q || category) {
     compter("recherche", {
       query: q || null,
@@ -66,23 +49,12 @@ export default async function SearchPage({
     });
   }
 
-  // « Filtre actif » = différent de ce qu'on aurait sans rien toucher :
-  // pour un client de Boké, sa propre ville n'est pas un filtre posé.
   const activeFilterCount = (ville !== defaultVille ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
-  // Écran de repos : montrer des produits ici les ferait passer pour des
-  // résultats.
   const resting = !q && categorie === "Tout";
 
-  /* Les deux gardent la recherche tapée : « filtres » ne veut pas dire ce
-     qu'on cherchait. Deux boutons pour deux gestes : changer de ville en
-     gardant la catégorie, ou tout remettre à zéro. */
   const searchInConakryHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(FALLBACK_CITY)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`;
-  // « Effacer les filtres » remet la ville de DÉPART, pas Conakry : on
-  // n'efface pas un filtre que la personne n'a pas posé.
   const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
 
-  // Une seule fonction pour TOUTES les URL de filtre : recopiées, l'une
-  // oublierait de reporter `q`, ce qui ne se remarque qu'en production.
   const lien = (modifs: { ville?: string; categorie?: string; tri?: string }) => {
     const params = new URLSearchParams({
       q,
@@ -97,10 +69,6 @@ export default async function SearchPage({
     <>
       <TopBar
         title={
-          /* `method="get"` sur un vrai <form> : la recherche marche sans
-             JavaScript et reste dans l'URL, donc partageable. Les trois
-             champs cachés reportent ville, catégorie et tri — chercher ne
-             doit pas réinitialiser ce qu'on avait réglé. */
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
             <input type="hidden" name="ville" value={ville} />
             <input type="hidden" name="categorie" value={categorie} />
@@ -140,8 +108,6 @@ export default async function SearchPage({
           </Section>
         ) : (
           <Section className="gap-3">
-            {/* Mémoire silencieuse : cette recherche a été réellement
-                lancée, elle mérite d'être retenue. */}
             <RecentSearches q={q} show={false} />
 
             <p className="text-sm text-ink-soft">
@@ -152,13 +118,6 @@ export default async function SearchPage({
               {activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}
             </p>
 
-            {/* Les filtres s'ouvrent PAR-DESSUS les résultats plutôt que sur
-                une page qui les cache : on voit ce qu'on filtre pendant qu'on
-                filtre. La rangée tient sur UNE ligne et défile au doigt —
-                repliée, elle ferait sauter les résultats de deux lignes au
-                quatrième filtre. Possible parce que les panneaux sont en
-                `fixed` et s'ouvrent en bas : ancré sous sa puce, un panneau
-                serait découpé par ce débordement. */}
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
               <FilterChip
                 title="Ville"
@@ -209,9 +168,6 @@ export default async function SearchPage({
                     : "Essayez un mot plus court, ou changez de ville."
                 }
               >
-                {/* Proposer « Chercher à Conakry » à quelqu'un qui y cherche
-                    DÉJÀ est un bouton qui ne fait rien : la plus grosse ville
-                    du catalogue ne se suggère qu'à qui est ailleurs. */}
                 {elsewhereCount === 0 && ville !== FALLBACK_CITY ? (
                   <Button href={searchInConakryHref}>Chercher à {FALLBACK_CITY}</Button>
                 ) : null}

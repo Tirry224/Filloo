@@ -4,14 +4,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { TopBar } from "@/components/ui/TopBar";
 
 /**
- * Chargement de l'espace COMMERÇANT. Sans lui, Next affiche le
- * `loading.tsx` de la racine — le squelette du fil CLIENT, ville et
- * onglets compris — devant `/vendeur`.
- *
- * Il reproduit la silhouette de l'ACCUEIL commerçant plutôt qu'un
- * tourniquet : la page ne saute pas à l'arrivée des données. Ce même
- * squelette sert les quatre onglets, viser celui où l'on atterrit étant le
- * meilleur compromis avec un seul fichier.
+ * Sans ce fichier, Next affiche le `loading.tsx` de la racine — le
+ * squelette du fil CLIENT, ville et onglets compris — devant `/vendeur`.
  */
 export default function LoadingSeller() {
   return (

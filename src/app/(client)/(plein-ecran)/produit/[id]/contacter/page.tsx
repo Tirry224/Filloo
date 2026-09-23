@@ -12,14 +12,6 @@ import { findOrCreateConversation } from "@/lib/actions/messages";
 import { compter } from "@/lib/analytics";
 import { lienWhatsApp } from "@/lib/telephone";
 
-/**
- * Écran 16 — compte requis.
- *
- * Le seul endroit de toute l'application où l'on demande un compte —
- * mais seulement à qui n'en a pas encore. Une connexion déjà cliente
- * n'a rien à créer : elle ouvre directement le fil avec cette boutique
- * (existant ou nouveau), le produit déjà cité pour son premier message.
- */
 export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -55,11 +47,6 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
      « Vérifiez votre connexion », il ferait réessayer toute la journée un
      geste refusé. Aucune conversation n'est créée, le trigger précédant
      l'insertion (0002, 3.4). */
-  /* L'INTENTION de contacter, comptée avant de savoir si elle aboutit :
-     placée après, elle manquerait exactement les cas qui intéressent —
-     celui qui renonce devant la demande de compte, et celui que le quota
-     refuse. L'écart entre `contact_ouvert` et `contact_abouti` EST le
-     taux de conversion de Makiti. */
   compter("contact_ouvert", {
     productId: product.id,
     merchantId: product.merchant.id,
@@ -80,10 +67,6 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
         description={outcome.reason}
         closeHref={`/produit/${product.id}`}
       >
-        {/* Ce que la personne peut faire MAINTENANT plutôt qu'un simple
-            refus : la limite ne porte que sur les NOUVELLES boutiques, ses
-            fils ouverts restent accessibles, et WhatsApp reste la sortie
-            quand la boutique a donné un numéro. */}
         <Button href="/messages">Voir mes conversations</Button>
         <Button variant="secondary" size="sm" href={`/produit/${product.id}`}>
           Revenir au produit
@@ -100,8 +83,6 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // L'intention (« écrire au vendeur de CE produit ») voyage jusqu'à la fin
-  // de l'inscription, sinon le produit se perd en chemin (`safeNextPath`).
   const next = encodeURIComponent(`/produit/${product.id}/contacter`);
 
   return (
@@ -121,10 +102,6 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       <Button variant="secondary" size="sm" href={`/connexion?next=${next}`}>
         J&apos;ai déjà un compte
       </Button>
-      {/* Cette phrase était un texte NU : rien à toucher, alors qu'elle
-          présente WhatsApp comme l'échappatoire — le chemin le plus crédible
-          en Guinée. Elle ne s'affiche plus sans numéro : une porte de sortie
-          annoncée sans être ouverte est pire que pas de porte. */}
       {waHref ? (
         <a
           href={waHref}

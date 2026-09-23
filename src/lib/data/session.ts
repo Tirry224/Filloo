@@ -18,10 +18,6 @@ export type SessionProfile = {
 /**
  * `auth.getUser()` et non `auth.getSession()` : seul le premier revalide le
  * jeton auprès de Supabase, et c'est une décision de sécurité.
- *
- * `cache()` évite de repayer cet aller-retour réseau aux écrans qui
- * appellent plusieurs fois par requête. Le middleware a le sien, dans une
- * exécution Edge que ce cache ne couvre pas.
  */
 export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): Promise<User | null> => {
   const {
@@ -37,8 +33,6 @@ export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): 
   return user;
 });
 
-/** Les 1 ou 2 profils (client, commerçant) de la connexion active, en
- * cache pour n'interroger `profiles` qu'une fois par requête. */
 export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): Promise<SessionProfile[]> => {
   const user = await getSessionUser(supabase);
   if (!user) return [];
@@ -70,12 +64,6 @@ export async function clientSpaceFallback(supabase: SupabaseClient<Database>): P
   return profiles.some((p) => p.role === "merchant") ? "/vendeur/boutique" : "/connexion";
 }
 
-/**
- * L'écran d'ouverture de la connexion active : `/vendeur` si elle n'a QUE
- * un compte commerçant, `/` sinon (décision 8 de `docs/SPEC.md`). Qui
- * possède les deux comptes bascule quand elle le décide
- * (`SwitchSpaceCard`).
- */
 export async function landingForSession(supabase: SupabaseClient<Database>): Promise<string> {
   const profiles = await getMyProfiles(supabase);
   const merchant = profiles.find((p) => p.role === "merchant");
@@ -90,8 +78,6 @@ export async function landingForSession(supabase: SupabaseClient<Database>): Pro
   return onlyMerchant ? "/vendeur" : "/";
 }
 
-/** Le profil (client OU commerçant) de la connexion active pour ce rôle,
- * ou `null` si elle n'a pas encore ce compte-là. */
 export async function getMyProfile(
   supabase: SupabaseClient<Database>,
   role: "client" | "merchant",
@@ -115,8 +101,6 @@ export async function requireMerchantSpace(
 ): Promise<SessionProfile> {
   const profiles = await getMyProfiles(supabase);
 
-  // La décision vit dans `espace-decision.ts`, testable sans base ni
-  // contexte Next (`scripts/verifier-gardes.mjs`). Ici, que le trajet.
   const refus = refusEspaceCommercant(profiles);
   if (refus) redirect(refus);
 

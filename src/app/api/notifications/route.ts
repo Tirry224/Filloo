@@ -2,20 +2,12 @@ import { NextResponse } from "next/server";
 import { drainNotifications } from "@/lib/notifications-decisions";
 
 /**
- * Le balayage des notifications en attente (migration `0021`).
- *
  * Appelée par Vercel Cron, avec `Authorization: Bearer $CRON_SECRET` —
  * seule façon d'entrer : cette adresse lit `auth.users` et envoie des
  * emails.
  *
- * Une route plutôt qu'une tâche planifiée en base : le transport d'envoi
- * vit déjà ici (`src/lib/email.ts`), et l'y déplacer demanderait `pg_net`,
- * la clé Resend recopiée dans Postgres et un second endroit où lire les
- * journaux.
- *
  * `GET` parce que Vercel Cron n'émet que des `GET`, bien que la route
- * écrive : l'appelant est unique, et rejouée elle ne reprend pas ce qui
- * est déjà marqué.
+ * écrive.
  */
 
 /* PAS de `export const dynamic = "force-dynamic"` : depuis Next 15 RC un
@@ -41,7 +33,6 @@ export async function GET(request: Request) {
   try {
     const rapport = await drainNotifications();
 
-    // Dans les journaux Vercel : personne ne regarde la réponse d'un cron.
     if (!rapport.configuree) {
       console.warn("[notifications] ni Resend ni les clés VAPID : rien n'a été envoyé.");
     } else if (rapport.echouees > 0) {
@@ -54,8 +45,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(rapport);
   } catch (cause) {
-    // Les lignes non marquées restent en attente ; le 500 fait apparaître
-    // le cron en échec dans le tableau de bord Vercel.
     console.error("[notifications] balayage impossible :", cause);
     return NextResponse.json({ erreur: "balayage impossible" }, { status: 500 });
   }

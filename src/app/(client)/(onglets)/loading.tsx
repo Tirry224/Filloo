@@ -5,16 +5,6 @@ import { ScreenBody, Section } from "@/components/ui/Screen";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 
-/**
- * Écran 3 — chargement du fil CLIENT. Ce n'est pas une page : Next
- * l'affiche automatiquement pendant qu'un écran de ce groupe attend ses
- * données, et il est posé DANS le groupe client pour ne pas s'afficher
- * devant l'espace commerçant, qui a le sien.
- *
- * Il reproduit la silhouette du fil plutôt qu'un tourniquet, et jamais un
- * élément que la vraie page n'a pas : un squelette qui ne correspond plus
- * fait SAUTER la page à l'arrivée des données.
- */
 export default function Loading() {
   return (
     <>

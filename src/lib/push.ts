@@ -3,8 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
 
 /**
- * L'envoi d'une notification push, côté serveur.
- *
  * `service_role` (`createAdminClient`) parce que les abonnements ne sont
  * lisibles que par leur propriétaire (RLS de `0023`), alors que l'envoi est
  * déclenché par l'EXPÉDITEUR du message. Ces trois valeurs donnent le droit
@@ -15,8 +13,6 @@ import { siteUrl } from "@/lib/site-url";
  * l'email demande de déverrouiller.
  */
 
-/** Une paire VAPID absente n'est pas une panne, mais l'état d'un projet
- *  dont les clés ne sont pas encore posées. */
 function configurer(): boolean {
   const publique = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privee = process.env.VAPID_PRIVATE_KEY;
@@ -48,15 +44,6 @@ export type ContenuPush = {
   tag: string;
 };
 
-/**
- * Envoie à TOUS les appareils d'une connexion : prévenir un seul, c'est
- * souvent prévenir celui qu'elle n'a pas en main. Ne lève jamais — une
- * notification ne doit pas casser l'envoi du message qui la déclenche.
- *
- * Rend le nombre d'appareils atteints : sans email configuré, c'est la
- * seule façon pour `drainNotifications` de savoir si une décision a été
- * annoncée.
- */
 export async function sendPushToUser(authUserId: string, contenu: ContenuPush): Promise<number> {
   if (!configurer()) return 0;
 

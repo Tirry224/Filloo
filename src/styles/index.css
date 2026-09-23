@@ -1,7 +1,5 @@
-/* Point d'entrée unique des styles. Importé une seule fois, dans
-   src/app/layout.tsx. L'ordre compte : Tailwind d'abord, nos tokens
-   ensuite pour qu'ils remplacent son thème par défaut, nos styles de base
-   en dernier. */
+/* L'ordre compte : Tailwind d'abord, nos tokens ensuite pour qu'ils
+   remplacent son thème par défaut, nos styles de base en dernier. */
 
 @import "tailwindcss";
 @import "./tokens.css";

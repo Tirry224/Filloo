@@ -1,11 +1,3 @@
-/**
- * Données de démonstration, en place le temps que l'écran soit dessiné.
- *
- * Volontairement RÉALISTES (Madina, Ratoma, pagne wax, prix en GNF) plutôt
- * que « Produit 1 · Lorem ipsum » : un écran rempli de faux contenu neutre
- * paraît toujours réussi, c'est le vrai contenu qui casse une mise en page.
- */
-
 import type { Merchant, Message, Product, Thread } from "./types";
 
 const aissatou: Product["merchant"] = {
@@ -40,8 +32,6 @@ export const merchantAissatou: Merchant = {
   rejectionReason: null,
 };
 
-/** Boutique refusée — écran 21 uniquement. Un second objet plutôt qu'un
- * champ ignoré sur `merchantAissatou`, approuvée partout ailleurs. */
 export const merchantRejected: Merchant = {
   id: "m-rejected-demo",
   shopName: "Chez Aïssatou",
@@ -200,10 +190,6 @@ export const conversation: Message[] = [
   { id: "msg-5", mine: false, product: huile, body: "Et ce bidon d'huile ?", sentAt: "14:03" },
 ];
 
-/* ── Vues secondaires ──────────────────────────────────────────────────
-   Jeux séparés pour voir les deux points de vue tant que la session
-   n'existe pas. */
-
 export const clientThreads: Thread[] = [
   {
     id: "t-mariama",
@@ -225,12 +211,8 @@ export const clientThreads: Thread[] = [
   },
 ];
 
-/** Les produits d'une seule boutique, côté commerçant (brouillons compris). */
 export const myProducts: Product[] = products.filter((p) => p.merchant.id === "m-aissatou");
 
-/** Motifs de signalement d'une CONVERSATION — écran 32b. Disjoints de
- * `reportReasons` : on ne signale pas une personne pour « photo
- * trompeuse ». */
 export const conversationReportReasons = [
   "Insultes ou menaces",
   "Tentative d'arnaque",

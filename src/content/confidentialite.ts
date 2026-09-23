@@ -1,44 +1,15 @@
 /**
- * La politique de confidentialité, promise par l'article 19 des conditions
- * d'utilisation et qui n'existait nulle part.
- *
- * ÉCRITE À PARTIR DU CODE, PAS D'UN MODÈLE. Chaque affirmation de ce
- * fichier a été vérifiée dans le dépôt le 2026-09-21 : les colonnes des
- * migrations pour ce qui est collecté, `src/lib/actions/account.ts` pour
- * ce que fait la suppression de compte, `src/lib/notifications.ts` et
- * `src/lib/push.ts` pour les destinataires, `0002_rules_and_security.sql`
- * pour qui voit quoi. Une politique recopiée d'un générateur aurait promis
- * des choses fausses — et une promesse écrite qui ne se vérifie pas est
- * pire qu'un silence : c'est exactement le défaut que ce fichier répare.
- *
- * LE POINT LE PLUS DÉLICAT est l'article « Supprimer votre compte » : la
- * suppression ANONYMISE et BANNIT, elle n'efface pas tout. Le dire
- * franchement est la seule option tenable — quelqu'un qui découvre l'écart
- * entre la promesse et le comportement ne revient pas.
- *
- * Sa date est ÉCRITE, jamais calculée, pour la même raison que celle des
- * conditions : un `new Date()` ferait dire au document qu'il a été relu
- * aujourd'hui alors que personne ne l'a rouvert.
+ * Ce texte engage le porteur du projet : chaque affirmation doit rester
+ * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
 export const CONFIDENTIALITE_MISE_A_JOUR = "21 septembre 2026";
 
-/** L'adresse où l'on nous écrit — pour une question, un signalement, ou
- * l'exercice d'un droit sur ses données. Un seul endroit la porte : trois
- * copies auraient fini par ne plus désigner la même boîte. */
 export const CONTACT_EMAIL = "bouliwelltirry@gmail.com";
 
 /**
- * Le nom civil de l'éditeur, responsable du traitement — fourni par le
- * porteur du projet le 2026-09-22.
- *
- * L'écran s'adapte si ces chaînes sont vides : il tait le bloc plutôt que
- * d'afficher un nom inventé, ce qui rendrait le document entier suspect.
- *
  * La ville n'est pas en Guinée, et c'est exact : le service s'adresse au
- * marché guinéen, l'éditeur réside à Montréal. Les deux informations sont
- * distinctes et aucune ne remplace l'autre — c'est l'éditeur qu'un
- * utilisateur doit pouvoir situer pour exercer ses droits, pas le marché.
+ * marché guinéen, l'éditeur réside à Montréal.
  */
 export const EDITEUR_NOM = "Boubacar Sow";
 export const EDITEUR_VILLE = "Montréal, Canada";

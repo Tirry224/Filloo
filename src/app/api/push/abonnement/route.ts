@@ -2,13 +2,6 @@ import { NextResponse } from "next/server";
 import { deletePushSubscriptionAction, savePushSubscriptionAction } from "@/lib/actions/push";
 
 /**
- * Le réabonnement automatique, appelé par `public/sw.js` sur
- * `pushsubscriptionchange` — sans quoi un téléphone dont l'abonnement a été
- * révoqué cesse silencieusement de recevoir les notifications.
- *
- * Une route et non l'action serveur : un service worker ne sait faire
- * qu'une requête HTTP. Elle ne duplique aucune règle, elle relaie l'action.
- *
  * Le `fetch` d'un service worker porte les cookies de son origine, donc
  * l'action retrouve la session ; un appel anonyme se heurte à l'action puis
  * au RLS de `0023`.
@@ -31,16 +24,13 @@ export async function POST(request: Request) {
     request.headers.get("user-agent") ?? "",
   );
 
-  // 403 et non 400 : le corps était valide, c'est le droit qui manque. Un
-  // service worker ne lit pas ces messages, les journaux Vercel si.
   if (resultat.error) {
     return NextResponse.json({ erreur: resultat.error }, { status: 403 });
   }
 
   /* L'ancienne ligne part APRÈS l'écriture de la nouvelle : l'ordre
      inverse laisserait, sur une coupure, un téléphone abonné côté
-     navigateur et inconnu de la base. Un échec ici ne fait pas échouer
-     l'appel — l'ancienne partira au premier 404 ou 410 du service. */
+     navigateur et inconnu de la base. */
   const ancienEndpoint = typeof corps.ancienEndpoint === "string" ? corps.ancienEndpoint : "";
   if (ancienEndpoint && ancienEndpoint !== abonnement.endpoint) {
     const oubli = await deletePushSubscriptionAction(ancienEndpoint);

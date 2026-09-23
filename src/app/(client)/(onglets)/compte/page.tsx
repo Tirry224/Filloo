@@ -13,11 +13,6 @@ import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/se
 import { getMyMerchant } from "@/lib/data/merchants";
 import { signOutAction } from "@/lib/actions/auth";
 
-/**
- * Mon compte — écran 17. « Ma ville » de la maquette n'est pas ici mais dans
- * « Mes informations », avec le reste de ce qui s'édite (`profiles.city_id`,
- * 0010) ; cet écran ne fait que mener aux réglages.
- */
 export default async function AccountPage() {
   const supabase = await createClient();
   const [profile, user] = await Promise.all([getMyProfile(supabase, "client"), getSessionUser(supabase)]);
@@ -45,9 +40,6 @@ export default async function AccountPage() {
             <MenuItem icon={MessageCircle} label="Mes messages" href="/messages" />
           </MenuList>
 
-          {/* Bascule vers le compte commerçant lié : jamais un item de menu
-              parmi d'autres, toujours une action à part (voir docs/SPEC.md,
-              décision 8). N'apparaît que si ce compte lié existe déjà. */}
           {merchant ? (
             <SwitchSpaceCard
               label="Basculer vers mon espace commerçant"
@@ -55,40 +47,18 @@ export default async function AccountPage() {
               href="/vendeur"
             />
           ) : (
-            /* Sans compte commerçant, cet emplacement était VIDE, et c'est
-               ce qui rendait les comptes liés inatteignables : le schéma
-               (`unique (auth_user_id, role)`) et `/inscription` savent
-               depuis le début tenir deux rôles sur une seule connexion, mais
-               le seul lien vers `/inscription` pour un client connecté vivait
-               dans l'état vide du fil d'accueil (« Devenir vendeur à X »),
-               qui disparaît dès qu'un produit existe dans sa ville. Une
-               fonctionnalité construite ne sert à rien tant qu'aucun écran
-               n'y mène — et `/inscription` reconnaît déjà une personne
-               connectée (mode « lié », nom et téléphone pré-remplis, seul le
-               rôle manquant offert) : rien à construire, une porte à ouvrir. */
             <MenuList>
               <MenuItem icon={Store} label="Créer mon compte vendeur" href="/inscription" />
             </MenuList>
           )}
 
-          {/* Même règle d'emplacement que l'interrupteur en dessous :
-              l'abonnement appartient à la CONNEXION, donc avec un compte
-              commerçant l'invitation vit sur l'écran boutique et nulle part
-              ailleurs — deux invitations laisseraient croire à deux réglages. */}
           {merchant ? null : (
             <PushInvite raison="Un vendeur peut répondre à votre question quelques heures plus tard. C'est le seul canal qui vous prévient sans ouvrir l'application." />
           )}
 
           <MenuList>
-            {/* Le mot de passe ne s'affiche ICI qu'en l'absence de compte
-                commerçant ; avec les deux, il vit sur l'écran boutique —
-                même connexion, même mot de passe, et l'offrir des deux côtés
-                laisserait croire qu'il y en a deux à tenir à jour. */}
             {merchant ? null : (
               <>
-                {/* Même règle que le mot de passe : l'abonnement push
-                    appartient à la CONNEXION, pas au profil — sinon deux
-                    interrupteurs commanderaient le même appareil. */}
                 <MenuPanel icon={BellRing} label="Notifications" title="Notifications sur cet appareil">
                   <PushToggle />
                 </MenuPanel>
@@ -98,10 +68,6 @@ export default async function AccountPage() {
               </>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
-            {/* Les deux promesses des conditions — l'article 19 renvoie à
-                une politique de confidentialité, l'article 24 à « un moyen
-                de contact indiqué sur la plateforme ». Elles ne valaient
-                rien tant qu'aucun écran ne les atteignait. */}
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />
             <MenuItem icon={LifeBuoy} label="Nous contacter" href="/contact" />
           </MenuList>

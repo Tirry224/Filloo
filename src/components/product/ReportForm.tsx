@@ -6,12 +6,6 @@ import { Textarea } from "@/components/ui/Field";
 import { reportProductAction } from "@/lib/actions/messages";
 import type { ActionState } from "@/lib/actions/auth";
 
-/**
- * Motifs en vraies cases radio natives — pas la pastille décorative de
- * `ChoiceRow` (pensée pour une sélection par NAVIGATION, comme citer un
- * produit) : ici la sélection doit voyager dans un `<form>` classique,
- * sans JavaScript pour cocher un motif.
- */
 export function ReportForm({ productId, reasons }: { productId: string; reasons: string[] }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(reportProductAction, null);
 

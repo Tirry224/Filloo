@@ -8,11 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyThreadsAsMerchant } from "@/lib/data/messages";
 
 /**
- * Messages — côté COMMERÇANT. Écran 27 de docs/ECRANS.md.
- *
- * Sous `/vendeur`, il hérite de la garde de `(vendeur)/layout.tsx` et de la
- * barre d'onglets commerçant : aucune garde écrite ici, et c'est le signe
- * que le découpage marche.
+ * Sous `/vendeur`, cet écran hérite de la garde de `(vendeur)/layout.tsx` :
+ * aucune garde n'est écrite ici.
  */
 export default async function MerchantMessagesPage() {
   const supabase = await createClient();
@@ -24,9 +21,6 @@ export default async function MerchantMessagesPage() {
 
       <ScreenBody rangees>
         {list.length === 0 ? (
-          /* Un écran vide dit ce qu'il faut faire ENSUITE, et ce n'est pas
-             la même chose selon l'espace : conseiller à un commerçant
-             d'écrire à un vendeur le sortirait de son espace. */
           <EmptyState
             icon={MessageCircle}
             title="Aucune conversation"

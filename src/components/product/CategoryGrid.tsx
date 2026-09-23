@@ -40,8 +40,6 @@ const classes = {
   label: "leading-tight",
 };
 
-/** Les catégories en pavés — entrée de la recherche au repos. `ville` est
- * reportée dans chaque lien pour ne pas défaire un choix déjà fait. */
 export function CategoryGrid({ categories, ville }: { categories: CategoryOption[]; ville: string }) {
   return (
     <div className={classes.grid}>

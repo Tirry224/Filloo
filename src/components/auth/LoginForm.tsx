@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { signInAction, type ActionState } from "@/lib/actions/auth";
 
-/** Connexion — écran 14. `next` porte l'écran à rejoindre une fois
- * connecté : on n'arrive presque jamais ici pour le plaisir de se
- * connecter, mais parce qu'un geste a été interrompu. */
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(signInAction, null);
 
@@ -23,10 +20,6 @@ export function LoginForm({ next }: { next?: string }) {
         <Input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" />
       </Field>
 
-      {/* Le lien emporte `next` : sans lui, l'intention meurt ici. Quelqu'un
-          venu pour écrire à un vendeur, qui a oublié son mot de passe,
-          revenait sur l'accueil après la réinitialisation — le produit
-          perdu, et sans savoir pourquoi. */}
       <Link
         href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
         className="-mt-1 self-end text-sm font-semibold text-accent"

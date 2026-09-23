@@ -8,8 +8,7 @@ import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 
-/** Écran 13 — création de la boutique, étape 2 de l'inscription commerçant.
- * La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
+/** La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
  * `profile_id` appartient au commerçant connecté ; inutile de le
  * revérifier ici, mais on a besoin de l'id pour l'insertion. */
 export async function createMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
@@ -22,9 +21,6 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   if (!shopName || !cityId) {
     return { error: "Le nom de la boutique et la ville sont obligatoires." };
   }
-  // Facultatif, mais joignable s'il est renseigné : un numéro faux sous
-  // une boutique est pire qu'aucun numéro, le client croyant avoir un
-  // recours.
   const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
   if (erreurWhatsapp) return { error: erreurWhatsapp };
 
@@ -32,17 +28,6 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return { error: "Vous devez d'abord créer un compte commerçant." };
 
-  /* LAISSÉ VIDE = LE NUMÉRO DU COMPTE. Le commerçant a déjà donné un
-     numéro à l'inscription ; le redemander est une friction qui se paie
-     cher, parce que le champ sauté fait DISPARAÎTRE le bouton WhatsApp de
-     ses fiches produit — sans que rien ne le lui dise. En Guinée, c'est la
-     sortie de secours quand la messagerie interne reste sans réponse :
-     l'oublier coûte des ventes au commerçant, pas à nous.
-
-     Il reste libre d'en mettre un AUTRE : beaucoup séparent le numéro
-     personnel du numéro de commerce, et ce choix-là doit rester possible.
-     Ce n'est donc pas un lien automatique entre les deux champs, c'est
-     une valeur par défaut au moment de la création. */
   const numeroWhatsapp = nettoyerTelephone(whatsappPhone) || merchantProfile.phone || null;
 
   const { error } = await supabase.from("merchants").insert({
@@ -58,17 +43,12 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
     return { error: error.message };
   }
 
-  /* La boutique existe en `pending` : c'est bien une création, même si la
-     validation viendra plus tard. Compter à l'approbation mesurerait le
-     rythme de l'administrateur, pas celui des commerçants. */
   compter("boutique_creee", { role: "merchant", cityId: cityId });
 
   redirect("/vendeur/attente");
 }
 
 /**
- * Renvoyer ma boutique à la vérification — écran 21, après correction.
- *
  * Le statut est écrit par `resubmit_my_merchant()` (0015), qui n'autorise
  * que 'rejected' → 'pending' sur la boutique de l'appelant : le commerçant
  * n'a aucun droit d'écriture sur `merchants.status`, et c'est la base qui
@@ -80,13 +60,12 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 export async function resubmitMerchantAction() {
   const supabase = await createClient();
   const { error } = await supabase.rpc("resubmit_my_merchant");
-  // Messages déjà en français, lus tels quels comme ceux des triggers.
   if (error) redirect(`/vendeur/refusee?erreur=${encodeURIComponent(error.message)}`);
   redirect("/vendeur/attente");
 }
 
 /**
- * Modifier ma boutique — écran 26. Ne touche jamais `status` : changer le
+ * Ne touche jamais `status` : changer le
  * nom ou la ville ne déclenche PAS de nouvelle vérification, et en ajouter
  * une ferait disparaître du catalogue les produits en ligne (la policy
  * "products: catalogue public" exige `approved`). Contradiction avec la
@@ -106,7 +85,6 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
   if (erreurWhatsapp) return { error: erreurWhatsapp };
 
-  // Ce qui peut être refusé l'est avant la première écriture.
   if (!currentPassword) {
     return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
   }
@@ -132,7 +110,6 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   }
 
   if (!(await passwordIsValid(user.email, currentPassword))) {
-    // Sec, et il dit ce qui compte : que rien n'a bougé.
     return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
   }
 
@@ -154,7 +131,5 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  // Retour sur la consultation, pas l'accueil : les deux sorties de
-  // l'écran d'édition mènent là d'où l'on vient.
   redirect("/vendeur/boutique");
 }

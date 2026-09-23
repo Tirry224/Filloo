@@ -16,8 +16,6 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const supabase = await createClient();
 
-  // Les quatre lectures sont indépendantes : aucune n'a besoin du résultat
-  // d'une autre pour démarrer.
   const [merchant, { data: product, error }, { data: images }, categories] = await Promise.all([
     getMyMerchant(supabase),
     supabase

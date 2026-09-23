@@ -7,18 +7,6 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * Index des écrans — page de TRAVAIL, pas de produit : elle rend
- * joignables des écrans qu'on n'atteint pas en naviguant normalement
- * (boutique refusée, compte suspendu, hors ligne), pour relecture.
- */
-
-/**
- * Identifiants RÉELS lus en base, jamais codés en dur : un index dont les
- * liens mènent à « Cette page n'existe pas » fait croire que l'application
- * est cassée. Quand un enregistrement manque, la ligne dit QUOI faire pour
- * l'obtenir — état normal d'une base neuve, pas une erreur.
- */
 type ScreenIds = {
   produit?: string;
   produitVendu?: string;
@@ -28,7 +16,6 @@ type ScreenIds = {
 
 function screenGroups(ids: ScreenIds): {
   title: string;
-  /* [numéro, intitulé, lien?, ce qui manque pour l'obtenir?] */
   screens: [string, string, string?, string?][];
 }[] {
   const MANQUE_PRODUIT = "publiez un produit";
@@ -84,9 +71,6 @@ function screenGroups(ids: ScreenIds): {
     {
       title: "Messagerie",
       screens: [
-        /* La messagerie du commerçant vit sous `/vendeur`, celle du client
-           à la racine. L'écran 29 (« vide ») n'a pas d'URL propre : c'est
-           l'état des deux autres quand la liste est vide. */
         ["27", "Messages — commerçant", "/vendeur/messages"],
         ["28", "Messages — client", "/messages"],
         ["30", "Fil de discussion", ids.conversation && `/messages/${ids.conversation}`, MANQUE_FIL],
@@ -122,15 +106,12 @@ export const dynamic = "force-dynamic";
  * Page de TRAVAIL : accessible en développement, introuvable en production —
  * elle partait en ligne ouverte à tous tant qu'elle était prérendue.
  *
- * `notFound()` conditionnel plutôt qu'un `rm` : le parcours « À faire sur un
- * vrai téléphone » de `docs/MEMOIRE.md` se fait depuis ici, l'outil restant
- * entier en local. À supprimer quand ce parcours sera terminé.
+ * À supprimer quand le parcours « À faire sur un vrai téléphone » de
+ * `docs/MEMOIRE.md` sera terminé.
  */
 export default async function ScreensIndexPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
-  /* Les conversations ne remontent que pour une session qui en a (le RLS
-     s'en charge) — normal, pas une erreur. */
   const supabase = await createClient();
   const [produit, produitVendu, boutique, conversation] = await Promise.all([
     supabase.from("products").select("id").eq("status", "active").limit(1).maybeSingle(),
@@ -185,8 +166,6 @@ export default async function ScreensIndexPage() {
                     {href ? (
                       <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
                     ) : (
-                      // Distinguer l'écran automatique de celui qui attend
-                      // une donnée évite de chercher un bug inexistant.
                       <span className="shrink-0 text-2xs text-ink-soft">{manque ?? "automatique"}</span>
                     )}
                   </>

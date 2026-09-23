@@ -9,8 +9,6 @@ import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 
 /**
- * Mes informations — écran 18, monté par les deux espaces.
- *
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
  * ces colonnes par rôle (`unique (auth_user_id, role)`), donc n'écrire que
  * sur le profil client corrigerait le numéro à moitié. La ville, elle, NE
@@ -43,8 +41,6 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
-  // Neutre au rôle : un commerçant sans compte client lié doit pouvoir
-  // corriger son nom.
   const clientProfile = profiles.find((p) => p.role === "client");
   if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
 
@@ -83,8 +79,6 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
       .from("profiles")
       .update({ city_id: cityId })
       .eq("id", clientProfile.id);
-    // Seul cas où cette action réussit à moitié : on le dit, sinon la
-    // ville choisie manque à l'écran sans explication.
     if (villeError) {
       return { error: "Nom et téléphone enregistrés, mais pas la ville. Réessayez." };
     }
@@ -127,8 +121,6 @@ export async function deleteAccountAction() {
         .select("id")
         .eq("profile_id", profile.id)
         .maybeSingle();
-      // Plutôt que `merchants.status`, dont aucune valeur ne veut dire
-      // « fermée par son propriétaire » : masquer les produits suffit.
       if (merchant) {
         const { error: hideError } = await admin
           .from("products")

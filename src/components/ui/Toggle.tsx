@@ -1,12 +1,5 @@
 import { cn } from "@/lib/cn";
 
-/**
- * Interrupteur. `role="switch"` et `aria-checked` le rendent
- * compréhensible : sans eux, un lecteur d'écran annonce « bouton » sans
- * dire si l'option est active — la couleur seule ne parle qu'aux voyants.
- *
- * `onClick` est optionnel, pour un écran pas encore branché.
- */
 export function Toggle({
   checked,
   label,

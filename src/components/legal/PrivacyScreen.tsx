@@ -14,19 +14,7 @@ import {
 
 /**
  * Politique de confidentialité — promise par l'article 19 des conditions
- * d'utilisation, et qui n'existait nulle part jusqu'ici.
- *
- * Un composant, deux routes, comme `TermsScreen` : même texte, lien de
- * RETOUR différent selon l'espace d'où l'on vient. `backHref` est imposé
- * par la route et jamais lu dans l'URL — un paramètre se perd au favori
- * comme au retour arrière.
- *
- * `prefixe` ("" ou "/vendeur") garde le lecteur dans son espace : voir le
- * même raisonnement dans `ContactScreen`.
- *
- * Publique et sans garde, pour la même raison que les conditions : un
- * texte qu'il faut un compte pour lire est un texte accepté sans avoir été
- * lu.
+ * d'utilisation.
  */
 export function PrivacyScreen({ backHref, prefixe = "" }: { backHref: string; prefixe?: string }) {
   return (
@@ -47,11 +35,6 @@ export function PrivacyScreen({ backHref, prefixe = "" }: { backHref: string; pr
 
           <Articles articles={CONFIDENTIALITE} />
 
-          {/* L'éditeur en DERNIER, comme une mention légale, et rendu
-              seulement s'il est renseigné : `EDITEUR_NOM` vide fait tomber
-              le bloc plutôt que d'afficher un nom vide ou inventé. Un
-              document juridique qui nomme mal son responsable vaut moins
-              qu'un document qui renvoie à une adresse de contact. */}
           <section className="flex flex-col gap-2.5">
             <h2 className="text-base font-semibold">Responsable du traitement</h2>
             {EDITEUR_NOM ? (

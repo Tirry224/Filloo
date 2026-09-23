@@ -1,11 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { Message } from "@/lib/types";
 
-/**
- * Bulle de message. Les coins ne sont pas symétriques : l'angle vif est du
- * côté de l'expéditeur, ce qui suffit à distinguer les deux voix sans
- * ajouter de nom au-dessus de chaque bulle.
- */
 export function MessageBubble({ message }: { message: Message }) {
   return (
     <div

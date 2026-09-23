@@ -14,14 +14,6 @@ import { getThreadContext, getMessages } from "@/lib/data/messages";
 import { getProduct } from "@/lib/data/products";
 import { messagesBase, type Espace } from "@/lib/espace";
 
-/**
- * Fil de discussion — écran 30 de docs/ECRANS.md.
- *
- * Un seul composant pour `/messages/[id]` et `/vendeur/messages/[id]` : un
- * fil se dessine pareil des deux côtés. Seuls la route, le layout et la
- * barre d'onglets diffèrent ; l'espace est imposé par le chemin emprunté,
- * puis confronté à la conversation par la garde ci-dessous.
- */
 export async function ThreadScreen({
   espace,
   params,
@@ -46,9 +38,6 @@ export async function ThreadScreen({
 
   // Marquer comme lu ce que je viens de voir — seuls les messages reçus,
   // jamais les miens (policy "messages: marquer comme lu", 0002).
-  // Journalisée plutôt que levée : rater le marquage « lu » ne doit pas
-  // empêcher d'afficher le fil. Mais inspectée, sinon le badge reste faux
-  // indéfiniment sans que rien ne le signale.
   const { error: readError } = await supabase
     .from("messages")
     .update({ read_at: new Date().toISOString() })
@@ -100,13 +89,7 @@ export async function ThreadScreen({
         }
       />
 
-      {/* `justify-end` colle la conversation au bas de l'écran quand elle
-          est courte : sinon les premiers messages flottent en haut, loin
-          du champ de saisie, et l'écran paraît vide. */}
       <ScreenBody className="justify-end">
-        {/* Résultat de la feuille d'actions (bloquer, signaler) : ces
-            actions redirigent ici en portant leur message dans l'URL,
-            faute de pouvoir l'afficher sur une feuille qui se ferme. */}
         {erreur ? <Notice>{erreur}</Notice> : null}
         {info ? <Notice tone="success">{info}</Notice> : null}
 
@@ -131,10 +114,6 @@ export async function ThreadScreen({
             </Link>
           </div>
         ) : mustCiteFirst ? (
-          /* Fil vide et rien de cité : l'état où l'on revient après avoir
-             quitté sans écrire, `?produit=` disparaissant avec l'URL. La
-             règle vient de la base (`check_message_product`, 0002) : on la
-             DIT, et on ouvre l'écran 31. */
           <Link
             href={`${base}/${id}/citer`}
             className="flex items-center gap-2 rounded-lg border border-accent bg-accent-soft px-3 py-2 text-xs text-accent-hover"

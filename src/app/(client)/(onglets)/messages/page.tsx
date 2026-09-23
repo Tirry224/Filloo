@@ -8,11 +8,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireClientSpace } from "@/lib/data/session";
 import { getMyThreadsAsClient } from "@/lib/data/messages";
 
-/**
- * Mes messages — côté CLIENT uniquement. Écrans 28 et 29 de
- * docs/ECRANS.md ; la boîte du commerçant est `/vendeur/messages`, derrière
- * sa propre garde, ce qui évite toute branche `asClient ? … : …` ici.
- */
 export default async function ClientMessagesPage() {
   const supabase = await createClient();
   // Pas de compte client, pas d'écran : sinon un commerçant sans compte

@@ -3,12 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/next-param";
 
 /**
- * Route technique, absente de docs/ECRANS.md : le lien envoyé par
- * `resetPasswordForEmail` pointe ici avec un `code` PKCE. L'échange
- * code → session doit se faire dans un Route Handler (seul endroit où
- * `next/headers` peut vraiment écrire des cookies) — un composant serveur
- * ne le peut pas, voir le commentaire de `createClient` dans
- * `src/lib/supabase/server.ts`.
+ * L'échange code → session doit se faire dans un Route Handler (seul
+ * endroit où `next/headers` peut vraiment écrire des cookies) — un
+ * composant serveur ne le peut pas.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);

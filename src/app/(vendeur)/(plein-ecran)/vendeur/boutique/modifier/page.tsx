@@ -22,15 +22,6 @@ type MerchantRow = {
   cities: { name: string } | null;
 };
 
-/**
- * Modifier ma boutique — l'écran d'édition, séparé de sa consultation :
- * des champs modifiables sur place se modifient sans qu'on l'ait décidé,
- * et disent « écris ici » plutôt que « voici ce que tu as ».
- *
- * Plein écran sans barre d'onglets, comme les formulaires produit : on ne
- * propose pas de partir au milieu d'un formulaire à moitié rempli. Les
- * deux sorties mènent à `/vendeur/boutique`.
- */
 export default async function EditShopPage() {
   const supabase = await createClient();
 
@@ -62,9 +53,6 @@ export default async function EditShopPage() {
 
   return (
     <Screen>
-      {/* La flèche retour EST le bouton « annuler » : elle ramène sur
-          `/vendeur/boutique` sans rien écrire. Pas de second « Annuler »
-          en bas — deux chemins pour un même geste. */}
       <TopBar
         title="Modifier ma boutique"
         backHref="/vendeur/boutique"

@@ -7,18 +7,8 @@ import { Screen, ScreenBody } from "@/components/ui/Screen";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 
 /**
- * Écran 4 — le chargement a échoué.
- *
  * `"use client"` est obligatoire : le bouton « Réessayer » ne relance le
  * rendu que depuis le navigateur.
- *
- * Une page blanche se comprend comme « l'application est cassée », pas
- * « le réseau est mauvais » — et sur un réseau qui tombe, c'est la
- * différence entre revenir ou non.
- *
- * LE TITRE NE NOMME AUCUN CONTENU : c'est l'unique `error.tsx` du projet,
- * il couvre donc aussi bien un message envoyé que l'espace commerçant. Un
- * écran de section peut poser le sien, plus précis, par-dessus.
  */
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (

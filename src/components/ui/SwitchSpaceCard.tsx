@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 
-/**
- * Bascule entre les deux comptes liés d'une même personne (client et
- * commerçant). Volontairement une carte à part, jamais un item de menu
- * comme les autres : changer d'espace change tout le contexte (données,
- * navigation), ce n'est pas un réglage parmi d'autres.
- */
 export function SwitchSpaceCard({
   label,
   target,
   href,
 }: {
-  /** Ex. « Basculer vers mon espace commerçant » */
   label: string;
-  /** Ex. « Chez Aïssatou » — dit vers QUEL compte on bascule. */
   target: string;
   href: string;
 }) {

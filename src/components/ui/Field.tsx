@@ -1,13 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/**
- * Enveloppe d'un champ : intitulé au-dessus, aide en dessous.
- *
- * Un vrai `<label>` relié par `htmlFor` : un lecteur d'écran annonce « Nom
- * complet, zone de saisie », et taper sur l'intitulé place le curseur dans
- * le champ. Un `<div>` en gras ne fait ni l'un ni l'autre.
- */
 export function Field({
   label,
   hint,
@@ -42,9 +35,6 @@ export function Textarea({ className, ...props }: React.ComponentProps<"textarea
   return <textarea className={cn(CONTROL, "resize-none py-3 leading-normal", className)} {...props} />;
 }
 
-/** Une vraie liste déroulante — contrairement à `FakeInput`, qui n'en a
- * que l'apparence. Sert partout où le choix vient d'une liste fixe de la
- * base (villes, catégories). */
 export function Select({ className, children, ...props }: React.ComponentProps<"select">) {
   return (
     <div className="relative">
@@ -64,11 +54,6 @@ export function Select({ className, children, ...props }: React.ComponentProps<"
   );
 }
 
-/**
- * Champ purement décoratif : il ressemble à un champ mais n'en est pas un.
- * Sert aux zones qui ouvrent autre chose au tap — le champ de recherche du
- * fil ouvre l'écran de recherche, il ne reçoit pas de frappe.
- */
 export function FakeInput({
   children,
   className,

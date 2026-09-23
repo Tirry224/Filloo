@@ -6,13 +6,6 @@ import Link from "next/link";
 import { sendMessageAction } from "@/lib/actions/messages";
 import type { ActionState } from "@/lib/actions/auth";
 
-/**
- * Champ de saisie du fil. Contrairement aux formulaires vendeur, celui-ci
- * exige du JavaScript : sans `useActionState`, un dépassement de quota ou
- * un blocage échouerait en silence, la page se rafraîchissant sans rien
- * dire du message disparu. Écart documenté dans docs/MEMOIRE.md
- * (« JavaScript : alléger reste une règle, s'en passer n'en est plus une »).
- */
 export function Composer({
   conversationId,
   basePath,
@@ -20,9 +13,6 @@ export function Composer({
   disabled = false,
 }: {
   conversationId: string;
-  /** Racine de la messagerie de l'espace courant (`/messages` ou
-   *  `/vendeur/messages`) : sans elle, « citer un produit » sort le
-   *  commerçant de son espace au milieu d'une réponse. */
   basePath: string;
   citingProductId?: string;
   disabled?: boolean;

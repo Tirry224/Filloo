@@ -9,18 +9,6 @@ type BaseProps = {
   tone?: "default" | "danger";
 };
 
-/**
- * Ligne d'action dans une feuille : un intitulé, sa conséquence en dessous.
- *
- * Trois formes selon ce qu'on lui donne — jamais un `onClick`, on est dans
- * un composant serveur :
- * - `href` : une navigation → un `<Link>`.
- * - `action` + `hiddenFields` : une action serveur → sa propre `<form>`,
- *   une par ligne, pour que chaque bouton ne fasse qu'une chose plutôt que
- *   de fondre la feuille en un formulaire unique.
- * - ni l'un ni l'autre : un bouton inerte, pour les écrans pas encore
- *   branchés (voir docs/MEMOIRE.md).
- */
 type ActionRowProps =
   | (BaseProps & { href: string; action?: undefined; hiddenFields?: undefined })
   | (BaseProps & {
@@ -43,8 +31,6 @@ export function ActionRow(props: ActionRowProps) {
       <Icon size={20} strokeWidth={1.8} aria-hidden className="mt-px shrink-0" />
       <span className="flex flex-col gap-0.5">
         <span className="text-base font-semibold">{label}</span>
-        {/* La conséquence est écrite sous chaque action : « Masquer » et
-            « Supprimer » se ressemblent, pas leur effet sur les données. */}
         <span className="text-xs leading-normal text-ink-soft">{description}</span>
       </span>
     </>

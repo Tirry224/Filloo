@@ -46,10 +46,8 @@ function RoleCard({
 }
 
 /**
- * Écran 12. Deux modes : `new` (personne pas encore connectée — email et
- * mot de passe demandés, trigger `handle_new_user` côté base) et `linked`
- * (déjà connectée, crée son second compte — pas de mot de passe, c'est la
- * même connexion). `excludeRole` retire le rôle déjà possédé de la liste.
+ * Mode `new` : le profil est créé par le trigger `handle_new_user` côté
+ * base. Mode `linked` : pas de mot de passe, c'est la même connexion.
  */
 export function SignupForm({
   mode,
@@ -112,15 +110,7 @@ export function SignupForm({
         ) : null}
       </div>
 
-      {/* EN MODE LIÉ, L'IDENTITÉ S'AFFICHE ET NE SE SAISIT PLUS.
-          Le nom et le téléphone appartiennent à la CONNEXION, pas au
-          rôle : les redemander ici revenait à proposer d'en donner
-          d'autres, et c'est ainsi que les deux profils d'une même
-          personne se mettaient à diverger dès leur création. Les champs
-          étaient pré-remplis, ce qui masquait le piège plutôt que de le
-          retirer.
-
-          Ils ne sont pas non plus envoyés au serveur :
+      {/* En mode lié, le nom et le téléphone ne sont pas envoyés au serveur :
           `createLinkedProfileAction` recopie ce qui est DÉJÀ en base.
           Accepter ces valeurs-là depuis le formulaire aurait ouvert un
           contournement de la confirmation par mot de passe — créer un
@@ -166,14 +156,7 @@ export function SignupForm({
             <Input id="password" name="password" type="password" autoComplete="new-password" placeholder="8 caractères minimum" />
           </Field>
 
-          {/* La double saisie : c'est le seul champ du parcours qu'on ne
-              peut pas relire — il s'affiche en points — et celui qui, mal
-              tapé, enferme dehors. La personne ne s'en aperçoit qu'à la
-              connexion suivante, et la faute coûte alors une
-              réinitialisation par email, sur un réseau où recevoir cet
-              email n'est pas acquis.
-
-              La comparaison qui COMPTE est celle de `signUpAction`, côté
+          {/* La comparaison qui COMPTE est celle de `signUpAction`, côté
               serveur : les formulaires de Makiti doivent fonctionner sans
               JavaScript, et une requête forgée ne passe par aucun champ. */}
           <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le : c'est le seul champ qu'on ne peut pas relire.">
@@ -195,14 +178,7 @@ export function SignupForm({
       </Button>
 
       {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce
-          bouton, et cet écran n'en disait rien : on faisait donc accepter
-          un texte sans jamais le montrer ni même le nommer. Une phrase
-          sous le bouton, pas une case à cocher — une case de plus sur un
-          formulaire déjà long se coche sans lire, et ne prouve rien de
-          plus qu'une mention lisible.
-
-          Les liens s'ouvrent dans un nouvel onglet : les suivre ici ferait
-          perdre tout ce qui vient d'être saisi. */}
+          bouton. */}
       <p className="text-center text-sm leading-normal text-ink-soft">
         En créant un compte, vous acceptez les{" "}
         <Link href="/conditions" target="_blank" className="font-semibold text-accent underline">

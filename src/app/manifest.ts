@@ -1,16 +1,5 @@
 import type { MetadataRoute } from "next";
 
-/**
- * Le manifeste, condition d'entrée des notifications push : sans lui, pas
- * d'« Ajouter à l'écran d'accueil », et sur iPhone Safari n'autorise le
- * push QUE pour une application installée ainsi.
- *
- * Route typée plutôt que `public/manifest.json` : Next la sert avec le bon
- * type MIME et vérifie les champs à la compilation.
- *
- * `start_url: "/"` et non l'écran vendeur : le manifeste ne connaît pas la
- * personne, c'est `landingForSession` qui aiguille.
- */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Makiti — produits et commerçants près de chez vous",

@@ -7,10 +7,6 @@ import type { Database } from "@/lib/database.types";
  * composant client, jamais transmis au navigateur.
  * `SUPABASE_SERVICE_ROLE_KEY`, sans préfixe `NEXT_PUBLIC_`, reste hors du
  * bundle et hors des fichiers versionnés.
- *
- * Plutôt qu'une Edge Function Supabase : une action serveur Next ne quitte
- * pas davantage le serveur, avec un aller-retour de moins et un seul
- * système à déployer.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

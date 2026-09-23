@@ -6,11 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 
-/**
- * Page technique, absente de docs/ECRANS.md : atteinte uniquement via le
- * lien de /mot-de-passe-oublie, après l'échange de code par
- * /auth/confirm. Sans session "recovery" active, rien à faire ici.
- */
 export default async function ResetPasswordPage({
   searchParams,
 }: {

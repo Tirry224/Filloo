@@ -4,12 +4,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Screen, ScreenBody } from "@/components/ui/Screen";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 
-/**
- * Page affichée quand une adresse n'existe pas. Sans ce fichier, Next sert
- * la sienne : fond blanc, texte anglais, aucun moyen de repartir — ce qui
- * se lit comme une application cassée. Une adresse fausse arrivera
- * toujours (lien WhatsApp périmé, produit supprimé, faute de frappe).
- */
 export default function NotFound() {
   return (
     <Screen>

@@ -1,13 +1,6 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/**
- * Ligne d'un choix unique : motif de signalement, ville, produit à citer.
- *
- * La sélection est marquée par une pastille ET par la graisse du texte :
- * deux signaux plutôt qu'un, pour que l'information ne repose pas
- * uniquement sur la couleur.
- */
 export function ChoiceRow({
   label,
   detail,

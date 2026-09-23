@@ -18,12 +18,6 @@ type MessageRow = {
   products: { title: string; price_gnf: number; status: Database["public"]["Enums"]["product_status"] } | null;
 };
 
-/**
- * Un seul aller-retour pour TOUS les fils : vingt fils ne doivent pas
- * coûter vingt requêtes (leçon de `auth.getUser()`, docs/MEMOIRE.md, « Pièges rencontrés »).
- * Les messages sont lus une fois, du plus récent au plus ancien, puis
- * regroupés en mémoire.
- */
 async function summarizeThreads(
   supabase: SupabaseClient<Database>,
   conversationIds: string[],
@@ -55,8 +49,6 @@ async function summarizeThreads(
       });
     } else {
       if (isUnread) existing.unreadCount += 1;
-      // Le produit cité le plus récent gagne ; à défaut, celui d'un
-      // message plus ancien reste le meilleur « de quoi parle ce fil ».
       if (!existing.lastProductTitle && row.products?.title) {
         existing.lastProductTitle = row.products.title;
       }
@@ -65,7 +57,6 @@ async function summarizeThreads(
   return summaries;
 }
 
-/** Mes fils, vus depuis mon compte CLIENT : l'interlocuteur est la boutique. */
 export async function getMyThreadsAsClient(supabase: SupabaseClient<Database>): Promise<Thread[]> {
   const profile = await getMyProfile(supabase, "client");
   if (!profile) return [];
@@ -93,7 +84,6 @@ export async function getMyThreadsAsClient(supabase: SupabaseClient<Database>): 
   });
 }
 
-/** Mes fils, vus depuis ma boutique : l'interlocuteur est une personne. */
 export async function getMyThreadsAsMerchant(supabase: SupabaseClient<Database>): Promise<Thread[]> {
   const merchant = await getMyMerchant(supabase);
   const merchantProfile = await getMyProfile(supabase, "merchant");
@@ -132,10 +122,8 @@ export type ThreadContext = {
   /** L'identifiant de boutique côté vendeur du fil — utile pour filtrer
    * les produits à citer, même quand je suis le client. */
   merchantId: string;
-  /** `true` si je suis moi-même la boutique de ce fil. */
   iAmMerchant: boolean;
   blockedBy: string | null;
-  /** L'identifiant public de la boutique, pour "Voir sa fiche" côté client. */
   merchantPublicId: string;
   /** `false` quand L'UN DES DEUX comptes du fil — le mien compris — est
    * suspendu ou supprimé : le fil passe en LECTURE SEULE (0017 côté
@@ -207,7 +195,6 @@ export async function getThreadContext(
   };
 }
 
-/** Les messages d'un fil, dans l'ordre chronologique. */
 export async function getMessages(
   supabase: SupabaseClient<Database>,
   conversationId: string,
@@ -235,9 +222,6 @@ export async function getMessages(
   }));
 }
 
-/** Produits de la boutique d'un fil, pour l'écran « citer un produit » —
- * disponibles ou vendus (un produit vendu reste citable : la conversation
- * a pu commencer avant qu'il ne le devienne), jamais un brouillon. */
 export async function getCitableProducts(supabase: SupabaseClient<Database>, merchantId: string) {
   const { data, error } = await supabase
     .from("products")
@@ -267,15 +251,6 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
   });
 }
 
-/**
- * Messages non lus DANS UN ESPACE — client ou commerçant — pour le badge
- * de la barre d'onglets (décision 5 de docs/SPEC.md).
- *
- * Jamais global : un commerçant qui range sa boutique n'a pas à voir
- * clignoter les messages de son compte d'acheteur. Renvoie 0 sans rien
- * interroger quand l'espace n'a pas de profil — le catalogue public ne
- * doit rien coûter.
- */
 export async function countUnreadMessages(
   supabase: SupabaseClient<Database>,
   space: Espace,

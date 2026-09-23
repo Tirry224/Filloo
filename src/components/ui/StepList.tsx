@@ -3,7 +3,6 @@ import { cn } from "@/lib/cn";
 
 export type StepState = "done" | "current" | "todo";
 
-/** Avancement d'une démarche : validation d'une boutique, par exemple. */
 export function StepList({ steps }: { steps: { label: string; state: StepState }[] }) {
   return (
     <ol className="flex flex-col gap-3.5">

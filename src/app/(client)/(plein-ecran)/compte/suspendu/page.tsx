@@ -8,18 +8,6 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfiles, landingForSession } from "@/lib/data/session";
 
-/**
- * Écran 19 — compte suspendu.
- *
- * La suspension coupe l'écriture, pas la lecture : le catalogue reste
- * consultable. Couper tout d'un coup pousse la personne à créer un second
- * compte, ce qui annule la sanction.
- *
- * `profiles` n'a pas de colonne « motif de suspension » — seulement
- * `suspended_at`. La maquette inventait « à la suite de signalements » ;
- * retiré plutôt que simulé, comme le reste des champs sans colonne réelle
- * trouvés cette session (docs/MEMOIRE.md, « Pièges rencontrés »).
- */
 export default async function SuspendedPage() {
   const supabase = await createClient();
 
@@ -28,16 +16,9 @@ export default async function SuspendedPage() {
   // un commerçant suspendu vers son espace, qui le renverrait ici.
   const profiles = await getMyProfiles(supabase);
   const suspended = profiles.find((p) => p.isSuspended && !p.isDeleted);
-  // Deux situations distinctes : sans profil on n'est pas connecté ; avec
-  // un profil non suspendu, on n'a rien à faire ici.
   if (profiles.length === 0) redirect(await clientSpaceFallback(supabase));
   if (!suspended) redirect(await landingForSession(supabase));
 
-  /* La suspension frappe un PROFIL, jamais une connexion (docs/SPEC.md,
-     décision 8). La bascule n'est donc pas un confort : sans elle,
-     quelqu'un dont seul le compte client est suspendu croit tout bloqué.
-     Même carte que `/compte` et `/vendeur/boutique`, pour que changer
-     d'espace se reconnaisse au même geste partout. */
   /* espaces:autorise — la suspension frappe un PROFIL, pas la connexion :
      qui garde un espace actif doit pouvoir le rejoindre. Geste de bascule
      comme `SwitchSpaceCard`, pas une redirection subie. */
