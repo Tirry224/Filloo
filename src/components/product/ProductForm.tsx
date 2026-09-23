@@ -27,6 +27,8 @@ type ProductFormProps = {
   | {
       mode: "edit";
       productId: string;
+      isDraft: boolean;
+      canPublish: boolean;
       initial: {
         title: string;
         categoryId: number;
@@ -41,7 +43,8 @@ type ProductFormProps = {
 export function ProductForm(props: ProductFormProps) {
   const { merchantId, categories } = props;
   const isEdit = props.mode === "edit";
-  const canPublish = props.mode === "create" && props.canPublish;
+  const canPublish = props.canPublish;
+  const isDraft = props.mode === "create" || props.isDraft;
   const initial = isEdit ? props.initial : undefined;
 
   // Généré côté navigateur : `PhotoPicker` construit le chemin de chaque
@@ -113,7 +116,7 @@ export function ProductForm(props: ProductFormProps) {
       </ScreenBody>
 
       <ScreenFooter className="flex flex-col gap-2.5">
-        {isEdit ? (
+        {!isDraft ? (
           <Button type="submit" disabled={pending}>
             {pending ? "Enregistrement…" : "Enregistrer"}
           </Button>
@@ -123,7 +126,7 @@ export function ProductForm(props: ProductFormProps) {
               {pending ? "Publication…" : "Publier le produit"}
             </Button>
             <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
-              Garder en brouillon
+              {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}
             </Button>
           </>
         ) : (

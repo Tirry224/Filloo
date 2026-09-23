@@ -142,7 +142,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
 
   compter("produit_cree", { role: "merchant", merchantId: owner.merchantId, categoryId: fields.categoryId });
 
-  redirect("/vendeur/produits");
+  backToSeller(undefined, publish ? "Produit publié. Il est visible dans le catalogue." : "Brouillon enregistré.");
 }
 
 /**
@@ -156,6 +156,11 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   const fields = readProductFields(formData);
   const fieldError = validateProductFields(fields);
   if (fieldError) return { error: fieldError };
+
+  const publish = formData.get("intent") === "publish";
+  if (publish && fields.imagePaths.length === 0) {
+    return { error: "Ajoutez au moins une photo avant de publier." };
+  }
 
   const supabase = await createClient();
 
@@ -239,15 +244,35 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  redirect("/vendeur/produits");
+  if (publish) {
+    const { data: published, error: publishError } = await supabase
+      .from("products")
+      .update({ status: "active" })
+      .eq("id", productId)
+      .eq("status", "draft")
+      .select("id");
+    if (publishError) return { error: publishError.message };
+    if (!published || published.length === 0) {
+      return { error: "Publication impossible : ce produit n'est plus un brouillon, ou votre compte commerçant n'est plus actif. Vos modifications sont enregistrées." };
+    }
+  }
+
+  backToSeller(undefined, publish ? "Produit publié. Il est visible dans le catalogue." : "Modifications enregistrées.");
 }
 
 /** Retour vers « Mes produits », le message d'erreur porté par l'URL : les
  * lignes de la feuille d'actions sont de vraies `<form>` serveur, et l'URL
  * est le seul canal qui survive à la redirection. */
-function backToSeller(errorMessage?: string): never {
-  redirect(errorMessage ? `/vendeur/produits?erreur=${encodeURIComponent(errorMessage)}` : "/vendeur/produits");
+function backToSeller(errorMessage?: string, successMessage?: string): never {
+  if (errorMessage) redirect(`/vendeur/produits?erreur=${encodeURIComponent(errorMessage)}`);
+  redirect(successMessage ? `/vendeur/produits?info=${encodeURIComponent(successMessage)}` : "/vendeur/produits");
 }
+
+const STATUS_DONE = {
+  active: "Produit publié. Il est visible dans le catalogue.",
+  sold: "Produit marqué comme vendu.",
+  hidden: "Produit masqué du catalogue.",
+} as const;
 
 /**
  * Changement de statut : vendu, masqué, republié. « Pas d'erreur » ne veut
@@ -271,7 +296,7 @@ async function setProductStatus(formData: FormData, status: "active" | "sold" | 
   if (!data || data.length === 0) {
     backToSeller("Action impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
   }
-  backToSeller();
+  backToSeller(undefined, STATUS_DONE[status]);
 }
 
 export async function markSoldAction(formData: FormData) {
@@ -337,5 +362,5 @@ export async function deleteProductAction(formData: FormData) {
     }
   }
 
-  backToSeller();
+  backToSeller(undefined, "Produit supprimé.");
 }

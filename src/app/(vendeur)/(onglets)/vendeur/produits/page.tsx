@@ -13,9 +13,9 @@ import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 export default async function MerchantProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; info?: string }>;
 }) {
-  const { erreur } = await searchParams;
+  const { erreur, info } = await searchParams;
   const supabase = await createClient();
 
   // Rôle et suspension sont traités par `(vendeur)/layout.tsx` ; ne reste
@@ -49,6 +49,7 @@ export default async function MerchantProductsPage({
 
       <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
+        {info ? <Notice tone="success">{info}</Notice> : null}
 
         {catalogue.length === 0 ? (
           <EmptyState

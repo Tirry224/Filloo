@@ -20,7 +20,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     getMyMerchant(supabase),
     supabase
       .from("products")
-      .select("id, title, category_id, price_gnf, is_negotiable, description")
+      .select("id, title, category_id, price_gnf, is_negotiable, description, status")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("product_images").select("storage_path, position").eq("product_id", id).order("position"),
@@ -36,6 +36,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <ProductForm
         mode="edit"
         productId={product.id}
+        isDraft={product.status === "draft"}
+        canPublish={merchant.status === "approved"}
         merchantId={merchant.id}
         categories={categories}
         initial={{

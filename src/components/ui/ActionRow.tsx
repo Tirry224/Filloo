@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
+import { PendingSubmit } from "@/components/ui/PendingSubmit";
 import type { LucideIcon } from "lucide-react";
 
 type BaseProps = {
@@ -50,9 +51,7 @@ export function ActionRow(props: ActionRowProps) {
         {Object.entries(props.hiddenFields ?? {}).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
-        <button type="submit" className={classes}>
-          {content}
-        </button>
+        <PendingSubmit className={classes}>{content}</PendingSubmit>
       </form>
     );
   }
