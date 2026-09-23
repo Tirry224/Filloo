@@ -148,9 +148,14 @@ export function InstallPrompt() {
           </p>
         ) : (
           <p className="text-sm leading-normal text-ink-soft">
+            {/* Le bouton est nommé, jamais situé : Partager est en bas dans
+                Safari sur iPhone, mais en haut sur iPad et dans Chrome. */}
             Touchez{" "}
-            <Share size={15} strokeWidth={2} aria-label="Partager" className="inline align-text-bottom" />{" "}
-            en bas de l’écran, puis{" "}
+            <span className="font-semibold text-ink">
+              <Share size={15} strokeWidth={2} aria-hidden className="inline align-text-bottom" />{" "}
+              Partager
+            </span>
+            , puis{" "}
             <span className="font-semibold text-ink">
               <SquarePlus size={15} strokeWidth={2} aria-hidden className="inline align-text-bottom" />{" "}
               Sur l’écran d’accueil
