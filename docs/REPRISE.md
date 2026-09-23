@@ -69,17 +69,19 @@ tenus, celui de la page la plus lourde de justesse.
   dans le `.env` versionné. *À constater.*
 - **Activer la confirmation d'email côté Supabase.** Décidée (SPEC,
   décision 1), le code la gère déjà de bout en bout (`needsConfirmation`
-  dans `signUpAction`, message d'attente dans `SignupForm`). C'est une
-  case à cocher, pas un écran à dessiner — **et elle ne se coche
-  qu'après le SMTP**, sinon plus personne ne peut s'inscrire.
-  ⚠️ **À faire AVANT de cocher** : `signUpAction` ne passe pas
-  d'`emailRedirectTo` (voir les dettes). Le lien de confirmation
-  ramènera donc à la racine du site, et le produit que la personne
-  voulait contacter sera perdu.
-- **Les libellés des 10 catégories et la liste des villes.** Le NOMBRE
-  est tranché (10, décision 3 de SPEC) ; les mots, non. Ils s'affichent
-  sur le premier écran de l'application : c'est la première chose qu'un
-  visiteur lit, et elle n'est pas décidée.
+  dans `signUpAction`, message d'attente dans `SignupForm`,
+  `emailRedirectTo` posé depuis le 2026-09-22). C'est une case à cocher,
+  pas un écran à dessiner — **et elle ne se coche qu'après le SMTP**,
+  sinon plus personne ne peut s'inscrire. Rien d'autre ne la retient.
+- ~~Les libellés des 10 catégories et la liste des villes~~ — le NOMBRE
+  de catégories a été révisé le 2026-09-22 à **9** (décision 3 de SPEC,
+  suppression du fourre-tout « Autre »), et les MOTS des 9 catégories
+  comme des 12 villes sont arrêtés (décision du porteur du projet,
+  2026-09-23) : ni l'un ni l'autre ne bouge avant qu'un besoin réel,
+  constaté chez un commerçant, ne le justifie. Conservé ici seulement
+  parce que ce point a longtemps été mal recopié d'une révision de SPEC
+  à l'autre — la mention disparaîtra à la prochaine réécriture de ce
+  fichier.
 
 ### Les deux promesses écrites sont tenues depuis le 2026-09-22
 
