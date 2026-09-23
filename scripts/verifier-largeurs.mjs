@@ -1,39 +1,12 @@
 /**
- * Ouvre CHAQUE écran à CHAQUE largeur standard, et signale ce qui dépasse.
+ * Signale tout débordement horizontal, écran par écran et largeur par largeur.
  *
- *     npm run build && npm start        (dans un terminal)
- *     npm run largeurs                  (dans un autre)
+ *     npm run build && npm start
+ *     npm run largeurs                  écrans publics
+ *     npm run largeurs -- --connecte    ouvre Chrome : on s'y connecte à la main
  *
- * Ce que ce script voit, et que rien d'autre ne voit : `typecheck`,
- * `build` et `classes` valident du code, pas une mise en page. Une colonne
- * qui sort de l'écran sur un téléphone de 320 px ne produit aucune erreur
- * nulle part — elle se constate, ou elle part en production.
- *
- * Ce qu'il NE voit PAS, et qu'il ne faut pas lui demander : un contenu
- * centré qui devrait être à gauche, une hiérarchie visuelle ratée, une
- * densité trop lâche. Un débordement est un fait mesurable ; le reste se
- * regarde.
- *
- * ─────────────────────────────────────────────────────────────────────
- * LES ÉCRANS QUI EXIGENT UNE SESSION
- * ─────────────────────────────────────────────────────────────────────
- * La moitié de l'application est derrière une connexion, et aucun mot de
- * passe ne doit se trouver dans ce dépôt. D'où `--connecte` : le script
- * ouvre un vrai Chrome, VOUS vous y connectez à la main, et il reprend
- * tout seul dès qu'il constate que la session est ouverte. Le profil est
- * conservé dans `.chrome-profil/` (ignoré par Git) : la fois suivante,
- * il n'y a plus rien à saisir.
- *
- *     npm run largeurs -- --connecte
- *
- * ─────────────────────────────────────────────────────────────────────
- * Playwright n'est PAS une dépendance du projet — un navigateur pèse plus
- * que l'application entière. À installer une fois, à la main :
- *
- *     npm i -D playwright-core
- *
- * Le navigateur utilisé est le Chrome du système ; son chemin se donne
- * par CHROME= si l'installation n'est pas à l'endroit habituel.
+ * Playwright n'est pas une dépendance : `npm i --no-save playwright-core`.
+ * Chrome du système, ou chemin donné par CHROME=.
  */
 import { chromium } from "playwright-core";
 import { existsSync, mkdirSync } from "node:fs";
@@ -61,14 +34,9 @@ if (!CHROME) {
 
 const AVEC_SESSION = process.argv.includes("--connecte");
 
-/**
- * Les largeurs qui comptent. 320 est le plus petit téléphone encore
- * vendu, et c'est la cible réelle de Makiti ; 844 est un téléphone
- * TOURNÉ, cas qu'on oublie toujours ; 1920 est le bureau ordinaire.
- */
+/* 844 : un téléphone en paysage. */
 const LARGEURS = [320, 390, 768, 834, 844, 1024, 1440, 1920];
 
-/** Les écrans qu'un visiteur sans compte atteint. */
 const PUBLICS = [
   "/",
   "/recherche",
@@ -85,7 +53,6 @@ const PUBLICS = [
   "/adresse-qui-nexiste-pas",
 ];
 
-/** Les écrans qui exigent une session ouverte. */
 const PRIVES = [
   "/compte",
   "/compte/informations",
@@ -103,11 +70,7 @@ const PRIVES = [
   "/vendeur/contact",
 ];
 
-/**
- * Les écrans dont l'adresse contient un identifiant ne peuvent pas être
- * écrits en dur : ils se DÉCOUVRENT en suivant les liens de la page qui y
- * mène, comme le ferait quelqu'un qui utilise l'application.
- */
+/* Les adresses à identifiant se découvrent en suivant les liens. */
 async function decouvrir(page) {
   const trouves = [];
 
@@ -149,12 +112,7 @@ async function decouvrir(page) {
   return [...new Set(trouves)];
 }
 
-/**
- * CE QUI COMPTE COMME UN DÉBORDEMENT. Un élément qui sort du cadre n'en
- * est un que si aucun de ses parents ne défile horizontalement EXPRÈS :
- * la rangée de puces de catégories est faite pour dépasser, s'en plaindre
- * rendrait le script inutilisable.
- */
+/* Un élément dans un parent qui défile à l'horizontale (ChipRow) dépasse exprès. */
 async function mesurer(page) {
   return page.evaluate(() => {
     const vue = document.documentElement.clientWidth;
@@ -187,7 +145,6 @@ async function mesurer(page) {
   });
 }
 
-/** Une redirection vers /connexion veut dire que la session a expiré. */
 function estRedirigeVersConnexion(chemin, rapport) {
   return chemin !== "/connexion" && rapport.adresse === "/connexion";
 }
@@ -217,17 +174,18 @@ if (AVEC_SESSION) {
 
   const limite = Date.now() + 10 * 60 * 1000;
   let ouverte = false;
+  /* Sonder par une requête et non par `page.goto` : naviguer la fenêtre
+     effacerait le formulaire pendant la saisie. */
   while (Date.now() < limite) {
     await new Promise((r) => setTimeout(r, 3000));
     try {
-      await page.goto(BASE + "/compte", { waitUntil: "domcontentloaded", timeout: 15000 });
-      if (new URL(page.url()).pathname !== "/connexion") {
+      const reponse = await contexte.request.get(BASE + "/compte", { maxRedirects: 0, timeout: 15000 });
+      const vers = reponse.headers()["location"] ?? "";
+      if (reponse.status() === 200 || (vers && !vers.includes("/connexion"))) {
         ouverte = true;
         break;
       }
-    } catch {
-      /* la fenêtre est peut-être en train de naviguer : on réessaie */
-    }
+    } catch {}
   }
   if (!ouverte) {
     console.error("Session jamais ouverte au bout de dix minutes. Abandon.");
