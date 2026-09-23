@@ -196,26 +196,27 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     return { error: "Modification impossible : ce produit n'est pas le vôtre, ou votre compte commerçant n'est plus actif." };
   }
 
-  // On remplace TOUTES les lignes plutôt que de comparer photo par photo :
-  // `unique (product_id, position)` rend ce calcul fragile dès qu'une photo
-  // du milieu part. Les chemins d'AVANT diront, une fois la base à jour,
-  // quels fichiers ne sont plus référencés.
+  // Réécrire position par position, puis retirer les positions en trop :
+  // tout supprimer d'abord déclencherait `unpublish_products_without_image`
+  // (0011), qui repasse un produit publié en brouillon sans le dire.
   const { data: previousImages } = await supabase
     .from("product_images")
     .select("storage_path")
     .eq("product_id", productId);
 
-  const { error: clearError } = await supabase
-    .from("product_images")
-    .delete()
-    .eq("product_id", productId);
-  if (clearError) return { error: clearError.message };
   if (fields.imagePaths.length > 0) {
-    const { error: imagesError } = await supabase.from("product_images").insert(
+    const { error: imagesError } = await supabase.from("product_images").upsert(
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),
+      { onConflict: "product_id,position" },
     );
     if (imagesError) return { error: imagesError.message };
   }
+  const { error: clearError } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("product_id", productId)
+    .gte("position", fields.imagePaths.length);
+  if (clearError) return { error: clearError.message };
 
   /* Le ménage dans Storage vient APRÈS l'écriture en base : supprimer
      d'abord laisserait `product_images` pointer sur un fichier détruit si
