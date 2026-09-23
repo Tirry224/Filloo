@@ -59,14 +59,14 @@ export default async function GalleryPage({
         </div>
 
         {photos.length > 1 ? (
-          <div className="flex shrink-0 gap-2.5 p-4">
+          <div className="flex shrink-0 gap-2.5 overflow-x-auto p-4">
             {photos.map((url, i) => (
               <Link
                 key={url}
                 href={`/produit/${product.id}/photos?photo=${i + 1}`}
                 aria-label={`Photo ${i + 1}`}
                 className={cn(
-                  "relative size-16 overflow-hidden rounded-md bg-white/10",
+                  "relative size-16 shrink-0 overflow-hidden rounded-md bg-white/10",
                   i + 1 === current && "ring-2 ring-white",
                 )}
               >

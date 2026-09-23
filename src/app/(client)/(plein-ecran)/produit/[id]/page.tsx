@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Photo } from "@/components/ui/Photo";
 import { Notice } from "@/components/ui/Notice";
 import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
+import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { formatGnf } from "@/lib/format";
@@ -89,16 +89,12 @@ export default async function ProductPage({
       <ScreenBody>
         {info ? <Notice tone="success">{info}</Notice> : null}
         <div className="relative">
-          <Link href={`/produit/${product.id}/photos`} aria-label="Voir les photos">
-            <Photo
-              ratio="hero"
-              src={product.imageUrls[0]}
-              alt={product.title}
-              priority
-              label={sold ? undefined : `Photo 1 sur ${product.imageUrls.length}`}
-              className={sold ? "grayscale" : ""}
-            />
-          </Link>
+          <ProductCarousel
+            productId={product.id}
+            imageUrls={product.imageUrls}
+            title={product.title}
+            sold={sold}
+          />
           <Link
             href="/"
             aria-label="Retour"
@@ -107,7 +103,7 @@ export default async function ProductPage({
             <span className="text-lg leading-none">←</span>
           </Link>
           {sold ? (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold tracking-wide text-paper">
                 VENDU
               </span>
