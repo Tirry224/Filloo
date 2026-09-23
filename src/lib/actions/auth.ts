@@ -221,12 +221,20 @@ export async function requestPasswordResetAction(
      `safeNextPath` des deux côtés, à l'aller comme au retour, parce que ce
      chemin voyage dans un email que n'importe qui peut réécrire. */
   const suite = safeNextPath(formData.get("next"));
-  const apresReinitialisation = suite
-    ? `/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`
-    : "/reinitialiser-mot-de-passe";
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(apresReinitialisation)}`,
-  });
+  /* SANS `next`, aucun paramètre du tout. La liste blanche de redirection
+     de Supabase compare l'URL ENTIÈRE, chaîne de requête comprise, et un
+     motif `https://site/**` ne couvre pas un `?` de façon fiable. Une URL
+     rejetée ne produit pas d'erreur : Supabase retombe en silence sur le
+     « Site URL » du tableau de bord — l'accueil — et la personne ne voit
+     jamais le formulaire. Le cas est arrivé en production.
+
+     Ce paramètre ne servait de toute façon qu'à répéter un défaut :
+     `/auth/confirm` vise déjà `/reinitialiser-mot-de-passe` quand `next`
+     est absent. Le chemin le plus court est donc aussi le plus sûr. */
+  const redirectTo = suite
+    ? `${origin}/auth/confirm?next=${encodeURIComponent(`/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`)}`
+    : `${origin}/auth/confirm`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   // `sent: true` dans TOUS les cas : répondre autrement pour une adresse
   // inconnue révélerait qui a un compte ici. L'erreur se journalise —
   // l'échec attendu est le quota du serveur mail.
