@@ -239,11 +239,13 @@ ne se recopient pas.
   s'annoncent PAS en clair sur un écran verrouillé** : le push dit qu'une
   décision attend, l'email dit laquelle. Le service worker **ne met rien
   en cache**.
-- **Temps réel** : `RealtimeThread` affiche un message reçu pendant
-  qu'on lit le fil, et `RealtimeUnread` (dans les deux layouts d'onglets)
-  rafraîchit badge, liste et tableau de bord à l'arrivée d'un message ou au
-  retour au premier plan. Le layout d'onglets n'est pas re-rendu par Next
-  d'un onglet à l'autre : sans lui, le compteur restait figé.
+- **Temps réel et alertes** : `RealtimeThread` affiche un message reçu
+  pendant qu'on lit le fil ; `MessageAlerts` (layout racine, chargé
+  seulement avec une session) joue un son synthétisé, affiche un bandeau et
+  rafraîchit badge et tableau de bord à chaque message reçu, sur tous les
+  écrans. Le push part à chaque message (vibration ; muet si l'application
+  est au premier plan), l'email seulement au premier non lu du fil. Un
+  navigateur ne joue aucun son avant un premier geste sur la page.
 - **Installation de l'application** proposée à l'entrée, et **mise en
   page tenue sur grand écran**.
 
