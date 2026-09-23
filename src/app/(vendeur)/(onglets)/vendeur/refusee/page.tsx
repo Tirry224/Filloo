@@ -39,7 +39,7 @@ export default async function RejectedShopPage({
     <>
       <TopBar title={<Wordmark />} right={<Badge tone="danger">Refusée</Badge>} />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {erreur ? <Notice>{erreur}</Notice> : null}
         <Section className="gap-5 py-6">
           <div className="flex size-14 items-center justify-center rounded-xl bg-danger-soft text-danger">

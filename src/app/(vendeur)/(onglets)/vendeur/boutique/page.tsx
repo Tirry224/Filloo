@@ -105,7 +105,7 @@ export default async function EditShopPage() {
         }
       />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         <Section className="gap-5">
           <div className="flex items-center gap-3.5">
             <Avatar name={merchant.shopName} kind="shop" size={64} />

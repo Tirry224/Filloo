@@ -67,7 +67,7 @@ export default async function MerchantHomePage({
         }
       />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {erreur ? <Notice>{erreur}</Notice> : null}
 
         <Section className="gap-5">

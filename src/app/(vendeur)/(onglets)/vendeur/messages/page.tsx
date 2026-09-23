@@ -22,7 +22,7 @@ export default async function MerchantMessagesPage() {
     <>
       <TopBar title="Messages" />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {list.length === 0 ? (
           /* Un écran vide dit ce qu'il faut faire ENSUITE, et ce n'est pas
              la même chose selon l'espace : conseiller à un commerçant

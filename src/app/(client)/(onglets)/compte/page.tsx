@@ -30,7 +30,7 @@ export default async function AccountPage() {
     <>
       <TopBar title="Mon compte" />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         <Section className="gap-4">
           <div className="flex items-center gap-3.5">
             <Avatar name={profile.fullName} size={58} />

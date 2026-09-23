@@ -25,7 +25,7 @@ export default function LoadingSeller() {
         }
       />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         <Section className="gap-5">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-5 w-52" />

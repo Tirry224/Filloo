@@ -57,7 +57,7 @@ export default async function MerchantProductsPage({
         }
       />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {erreur ? <Notice>{erreur}</Notice> : null}
 
         {catalogue.length === 0 ? (

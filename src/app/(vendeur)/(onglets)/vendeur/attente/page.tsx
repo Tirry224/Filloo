@@ -40,7 +40,7 @@ export default async function PendingShopPage({
     <>
       <TopBar title={<Wordmark />} right={<Badge tone="warn">En attente</Badge>} />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {erreur ? <Notice>{erreur}</Notice> : null}
         <Section className="gap-5 py-6">
           <div className="flex flex-col gap-2.5">

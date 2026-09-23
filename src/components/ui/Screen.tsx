@@ -31,9 +31,39 @@ export function Screen({ children, className }: { children: React.ReactNode; cla
   );
 }
 
-/** Zone défilante. `flex-1` lui fait occuper tout l'espace restant. */
-export function ScreenBody({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <main className={cn("flex flex-1 flex-col", className)}>{children}</main>;
+/**
+ * Zone défilante. `flex-1` lui fait occuper tout l'espace restant.
+ *
+ * `rangees` sert aux écrans dont le contenu est une SUITE DE LIGNES —
+ * un menu, une liste de conversations, un catalogue en lignes — par
+ * opposition à une grille. Dans le cadre large d'`AppShell`, une ligne
+ * étirée sur 880 px met son intitulé à gauche et son chevron à
+ * l'extrême droite, avec un désert au milieu : l'œil doit traverser
+ * l'écran pour relier deux morceaux de la même ligne. On plafonne donc
+ * ces écrans-là, alignés à gauche sous la barre du haut.
+ *
+ * Une GRILLE, elle, ne prend pas ce plafond : ses vignettes se
+ * multiplient au lieu de s'étirer, et la largeur lui profite vraiment.
+ * C'est toute la règle, et elle se décide écran par écran parce que
+ * seule la forme du contenu peut trancher.
+ *
+ * Sur téléphone et tablette le plafond ne s'applique pas : le cadre y
+ * est déjà plus étroit que lui.
+ */
+export function ScreenBody({
+  children,
+  className,
+  rangees = false,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  rangees?: boolean;
+}) {
+  return (
+    <main className={cn("flex flex-1 flex-col", rangees && "lg:max-w-2xl", className)}>
+      {children}
+    </main>
+  );
 }
 
 /** Barre d'actions collée en bas, au-dessus du contenu. */

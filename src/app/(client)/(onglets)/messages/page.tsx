@@ -25,7 +25,7 @@ export default async function ClientMessagesPage() {
     <>
       <TopBar title="Mes messages" />
 
-      <ScreenBody>
+      <ScreenBody rangees>
         {list.length === 0 ? (
           <EmptyState
             icon={MessageCircle}
