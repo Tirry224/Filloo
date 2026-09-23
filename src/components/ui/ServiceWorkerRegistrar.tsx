@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+// Monté dans le layout racine : charge l'écoute de `beforeinstallprompt` sur toutes les pages.
+import "@/lib/installation";
 
 /**
  * L'installation est séparée de la PERMISSION : l'enregistrement ne demande

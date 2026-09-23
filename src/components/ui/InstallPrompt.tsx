@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Download, Share, SquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-
-/** Pas dans les types DOM de TypeScript : l'événement n'est pas standard. */
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+import {
+  abonnerInstallation,
+  evenementInstallation,
+  oublierEvenementInstallation,
+} from "@/lib/installation";
 
 const CLE_REFUS = "makiti:installation-refusee";
 const DELAI_APRES_REFUS = 14 * 24 * 60 * 60 * 1000; // 14 jours
@@ -48,46 +47,31 @@ function estIphone(): boolean {
 }
 
 export function InstallPrompt() {
-  const [mode, setMode] = useState<"android" | "iphone" | null>(null);
-  const [evenement, setEvenement] = useState<BeforeInstallPromptEvent | null>(null);
+  const evenement = useSyncExternalStore(abonnerInstallation, evenementInstallation, () => null);
+  const [eligible, setEligible] = useState(false);
+  const [iphone, setIphone] = useState(false);
 
   useEffect(() => {
     if (dejaInstallee() || refusRecent()) return;
-
-    const surInstallable = (e: Event) => {
-      // Empêche la mini-barre de Chrome : c'est notre carte qui pose la
-      // question, une seule fois.
-      e.preventDefault();
-      setEvenement(e as BeforeInstallPromptEvent);
-      setMode("android");
-    };
-    const surInstallee = () => setMode(null);
-
-    window.addEventListener("beforeinstallprompt", surInstallable);
-    window.addEventListener("appinstalled", surInstallee);
-    if (estIphone()) setMode("iphone");
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", surInstallable);
-      window.removeEventListener("appinstalled", surInstallee);
-    };
+    setEligible(true);
+    setIphone(estIphone());
   }, []);
 
+  const mode = !eligible ? null : evenement ? "android" : iphone ? "iphone" : null;
   if (!mode) return null;
 
   const plusTard = () => {
     retenirRefus();
-    setMode(null);
+    setEligible(false);
   };
 
   const installer = async () => {
     if (!evenement) return;
     await evenement.prompt();
     const { outcome } = await evenement.userChoice;
-    // L'événement ne sert qu'une fois : on l'oublie dans les deux cas.
-    setEvenement(null);
+    oublierEvenementInstallation();
     if (outcome === "dismissed") retenirRefus();
-    setMode(null);
+    setEligible(false);
   };
 
   return (
