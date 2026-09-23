@@ -478,10 +478,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-155 commits, du plus récent au plus ancien.
+156 commits, du plus récent au plus ancien.
 
 ### 2026-09-23
 
+- `2809134` MEMOIRE remplace REPRISE, avec un historique généré depuis Git
 - `9bc51bf` REPRISE : deux points fermés que le fichier tenait encore pour ouverts
 - `be88c30` Les écrans en lignes ne s'étirent plus sur toute la largeur
 - `188d5c0` L'application tient enfin sur un écran qui n'est pas un téléphone
