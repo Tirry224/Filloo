@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Notice } from "@/components/ui/Notice";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductRow } from "@/components/product/ProductRow";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +33,7 @@ export default async function MerchantProductsPage({
   const catalogue = await getMerchantProducts(supabase, merchant);
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar
         title="Mes produits"
         right={
@@ -47,7 +47,7 @@ export default async function MerchantProductsPage({
         }
       />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
 
         {catalogue.length === 0 ? (
@@ -68,6 +68,6 @@ export default async function MerchantProductsPage({
           </Section>
         )}
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

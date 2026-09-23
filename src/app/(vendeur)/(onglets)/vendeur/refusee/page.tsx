@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
@@ -30,10 +30,10 @@ export default async function RejectedShopPage({
   if (merchant.status === "pending") redirect("/vendeur/attente");
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar title={<Wordmark />} right={<Badge tone="danger">Refusée</Badge>} />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
         <Section className="gap-5 py-6">
           <div className="flex size-14 items-center justify-center rounded-xl bg-danger-soft text-danger">
@@ -63,6 +63,6 @@ export default async function RejectedShopPage({
           </form>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

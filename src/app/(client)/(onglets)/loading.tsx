@@ -1,13 +1,14 @@
 import { MapPin } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
+import { ProductGrid } from "@/components/product/ProductGrid";
 
 export default function Loading() {
   return (
-    <>
+    <TabScreen largeur="grille">
       <TopBar title={<Wordmark size="lg" />} right={<Chip icon={MapPin}>Conakry</Chip>} />
       <ScreenBody>
         <Section className="gap-3 pb-1">
@@ -19,7 +20,7 @@ export default function Loading() {
         </Section>
         <Section className="gap-3 pt-3">
           <Skeleton className="h-3 w-20" />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <ProductGrid>
             {[0, 1, 2, 3].map((i) => (
               <Card key={i} className="flex flex-col">
                 <Skeleton className="h-33 rounded-none" />
@@ -30,9 +31,9 @@ export default function Loading() {
                 </div>
               </Card>
             ))}
-          </div>
+          </ProductGrid>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

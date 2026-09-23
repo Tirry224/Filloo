@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Notice } from "@/components/ui/Notice";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +43,7 @@ export default async function MerchantHomePage({
   const dernieres = threads.slice(0, 3);
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar
         title={<Wordmark />}
         right={
@@ -54,7 +54,7 @@ export default async function MerchantHomePage({
         }
       />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
 
         <Section className="gap-5">
@@ -146,6 +146,6 @@ export default async function MerchantHomePage({
           )}
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

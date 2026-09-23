@@ -30,8 +30,12 @@ export default async function GalleryPage({
   // bricolée ne doit pas casser l'écran.
   const current = Math.min(Math.max(Number(photo) || 1, 1), Math.max(photos.length, 1));
 
+  /* Le noir prend TOUTE la largeur, la colonne de photos seulement la
+     sienne : un visionneur est fait pour isoler l'image du reste, et une
+     bande sombre au milieu d'un fond clair produirait l'inverse. */
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-app flex-col bg-[#12100e]">
+    <div className="flex min-h-dvh w-full flex-col bg-viewer">
+      <div className="mx-auto flex w-full max-w-app flex-1 flex-col sm:max-w-lecture md:max-w-rangees">
       <div className="flex shrink-0 items-center justify-between p-4">
         <Link href={`/produit/${product.id}`} aria-label="Fermer" className="text-white">
           <X size={24} strokeWidth={2} />
@@ -74,6 +78,7 @@ export default async function GalleryPage({
           ))}
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -100,8 +100,24 @@
   --spacing-photo-card: 8rem;  /* 128px */
   --spacing-photo-hero: 18rem; /* 288px */
 
-  --container-app: 28rem;  /* 448px */
-  --container-wide: 72rem; /* 1152px */
+  /* Les largeurs maximales d'un écran, une par FORME de contenu. Elles
+     s'écrivent `max-w-app`, `max-w-lecture`, `max-w-rangees`,
+     `max-w-wide`, et la table `LARGEURS` de `src/components/ui/Screen.tsx`
+     est le seul endroit qui les combine. */
+
+  --container-*: initial;
+
+  --container-app: 28rem;      /* 448px — la colonne téléphone */
+  --container-lecture: 40rem;  /* 640px — formulaires et pages de texte */
+  --container-rangees: 48rem;  /* 768px — suites de lignes cliquables */
+  --container-wide: 72rem;     /* 1152px — grilles de vignettes */
+
+  /* Un palier de plus que les quatre de Tailwind (sm 640, md 768, lg 1024,
+     xl 1280), parce qu'une bordure latérale ne doit apparaître qu'au
+     moment où du vide apparaît de part et d'autre de la coquille, soit à
+     `--container-wide` exactement. */
+
+  --breakpoint-wide: 72rem;    /* 1152px */
 
   --shadow-*: initial;
   --shadow-sheet: 0 -8px 32px oklch(0.245 0.018 60 / 0.14);

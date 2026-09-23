@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { MapPin } from "lucide-react";
-import { Chip } from "@/components/ui/Chip";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { Chip, ChipRow } from "@/components/ui/Chip";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { ProductGrid } from "@/components/product/ProductGrid";
 import { Card } from "@/components/ui/Card";
 import { Photo } from "@/components/ui/Photo";
 import { Badge } from "@/components/ui/Badge";
@@ -46,7 +47,7 @@ export default async function HomePage({
   compter("visite", { cityId: city?.id ?? null });
 
   return (
-    <>
+    <TabScreen largeur="grille">
       <TopBar
         title={<Wordmark size="lg" />}
         right={<Chip icon={MapPin}>{ville}</Chip>}
@@ -54,7 +55,7 @@ export default async function HomePage({
 
       <ScreenBody>
         <Section className="gap-3 pb-1">
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
+          <ChipRow>
             <Link href={`/?ville=${encodeURIComponent(ville)}&categorie=Tout`}>
               <Chip selected={categorie === "Tout"}>Tout</Chip>
             </Link>
@@ -66,7 +67,7 @@ export default async function HomePage({
                 <Chip selected={c.name === categorie}>{c.name}</Chip>
               </Link>
             ))}
-          </div>
+          </ChipRow>
         </Section>
 
         {visible.length === 0 && categorie !== "Tout" && inCity.length > 0 ? (
@@ -134,15 +135,15 @@ export default async function HomePage({
               </Link>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <ProductGrid>
             {gridItems.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
-          </div>
+          </ProductGrid>
         </Section>
           </>
         )}
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

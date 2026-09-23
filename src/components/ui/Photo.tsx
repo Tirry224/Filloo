@@ -21,15 +21,22 @@ export function Photo({
 }) {
   const RATIOS = {
     square: "aspect-square",
-    card: "h-33",       /* 132px, la vignette du fil */
-    hero: "h-75",       /* 300px, la photo de la fiche produit */
+    card: "h-33",              /* 132px, la vignette du fil */
+    hero: "h-75 sm:h-100",     /* 300px, puis 400px dès que la fiche
+                                  s'élargit : gardée à 300px sur une
+                                  colonne de 640, la photo deviendrait un
+                                  bandeau deux fois plus large que haut. */
     free: "",
   } as const;
 
+  /* Ce que le navigateur doit TÉLÉCHARGER, et non ce qu'il affiche. Un
+     `100vw` sur un écran de 1440 px ferait chercher une image de 1440 px
+     de large pour la poser dans une colonne de 768 — sur une connexion
+     guinéenne, c'est un coût réel pour aucun pixel visible. */
   const SIZES = {
-    square: "100vw",
-    card: "50vw",
-    hero: "100vw",
+    square: "(min-width: 48rem) 48rem, 100vw",
+    card: "(min-width: 64rem) 15rem, (min-width: 40rem) 33vw, 50vw",
+    hero: "(min-width: 48rem) 48rem, 100vw",
     free: "112px",
   } as const;
 

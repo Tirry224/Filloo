@@ -5,7 +5,7 @@ import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { PushInvite } from "@/components/push/PushInvite";
 import { PushToggle } from "@/components/push/PushToggle";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
@@ -22,10 +22,10 @@ export default async function AccountPage() {
   const merchant = await getMyMerchant(supabase);
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar title="Mon compte" />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         <Section className="gap-4">
           <div className="flex items-center gap-3.5">
             <Avatar name={profile.fullName} size={58} />
@@ -77,6 +77,6 @@ export default async function AccountPage() {
           </MenuList>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

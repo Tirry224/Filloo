@@ -1,10 +1,12 @@
 import { ArrowUpDown, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/FilterChip";
+import { ChipRow } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -66,7 +68,7 @@ export default async function SearchPage({
   };
 
   return (
-    <>
+    <TabScreen largeur="grille">
       <TopBar
         title={
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
@@ -118,7 +120,7 @@ export default async function SearchPage({
               {activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}
             </p>
 
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
+            <ChipRow>
               <FilterChip
                 title="Ville"
                 label={ville}
@@ -153,7 +155,7 @@ export default async function SearchPage({
                   { label: "Populaires", href: lien({ tri: "populaire" }), selected: tri === "populaire" },
                 ]}
               />
-            </div>
+            </ChipRow>
 
             {results.length === 0 ? (
               <EmptyState
@@ -176,15 +178,15 @@ export default async function SearchPage({
                 </Button>
               </EmptyState>
             ) : (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+              <ProductGrid>
                 {results.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
-              </div>
+              </ProductGrid>
             )}
           </Section>
         )}
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

@@ -21,7 +21,7 @@ export function ConfirmPasswordSave({
         Enregistrer
       </summary>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[85vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[85vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet sm:bottom-gutter sm:max-w-lecture sm:rounded-2xl sm:border">
         <p className="shrink-0 px-4.5 pt-3.5 text-base font-bold">{title}</p>
         <div className="flex flex-col gap-4 overflow-y-auto px-4.5 pt-3 pb-5">
           <Field

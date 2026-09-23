@@ -37,7 +37,7 @@ export function FilterChip({
         <ChevronDown size={15} strokeWidth={2} className="group-open:rotate-180" aria-hidden />
       </summary>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[55vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet">
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-h-[55vh] w-full max-w-app flex-col rounded-t-2xl border-t border-line bg-surface shadow-sheet sm:bottom-gutter sm:max-w-lecture sm:rounded-2xl sm:border">
         <p className="shrink-0 px-4.5 pt-3.5 pb-2 text-sm font-bold">{title}</p>
         <div className="overflow-y-auto px-2.5 pb-5">
           {options.map((option) => (

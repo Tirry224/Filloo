@@ -38,3 +38,29 @@ export function Chip({
 
   return <span className={classes}>{content}</span>;
 }
+
+/**
+ * UNE RANGÉE DE PUCES. Sur téléphone elle défile au doigt, parce qu'une
+ * dizaine de catégories mangerait trois lignes d'un écran qui en compte
+ * quinze. Dès qu'il y a la place, elle passe à la ligne : sur un écran
+ * large, une rangée qui défile cache des choix derrière un geste que
+ * personne ne devine avec une souris, et se coupait net contre la bordure
+ * de la coquille.
+ *
+ * Les marges négatives font toucher le bord à la rangée qui défile, pour
+ * qu'on voie qu'elle continue ; elles n'ont plus lieu d'être une fois
+ * qu'elle passe à la ligne.
+ */
+export function ChipRow({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5",
+        "lg:mx-0 lg:flex-wrap lg:overflow-x-visible lg:px-0",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}

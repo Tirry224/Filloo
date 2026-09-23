@@ -8,7 +8,7 @@ import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { PushInvite } from "@/components/push/PushInvite";
 import { PushToggle } from "@/components/push/PushToggle";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
@@ -73,7 +73,7 @@ export default async function EditShopPage() {
   ];
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar
         title="Ma boutique"
         right={
@@ -87,7 +87,7 @@ export default async function EditShopPage() {
         }
       />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         <Section className="gap-5">
           <div className="flex items-center gap-3.5">
             <Avatar name={merchant.shopName} kind="shop" size={64} />
@@ -145,6 +145,6 @@ export default async function EditShopPage() {
           </MenuList>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

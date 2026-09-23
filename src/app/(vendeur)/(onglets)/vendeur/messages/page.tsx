@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ThreadRow } from "@/components/chat/ThreadRow";
 import { createClient } from "@/lib/supabase/server";
@@ -16,10 +16,10 @@ export default async function MerchantMessagesPage() {
   const list = await getMyThreadsAsMerchant(supabase);
 
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar title="Messages" />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         {list.length === 0 ? (
           <EmptyState
             icon={MessageCircle}
@@ -36,6 +36,6 @@ export default async function MerchantMessagesPage() {
           </Section>
         )}
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

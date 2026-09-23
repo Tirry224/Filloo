@@ -70,7 +70,7 @@ export async function ThreadScreen({
   const mustCiteFirst = messages.length === 0 && !citing && !frozen;
 
   return (
-    <Screen>
+    <Screen largeur="rangees">
       <RealtimeThread conversationId={id} myParticipantId={context.myParticipantId} />
       <TopBar
         backHref={base}

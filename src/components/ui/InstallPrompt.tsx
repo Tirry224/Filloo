@@ -95,7 +95,7 @@ export function InstallPrompt() {
       <section
         role="dialog"
         aria-labelledby="installation-titre"
-        className="mx-auto flex w-full max-w-app flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sheet"
+        className="mx-auto flex w-full max-w-app flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sheet sm:max-w-lecture"
       >
         <div className="flex items-center gap-2.5">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">

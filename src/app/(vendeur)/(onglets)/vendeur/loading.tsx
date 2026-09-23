@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { TopBar } from "@/components/ui/TopBar";
 
@@ -9,7 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
  */
 export default function LoadingSeller() {
   return (
-    <>
+    <TabScreen largeur="rangees">
       <TopBar
         title={
           <div className="flex flex-col gap-1.5">
@@ -19,7 +19,7 @@ export default function LoadingSeller() {
         }
       />
 
-      <ScreenBody rangees>
+      <ScreenBody>
         <Section className="gap-5">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-5 w-52" />
@@ -53,6 +53,6 @@ export default function LoadingSeller() {
           </div>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }

@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { Check, MapPin } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
-import { ScreenBody, Section } from "@/components/ui/Screen";
+import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { ProductGrid } from "@/components/product/ProductGrid";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { compter } from "@/lib/analytics";
@@ -47,7 +48,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   compter("boutique_vue", { merchantId: merchant.id });
 
   return (
-    <>
+    <TabScreen largeur="grille">
       <TopBar title={merchant.shopName} backHref="/" />
 
       <ScreenBody>
@@ -76,13 +77,13 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
           <SectionLabel>
             {catalogue.length} produit{catalogue.length > 1 ? "s" : ""} en vente
           </SectionLabel>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <ProductGrid>
             {catalogue.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
-          </div>
+          </ProductGrid>
         </Section>
       </ScreenBody>
-    </>
+    </TabScreen>
   );
 }
