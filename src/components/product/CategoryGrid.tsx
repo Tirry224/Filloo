@@ -34,7 +34,7 @@ function iconFor(name: string): LucideIcon {
 }
 
 const classes = {
-  grid: "grid grid-cols-2 gap-2",
+  grid: "grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4",
   tile: "flex items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-3 text-sm font-semibold",
   icon: "shrink-0 text-accent",
   label: "leading-tight",

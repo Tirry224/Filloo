@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { House, MessageCircle, Search, User } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { NavBar, type NavTab } from "@/components/nav/NavBar";
 
 /**
  * La barre d'onglets de l'espace CLIENT — et elle ne sert que lui.
@@ -14,12 +12,12 @@ import { cn } from "@/lib/cn";
  * l'autre, et un écran de `(client)` n'a aucun moyen de demander celle du
  * commerçant (décision 8 de docs/SPEC.md).
  *
- * Composant client pour lire l'onglet actif (`usePathname`), sans exiger de
- * JavaScript : Next le rend sur le serveur au premier chargement, donc
- * `aria-current` et la couleur sont corrects dans le HTML initial et les
- * onglets restent des `<a>` (R7 de docs/PERFORMANCE.md).
+ * Le DESSIN de la barre — horizontale en bas sur téléphone, latérale sur
+ * grand écran — vit dans `NavBar`, partagé avec le commerçant. Ce
+ * fichier-ci ne décide que d'une chose : QUELS onglets. C'est
+ * précisément ce que la décision 8 protège.
  */
-const TABS = [
+const TABS: readonly NavTab[] = [
   { label: "Accueil", href: "/", icon: House, match: (p: string) => p === "/" },
   {
     label: "Rechercher",
@@ -42,39 +40,5 @@ const TABS = [
 ] as const;
 
 export function ClientNav({ unreadCount = 0 }: { unreadCount?: number }) {
-  const pathname = usePathname();
-
-  return (
-    <nav className="sticky bottom-0 flex shrink-0 border-t border-line bg-surface">
-      {TABS.map(({ label, href, icon: Icon, match }) => {
-        const isActive = match(pathname);
-        const badge = label === "Messages" && unreadCount > 0 ? unreadCount : 0;
-        return (
-          <Link
-            key={label}
-            href={href}
-            aria-current={isActive ? "page" : undefined}
-            aria-label={badge > 0 ? `${label}, ${badge} non lus` : undefined}
-            className={cn(
-              "flex h-nav flex-1 flex-col items-center justify-center gap-0.5 text-2xs",
-              isActive ? "font-semibold text-accent" : "font-medium text-ink-soft",
-            )}
-          >
-            <span className="relative">
-              <Icon size={22} strokeWidth={isActive ? 2 : 1.8} aria-hidden />
-              {badge > 0 ? (
-                <span
-                  aria-hidden
-                  className="absolute -top-1 -right-2 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-2xs font-bold text-on-accent"
-                >
-                  {badge > 9 ? "9+" : badge}
-                </span>
-              ) : null}
-            </span>
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  return <NavBar tabs={TABS} unreadCount={unreadCount} label="Navigation principale" />;
 }

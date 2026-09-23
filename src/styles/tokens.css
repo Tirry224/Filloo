@@ -201,6 +201,11 @@
                                   préférence, c'est une règle. */
   --spacing-control: 3.25rem;  /* 52px — hauteur des boutons et des champs */
   --spacing-nav: 4rem;         /* 64px — hauteur de la barre du bas */
+  --spacing-rail: 15rem;       /* 240px — largeur de cette même barre quand
+                                  elle passe à la verticale sur grand
+                                  écran. Assez pour « Messages » suivi de
+                                  son compteur sans que l'intitulé se
+                                  coupe. */
 
   /* ── Objets carrés ───────────────────────────────────────────────────
      Mêmes causes, mêmes effets que pour les espacements : l'application
@@ -223,11 +228,23 @@
   --spacing-photo-hero: 18rem; /* 288px — photo de la fiche produit */
 
   /* ═══ LARGEUR DE PAGE ═══════════════════════════════════════════════
-     L'application est pensée pour le téléphone. Sur un grand écran, on ne
-     l'étire pas : on centre une colonne de la largeur d'un téléphone.
-     Une ligne de texte de 1400 px de large est illisible. */
+     L'application est pensée pour le téléphone, et le TEXTE garde cette
+     largeur partout : une ligne de 1400 px est illisible, quel que soit
+     l'écran qui l'affiche. Ce qui s'élargit sur grand écran, c'est ce qui
+     se PARCOURT — une grille de produits, une liste de conversations —
+     jamais un formulaire ni un paragraphe.
 
-  --container-app: 28rem; /* 448px */
+     D'où deux largeurs, et deux seulement :
+
+     - `app` : la colonne téléphone. Tout ce qui se lit ou se remplit.
+       Les écrans `(plein-ecran)` et les pages d'authentification n'en
+       sortent jamais, même sur un écran de 27 pouces.
+     - `wide` : le cadre des écrans à onglets sur grand écran, barre
+       latérale comprise. 72rem parce qu'au-delà, la grille de produits
+       dépasse quatre colonnes et les vignettes deviennent des timbres. */
+
+  --container-app: 28rem;  /* 448px — la colonne téléphone */
+  --container-wide: 72rem; /* 1152px — le cadre des écrans à onglets */
 
   /* ═══ OMBRES ════════════════════════════════════════════════════════
      Makiti se dessine avec des BORDURES, pas des ombres : c'est plus net

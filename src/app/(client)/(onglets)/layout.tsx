@@ -1,4 +1,4 @@
-import { Screen } from "@/components/ui/Screen";
+import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { ClientNav } from "@/components/nav/ClientNav";
 import { createClient } from "@/lib/supabase/server";
@@ -23,10 +23,9 @@ export default async function ClientTabsLayout({ children }: { children: React.R
   const unreadCount = profile ? await countUnreadMessages(supabase, "client") : 0;
 
   return (
-    <Screen>
+    <AppShell nav={<ClientNav unreadCount={unreadCount} />}>
       {children}
-      <ClientNav unreadCount={unreadCount} />
       <InstallPrompt />
-    </Screen>
+    </AppShell>
   );
 }

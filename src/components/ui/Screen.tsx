@@ -1,16 +1,31 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Le cadre de tout écran de l'application.
+ * Le cadre des écrans SANS onglets — formulaires, pages de texte,
+ * authentification. C'est le cas le plus fréquent, d'où le nom le plus
+ * court. Les écrans à onglets, eux, ont `AppShell`.
  *
  * `max-w-app` centre une colonne de largeur téléphone plutôt que d'étirer
- * l'interface : une ligne de texte de 1400 px ne se lit pas. `min-h-dvh`
- * prend la hauteur RÉELLE de la zone visible, là où `100vh` ignore la
- * barre d'adresse et fait dépasser le contenu.
+ * l'interface, ET CELA NE CHANGE PAS SUR GRAND ÉCRAN : un champ de
+ * 1000 px se remplit plus mal qu'un champ de 400, et une ligne de texte
+ * de 1400 px ne se lit pas. Élargir ces écrans-là serait une régression
+ * déguisée en adaptation.
+ *
+ * Ce qui change à `lg:`, c'est seulement la bordure latérale : sans elle
+ * la colonne flotte au milieu d'un aplat et paraît inachevée. Elle ne
+ * coûte rien sur téléphone, où elle est hors de l'écran.
+ *
+ * `min-h-dvh` prend la hauteur RÉELLE de la zone visible, là où `100vh`
+ * ignore la barre d'adresse et fait dépasser le contenu.
  */
 export function Screen({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("mx-auto flex min-h-dvh w-full max-w-app flex-col bg-paper", className)}>
+    <div
+      className={cn(
+        "mx-auto flex min-h-dvh w-full max-w-app flex-col bg-paper lg:border-x lg:border-line",
+        className,
+      )}
+    >
       {children}
     </div>
   );

@@ -96,7 +96,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
           <SectionLabel>
             {catalogue.length} produit{catalogue.length > 1 ? "s" : ""} en vente
           </SectionLabel>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {catalogue.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

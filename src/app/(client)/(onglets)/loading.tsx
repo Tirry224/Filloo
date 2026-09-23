@@ -29,7 +29,7 @@ export default function Loading() {
         </Section>
         <Section className="gap-3 pt-3">
           <Skeleton className="h-3 w-20" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <Card key={i} className="flex flex-col">
                 <Skeleton className="h-33 rounded-none" />
