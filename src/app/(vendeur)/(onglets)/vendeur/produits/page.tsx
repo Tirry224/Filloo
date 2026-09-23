@@ -26,7 +26,11 @@ export default async function MerchantProductsPage({
   /* Une boutique non validée n'a pas sa place dans les onglets de gestion :
      `/vendeur/attente` et `/vendeur/refusee` sont ses écrans. Le message
      d'erreur voyage avec la redirection, sinon il meurt ici. */
-  const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
+  const suite = erreur
+    ? `?erreur=${encodeURIComponent(erreur)}`
+    : info
+      ? `?info=${encodeURIComponent(info)}`
+      : "";
   if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
   if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
 

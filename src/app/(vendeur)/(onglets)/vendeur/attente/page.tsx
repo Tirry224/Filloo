@@ -13,9 +13,9 @@ import { getMyMerchant } from "@/lib/data/merchants";
 export default async function PendingShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; info?: string }>;
 }) {
-  const { erreur } = await searchParams;
+  const { erreur, info } = await searchParams;
   const supabase = await createClient();
   // La suspension est traitée par `(vendeur)/layout.tsx` pour TOUT
   // l'espace, via `requireMerchantSpace`.
@@ -31,6 +31,7 @@ export default async function PendingShopPage({
 
       <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
+        {info ? <Notice tone="success">{info}</Notice> : null}
         <Section className="gap-5 py-6">
           <div className="flex flex-col gap-2.5">
             <div className="flex size-14 items-center justify-center rounded-xl bg-accent-soft text-accent">
