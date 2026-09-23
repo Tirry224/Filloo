@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createRealtimeClient } from "@/lib/supabase/client";
 
 /**
  * Recalcule le badge et le tableau de bord quand un message arrive ou quand
@@ -22,11 +22,16 @@ export function RealtimeUnread() {
       timer = setTimeout(() => router.refresh(), 300);
     };
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel("messages:non-lus")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, refresh)
-      .subscribe();
+    let stopped = false;
+    let cleanup = () => {};
+    createRealtimeClient().then((supabase) => {
+      if (stopped) return;
+      const channel = supabase
+        .channel("messages:non-lus")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, refresh)
+        .subscribe();
+      cleanup = () => supabase.removeChannel(channel);
+    });
 
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
@@ -36,7 +41,8 @@ export function RealtimeUnread() {
     return () => {
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
-      supabase.removeChannel(channel);
+      stopped = true;
+      cleanup();
     };
   }, [router]);
 

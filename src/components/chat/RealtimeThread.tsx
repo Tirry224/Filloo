@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createRealtimeClient } from "@/lib/supabase/client";
 
 /**
  * N'affiche rien : écoute les nouveaux messages de CE fil (migration
@@ -19,21 +19,27 @@ export function RealtimeThread({
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          if (payload.new.sender_id === myParticipantId) return;
-          router.refresh();
-        },
-      )
-      .subscribe();
+    let stopped = false;
+    let cleanup = () => {};
+    createRealtimeClient().then((supabase) => {
+      if (stopped) return;
+      const channel = supabase
+        .channel(`messages:${conversationId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+          (payload) => {
+            if (payload.new.sender_id === myParticipantId) return;
+            router.refresh();
+          },
+        )
+        .subscribe();
+      cleanup = () => supabase.removeChannel(channel);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      stopped = true;
+      cleanup();
     };
   }, [conversationId, myParticipantId, router]);
 
