@@ -53,7 +53,11 @@ export async function sendPushToUser(authUserId: string, contenu: ContenuPush): 
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth_secret")
       .eq("auth_user_id", authUserId);
-    if (error || !abonnements?.length) return 0;
+    if (error) {
+      console.error("[push] abonnements illisibles :", error.message);
+      return 0;
+    }
+    if (!abonnements.length) return 0;
 
     const charge = JSON.stringify(contenu);
     let atteints = 0;

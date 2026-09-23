@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { emailButton, emailFooter, emailShell, escapeHtml, sendEmail } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
 import { siteUrl as adresseDuSite } from "@/lib/site-url";
+import { messagesBase } from "@/lib/espace";
 
 /**
  * `service_role` parce que l'adresse vit dans `auth.users`, hors RLS.
@@ -24,7 +25,12 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
     }
     const emailPossible = emailPret && Boolean(siteUrl);
 
-    if (!emailPossible && !pushPret) return;
+    if (!emailPossible && !pushPret) {
+      console.error(
+        "[notification] Ni push (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY) ni email (RESEND_API_KEY, EMAIL_FROM) configuré : aucun avertissement envoyé.",
+      );
+      return;
+    }
 
     const admin = createAdminClient();
 
@@ -39,7 +45,10 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
         body: string;
         products: { title: string } | null;
       }>();
-    if (messageError || !message) return;
+    if (messageError || !message) {
+      console.error(`[notification] message ${messageId} illisible :`, messageError?.message);
+      return;
+    }
 
     /* La règle anti-spam, et elle ne coûte aucune colonne : on ne prévient
        que si ce message est le premier non lu du fil. Sinon le destinataire
@@ -53,7 +62,10 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       .eq("sender_id", message.sender_id)
       .is("read_at", null)
       .neq("id", message.id);
-    if (countError) return;
+    if (countError) {
+      console.error(`[notification] comptage impossible (message ${messageId}) :`, countError.message);
+      return;
+    }
     if ((alreadyWaiting ?? 0) > 0) return;
 
     const { data: conversation, error: conversationError } = await admin
@@ -67,11 +79,15 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
         merchants: { profile_id: string; shop_name: string } | null;
         profiles: { full_name: string } | null;
       }>();
-    if (conversationError || !conversation?.merchants) return;
+    if (conversationError || !conversation?.merchants) {
+      console.error(`[notification] fil introuvable (message ${messageId}) :`, conversationError?.message);
+      return;
+    }
 
     const merchantProfileId = conversation.merchants.profile_id;
     const senderIsMerchant = message.sender_id === merchantProfileId;
     const recipientProfileId = senderIsMerchant ? conversation.client_id : merchantProfileId;
+    const threadPath = `${messagesBase(senderIsMerchant ? "client" : "merchant")}/${message.conversation_id}`;
     const senderName = senderIsMerchant
       ? conversation.merchants.shop_name
       : (conversation.profiles?.full_name ?? "Un client");
@@ -81,7 +97,10 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       .select("auth_user_id, full_name, is_deleted")
       .eq("id", recipientProfileId)
       .single();
-    if (recipientError || !recipient) return;
+    if (recipientError || !recipient) {
+      console.error(`[notification] destinataire introuvable (message ${messageId}) :`, recipientError?.message);
+      return;
+    }
     // Un compte supprimé est banni côté `auth.users` : il ne peut plus se
     // connecter pour lire. Un compte SUSPENDU, lui, garde la lecture.
     if (recipient.is_deleted) return;
@@ -97,7 +116,7 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
         corps: message.products?.title
           ? `Nouveau message à propos de : ${message.products.title}`
           : "Vous avez un nouveau message.",
-        url: `/messages/${message.conversation_id}`,
+        url: threadPath,
         // Un `tag` par conversation : la nouvelle remplace la précédente
         // au lieu d'en empiler dix.
         tag: `conversation-${message.conversation_id}`,
@@ -124,7 +143,7 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
         senderName,
         body: message.body,
         productTitle: message.products?.title ?? null,
-        conversationId: message.conversation_id,
+        threadPath,
       }),
     );
 
@@ -145,9 +164,9 @@ function composeNewMessageEmail(input: {
   senderName: string;
   body: string;
   productTitle: string | null;
-  conversationId: string;
+  threadPath: string;
 }) {
-  const link = `${input.siteUrl}/messages/${input.conversationId}`;
+  const link = `${input.siteUrl}${input.threadPath}`;
 
   const excerpt = input.body.length > 400 ? `${input.body.slice(0, 400)}…` : input.body;
   const about = input.productTitle ? `À propos de : ${input.productTitle}` : "";

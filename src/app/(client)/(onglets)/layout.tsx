@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { ClientNav } from "@/components/nav/ClientNav";
+import { RealtimeUnread } from "@/components/chat/RealtimeUnread";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { countUnreadMessages } from "@/lib/data/messages";
@@ -18,6 +19,7 @@ export default async function ClientTabsLayout({ children }: { children: React.R
 
   return (
     <AppShell nav={<ClientNav unreadCount={unreadCount} />}>
+      {profile ? <RealtimeUnread /> : null}
       {children}
       <InstallPrompt />
     </AppShell>
