@@ -49,6 +49,21 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
+- **L'INSCRIPTION EST CASSÉE EN PRODUCTION** (constaté le 2026-09-23).
+  Une inscription depuis l'application renvoie « Error sending
+  confirmation email » et aucun compte n'est créé : la confirmation
+  d'email a été activée côté Supabase AVANT que le SMTP soit prouvé,
+  exactement ce que la ligne « Activer la confirmation d'email » plus bas
+  interdisait. Les trois comptes existants datent d'avant (confirmés
+  automatiquement les 15 et 16 septembre). Décocher la confirmation, ou
+  brancher un vrai SMTP.
+- **Aucun push n'a jamais été distribué.** Le 2026-09-23,
+  `push_subscriptions.last_used_at` était vide sur les quatre abonnements,
+  alors que des messages étaient arrivés après leur création. Premier
+  suspect : `VAPID_PRIVATE_KEY` absente de Vercel, ou d'une autre paire que
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Les abandons de `notifyNewMessage` sont
+  désormais journalisés (`[notification]`, `[push]`) : les journaux Vercel
+  diront lequel. *À constater.*
 - **La chaîne d'envoi d'emails est CASSÉE.** Le 2026-09-21, la file
   `notifications` de production portait une ligne `merchant_approved`
   créée le 17 et jamais envoyée : le cron quotidien de 7 h avait échoué
@@ -107,6 +122,11 @@ trompera.
 
 ### Dettes techniques connues, aucune bloquante
 
+- **`npm run tests` ne trouve aucun fichier sous Windows** : les
+  guillemets simples de `'tests/*.test.ts'` ne sont pas retirés par
+  `cmd.exe`, et le script affiche « pass 0 » sans échouer.
+  `node --experimental-strip-types --test tests/*.test.ts` depuis Git Bash
+  les lance (33 au 2026-09-23).
 - **La couche applicative est à peine testée.** `npm run tests` couvre
   `safeNextPath`, les règles de saisie et l'adresse du site ; les actions
   serveur, là où vivent les écritures, n'ont aucun test. Deux mille lignes
@@ -223,9 +243,11 @@ ne se recopient pas.
   s'annoncent PAS en clair sur un écran verrouillé** : le push dit qu'une
   décision attend, l'email dit laquelle. Le service worker **ne met rien
   en cache**.
-- **Temps réel partiel** : `RealtimeThread` affiche un message reçu
-  pendant qu'on lit le fil. La liste `/messages` et le badge attendent
-  une navigation — assumé, ce n'est pas une messagerie instantanée.
+- **Temps réel** : `RealtimeThread` affiche un message reçu pendant
+  qu'on lit le fil, et `RealtimeUnread` (dans les deux layouts d'onglets)
+  rafraîchit badge, liste et tableau de bord à l'arrivée d'un message ou au
+  retour au premier plan. Le layout d'onglets n'est pas re-rendu par Next
+  d'un onglet à l'autre : sans lui, le compteur restait figé.
 - **Installation de l'application** proposée à l'entrée, et **mise en
   page tenue sur grand écran**.
 
