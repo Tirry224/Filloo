@@ -50,11 +50,9 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       return;
     }
 
-    /* La règle anti-spam, et elle ne coûte aucune colonne : on ne prévient
-       que si ce message est le premier non lu du fil. Sinon le destinataire
-       a déjà été prévenu et n'est pas revenu — un second avertissement ne
-       l'informe de rien et mène au courrier indésirable. `read_at` se pose
-       à l'ouverture du fil, et le suivant redevient notifiable. */
+    /* Le push part à chaque message ; l'email seulement pour le premier non
+       lu du fil, sinon il mène au courrier indésirable. `read_at` se pose à
+       l'ouverture du fil, et le suivant redevient notifiable par email. */
     const { count: alreadyWaiting, error: countError } = await admin
       .from("messages")
       .select("id", { count: "exact", head: true })
@@ -66,7 +64,7 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
       console.error(`[notification] comptage impossible (message ${messageId}) :`, countError.message);
       return;
     }
-    if ((alreadyWaiting ?? 0) > 0) return;
+    const emailDu = (alreadyWaiting ?? 0) === 0;
 
     const { data: conversation, error: conversationError } = await admin
       .from("conversations")
@@ -127,7 +125,7 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
        pas pour TypeScript, qui ne suit pas la déduction à travers un
        booléen intermédiaire. L'écrire ici plutôt que de forcer le type
        plus bas : un `!` non nul se contente de faire taire l'analyse. */
-    if (!emailPossible || !siteUrl) return;
+    if (!emailDu || !emailPossible || !siteUrl) return;
 
     const { data: authUser, error: authError } = await admin.auth.admin.getUserById(
       recipient.auth_user_id,

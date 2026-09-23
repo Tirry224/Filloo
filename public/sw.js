@@ -72,6 +72,7 @@ self.addEventListener("push", (evenement) => {
        déverrouiller son téléphone pour vider une pile. */
     tag: donnees.tag || "makiti-message",
     renotify: true,
+    vibrate: [200, 100, 200],
     data: { url: donnees.url || "/messages" },
   };
 
@@ -80,7 +81,16 @@ self.addEventListener("push", (evenement) => {
      serait alors consommé pour rien — et certains navigateurs affichent à
      la place une notification générique « ce site a été mis à jour en
      arrière-plan », ce qui est pire que rien. */
-  evenement.waitUntil(self.registration.showNotification(titre, options));
+  /* Application au premier plan : `MessageAlerts` joue déjà le son. La
+     notification reste affichée — Chrome en exige une par push — mais muette. */
+  evenement.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
+      const auPremierPlan = fenetres.some((f) => f.focused && f.visibilityState === "visible");
+      if (!auPremierPlan) return self.registration.showNotification(titre, options);
+      const { vibrate, ...muette } = options;
+      return self.registration.showNotification(titre, { ...muette, silent: true });
+    }),
+  );
 });
 
 /**

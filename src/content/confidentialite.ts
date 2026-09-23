@@ -117,7 +117,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     blocs: [
       "Makiti vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message, décision concernant votre boutique (validée, refusée) ou suspension de votre compte.",
       "Aucun email publicitaire, aucune lettre d’information.",
-      "Vous n’êtes prévenu d’un nouveau message que si vous n’avez pas déjà un message non lu dans la même conversation : deux avertissements pour la même chose n’apprendraient rien de plus.",
+      "Si vous avez activé les notifications, chaque nouveau message vous est signalé sur votre téléphone. L’email, lui, n’est envoyé que si vous n’avez pas déjà un message non lu dans la même conversation : deux emails pour la même chose n’apprendraient rien de plus.",
       "Les notifications affichées sur un écran verrouillé ne contiennent jamais le motif d’un refus ni celui d’une suspension : elles disent qu’une décision vous attend, et l’email dit laquelle. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
       "Les notifications sur téléphone se désactivent à tout moment depuis « Mon compte », et depuis les réglages de votre appareil.",
     ],

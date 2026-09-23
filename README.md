@@ -176,6 +176,9 @@ personnes qui s'écrivent dix fois de suite produisent un seul email ;
 le suivant ne repart qu'une fois le fil ouvert. Un rappel de plus
 n'apprendrait rien à quelqu'un qui n'est pas revenu, et c'est ainsi
 qu'on finit en courrier indésirable.
+La notification sur téléphone, elle, part à chaque message, avec son et
+vibration ; application ouverte, `MessageAlerts` joue le son et affiche un
+bandeau.
 
 ### Décisions d'administration (Vercel Cron)
 
