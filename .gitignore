@@ -19,3 +19,8 @@ design/makiti-maquette.html
 
 # TypeScript
 *.tsbuildinfo
+
+# Vérification des largeurs (npm run largeurs) : un profil de navigateur
+# et des captures, tous deux régénérables et volumineux.
+.chrome-profil/
+.captures/

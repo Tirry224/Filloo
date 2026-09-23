@@ -418,6 +418,59 @@ déjà que c'en est une.
 
 ---
 
+## 9 bis. La largeur d'un écran
+
+Décidé le 2026-09-23, après une première tentative qui laissait les
+formulaires dans une colonne de 448 px à toute largeur et les listes de
+lignes collées à gauche d'une coquille de 1152.
+
+### Un écran déclare une FORME, jamais des pixels
+
+La table `LARGEURS` de `src/components/ui/Screen.tsx` est le seul endroit
+du projet qui combine des largeurs. Un écran choisit parmi trois familles,
+et tout le reste en découle :
+
+| Famille | Va jusqu'à | Pour quoi |
+|---|---|---|
+| `colonne` | 640 px | Formulaires, pages de texte, écrans d'erreur. Au-delà, l'œil perd le début de la ligne en arrivant à sa fin. |
+| `rangees` | 768 px | Menus, listes de conversations, catalogue du commerçant. Au-delà, l'intitulé reste à gauche et le chevron part à l'extrême droite. |
+| `grille` | 1152 px | Vignettes de produits. Seule famille à prendre toute la largeur, parce qu'une grille ajoute des colonnes au lieu de s'étirer. |
+
+Chaque famille part de la colonne téléphone et s'élargit **par paliers** :
+un écran ne saute jamais de 448 à 1152 px, parce qu'entre les deux il y a
+les tablettes.
+
+### Deux conteneurs, selon que l'écran porte des onglets
+
+- `Screen` pour un écran plein écran : il porte le fond, la hauteur et les
+  bordures qui le détachent du vide.
+- `TabScreen` pour un écran à onglets : `AppShell` porte déjà tout cela, il
+  ne reste que la largeur. Il enveloppe la barre du haut **avec** le
+  contenu, sans quoi le titre resterait à gauche d'un contenu centré.
+
+### Les règles qui ne se discutent pas
+
+- **Le centrage vit dans le conteneur, jamais dans l'écran.** C'est
+  précisément ce qu'un `mx-auto` oublié dans un composant avait coûté :
+  vingt-deux écrans plafonnés mais alignés à gauche.
+- **Aucune largeur chiffrée dans un composant.** `--container-*: initial`
+  efface les largeurs de Tailwind, donc `max-w-2xl` ne produit plus rien et
+  `npm run classes` le signale.
+- **Une valeur nommée de plus se décide dans `tokens.css`**, pas dans le
+  fichier où le besoin est apparu.
+
+### Se vérifier
+
+`npm run largeurs` ouvre chaque écran à 320, 390, 768, 834, 844, 1024,
+1440 et 1920 px et signale tout débordement horizontal. Avec `--connecte`,
+il ouvre un vrai Chrome où l'on se connecte à la main, ce qui lui donne
+accès aux écrans privés sans qu'aucun mot de passe entre dans le dépôt.
+
+Ce script voit les débordements, et rien d'autre. Un contenu mal centré,
+une hiérarchie ratée ou une densité trop lâche se regardent.
+
+---
+
 ## 10. La liste de contrôle
 
 Avant de considérer un écran comme fait :
@@ -432,6 +485,8 @@ Avant de considérer un écran comme fait :
 - [ ] `npm run typecheck` et `npm run build` passent
 - [ ] L'écran a été **regardé dans un navigateur** — une classe Tailwind
       inexistante ne produit aucune erreur
+- [ ] L'écran déclare sa famille de largeur, et `npm run largeurs` ne
+      signale aucun débordement
 
 ---
 

@@ -10,6 +10,7 @@
     "poids": "node scripts/poids.mjs",
     "parcours": "node scripts/parcours.mjs",
     "classes": "node scripts/verifier-classes.mjs",
+    "largeurs": "node scripts/verifier-largeurs.mjs",
     "espaces": "node scripts/verifier-espaces.mjs",
     "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
     "tests": "node --experimental-strip-types --test 'tests/*.test.ts'",
