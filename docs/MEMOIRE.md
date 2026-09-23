@@ -49,14 +49,10 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
-- **L'INSCRIPTION EST CASSÉE EN PRODUCTION** (constaté le 2026-09-23).
-  Une inscription depuis l'application renvoie « Error sending
-  confirmation email » et aucun compte n'est créé : la confirmation
-  d'email a été activée côté Supabase AVANT que le SMTP soit prouvé,
-  exactement ce que la ligne « Activer la confirmation d'email » plus bas
-  interdisait. Les trois comptes existants datent d'avant (confirmés
-  automatiquement les 15 et 16 septembre). Décocher la confirmation, ou
-  brancher un vrai SMTP.
+- **La confirmation d'email est DÉSACTIVÉE depuis le 2026-09-23.** Elle
+  avait été activée avant que le SMTP soit prouvé, et toute inscription
+  échouait sur « Error sending confirmation email » sans créer de compte.
+  Le porteur du projet l'a décochée ; la réactiver attend toujours le SMTP.
 - **Aucun push n'a jamais été distribué.** Le 2026-09-23,
   `push_subscriptions.last_used_at` était vide sur les quatre abonnements,
   alors que des messages étaient arrivés après leur création. Premier
@@ -383,6 +379,16 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 
 ### Couche applicative
 
+- **Un abonnement temps réel parti avant la lecture de la session rejoint
+  le canal en `anon`**, et le RLS ne lui transmet alors rien, sans
+  erreur. Le badge de non-lus n'a jamais bougé pour cette raison. D'où
+  `createRealtimeClient`, qui pose le jeton AVANT `subscribe()`. Vu en
+  lisant les trames WebSocket : `phx_join` sans `access_token`.
+- **Supprimer toutes les photos puis les réinsérer dépubliait le
+  produit.** Le trigger de `0011` voyait un produit publié sans photo entre
+  les deux requêtes : toute modification d'un produit publié, même un
+  prix, le retirait du catalogue en affichant « enregistré ». Les photos
+  se réécrivent désormais position par position.
 - **Une liste blanche qui compare des préfixes valide une ORTHOGRAPHE,
   pas une adresse.** `/<TAB>/faux-makiti.gn` passait `safeNextPath`, et
   les navigateurs effacent les tabulations avant d'analyser l'adresse.
@@ -440,6 +446,12 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 
 ### Méthode
 
+- **Un parcours réel à deux navigateurs trouve ce qu'aucun test ne
+  voit.** Le 2026-09-23, un script Playwright (réseau « 3G Conakry » et
+  « Slow 3G », CPU ralenti x4, trois comptes de test en production, puis
+  nettoyés) a trouvé trois défauts après que types, build et tests
+  unitaires étaient au vert : le temps réel anonyme, la dépublication à
+  la modification, et le message perdu d'une boutique en attente.
 - **La vérification automatique et le fait de regarder ne trouvent pas
   les mêmes défauts.** Tout avait été vérifié autrement ; **le premier
   vrai passage sur téléphone a trouvé quatre défauts en quelques
