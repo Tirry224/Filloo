@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Message, Thread } from "@/lib/types";
 import { productImageUrl } from "@/lib/storage";
+import { coverPath, summarizeThreadRows, type ImageRow, type ThreadMessageRow } from "@/lib/thread-summary";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatMessageTime } from "@/lib/format";
@@ -15,44 +16,53 @@ type MessageRow = {
   read_at: string | null;
   created_at: string;
   product_id: string | null;
-  products: { title: string; price_gnf: number; status: Database["public"]["Enums"]["product_status"] } | null;
+  products: {
+    title: string;
+    price_gnf: number;
+    status: Database["public"]["Enums"]["product_status"];
+    product_images: ImageRow[];
+  } | null;
 };
+
+type ThreadSummary = {
+  lastMessage: string;
+  lastAt: string;
+  lastProductTitle: string;
+  lastProductImageUrl?: string;
+  unreadCount: number;
+};
+
+function coverUrl(images: ImageRow[] | undefined): string | undefined {
+  const path = coverPath(images);
+  return path ? productImageUrl(path) : undefined;
+}
 
 async function summarizeThreads(
   supabase: SupabaseClient<Database>,
   conversationIds: string[],
   myProfileId: string,
-): Promise<Map<string, { lastMessage: string; lastAt: string; lastProductTitle: string; unreadCount: number }>> {
-  const summaries = new Map<
-    string,
-    { lastMessage: string; lastAt: string; lastProductTitle: string; unreadCount: number }
-  >();
-  if (conversationIds.length === 0) return summaries;
+): Promise<Map<string, ThreadSummary>> {
+  if (conversationIds.length === 0) return new Map();
 
+  // Un produit masqué, brouillon ou supprimé revient `null` par le RLS :
+  // la ligne retombe alors sur l'avatar.
   const { data, error } = await supabase
     .from("messages")
-    .select("conversation_id, sender_id, body, read_at, created_at, product_id, products(title)")
+    .select("conversation_id, sender_id, body, read_at, created_at, products(title, product_images(storage_path, position))")
     .in("conversation_id", conversationIds)
     .order("created_at", { ascending: false })
-    .returns<Pick<MessageRow, "conversation_id" | "sender_id" | "body" | "read_at" | "created_at" | "product_id" | "products">[]>();
+    .returns<ThreadMessageRow[]>();
   if (error) throw error;
 
-  for (const row of data) {
-    const existing = summaries.get(row.conversation_id);
-    const isUnread = row.read_at === null && row.sender_id !== myProfileId;
-    if (!existing) {
-      summaries.set(row.conversation_id, {
-        lastMessage: row.body,
-        lastAt: formatMessageTime(row.created_at),
-        lastProductTitle: row.products?.title ?? "",
-        unreadCount: isUnread ? 1 : 0,
-      });
-    } else {
-      if (isUnread) existing.unreadCount += 1;
-      if (!existing.lastProductTitle && row.products?.title) {
-        existing.lastProductTitle = row.products.title;
-      }
-    }
+  const summaries = new Map<string, ThreadSummary>();
+  for (const [id, raw] of summarizeThreadRows(data, myProfileId)) {
+    summaries.set(id, {
+      lastMessage: raw.lastMessage,
+      lastAt: formatMessageTime(raw.lastCreatedAt),
+      lastProductTitle: raw.lastProductTitle,
+      lastProductImageUrl: raw.lastProductCoverPath ? productImageUrl(raw.lastProductCoverPath) : undefined,
+      unreadCount: raw.unreadCount,
+    });
   }
   return summaries;
 }
@@ -77,6 +87,7 @@ export async function getMyThreadsAsClient(supabase: SupabaseClient<Database>): 
       peerName: c.merchants?.shop_name ?? "",
       peerKind: "shop",
       lastProductTitle: s?.lastProductTitle ?? "",
+      lastProductImageUrl: s?.lastProductImageUrl,
       lastMessage: s?.lastMessage ?? "",
       lastAt: s?.lastAt ?? "",
       unreadCount: s?.unreadCount ?? 0,
@@ -105,6 +116,7 @@ export async function getMyThreadsAsMerchant(supabase: SupabaseClient<Database>)
       peerName: c.profiles?.full_name ?? "",
       peerKind: "person",
       lastProductTitle: s?.lastProductTitle ?? "",
+      lastProductImageUrl: s?.lastProductImageUrl,
       lastMessage: s?.lastMessage ?? "",
       lastAt: s?.lastAt ?? "",
       unreadCount: s?.unreadCount ?? 0,
@@ -202,11 +214,13 @@ export async function getMessages(
 ): Promise<Message[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, sender_id, body, created_at, product_id, products(title, price_gnf, status)")
+    .select(
+      "id, sender_id, body, created_at, product_id, products(title, price_gnf, status, product_images(storage_path, position))",
+    )
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .returns<
-      { id: string; sender_id: string; body: string; created_at: string; product_id: string | null; products: { title: string; price_gnf: number; status: Database["public"]["Enums"]["product_status"] } | null }[]
+      (Pick<MessageRow, "id" | "sender_id" | "body" | "created_at" | "product_id" | "products">)[]
     >();
   if (error) throw error;
 
@@ -215,7 +229,13 @@ export async function getMessages(
     mine: m.sender_id === myParticipantId,
     product:
       m.product_id && m.products
-        ? { id: m.product_id, title: m.products.title, priceGnf: m.products.price_gnf, status: m.products.status }
+        ? {
+            id: m.product_id,
+            title: m.products.title,
+            priceGnf: m.products.price_gnf,
+            status: m.products.status,
+            imageUrl: coverUrl(m.products.product_images),
+          }
         : null,
     body: m.body,
     sentAt: formatMessageTime(m.created_at),
@@ -239,16 +259,13 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
       }[]
     >();
   if (error) throw error;
-  return data.map((p) => {
-    const cover = [...p.product_images].sort((a, b) => a.position - b.position)[0];
-    return {
-      id: p.id,
-      title: p.title,
-      priceGnf: p.price_gnf,
-      status: p.status,
-      imageUrl: cover ? productImageUrl(cover.storage_path) : undefined,
-    };
-  });
+  return data.map((p) => ({
+    id: p.id,
+    title: p.title,
+    priceGnf: p.price_gnf,
+    status: p.status,
+    imageUrl: coverUrl(p.product_images),
+  }));
 }
 
 export async function countUnreadMessages(

@@ -11,18 +11,17 @@ export function ThreadRow({ thread, basePath }: { thread: Thread; basePath: stri
       href={`${basePath}/${thread.id}`}
       className="flex items-start gap-3 border-b border-line py-3.5"
     >
-      <Avatar name={thread.peerName} kind={thread.peerKind} />
+      {thread.lastProductImageUrl ? (
+        <Photo ratio="free" src={thread.lastProductImageUrl} className="size-11 shrink-0 rounded-md" />
+      ) : (
+        <Avatar name={thread.peerName} kind={thread.peerKind} />
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-base font-semibold">{thread.peerName}</span>
           <time className="shrink-0 text-2xs text-ink-soft">{thread.lastAt}</time>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Photo ratio="free" className="size-4.5 shrink-0 rounded-xs" iconSize={10} />
-          <span className="truncate text-2xs font-medium text-ink-soft">
-            {thread.lastProductTitle}
-          </span>
-        </div>
+        <span className="truncate text-2xs font-medium text-ink-soft">{thread.lastProductTitle}</span>
         <div className="flex items-center gap-2">
           <span
             className={cn(

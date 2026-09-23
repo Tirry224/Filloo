@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { PhotoImage } from "@/components/ui/PhotoImage";
 
 export function Photo({
   ratio = "square",
@@ -42,14 +42,7 @@ export function Photo({
       )}
     >
       {src ? (
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes={SIZES[ratio]}
-          priority={priority}
-          className="object-cover"
-        />
+        <PhotoImage src={src} alt={alt} sizes={SIZES[ratio]} priority={priority} iconSize={iconSize} />
       ) : (
         <>
           <ImageIcon size={iconSize} strokeWidth={1.5} aria-hidden />

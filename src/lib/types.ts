@@ -30,7 +30,7 @@ export type Product = {
 export type Message = {
   id: string;
   mine: boolean;
-  product: Pick<Product, "id" | "title" | "priceGnf" | "status"> | null;
+  product: (Pick<Product, "id" | "title" | "priceGnf" | "status"> & { imageUrl?: string }) | null;
   body: string;
   sentAt: string;
 };
@@ -40,6 +40,7 @@ export type Thread = {
   peerName: string;
   peerKind: "shop" | "person";
   lastProductTitle: string;
+  lastProductImageUrl?: string;
   lastMessage: string;
   lastAt: string;
   unreadCount: number;
