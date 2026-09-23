@@ -82,7 +82,7 @@ export function SignupForm({
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className="flex flex-col gap-2.5">
-        <SectionLabel>Je viens sur Makiti pour</SectionLabel>
+        <SectionLabel>Je viens sur Filloo pour</SectionLabel>
         {excludeRole !== "client" ? (
           <RoleCard
             icon={Search}
@@ -157,7 +157,7 @@ export function SignupForm({
           </Field>
 
           {/* La comparaison qui COMPTE est celle de `signUpAction`, côté
-              serveur : les formulaires de Makiti doivent fonctionner sans
+              serveur : les formulaires de Filloo doivent fonctionner sans
               JavaScript, et une requête forgée ne passe par aucun champ. */}
           <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le : c'est le seul champ qu'on ne peut pas relire.">
             <Input

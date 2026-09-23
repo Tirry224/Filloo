@@ -169,11 +169,11 @@ function composeNewMessageEmail(input: {
   const excerpt = input.body.length > 400 ? `${input.body.slice(0, 400)}…` : input.body;
   const about = input.productTitle ? `À propos de : ${input.productTitle}` : "";
 
-  const subject = `${input.senderName} vous a écrit sur Makiti`;
+  const subject = `${input.senderName} vous a écrit sur Filloo`;
 
   const text = [
     `Bonjour ${input.recipientName},`,
-    `${input.senderName} vous a envoyé un message sur Makiti.`,
+    `${input.senderName} vous a envoyé un message sur Filloo.`,
     ...(about ? [about] : []),
     excerpt,
     `Répondre : ${link}`,
@@ -182,11 +182,11 @@ function composeNewMessageEmail(input: {
   // Enveloppe commune aux quatre emails du projet (`emailShell`). Tout ce
   // qui vient d'un humain passe par `escapeHtml`.
   const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.recipientName)},</p>
-      <p style="margin:0 0 16px;"><strong>${escapeHtml(input.senderName)}</strong> vous a envoyé un message sur Makiti.</p>
+      <p style="margin:0 0 16px;"><strong>${escapeHtml(input.senderName)}</strong> vous a envoyé un message sur Filloo.</p>
       ${about ? `<p style="margin:0 0 16px;color:#6b5d52;font-size:14px;">${escapeHtml(about)}</p>` : ""}
       <blockquote style="margin:0 0 24px;padding:12px 16px;background:#faf6f0;border-left:3px solid #c1613a;white-space:pre-wrap;">${escapeHtml(excerpt)}</blockquote>
       ${emailButton(link, "Répondre")}
-      ${emailFooter("Vous recevez cet email parce que vous avez un compte Makiti et qu'un message vous attend.")}`);
+      ${emailFooter("Vous recevez cet email parce que vous avez un compte Filloo et qu'un message vous attend.")}`);
 
   return { to: input.to, subject, text, html };
 }

@@ -1,4 +1,4 @@
-# Mémoire de Makiti
+# Mémoire de Filloo
 
 Point d'entrée pour reprendre le projet dans une nouvelle conversation.
 Il remplace `docs/REPRISE.md` depuis le **2026-09-23**.
@@ -100,7 +100,7 @@ fait perdre le fil du parcours.
   ci-dessus terminé : une page de travail qu'on oublie finit par être
   trouvée.
 - **Regarder le projet Supabase « Fillo »** du 2026-08-25, qui tourne
-  encore à côté de `Makiti` sans qu'on sache s'il sert.
+  encore à côté de `Filloo` sans qu'on sache s'il sert.
 - **Supprimer les branches `claude/*` restées sur GitHub.** Inventoriées
   le 2026-09-21 : aucune ne portait alors de contenu absent de `main`. Le
   relais Git des sessions refuse la suppression de références (403) :
@@ -156,7 +156,7 @@ trompera.
 
 ---
 
-## Ce que Makiti est
+## Ce que Filloo est
 
 Une marketplace de **mise en relation** en Guinée. Les commerçants
 publient leurs produits avec un prix, les clients les parcourent et
@@ -392,7 +392,7 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   prix, le retirait du catalogue en affichant « enregistré ». Les photos
   se réécrivent désormais position par position.
 - **Une liste blanche qui compare des préfixes valide une ORTHOGRAPHE,
-  pas une adresse.** `/<TAB>/faux-makiti.gn` passait `safeNextPath`, et
+  pas une adresse.** `/<TAB>/faux-filloo.gn` passait `safeNextPath`, et
   les navigateurs effacent les tabulations avant d'analyser l'adresse.
   **Une adresse se valide en l'analysant comme le fera celui qui la
   suivra.**
@@ -514,10 +514,27 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-160 commits, du plus récent au plus ancien.
+177 commits, du plus récent au plus ancien.
 
 ### 2026-09-23
 
+- `5ffecd2` Un produit peut porter cinq photos
+- `4a3376b` La proposition d'installation survit à la navigation
+- `9af0232` Les photos d'un produit se parcourent en glissant
+- `02baaa7` La mémoire décrit les alertes de message
+- `0c3ef98` Le push part à chaque message, avec vibration
+- `d9c7c89` Un message reçu sonne et s'annonce sur tous les écrans
+- `922550e` La mémoire garde les trois défauts trouvés par le parcours réel
+- `eb6f842` Une boutique en attente voit la confirmation de son brouillon
+- `895fb61` Modifier un produit publié ne le dépublie plus
+- `4aeaded` Le temps réel s'abonne avec la session, plus en anonyme
+- `7089de7` La mémoire note l'inscription cassée et le push jamais distribué
+- `571f7fc` Un brouillon se publie depuis son formulaire
+- `b3bd53b` Chaque conversation montre la photo de son produit
+- `1f156ab` Le compteur de messages non lus suit l'arrivée des messages
+- `f15362c` npm run largeurs ne vide plus le formulaire de connexion
+- `9f6e4e5` Les commentaires du responsive reviennent au strict nécessaire
+- `745bc25` Ajoute la vérification des largeurs d'écran
 - `7b979ab` Le choix des photos ne sort plus d'un écran de 320 px
 - `fe5e12b` Le responsive s'étend à toute l'application, et se centre
 - `c4c488a` Les commentaires explicatifs disparaissent de 157 fichiers

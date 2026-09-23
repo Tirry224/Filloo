@@ -28,7 +28,7 @@ export async function generateMetadata({
   const titre = `${merchant.shopName} — ${merchant.city}`;
   const description =
     merchant.description?.slice(0, 200) ||
-    `Découvrez les produits de ${merchant.shopName}, à ${merchant.city}, et contactez le commerçant sur Makiti.`;
+    `Découvrez les produits de ${merchant.shopName}, à ${merchant.city}, et contactez le commerçant sur Filloo.`;
 
   return {
     title: titre,

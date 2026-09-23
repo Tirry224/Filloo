@@ -1,5 +1,5 @@
 -- =====================================================================
--- Makiti — jeu de DÉMONSTRATION
+-- Filloo — jeu de DÉMONSTRATION
 -- =====================================================================
 -- CE FICHIER N'EST PAS UNE MIGRATION. Il ne décrit pas le schéma, il
 -- remplit la base de fausses boutiques pour qu'on puisse REGARDER les
@@ -30,13 +30,13 @@ insert into auth.users (
 ) values
   ('00000000-0000-0000-0000-000000000000',
    'd0000000-0000-4000-a000-000000000001', 'authenticated', 'authenticated',
-   'aissatou@demo.makiti.local', extensions.crypt('demo-makiti-2026', extensions.gen_salt('bf')),
+   'aissatou@demo.filloo.local', extensions.crypt('demo-filloo-2026', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}'::jsonb,
    '{"role":"merchant","full_name":"Aïssatou Barry","phone":"622334455"}'::jsonb,
    now(), now()),
   ('00000000-0000-0000-0000-000000000000',
    'd0000000-0000-4000-a000-000000000002', 'authenticated', 'authenticated',
-   'kaloum@demo.makiti.local', extensions.crypt('demo-makiti-2026', extensions.gen_salt('bf')),
+   'kaloum@demo.filloo.local', extensions.crypt('demo-filloo-2026', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}'::jsonb,
    '{"role":"merchant","full_name":"Mamadou Sylla","phone":"622110022"}'::jsonb,
    now(), now())
@@ -131,6 +131,6 @@ update public.products set status = 'sold'
 -- Les `on delete cascade` de 0001 font le reste : profils, boutiques,
 -- produits, photos et conversations partent avec les comptes.
 --
---   delete from auth.users where email like '%@demo.makiti.local';
+--   delete from auth.users where email like '%@demo.filloo.local';
 --
 -- =====================================================================

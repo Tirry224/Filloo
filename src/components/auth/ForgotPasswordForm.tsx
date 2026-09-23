@@ -22,7 +22,7 @@ export function ForgotPasswordForm({ next }: { next?: string }) {
 
       {/* Le message ne dit jamais si le compte existe : sinon n'importe
           qui pourrait tester des adresses une par une pour découvrir qui
-          est inscrit sur Makiti. */}
+          est inscrit sur Filloo. */}
       {state?.sent ? (
         <p className="flex gap-2.5 rounded-lg bg-success-soft px-3.5 py-3 text-sm leading-normal text-success-ink">
           <Check size={19} strokeWidth={2.4} className="shrink-0 text-success" aria-hidden />

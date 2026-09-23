@@ -20,30 +20,30 @@ afterEach(() => {
 });
 
 test("la variable explicite gagne toujours", () => {
-  // Elle est la seule à connaître un domaine propre le jour où Makiti en
+  // Elle est la seule à connaître un domaine propre le jour où Filloo en
   // prend un : un repli ne doit jamais la contredire.
-  process.env.NEXT_PUBLIC_SITE_URL = "https://makiti.gn";
-  process.env.VERCEL_PROJECT_PRODUCTION_URL = "makiti.vercel.app";
-  assert.equal(siteUrl(), "https://makiti.gn");
+  process.env.NEXT_PUBLIC_SITE_URL = "https://filloo.gn";
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "filloo.vercel.app";
+  assert.equal(siteUrl(), "https://filloo.gn");
 });
 
 test("LE FILET : sans variable explicite, l'adresse de production de Vercel prend le relais", () => {
   delete process.env.NEXT_PUBLIC_SITE_URL;
-  process.env.VERCEL_PROJECT_PRODUCTION_URL = "makiti.vercel.app";
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "filloo.vercel.app";
   // Vercel la donne sans protocole ; c'est à nous de l'ajouter.
-  assert.equal(siteUrl(), "https://makiti.vercel.app");
+  assert.equal(siteUrl(), "https://filloo.vercel.app");
 });
 
 test("la barre oblique finale est retirée, des deux sources", () => {
   /* Sinon les appelants, qui concatènent un chemin commençant déjà par
      `/`, produisent `https://site.gn//produit/x` — une autre adresse pour
      un moteur de recherche. */
-  process.env.NEXT_PUBLIC_SITE_URL = "https://makiti.gn///";
-  assert.equal(siteUrl(), "https://makiti.gn");
+  process.env.NEXT_PUBLIC_SITE_URL = "https://filloo.gn///";
+  assert.equal(siteUrl(), "https://filloo.gn");
 
   delete process.env.NEXT_PUBLIC_SITE_URL;
-  process.env.VERCEL_PROJECT_PRODUCTION_URL = "makiti.vercel.app/";
-  assert.equal(siteUrl(), "https://makiti.vercel.app");
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "filloo.vercel.app/";
+  assert.equal(siteUrl(), "https://filloo.vercel.app");
 });
 
 test("sans aucune source, on ne devine pas de domaine", () => {
@@ -81,7 +81,7 @@ test("l'en-tête Host n'est plus une source", () => {
      l'alimente. */
   delete process.env.NEXT_PUBLIC_SITE_URL;
   delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  process.env.HOST = "faux-makiti.gn";
+  process.env.HOST = "faux-filloo.gn";
   process.env.VERCEL_URL = "deploiement-ephemere.vercel.app";
   assert.equal(siteUrl(), null);
 });

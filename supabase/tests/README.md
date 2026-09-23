@@ -11,10 +11,10 @@ ailleurs que chez Supabase. Ce fichier ne fait pas partie de l'application.
 ## Lancer les tests
 
 ```bash
-createdb makiti_test
-psql -d makiti_test -f supabase/tests/_supabase_stub.sql
-for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d makiti_test -f "$f"; done
-psql -d makiti_test -f supabase/tests/security_test.sql
+createdb filloo_test
+psql -d filloo_test -f supabase/tests/_supabase_stub.sql
+for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f "$f"; done
+psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
 Les 153 vérifications affichent `OK`. La première qui échoue interrompt tout

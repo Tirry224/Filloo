@@ -1,9 +1,9 @@
 /**
  * L'adresse où reprendre après une connexion. Elle vient de l'URL, donc de
- * n'importe qui : sans contrôle, `?next=https://faux-makiti.gn` est une
+ * n'importe qui : sans contrôle, `?next=https://faux-filloo.gn` est une
  * redirection ouverte vers un site d'hameçonnage.
  *
- * Comparer des préfixes ne suffit pas — `/⇥/faux-makiti.gn` passerait, car
+ * Comparer des préfixes ne suffit pas — `/⇥/faux-filloo.gn` passerait, car
  * les navigateurs effacent tabulations et sauts de ligne AVANT d'analyser
  * l'adresse. Il faut donc l'analyser comme le fera celui qui la suivra :
  * pas de caractère de contrôle, et résolue contre une origine bidon, elle
@@ -11,7 +11,7 @@
  *
  * `.invalid` est réservé par la RFC 2606 : rien n'est joint ici.
  */
-const ORIGINE_DE_TEST = "http://makiti.invalid";
+const ORIGINE_DE_TEST = "http://filloo.invalid";
 
 /** Tabulation, retour chariot, saut de ligne et le reste des caractères de
  * contrôle : chacun fait dire à l'adresse autre chose qu'elle ne montre. */

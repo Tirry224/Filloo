@@ -39,7 +39,7 @@ export function PrivacyScreen({ backHref, prefixe = "" }: { backHref: string; pr
             <h2 className="text-base font-semibold">Responsable du traitement</h2>
             {EDITEUR_NOM ? (
               <p className="text-base leading-relaxed">
-                {EDITEUR_NOM}, éditeur de Makiti — {EDITEUR_VILLE}.
+                {EDITEUR_NOM}, éditeur de Filloo — {EDITEUR_VILLE}.
               </p>
             ) : null}
             <p className="text-base leading-relaxed">

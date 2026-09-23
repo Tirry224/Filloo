@@ -135,8 +135,8 @@ export async function ThreadScreen({
             {context.iAmSuspended
               ? "Votre compte ne permet plus d'écrire. Vos conversations restent consultables."
               : context.iAmMerchant
-                ? "Cette personne n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."
-                : "Cette boutique n'est plus joignable sur Makiti. Vous pouvez relire vos échanges, mais plus lui écrire."}
+                ? "Cette personne n'est plus joignable sur Filloo. Vous pouvez relire vos échanges, mais plus lui écrire."
+                : "Cette boutique n'est plus joignable sur Filloo. Vous pouvez relire vos échanges, mais plus lui écrire."}
           </p>
         ) : blockedByPeer ? (
           <p className="py-2 text-center text-sm text-ink-soft">Vous ne pouvez plus écrire dans ce fil.</p>

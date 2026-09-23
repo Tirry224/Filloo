@@ -23,7 +23,7 @@ export type ArticleConfidentialite = {
 };
 
 export const CONFIDENTIALITE_PREAMBULE = [
-  "Cette Politique de confidentialité explique quelles données Makiti collecte, pourquoi, avec qui elles sont partagées, combien de temps elles sont conservées, et ce que vous pouvez demander à leur sujet.",
+  "Cette Politique de confidentialité explique quelles données Filloo collecte, pourquoi, avec qui elles sont partagées, combien de temps elles sont conservées, et ce que vous pouvez demander à leur sujet.",
   "Elle complète les Conditions d’utilisation, dont l’article 19 y renvoie. Elle décrit le fonctionnement réel de la plateforme, et non des intentions : si une pratique change, ce texte change avec elle et sa date de mise à jour l’indique.",
 ];
 
@@ -32,15 +32,15 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 1,
     titre: "Qui traite vos données",
     blocs: [
-      "Makiti est une plateforme de mise en relation entre commerçants et clients en Guinée. Elle ne vend rien, n’encaisse aucun paiement et n’organise aucune livraison : la vente se conclut directement entre le client et le commerçant, hors de la plateforme.",
-      "Cette précision n’est pas décorative : elle explique pourquoi Makiti ne détient aucune donnée bancaire, aucune adresse de livraison et aucun historique d’achat.",
+      "Filloo est une plateforme de mise en relation entre commerçants et clients en Guinée. Elle ne vend rien, n’encaisse aucun paiement et n’organise aucune livraison : la vente se conclut directement entre le client et le commerçant, hors de la plateforme.",
+      "Cette précision n’est pas décorative : elle explique pourquoi Filloo ne détient aucune donnée bancaire, aucune adresse de livraison et aucun historique d’achat.",
     ],
   },
   {
     numero: 2,
     titre: "Ce que vous pouvez faire sans donner aucune donnée",
     blocs: [
-      "Le catalogue, les fiches produit et les pages de boutique se consultent sans compte et sans inscription. Parcourir Makiti ne demande rien.",
+      "Le catalogue, les fiches produit et les pages de boutique se consultent sans compte et sans inscription. Parcourir Filloo ne demande rien.",
       "Un compte n’est exigé que pour ÉCRIRE : contacter un commerçant, publier un produit, tenir une boutique.",
     ],
   },
@@ -51,7 +51,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
       "À la création d’un compte :",
       [
         "votre adresse email, qui sert d’identifiant de connexion ;",
-        "votre mot de passe, que nous ne stockons jamais en clair et que personne chez Makiti ne peut lire ;",
+        "votre mot de passe, que nous ne stockons jamais en clair et que personne chez Filloo ne peut lire ;",
         "votre nom, affiché à votre interlocuteur dans la messagerie ;",
         "votre numéro de téléphone ;",
         "votre ville, si vous la renseignez, pour filtrer le catalogue.",
@@ -66,14 +66,14 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 4,
     titre: "Ce que nous ne collectons pas",
     blocs: [
-      "Makiti ne collecte pas :",
+      "Filloo ne collecte pas :",
       [
         "de données bancaires ou de moyen de paiement — il n’y a pas de paiement en ligne ;",
         "d’adresse de livraison — il n’y a pas de livraison ;",
         "de position géographique automatique : le filtre de ville est toujours choisi à la main, jamais déduit de votre appareil ;",
-        "de données de profilage publicitaire, et Makiti ne vend aucune donnée à personne.",
+        "de données de profilage publicitaire, et Filloo ne vend aucune donnée à personne.",
       ],
-      "Vos recherches récentes sont enregistrées DANS VOTRE NAVIGATEUR, sur votre appareil uniquement. Elles ne sont jamais envoyées à Makiti, et vider les données de votre navigateur les efface.",
+      "Vos recherches récentes sont enregistrées DANS VOTRE NAVIGATEUR, sur votre appareil uniquement. Elles ne sont jamais envoyées à Filloo, et vider les données de votre navigateur les efface.",
     ],
   },
   {
@@ -102,20 +102,20 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 7,
     titre: "Les prestataires qui hébergent vos données",
     blocs: [
-      "Makiti s’appuie sur trois prestataires, et sur aucun autre :",
+      "Filloo s’appuie sur trois prestataires, et sur aucun autre :",
       [
         "Supabase, pour la base de données, l’authentification et le stockage des photos. Les données sont hébergées dans l’Union européenne (région de Paris).",
         "Vercel, pour l’hébergement de l’application.",
         "Resend, pour l’envoi des emails du service.",
       ],
-      "Ces prestataires traitent les données pour le compte de Makiti et selon ses instructions. Makiti ne partage vos données avec aucun annonceur, aucun courtier en données et aucun réseau social.",
+      "Ces prestataires traitent les données pour le compte de Filloo et selon ses instructions. Filloo ne partage vos données avec aucun annonceur, aucun courtier en données et aucun réseau social.",
     ],
   },
   {
     numero: 8,
     titre: "Les emails et notifications que vous recevez",
     blocs: [
-      "Makiti vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message, décision concernant votre boutique (validée, refusée) ou suspension de votre compte.",
+      "Filloo vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message, décision concernant votre boutique (validée, refusée) ou suspension de votre compte.",
       "Aucun email publicitaire, aucune lettre d’information.",
       "Si vous avez activé les notifications, chaque nouveau message vous est signalé sur votre téléphone. L’email, lui, n’est envoyé que si vous n’avez pas déjà un message non lu dans la même conversation : deux emails pour la même chose n’apprendraient rien de plus.",
       "Les notifications affichées sur un écran verrouillé ne contiennent jamais le motif d’un refus ni celui d’une suspension : elles disent qu’une décision vous attend, et l’email dit laquelle. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
@@ -166,7 +166,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     titre: "La sécurité de vos données",
     blocs: [
       "Les règles qui déterminent qui peut lire et écrire quoi sont appliquées par la base de données elle-même, et pas seulement par l’interface : contourner l’application ne donne pas accès aux données des autres. Ces règles font l’objet de tests automatisés rejoués à chaque modification.",
-      "Les échanges entre votre téléphone et Makiti sont chiffrés. Votre mot de passe est stocké sous une forme qui ne permet pas de le retrouver.",
+      "Les échanges entre votre téléphone et Filloo sont chiffrés. Votre mot de passe est stocké sous une forme qui ne permet pas de le retrouver.",
       "Aucun système n’est infaillible. En cas d’incident touchant vos données, nous vous en informerons à l’adresse de votre compte.",
     ],
   },
@@ -174,7 +174,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 13,
     titre: "Les mineurs",
     blocs: [
-      "Makiti n’est pas destinée aux personnes de moins de 18 ans, conformément aux Conditions d’utilisation.",
+      "Filloo n’est pas destinée aux personnes de moins de 18 ans, conformément aux Conditions d’utilisation.",
     ],
   },
   {
@@ -187,4 +187,4 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
 ];
 
 export const CONFIDENTIALITE_PIED =
-  "En utilisant Makiti, vous reconnaissez avoir pris connaissance de cette Politique de confidentialité.";
+  "En utilisant Filloo, vous reconnaissez avoir pris connaissance de cette Politique de confidentialité.";

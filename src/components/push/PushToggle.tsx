@@ -21,7 +21,7 @@ export function PushToggle() {
   if (!supporte) {
     return (
       <p className="text-sm text-ink-soft">
-        Ce navigateur ne gère pas les notifications. Sur iPhone, ajoutez d&apos;abord Makiti à votre
+        Ce navigateur ne gère pas les notifications. Sur iPhone, ajoutez d&apos;abord Filloo à votre
         écran d&apos;accueil (bouton Partager, puis « Sur l&apos;écran d&apos;accueil »), puis
         rouvrez-la depuis là.
       </p>

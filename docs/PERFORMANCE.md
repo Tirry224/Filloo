@@ -1,4 +1,4 @@
-# Makiti — tenir sur une mauvaise connexion
+# Filloo — tenir sur une mauvaise connexion
 
 Contrainte n°1 du projet, au même rang que « ça marche » : l'application doit
 rester utilisable sur un réseau lent, instable et **facturé au mégaoctet**.

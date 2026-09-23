@@ -9,8 +9,8 @@
 export const CONDITIONS_MISE_A_JOUR = "17 septembre 2026";
 
 export const CONDITIONS_PREAMBULE = [
-  "Les présentes Conditions d’utilisation (« Conditions ») régissent l’accès et l’utilisation de Makiti (« Makiti », « nous », « notre » ou « la plateforme »).",
-  "En créant un compte ou en utilisant Makiti, vous reconnaissez avoir lu et accepté ces Conditions.",
+  "Les présentes Conditions d’utilisation (« Conditions ») régissent l’accès et l’utilisation de Filloo (« Filloo », « nous », « notre » ou « la plateforme »).",
+  "En créant un compte ou en utilisant Filloo, vous reconnaissez avoir lu et accepté ces Conditions.",
 ];
 
 export type BlocConditions = string | string[];
@@ -24,10 +24,10 @@ export type ArticleConditions = {
 export const CONDITIONS: ArticleConditions[] = [
   {
     numero: 1,
-    titre: "Objet de Makiti",
+    titre: "Objet de Filloo",
     blocs: [
-      "Makiti est une plateforme de mise en relation permettant aux commerçants de présenter leurs produits et aux clients de les découvrir et de contacter les commerçants.",
-      "Makiti permet notamment :",
+      "Filloo est une plateforme de mise en relation permettant aux commerçants de présenter leurs produits et aux clients de les découvrir et de contacter les commerçants.",
+      "Filloo permet notamment :",
       [
         "la consultation du catalogue sans création de compte ;",
         "la recherche de produits et de boutiques ;",
@@ -37,14 +37,14 @@ export const CONDITIONS: ArticleConditions[] = [
         "la messagerie entre clients et commerçants ;",
         "le signalement de contenus ou de comportements problématiques.",
       ],
-      "Makiti n’est pas le vendeur des produits présents sur la plateforme et n’est pas partie aux transactions entre utilisateurs.",
+      "Filloo n’est pas le vendeur des produits présents sur la plateforme et n’est pas partie aux transactions entre utilisateurs.",
     ],
   },
   {
     numero: 2,
     titre: "Transactions entre utilisateurs",
     blocs: [
-      "Makiti ne fournit actuellement :",
+      "Filloo ne fournit actuellement :",
       [
         "aucun paiement en ligne ;",
         "aucun panier ;",
@@ -53,7 +53,7 @@ export const CONDITIONS: ArticleConditions[] = [
         "aucun système de notation ou d’avis.",
       ],
       "Le prix, le paiement, la livraison ou remise du produit et les autres conditions de vente sont convenus directement entre le client et le commerçant.",
-      "Makiti ne garantit donc pas qu’une transaction aura lieu ni qu’elle sera correctement exécutée.",
+      "Filloo ne garantit donc pas qu’une transaction aura lieu ni qu’elle sera correctement exécutée.",
       "Le client doit effectuer les vérifications qu’il juge nécessaires avant toute transaction.",
     ],
   },
@@ -64,7 +64,7 @@ export const CONDITIONS: ArticleConditions[] = [
       "La consultation du catalogue est accessible sans compte.",
       "Un compte est nécessaire pour utiliser certaines fonctionnalités, notamment la messagerie.",
       "L’utilisateur doit fournir des informations exactes et à jour lors de son inscription.",
-      "Le numéro de téléphone est demandé pour le compte mais n’est pas vérifié par SMS dans la version actuelle de Makiti. L’utilisateur reste responsable de l’exactitude du numéro fourni.",
+      "Le numéro de téléphone est demandé pour le compte mais n’est pas vérifié par SMS dans la version actuelle de Filloo. L’utilisateur reste responsable de l’exactitude du numéro fourni.",
     ],
   },
   {
@@ -87,9 +87,9 @@ export const CONDITIONS: ArticleConditions[] = [
     titre: "Compte commerçant et validation",
     blocs: [
       "La création d’un espace commerçant ne signifie pas que la boutique est automatiquement approuvée.",
-      "Makiti peut effectuer un contrôle avant l’activation de la boutique.",
+      "Filloo peut effectuer un contrôle avant l’activation de la boutique.",
       "Un commerçant en attente de validation peut préparer sa boutique et ses produits en brouillon.",
-      "Makiti peut :",
+      "Filloo peut :",
       [
         "approuver une boutique ;",
         "demander des corrections ou informations complémentaires ;",
@@ -122,8 +122,8 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 7,
     titre: "Produits vendus",
     blocs: [
-      "Un produit marqué comme « vendu » n’est plus considéré comme disponible à la vente sur Makiti.",
-      "Makiti ne gère pas de stock et ne garantit pas la disponibilité réelle d’un produit.",
+      "Un produit marqué comme « vendu » n’est plus considéré comme disponible à la vente sur Filloo.",
+      "Filloo ne gère pas de stock et ne garantit pas la disponibilité réelle d’un produit.",
       "Le commerçant doit mettre à jour l’état de ses produits lorsqu’ils ne sont plus disponibles.",
     ],
   },
@@ -131,7 +131,7 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 8,
     titre: "Contenus interdits",
     blocs: [
-      "Il est interdit d’utiliser Makiti pour publier, proposer ou promouvoir :",
+      "Il est interdit d’utiliser Filloo pour publier, proposer ou promouvoir :",
       [
         "des produits ou services illégaux ;",
         "des produits contrefaits ou frauduleux ;",
@@ -140,9 +140,9 @@ export const CONDITIONS: ArticleConditions[] = [
         "des contenus trompeurs ou frauduleux ;",
         "des contenus à caractère abusif, menaçant ou harcelant ;",
         "des contenus contenant des logiciels malveillants ;",
-        "des contenus destinés à contourner les règles de Makiti.",
+        "des contenus destinés à contourner les règles de Filloo.",
       ],
-      "Makiti peut retirer tout contenu qu’elle estime contraire aux présentes Conditions ou à la législation applicable.",
+      "Filloo peut retirer tout contenu qu’elle estime contraire aux présentes Conditions ou à la législation applicable.",
     ],
   },
   {
@@ -150,9 +150,9 @@ export const CONDITIONS: ArticleConditions[] = [
     titre: "Photos, descriptions et autres contenus",
     blocs: [
       "L’utilisateur reste responsable des contenus qu’il publie.",
-      "Il garantit disposer des droits nécessaires pour publier les photos, textes, logos et autres contenus transmis à Makiti.",
-      "En publiant un contenu sur Makiti, l’utilisateur accorde à Makiti une autorisation non exclusive d’héberger, reproduire, afficher et adapter ce contenu dans la mesure nécessaire au fonctionnement, à la sécurité, à la promotion et à l’amélioration de la plateforme.",
-      "Cette autorisation ne transfère pas la propriété du contenu à Makiti.",
+      "Il garantit disposer des droits nécessaires pour publier les photos, textes, logos et autres contenus transmis à Filloo.",
+      "En publiant un contenu sur Filloo, l’utilisateur accorde à Filloo une autorisation non exclusive d’héberger, reproduire, afficher et adapter ce contenu dans la mesure nécessaire au fonctionnement, à la sécurité, à la promotion et à l’amélioration de la plateforme.",
+      "Cette autorisation ne transfère pas la propriété du contenu à Filloo.",
     ],
   },
   {
@@ -166,10 +166,10 @@ export const CONDITIONS: ArticleConditions[] = [
         "envoyer des messages répétitifs ou du spam ;",
         "diffuser des contenus illégaux ;",
         "tenter d’obtenir frauduleusement des informations personnelles ou financières ;",
-        "utiliser la messagerie pour contourner les restrictions de Makiti ;",
+        "utiliser la messagerie pour contourner les restrictions de Filloo ;",
         "utiliser des moyens automatisés abusifs.",
       ],
-      "Makiti peut limiter ou suspendre l’accès à la messagerie en cas d’abus.",
+      "Filloo peut limiter ou suspendre l’accès à la messagerie en cas d’abus.",
     ],
   },
   {
@@ -177,7 +177,7 @@ export const CONDITIONS: ArticleConditions[] = [
     titre: "Signalements et modération",
     blocs: [
       "Les utilisateurs peuvent signaler un produit, une boutique ou un comportement qu’ils considèrent comme problématique.",
-      "Makiti peut examiner les signalements et prendre les mesures qu’elle estime appropriées, notamment :",
+      "Filloo peut examiner les signalements et prendre les mesures qu’elle estime appropriées, notamment :",
       [
         "masquer un produit ;",
         "retirer un contenu ;",
@@ -185,14 +185,14 @@ export const CONDITIONS: ArticleConditions[] = [
         "suspendre un compte ;",
         "limiter certaines fonctionnalités.",
       ],
-      "La modération de Makiti ne constitue pas une garantie que tous les contenus ou utilisateurs présents sur la plateforme ont été vérifiés.",
+      "La modération de Filloo ne constitue pas une garantie que tous les contenus ou utilisateurs présents sur la plateforme ont été vérifiés.",
     ],
   },
   {
     numero: 12,
     titre: "Limites d’utilisation",
     blocs: [
-      "Afin de protéger la plateforme et ses utilisateurs, Makiti peut appliquer des limites d’utilisation, notamment concernant :",
+      "Afin de protéger la plateforme et ses utilisateurs, Filloo peut appliquer des limites d’utilisation, notamment concernant :",
       [
         "le nombre de boutiques contactées ;",
         "le nombre de messages envoyés ;",
@@ -206,13 +206,13 @@ export const CONDITIONS: ArticleConditions[] = [
     titre: "Sécurité du compte",
     blocs: [
       "L’utilisateur doit conserver ses identifiants confidentiels et ne pas permettre à une autre personne d’utiliser son compte.",
-      "Il doit informer Makiti dès qu’il constate une utilisation non autorisée de son compte.",
+      "Il doit informer Filloo dès qu’il constate une utilisation non autorisée de son compte.",
       "Il est interdit de :",
       [
         "tenter d’accéder au compte d’un autre utilisateur ;",
         "contourner les mécanismes de sécurité ;",
         "exploiter une vulnérabilité ;",
-        "perturber volontairement le fonctionnement de Makiti ;",
+        "perturber volontairement le fonctionnement de Filloo ;",
         "récupérer ou utiliser des données auxquelles l’utilisateur n’a pas droit d’accès.",
       ],
     ],
@@ -221,10 +221,10 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 14,
     titre: "Suspension ou fermeture d’un compte",
     blocs: [
-      "Makiti peut suspendre ou fermer un compte, une boutique ou certaines fonctionnalités lorsqu’une violation des présentes Conditions est constatée, lorsqu’une activité présente un risque pour les utilisateurs ou lorsque la loi l’exige.",
+      "Filloo peut suspendre ou fermer un compte, une boutique ou certaines fonctionnalités lorsqu’une violation des présentes Conditions est constatée, lorsqu’une activité présente un risque pour les utilisateurs ou lorsque la loi l’exige.",
       "La suspension peut notamment concerner un commerçant faisant l’objet d’un litige ou d’un signalement sérieux.",
       "Une suspension peut entraîner l’impossibilité de publier, contacter ou répondre aux utilisateurs selon la nature de la mesure.",
-      "L’utilisateur peut également demander la fermeture de son compte selon les fonctionnalités disponibles sur Makiti.",
+      "L’utilisateur peut également demander la fermeture de son compte selon les fonctionnalités disponibles sur Filloo.",
     ],
   },
   {
@@ -233,15 +233,15 @@ export const CONDITIONS: ArticleConditions[] = [
     blocs: [
       "Les utilisateurs sont responsables de leurs relations et transactions.",
       "En cas de désaccord concernant un produit ou une transaction, le client et le commerçant doivent en priorité tenter de résoudre directement leur différend.",
-      "Makiti peut recevoir un signalement et prendre des mesures concernant l’utilisation de sa plateforme.",
-      "Cependant, Makiti n’est pas arbitre des transactions et ne garantit pas le règlement d’un litige commercial entre utilisateurs.",
+      "Filloo peut recevoir un signalement et prendre des mesures concernant l’utilisation de sa plateforme.",
+      "Cependant, Filloo n’est pas arbitre des transactions et ne garantit pas le règlement d’un litige commercial entre utilisateurs.",
     ],
   },
   {
     numero: 16,
     titre: "Absence de garantie sur les vendeurs et produits",
     blocs: [
-      "La présence d’un commerçant ou d’un produit sur Makiti ne signifie pas que Makiti certifie :",
+      "La présence d’un commerçant ou d’un produit sur Filloo ne signifie pas que Filloo certifie :",
       [
         "l’identité complète du commerçant ;",
         "la qualité du produit ;",
@@ -255,43 +255,43 @@ export const CONDITIONS: ArticleConditions[] = [
   },
   {
     numero: 17,
-    titre: "Disponibilité de Makiti",
+    titre: "Disponibilité de Filloo",
     blocs: [
-      "Makiti s’efforce de maintenir le service disponible.",
+      "Filloo s’efforce de maintenir le service disponible.",
       "Toutefois, des interruptions peuvent survenir notamment en raison :",
       [
         "de maintenance ;",
         "de problèmes techniques ;",
         "de défaillances de prestataires externes ;",
         "de problèmes de réseau ou d’accès Internet ;",
-        "de circonstances indépendantes de la volonté de Makiti.",
+        "de circonstances indépendantes de la volonté de Filloo.",
       ],
-      "Makiti ne garantit pas un fonctionnement permanent ou sans interruption.",
+      "Filloo ne garantit pas un fonctionnement permanent ou sans interruption.",
     ],
   },
   {
     numero: 18,
-    titre: "Propriété intellectuelle de Makiti",
+    titre: "Propriété intellectuelle de Filloo",
     blocs: [
       "La plateforme, son interface, son identité visuelle, ses logos, ses textes, ses fonctionnalités et ses éléments techniques sont protégés par les droits applicables.",
-      "Sauf autorisation, il est interdit de copier, reproduire, modifier, distribuer ou exploiter les éléments de Makiti au-delà de ce qui est nécessaire à l’utilisation normale du service.",
+      "Sauf autorisation, il est interdit de copier, reproduire, modifier, distribuer ou exploiter les éléments de Filloo au-delà de ce qui est nécessaire à l’utilisation normale du service.",
     ],
   },
   {
     numero: 19,
     titre: "Données personnelles",
     blocs: [
-      "Makiti traite certaines données personnelles nécessaires au fonctionnement du service, notamment pour la création de comptes, la gestion des boutiques, la messagerie et la sécurité.",
-      "Les modalités de collecte, d’utilisation, de conservation et de protection de ces données sont précisées dans la Politique de confidentialité de Makiti.",
+      "Filloo traite certaines données personnelles nécessaires au fonctionnement du service, notamment pour la création de comptes, la gestion des boutiques, la messagerie et la sécurité.",
+      "Les modalités de collecte, d’utilisation, de conservation et de protection de ces données sont précisées dans la Politique de confidentialité de Filloo.",
     ],
   },
   {
     numero: 20,
     titre: "Modifications du service",
     blocs: [
-      "Makiti peut modifier, ajouter ou supprimer certaines fonctionnalités.",
+      "Filloo peut modifier, ajouter ou supprimer certaines fonctionnalités.",
       "Les fonctionnalités actuellement disponibles peuvent évoluer, notamment lors du développement de nouvelles versions.",
-      "Makiti peut également modifier les présentes Conditions.",
+      "Filloo peut également modifier les présentes Conditions.",
       "La nouvelle version sera publiée sur la plateforme et indiquera sa date de mise à jour.",
     ],
   },
@@ -299,8 +299,8 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 21,
     titre: "Responsabilité",
     blocs: [
-      "Makiti fournit un service de mise en relation et ne contrôle pas directement les relations commerciales entre utilisateurs.",
-      "Dans les limites autorisées par la loi, Makiti ne peut être tenue responsable des conséquences résultant notamment :",
+      "Filloo fournit un service de mise en relation et ne contrôle pas directement les relations commerciales entre utilisateurs.",
+      "Dans les limites autorisées par la loi, Filloo ne peut être tenue responsable des conséquences résultant notamment :",
       [
         "d’une transaction entre utilisateurs ;",
         "d’un produit vendu par un commerçant ;",
@@ -316,7 +316,7 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 22,
     titre: "Respect de la législation",
     blocs: [
-      "Chaque utilisateur doit utiliser Makiti conformément aux lois et règlements qui lui sont applicables.",
+      "Chaque utilisateur doit utiliser Filloo conformément aux lois et règlements qui lui sont applicables.",
       "Le commerçant reste notamment responsable de respecter les règles applicables à son activité commerciale, à ses produits et à ses ventes.",
     ],
   },
@@ -325,7 +325,7 @@ export const CONDITIONS: ArticleConditions[] = [
     titre: "Droit applicable et règlement des différends",
     blocs: [
       "Les présentes Conditions sont interprétées conformément au droit applicable.",
-      "En cas de différend concernant l’utilisation de Makiti, les parties s’efforceront d’abord de rechercher une solution amiable.",
+      "En cas de différend concernant l’utilisation de Filloo, les parties s’efforceront d’abord de rechercher une solution amiable.",
       "À défaut d’accord amiable, le différend pourra être soumis aux juridictions compétentes conformément aux règles de droit applicables.",
     ],
   },
@@ -333,17 +333,17 @@ export const CONDITIONS: ArticleConditions[] = [
     numero: 24,
     titre: "Contact",
     blocs: [
-      "Pour toute question, demande ou signalement concernant Makiti, l’utilisateur peut utiliser le moyen de contact indiqué sur la plateforme.",
+      "Pour toute question, demande ou signalement concernant Filloo, l’utilisateur peut utiliser le moyen de contact indiqué sur la plateforme.",
     ],
   },
   {
     numero: 25,
     titre: "Acceptation",
     blocs: [
-      "En créant un compte ou en utilisant les fonctionnalités de Makiti, l’utilisateur reconnaît avoir pris connaissance des présentes Conditions et les accepter.",
+      "En créant un compte ou en utilisant les fonctionnalités de Filloo, l’utilisateur reconnaît avoir pris connaissance des présentes Conditions et les accepter.",
       "Si l’utilisateur n’accepte pas ces Conditions, il ne doit pas utiliser les fonctionnalités auxquelles elles s’appliquent.",
     ],
   },
 ];
 
-export const CONDITIONS_PIED = "Makiti — Marketplace de mise en relation en Guinée.";
+export const CONDITIONS_PIED = "Filloo — Marketplace de mise en relation en Guinée.";

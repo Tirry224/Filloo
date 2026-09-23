@@ -47,7 +47,7 @@ export function Wordmark({ size = "md" }: { size?: "md" | "lg" }) {
         size === "lg" ? "text-2xl" : "text-xl",
       )}
     >
-      Makiti
+      Filloo
     </span>
   );
 }

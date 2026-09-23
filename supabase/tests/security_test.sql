@@ -1,5 +1,5 @@
 -- =====================================================================
--- Makiti — tests de sécurité
+-- Filloo — tests de sécurité
 -- =====================================================================
 -- Ces tests simulent de vrais utilisateurs et vérifient qu'ils ne peuvent
 -- PAS faire ce qui leur est interdit. Un test de sécurité qui ne vérifie
@@ -2052,7 +2052,7 @@ reset role;
 -- =====================================================================
 -- Ces trois valeurs — endpoint, p256dh, auth_secret — forment ensemble le
 -- droit d'écrire sur l'écran verrouillé de quelqu'un. Les voir, c'est
--- pouvoir lui envoyer une notification au nom de Makiti ; les écrire au
+-- pouvoir lui envoyer une notification au nom de Filloo ; les écrire au
 -- nom d'un autre, c'est détourner les siennes.
 
 set role authenticated;

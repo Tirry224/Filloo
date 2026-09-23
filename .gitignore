@@ -15,7 +15,7 @@ build/
 .vercel
 
 # canvas assemblé, régénérable depuis design/*.dc.html
-design/makiti-maquette.html
+design/filloo-maquette.html
 
 # TypeScript
 *.tsbuildinfo

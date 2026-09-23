@@ -24,14 +24,14 @@ function configurer(): boolean {
      Mozilla sans raison. */
   const site = siteUrl();
   if (!site) {
-    /* Le repli est faux et doit se voir : `makiti.app` n'appartient pas au
+    /* Le repli est faux et doit se voir : `filloo.app` n'appartient pas au
        projet. On continue — le sujet VAPID n'empêche aucune distribution —
        mais journalisé, jamais silencieux. */
     console.error(
       "[push] NEXT_PUBLIC_SITE_URL absente : sujet VAPID de repli utilisé, à poser sur l'hébergeur.",
     );
   }
-  webpush.setVapidDetails(site || "https://makiti.app", publique, privee);
+  webpush.setVapidDetails(site || "https://filloo.app", publique, privee);
   return true;
 }
 

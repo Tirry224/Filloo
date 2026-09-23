@@ -361,7 +361,7 @@ plus cher à lire qu'un peu de duplication assumée.
 
 La frontière de `src/components/` reste celle d'aujourd'hui :
 
-- `ui/` — aucune connaissance de Makiti. `Button`, `Card`, `Field`. Un
+- `ui/` — aucune connaissance de Filloo. `Button`, `Card`, `Field`. Un
   composant de `ui/` qui importe un type du domaine est un bug de rangement.
 - `product/`, `chat/` — le domaine.
 

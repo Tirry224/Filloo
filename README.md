@@ -1,4 +1,4 @@
-# Makiti
+# Filloo
 
 Marketplace de mise en relation entre commerçants et clients, en Guinée.
 Le commerçant publie ses produits, le client les parcourt librement et le
@@ -154,7 +154,7 @@ une et aucun email ne part (l'application, elle, continue de marcher) :
 
 ```
 RESEND_API_KEY=re_...
-EMAIL_FROM="Makiti <notifications@ton-domaine.gn>"
+EMAIL_FROM="Filloo <notifications@ton-domaine.gn>"
 NEXT_PUBLIC_SITE_URL=https://ton-domaine.gn
 ```
 
@@ -234,7 +234,7 @@ VAPID_PRIVATE_KEY=<Vercel uniquement, jamais ici>
   façon : c'est elle qu'il envoie au service de push pour créer un
   abonnement. Elle vit donc dans `.env`, versionné.
 - `VAPID_PRIVATE_KEY` — **posée dans Vercel, à ne jamais recopier ici.**
-  Quiconque l'obtient peut notifier tous les abonnés au nom de Makiti.
+  Quiconque l'obtient peut notifier tous les abonnés au nom de Filloo.
 - **La migration `0023` est exécutée** (2026-09-19) : la table
   `push_subscriptions` existe, avec son RLS et ses quatre policies.
 - **Sur iPhone, le push n'existe que si l'application a été « ajoutée à

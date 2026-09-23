@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   /* `next` vient du lien reçu par email, donc d'une URL réécrivable par
      quiconque la fait suivre. Recollé tel quel à `origin`, il ouvre une
      redirection vers un tiers : `?next=@exemple.gn` donne
-     `https://makiti…@exemple.gn`, dont le vrai domaine est `exemple.gn`.
+     `https://filloo…@exemple.gn`, dont le vrai domaine est `exemple.gn`.
 
      Même liste blanche que les écrans d'authentification
      (`safeNextPath`) : un chemin interne, ou le défaut. */

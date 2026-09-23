@@ -4,7 +4,7 @@ Trois dossiers, une règle de rangement simple :
 
 | Dossier | Contient | Exemple |
 |---|---|---|
-| `ui/` | Les briques **sans métier**. Elles ignorent tout de Makiti. | `Button`, `Card`, `Field`, `EmptyState` |
+| `ui/` | Les briques **sans métier**. Elles ignorent tout de Filloo. | `Button`, `Card`, `Field`, `EmptyState` |
 | `product/` | Ce qui parle de **produits et de boutiques**. | `ProductCard`, `PriceTag`, `MerchantCard` |
 | `chat/` | Ce qui parle de **messagerie**. | `MessageBubble`, `ProductRef`, `ThreadRow` |
 

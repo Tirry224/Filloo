@@ -1,5 +1,5 @@
 /**
- * Service worker de Makiti — NOTIFICATIONS UNIQUEMENT.
+ * Service worker de Filloo — NOTIFICATIONS UNIQUEMENT.
  *
  * ── Ce qu'il ne fait pas, et c'est délibéré ────────────────────────────
  *
@@ -61,7 +61,7 @@ self.addEventListener("push", (evenement) => {
     donnees = {};
   }
 
-  const titre = donnees.titre || "Makiti";
+  const titre = donnees.titre || "Filloo";
   const options = {
     body: donnees.corps || "Vous avez un nouveau message.",
     icon: "/icons/icone-192.png",
@@ -70,7 +70,7 @@ self.addEventListener("push", (evenement) => {
        la notification précédente au lieu d'en empiler dix. Un commerçant
        qui reçoit quinze messages veut savoir qu'on lui écrit, pas
        déverrouiller son téléphone pour vider une pile. */
-    tag: donnees.tag || "makiti-message",
+    tag: donnees.tag || "filloo-message",
     renotify: true,
     vibrate: [200, 100, 200],
     data: { url: donnees.url || "/messages" },
@@ -96,9 +96,9 @@ self.addEventListener("push", (evenement) => {
 /**
  * On touche la notification : ouvrir la bonne conversation.
  *
- * On cherche d'abord un onglet Makiti DÉJÀ ouvert et on l'y amène, plutôt
+ * On cherche d'abord un onglet Filloo DÉJÀ ouvert et on l'y amène, plutôt
  * que d'en ouvrir un deuxième — sinon la personne se retrouve avec trois
- * Makiti ouverts après trois messages.
+ * Filloo ouverts après trois messages.
  */
 self.addEventListener("notificationclick", (evenement) => {
   evenement.notification.close();

@@ -35,7 +35,7 @@ export function ContactScreen({ backHref, prefixe = "" }: { backHref: string; pr
             </a>
             <p className="text-sm leading-normal text-ink-soft">
               C&apos;est aussi l&apos;adresse à laquelle répondre si vous avez reçu un
-              email de Makiti au sujet de votre boutique.
+              email de Filloo au sujet de votre boutique.
             </p>
           </Card>
 
@@ -57,7 +57,7 @@ export function ContactScreen({ backHref, prefixe = "" }: { backHref: string; pr
               Une question sur un produit ou une commande
             </p>
             <p className="text-sm leading-normal text-ink-soft">
-              Écrivez directement au commerçant depuis sa fiche produit. Makiti met
+              Écrivez directement au commerçant depuis sa fiche produit. Filloo met
               en relation : elle ne vend pas, n&apos;encaisse aucun paiement et
               n&apos;organise aucune livraison. Le prix, la disponibilité et la
               remise du produit se règlent entre vous et le commerçant.

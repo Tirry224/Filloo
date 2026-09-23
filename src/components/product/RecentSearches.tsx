@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpLeft, Clock } from "lucide-react";
 
-const KEY = "makiti.recherches";
+const KEY = "filloo.recherches";
 const MAX = 5;
 
 function read(): string[] {

@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Les compteurs d'usage de Makiti — côté SERVEUR uniquement.
+ * Les compteurs d'usage de Filloo — côté SERVEUR uniquement.
  *
  * Pas de garde `import "server-only"` : ce serait une dépendance de plus
  * pour un interdit que deux choses rendent déjà impossible — `after()`

@@ -43,7 +43,7 @@ export async function generateMetadata({
   const titre = `${product.title} — ${formatGnf(product.priceGnf)}${vendu ? " (vendu)" : ""}`;
   const description =
     product.description?.slice(0, 200) ||
-    `${product.title} chez ${product.merchant.shopName}, à ${product.merchant.city}. Contactez le commerçant sur Makiti.`;
+    `${product.title} chez ${product.merchant.shopName}, à ${product.merchant.city}. Contactez le commerçant sur Filloo.`;
 
   return {
     title: titre,

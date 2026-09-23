@@ -146,19 +146,19 @@ type Composition =
  */
 const PUSH_PAR_DECISION = {
   merchant_approved: (shopName: string): ContenuPush => ({
-    titre: "Makiti",
+    titre: "Filloo",
     corps: `Votre boutique « ${shopName} » est validée. Publiez vos produits.`,
     url: "/vendeur",
     tag: "decision-boutique",
   }),
   merchant_rejected: (): ContenuPush => ({
-    titre: "Makiti",
+    titre: "Filloo",
     corps: "Une décision concernant votre boutique vous attend.",
     url: "/vendeur/refusee",
     tag: "decision-boutique",
   }),
   profile_suspended: (): ContenuPush => ({
-    titre: "Makiti",
+    titre: "Filloo",
     corps: "Une décision concernant votre compte vous attend.",
     url: "/compte/suspendu",
     tag: "decision-compte",
@@ -271,20 +271,20 @@ async function marquerEchouee(
 
 function approvalEmail(input: { to: string; siteUrl: string; name: string; shopName: string }) {
   const link = `${input.siteUrl}/vendeur`;
-  const subject = `${input.shopName} est en ligne sur Makiti`;
+  const subject = `${input.shopName} est en ligne sur Filloo`;
 
   const text = [
     `Bonjour ${input.name},`,
-    `Votre boutique « ${input.shopName} » a été validée : elle est visible par les clients sur Makiti.`,
+    `Votre boutique « ${input.shopName} » a été validée : elle est visible par les clients sur Filloo.`,
     `Vos produits en brouillon peuvent maintenant être publiés — c'est ce qui vous rendra visible dans le fil.`,
     `Votre boutique : ${link}`,
   ].join("\n\n");
 
   const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.name)},</p>
-      <p style="margin:0 0 16px;">Votre boutique <strong>${escapeHtml(input.shopName)}</strong> a été validée : elle est visible par les clients sur Makiti.</p>
+      <p style="margin:0 0 16px;">Votre boutique <strong>${escapeHtml(input.shopName)}</strong> a été validée : elle est visible par les clients sur Filloo.</p>
       <p style="margin:0 0 24px;">Vos produits en brouillon peuvent maintenant être publiés — c'est ce qui vous rendra visible dans le fil.</p>
       ${emailButton(link, "Ouvrir ma boutique")}
-      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Makiti.")}`);
+      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Filloo.")}`);
 
   return { to: input.to, subject, text, html };
 }
@@ -315,29 +315,29 @@ function rejectionEmail(input: {
       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#faf6f0;border-left:3px solid #c1613a;white-space:pre-wrap;">${escapeHtml(motif)}</blockquote>
       <p style="margin:0 0 24px;">Vos produits en brouillon sont conservés. Corrigez ce qui est signalé, puis renvoyez votre boutique.</p>
       ${emailButton(link, "Renvoyer ma boutique")}
-      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Makiti.")}`);
+      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Filloo.")}`);
 
   return { to: input.to, subject, text, html };
 }
 
 function suspensionEmail(input: { to: string; siteUrl: string; name: string }) {
   const link = `${input.siteUrl}/compte/suspendu`;
-  const subject = "Votre compte Makiti a été suspendu";
+  const subject = "Votre compte Filloo a été suspendu";
 
   const text = [
     `Bonjour ${input.name},`,
-    `Votre compte Makiti a été suspendu : vous ne pouvez plus envoyer de messages ni publier.`,
+    `Votre compte Filloo a été suspendu : vous ne pouvez plus envoyer de messages ni publier.`,
     `Vous pouvez toujours consulter le catalogue, et vos conversations restent lisibles.`,
     `Si vous pensez qu'il s'agit d'une erreur, répondez à cet email.`,
     `Votre compte : ${link}`,
   ].join("\n\n");
 
   const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.name)},</p>
-      <p style="margin:0 0 16px;">Votre compte Makiti a été <strong>suspendu</strong> : vous ne pouvez plus envoyer de messages ni publier.</p>
+      <p style="margin:0 0 16px;">Votre compte Filloo a été <strong>suspendu</strong> : vous ne pouvez plus envoyer de messages ni publier.</p>
       <p style="margin:0 0 16px;">Vous pouvez toujours consulter le catalogue, et vos conversations restent lisibles.</p>
       <p style="margin:0 0 24px;">Si vous pensez qu'il s'agit d'une erreur, répondez à cet email.</p>
       ${emailButton(link, "Voir mon compte")}
-      ${emailFooter("Vous recevez cet email parce que vous avez un compte Makiti.")}`);
+      ${emailFooter("Vous recevez cet email parce que vous avez un compte Filloo.")}`);
 
   return { to: input.to, subject, text, html };
 }

@@ -82,7 +82,7 @@ export default async function HomePage({
           <EmptyState
             icon={Package}
             title={`Aucun produit à ${ville} pour le moment`}
-            description="Makiti démarre à Conakry. Changez de ville pour voir ce qui est en vente, ou inscrivez-vous comme vendeur pour être le premier ici."
+            description="Filloo démarre à Conakry. Changez de ville pour voir ce qui est en vente, ou inscrivez-vous comme vendeur pour être le premier ici."
           >
             {ville !== FALLBACK_CITY ? (
               <Button href={`/?ville=${encodeURIComponent(FALLBACK_CITY)}`}>

@@ -15,9 +15,9 @@ import { safeNextPath } from "../src/lib/next-param.ts";
  * le dise. Ils sont ici, dans le dépôt, avec ceux qui manquaient.
  *
  * Le contournement, pour mémoire : `safeNextPath` comparait des préfixes,
- * donc `//autre.gn` était refusé — mais `/<TAB>/faux-makiti.gn` passait,
+ * donc `//autre.gn` était refusé — mais `/<TAB>/faux-filloo.gn` passait,
  * et les navigateurs effacent les tabulations AVANT d'analyser l'adresse,
- * qui redevenait `//faux-makiti.gn`. Une liste blanche qui compare des
+ * qui redevenait `//faux-filloo.gn`. Une liste blanche qui compare des
  * préfixes valide une ORTHOGRAPHE, pas une adresse.
  *
  *     node --run tests
@@ -36,9 +36,9 @@ test("la chaîne de requête et le fragment sont conservés", () => {
 
 test("une adresse absolue est refusée, quel que soit le protocole", () => {
   for (const hostile of [
-    "https://faux-makiti.gn",
-    "http://faux-makiti.gn",
-    "//faux-makiti.gn",
+    "https://faux-filloo.gn",
+    "http://faux-filloo.gn",
+    "//faux-filloo.gn",
     "javascript:alert(1)",
     "data:text/html,<script>alert(1)</script>",
     "mailto:quelquun@exemple.gn",
@@ -49,9 +49,9 @@ test("une adresse absolue est refusée, quel que soit le protocole", () => {
 
 test("LE CAS QUI A COÛTÉ CHER : un caractère de contrôle en deuxième position", () => {
   /* Le navigateur efface ces caractères puis relit l'adresse : ce qui
-     ressemble à un chemin interne redevient `//faux-makiti.gn`. */
+     ressemble à un chemin interne redevient `//faux-filloo.gn`. */
   for (const controle of ["\t", "\n", "\r", "\u0000", "\u001F", "\u007F"]) {
-    const hostile = `/${controle}/faux-makiti.gn`;
+    const hostile = `/${controle}/faux-filloo.gn`;
     assert.equal(safeNextPath(hostile), null, `accepté à tort : ${JSON.stringify(hostile)}`);
   }
 });

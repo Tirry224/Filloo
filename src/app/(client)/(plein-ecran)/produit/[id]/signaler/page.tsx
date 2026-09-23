@@ -25,7 +25,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   return (
     <Sheet
       title="Signaler ce produit"
-      description="Votre signalement est envoyé à l'équipe Makiti. Le vendeur n'est pas prévenu."
+      description="Votre signalement est envoyé à l'équipe Filloo. Le vendeur n'est pas prévenu."
       closeHref={`/produit/${product.id}`}
     >
       {canReport ? (

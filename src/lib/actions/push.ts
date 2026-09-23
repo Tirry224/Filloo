@@ -80,10 +80,10 @@ export async function sendTestPushAction(): Promise<ActionState> {
   if (!count) return { error: "Aucun appareil abonné. Activez d'abord les notifications." };
 
   await sendPushToUser(user.id, {
-    titre: "Makiti",
+    titre: "Filloo",
     corps: "Test réussi : les notifications fonctionnent sur cet appareil.",
     url: "/compte",
-    tag: "makiti-test",
+    tag: "filloo-test",
   });
 
   return { sent: true };

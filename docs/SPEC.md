@@ -1,4 +1,4 @@
-# Makiti — Spécification de la v1
+# Filloo — Spécification de la v1
 
 Marketplace de mise en relation : des commerçants publient leurs produits,
 des clients les parcourent et contactent le commerçant par messagerie interne.

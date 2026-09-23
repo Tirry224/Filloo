@@ -30,7 +30,7 @@ export async function ReportThreadScreen({
   return (
     <Sheet
       title="Signaler cette conversation"
-      description="Votre signalement est envoyé à l'équipe Makiti. La personne n'est pas prévenue."
+      description="Votre signalement est envoyé à l'équipe Filloo. La personne n'est pas prévenue."
       closeHref={`${base}/${id}`}
     >
       <form action={reportConversationAction} className="flex flex-col gap-3.5">

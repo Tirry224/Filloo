@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Makiti — produits et commerçants près de chez vous",
-    short_name: "Makiti",
+    name: "Filloo — produits et commerçants près de chez vous",
+    short_name: "Filloo",
     description:
       "Trouvez des produits et les commerçants qui les vendent, en Guinée. Parcourez le catalogue et contactez le vendeur pour conclure la vente.",
     lang: "fr",

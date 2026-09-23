@@ -2,7 +2,7 @@
  * LES TROIS SOURCES, dans cet ordre :
  *
  * 1. `NEXT_PUBLIC_SITE_URL`, posée à la main. Elle gagne toujours : c'est
- *    la seule qui connaisse un domaine propre le jour où Makiti en prend
+ *    la seule qui connaisse un domaine propre le jour où Filloo en prend
  *    un.
  * 2. `VERCEL_PROJECT_PRODUCTION_URL`, que Vercel pose SEUL sur chaque
  *    déploiement et qui porte le domaine de production du projet. C'est
@@ -30,7 +30,7 @@ export function siteUrl(): string | null {
   const explicite = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (explicite) return sansBarreFinale(explicite);
 
-  /* Vercel la donne sans protocole (`makiti.vercel.app`), et toujours en
+  /* Vercel la donne sans protocole (`filloo.vercel.app`), et toujours en
      HTTPS côté production. */
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   if (vercel) return sansBarreFinale(vercel.startsWith("http") ? vercel : `https://${vercel}`);

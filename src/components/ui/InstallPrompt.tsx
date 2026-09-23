@@ -9,7 +9,7 @@ import {
   oublierEvenementInstallation,
 } from "@/lib/installation";
 
-const CLE_REFUS = "makiti:installation-refusee";
+const CLE_REFUS = "filloo:installation-refusee";
 const DELAI_APRES_REFUS = 14 * 24 * 60 * 60 * 1000; // 14 jours
 
 /* `localStorage` peut lever (navigation privée, stockage bloqué) : dans ce
@@ -86,13 +86,13 @@ export function InstallPrompt() {
             <Download size={20} strokeWidth={1.8} aria-hidden />
           </div>
           <h2 id="installation-titre" className="text-base font-bold">
-            Installer Makiti sur votre téléphone ?
+            Installer Filloo sur votre téléphone ?
           </h2>
         </div>
 
         {mode === "android" ? (
           <p className="text-sm leading-normal text-ink-soft">
-            Makiti s’ouvrira depuis votre écran d’accueil, comme une application. Rien à
+            Filloo s’ouvrira depuis votre écran d’accueil, comme une application. Rien à
             télécharger depuis un store, et presque aucune place prise.
           </p>
         ) : (

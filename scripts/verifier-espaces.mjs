@@ -1,5 +1,5 @@
 /**
- * Vérifie que les deux espaces de Makiti — client et commerçant — restent
+ * Vérifie que les deux espaces de Filloo — client et commerçant — restent
  * séparés.
  *
  *     node scripts/verifier-espaces.mjs
