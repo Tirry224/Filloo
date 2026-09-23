@@ -9,6 +9,7 @@ import { PhotoPicker } from "@/components/product/PhotoPicker";
 import { createProductAction, updateProductAction } from "@/lib/actions/products";
 import type { ActionState } from "@/lib/actions/auth";
 import type { CategoryOption } from "@/lib/data/reference";
+import { PHOTOS_MAX } from "@/lib/storage";
 
 type ProductFormProps = {
   merchantId: string;
@@ -60,7 +61,7 @@ export function ProductForm(props: ProductFormProps) {
       <input type="hidden" name="productId" value={productId} />
       <ScreenBody>
         <Section className="gap-4">
-          <Field label="Photos" hint="1 photo minimum, 3 maximum. Sans photo, un produit ne se vend pas.">
+          <Field label="Photos" hint={`1 photo minimum, ${PHOTOS_MAX} maximum. Sans photo, un produit ne se vend pas.`}>
             <PhotoPicker merchantId={merchantId} productId={productId} initialPaths={initial?.imagePaths} />
           </Field>
 

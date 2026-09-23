@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
+import { PHOTOS_MAX } from "@/lib/storage";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -34,6 +35,7 @@ function validateProductFields(fields: ReturnType<typeof readProductFields>): st
   if (!fields.categoryId) return "Choisissez une catégorie.";
   if (!Number.isFinite(fields.priceGnf) || fields.priceGnf < 0) return "Le prix n'est pas valide.";
   if (fields.description.length > 2000) return "La description est trop longue.";
+  if (fields.imagePaths.length > PHOTOS_MAX) return `${PHOTOS_MAX} photos au maximum.`;
   return null;
 }
 

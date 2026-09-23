@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
-import { productImageUrl } from "@/lib/storage";
+import { PHOTOS_MAX, productImageUrl } from "@/lib/storage";
 
 type Slot = {
   id: string;
@@ -39,7 +39,7 @@ export function PhotoPicker({
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const room = 3 - slots.length;
+  const room = PHOTOS_MAX - slots.length;
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
