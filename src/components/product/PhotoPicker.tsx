@@ -92,10 +92,6 @@ export function PhotoPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* `flex-wrap` pour les très petits téléphones : trois vignettes de
-          100 px et deux écarts font 324 px, quand un écran de 320 px n'en
-          offre que 288 une fois les marges prises. Sans ça, la troisième
-          photo sortait de l'écran. */}
       <div className="flex flex-wrap gap-3">
         {slots.map((slot) => (
           <div key={slot.id} className="relative">
