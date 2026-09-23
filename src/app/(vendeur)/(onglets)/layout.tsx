@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { MerchantNav } from "@/components/nav/MerchantNav";
-import { RealtimeUnread } from "@/components/chat/RealtimeUnread";
 import { createClient } from "@/lib/supabase/server";
 import { countUnreadMessages } from "@/lib/data/messages";
 
@@ -16,7 +15,6 @@ export default async function MerchantTabsLayout({ children }: { children: React
 
   return (
     <AppShell nav={<MerchantNav unreadCount={unreadCount} />}>
-      <RealtimeUnread />
       {children}
       <InstallPrompt />
     </AppShell>

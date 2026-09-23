@@ -4,6 +4,7 @@ import "@/styles/index.css";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ClosePanels } from "@/components/ui/ClosePanels";
 import { ServiceWorkerRegistrar } from "@/components/ui/ServiceWorkerRegistrar";
+import { MessageAlerts } from "@/components/chat/MessageAlerts";
 import { siteUrl } from "@/lib/site-url";
 
 const body = Figtree({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <ClosePanels />
         <ServiceWorkerRegistrar />
+        <MessageAlerts />
       </body>
     </html>
   );
