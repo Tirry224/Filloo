@@ -6,6 +6,7 @@ import { getMyMerchant } from "@/lib/data/merchants";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
+import { lirePrixGnf } from "@/lib/prix";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -17,26 +18,42 @@ async function requireMerchantId(): Promise<{ merchantId: string } | { error: st
   return { merchantId: merchant.id };
 }
 
-function readProductFields(formData: FormData) {
-  return {
-    title: String(formData.get("title") ?? "").trim(),
-    categoryId: Number(formData.get("categoryId") ?? 0),
-    priceGnf: Number(formData.get("priceGnf") ?? 0),
-    isNegotiable: formData.get("isNegotiable") === "on",
-    description: String(formData.get("description") ?? "").trim(),
-    imagePaths: formData.getAll("imagePaths").map(String).filter(Boolean),
-  };
-}
+type ProductFields = {
+  title: string;
+  categoryId: number;
+  priceGnf: number;
+  isNegotiable: boolean;
+  description: string;
+  imagePaths: string[];
+};
 
-function validateProductFields(fields: ReturnType<typeof readProductFields>): string | null {
-  if (fields.title.length < 3 || fields.title.length > 120) {
-    return "Le titre doit faire entre 3 et 120 caractères.";
+/** Lire ET valider en un seul geste : le prix n'existe comme nombre
+ * qu'une fois la saisie acceptée par `lirePrixGnf`. */
+function readProductFields(formData: FormData): { fields: ProductFields } | { error: string } {
+  const title = String(formData.get("title") ?? "").trim();
+  const categoryId = Number(formData.get("categoryId") ?? 0);
+  const prix = lirePrixGnf(String(formData.get("priceGnf") ?? ""));
+  const description = String(formData.get("description") ?? "").trim();
+  const imagePaths = formData.getAll("imagePaths").map(String).filter(Boolean);
+
+  if (title.length < 3 || title.length > 120) {
+    return { error: "Le titre doit faire entre 3 et 120 caractères." };
   }
-  if (!fields.categoryId) return "Choisissez une catégorie.";
-  if (!Number.isFinite(fields.priceGnf) || fields.priceGnf < 0) return "Le prix n'est pas valide.";
-  if (fields.description.length > 2000) return "La description est trop longue.";
-  if (fields.imagePaths.length > PHOTOS_MAX) return `${PHOTOS_MAX} photos au maximum.`;
-  return null;
+  if (!categoryId) return { error: "Choisissez une catégorie." };
+  if ("erreur" in prix) return { error: prix.erreur };
+  if (description.length > 2000) return { error: "La description est trop longue." };
+  if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos au maximum.` };
+
+  return {
+    fields: {
+      title,
+      categoryId,
+      priceGnf: prix.prix,
+      isNegotiable: formData.get("isNegotiable") === "on",
+      description,
+      imagePaths,
+    },
+  };
 }
 
 /**
@@ -55,9 +72,9 @@ export async function createProductAction(_prevState: ActionState | null, formDa
   const productId = String(formData.get("productId") ?? "");
   if (!productId) return { error: "Formulaire invalide, rechargez la page." };
 
-  const fields = readProductFields(formData);
-  const fieldError = validateProductFields(fields);
-  if (fieldError) return { error: fieldError };
+  const lu = readProductFields(formData);
+  if ("error" in lu) return lu;
+  const { fields } = lu;
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
@@ -155,9 +172,9 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   const productId = String(formData.get("productId") ?? "");
   if (!productId) return { error: "Formulaire invalide, rechargez la page." };
 
-  const fields = readProductFields(formData);
-  const fieldError = validateProductFields(fields);
-  if (fieldError) return { error: fieldError };
+  const lu = readProductFields(formData);
+  if ("error" in lu) return lu;
+  const { fields } = lu;
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {

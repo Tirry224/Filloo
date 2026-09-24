@@ -437,6 +437,13 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 - **Un identifiant de démonstration survit à la donnée de
   démonstration.** Neuf liens de `/ecrans` pointaient encore sur des
   identifiants de démonstration morts.
+- **`Number()` ne lit pas un montant tapé par un humain.** « 450.000 »
+  devenait 450 GNF — le prix divisé par mille, sans un mot —,
+  « 450 000 », l'exemple même du champ, était refusé, et un champ vide
+  donnait un produit à 0 GNF. Trouvé le 2026-09-24 en tapant n'importe
+  quoi dans les formulaires. **Une saisie se lit avec la règle écrite du
+  format attendu** (`src/lib/prix.ts`), jamais avec le convertisseur du
+  langage, qui a ses propres idées.
 - **`Intl.NumberFormat` en français** sépare les milliers par une espace
   fine insécable, illisible sur mobile. Remplacée dans
   `src/lib/format.ts`.
@@ -524,10 +531,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-180 commits, du plus récent au plus ancien.
+181 commits, du plus récent au plus ancien.
 
 ### 2026-09-24
 
+- `dc48399` Les notifications push changent de clé VAPID
 - `994e06c` Le contact et l'envoi des emails passent par filloo.gn@gmail.com
 
 ### 2026-09-23
