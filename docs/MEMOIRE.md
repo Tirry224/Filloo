@@ -524,7 +524,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-179 commits, du plus récent au plus ancien.
+180 commits, du plus récent au plus ancien.
+
+### 2026-09-24
+
+- `994e06c` Le contact et l'envoi des emails passent par filloo.gn@gmail.com
 
 ### 2026-09-23
 

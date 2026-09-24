@@ -23,6 +23,18 @@ import {
  */
 const DELAI_SERVICE_WORKER_MS = 10_000;
 
+/**
+ * Un abonnement créé avec une autre clé VAPID ne reçoit plus rien, et
+ * `subscribe` le rejette tant qu'il existe : il faut le reconnaître pour
+ * le remplacer.
+ */
+function memeCle(abonnement: PushSubscription, cle: string): boolean {
+  const brute = abonnement.options.applicationServerKey;
+  if (!brute) return false;
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(brute)));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") === cle;
+}
+
 async function enregistrementPret(): Promise<ServiceWorkerRegistration | null> {
   return Promise.race([
     navigator.serviceWorker.ready,
@@ -70,7 +82,9 @@ export function usePushAbonnement(): PushAbonnement {
     enregistrementPret()
       .then(async (enregistrement) => {
         if (!enregistrement) return false;
-        return Boolean(await enregistrement.pushManager.getSubscription());
+        const abonnement = await enregistrement.pushManager.getSubscription();
+        const cle = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        return Boolean(abonnement && cle && memeCle(abonnement, cle));
       })
       .then((estAbonne) => {
         if (vivant) setAbonne(estAbonne);
@@ -110,6 +124,8 @@ export function usePushAbonnement(): PushAbonnement {
     // push silencieux. Contrainte partagée : rien ici ne se cache.
     let abonnement: PushSubscription;
     try {
+      const ancien = await enregistrement.pushManager.getSubscription();
+      if (ancien && !memeCle(ancien, cle)) await ancien.unsubscribe();
       abonnement = await enregistrement.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: cle,
