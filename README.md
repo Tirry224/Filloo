@@ -32,8 +32,9 @@ conclut hors de l'application.
       sur Vercel — reste à constater un envoi réel dans une vraie boîte)
 - [x] Notification par email des décisions d'administration : boutique
       validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
-- [x] SMTP Resend côté Supabase — mot de passe oublié et confirmation
-      d'inscription partent par Resend depuis le 2026-09-17
+- [ ] SMTP Gmail (`filloo.gn@gmail.com`) côté Supabase — mot de passe
+      oublié et confirmation d'inscription. Le SMTP Resend du 2026-09-17
+      n'écrivait qu'au propriétaire du compte, faute de domaine
 - [ ] **La chaîne d'envoi des décisions d'administration est CASSÉE, et
       c'est constaté, pas supposé** : la file `notifications` de la base
       de production portait le 2026-09-21 une ligne `merchant_approved`
@@ -268,15 +269,16 @@ avec le SMTP configuré dans **Authentication → Emails → SMTP Settings**.
 C'est de la configuration, pas du code : rien dans ce dépôt ne les
 envoie.
 
-**Fait le 2026-09-17** : le SMTP de Resend y est branché et fonctionne.
-Avant ça, `/mot-de-passe-oublie` promettait « vous recevrez un lien »
-en dépendant du serveur de démonstration de Supabase, que leur propre
-documentation donne pour non destiné à la production.
+**Le SMTP est celui de Gmail, sur l'adresse du projet
+`filloo.gn@gmail.com`.** Filloo n'a pas de domaine, et Resend n'envoie
+sans domaine vérifié qu'au propriétaire du compte : le SMTP Resend posé
+le 2026-09-17 ne pouvait donc écrire à aucun utilisateur.
 
-Les valeurs, si c'est à refaire : hôte `smtp.resend.com`, port `465`
-(`587` en repli), utilisateur `resend`, mot de passe la clé `re_…`,
-expéditeur identique à `EMAIL_FROM` — dont le domaine doit être vérifié
-chez Resend.
+Les valeurs : hôte `smtp.gmail.com`, port `465`, utilisateur et
+expéditeur `filloo.gn@gmail.com`, nom d'expéditeur `Filloo`, mot de
+passe un **mot de passe d'application** Google (validation en deux
+étapes obligatoire ; le mot de passe du compte est refusé). Limite
+d'environ 500 envois par jour.
 
 ### Sur Vercel — à faire avant le premier déploiement
 

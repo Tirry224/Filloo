@@ -49,6 +49,16 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
+- **Poser le SMTP Gmail de `filloo.gn@gmail.com` dans Supabase.** Filloo
+  se lance sans domaine, et Resend n'écrit sans domaine vérifié qu'au
+  propriétaire du compte : c'est la cause la plus probable de toute la
+  panne d'emails ci-dessous. Valeurs dans le README, « Emails
+  d'authentification ». Les emails envoyés par l'app elle-même
+  (`src/lib/email.ts`, Resend) restent éteints au lancement : le push
+  les remplace.
+- **Les trois `merchant_approved` en file ont `attempts = 0`** (constaté
+  le 2026-09-23 par le connecteur Supabase) : le cron n'a jamais lu la
+  file, il est refusé avant. `CRON_SECRET` est le suspect.
 - **La confirmation d'email est DÉSACTIVÉE depuis le 2026-09-23.** Elle
   avait été activée avant que le SMTP soit prouvé, et toute inscription
   échouait sur « Error sending confirmation email » sans créer de compte.
@@ -514,10 +524,12 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-177 commits, du plus récent au plus ancien.
+179 commits, du plus récent au plus ancien.
 
 ### 2026-09-23
 
+- `0d98bef` L'icône de l'app porte un F
+- `cc4c180` Le projet s'appelle désormais Filloo
 - `5ffecd2` Un produit peut porter cinq photos
 - `4a3376b` La proposition d'installation survit à la navigation
 - `9af0232` Les photos d'un produit se parcourent en glissant

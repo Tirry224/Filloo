@@ -3,9 +3,9 @@
  * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "21 septembre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "24 septembre 2026";
 
-export const CONTACT_EMAIL = "bouliwelltirry@gmail.com";
+export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
 /**
  * La ville n'est pas en Guinée, et c'est exact : le service s'adresse au
@@ -106,7 +106,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
       [
         "Supabase, pour la base de données, l’authentification et le stockage des photos. Les données sont hébergées dans l’Union européenne (région de Paris).",
         "Vercel, pour l’hébergement de l’application.",
-        "Resend, pour l’envoi des emails du service.",
+        "Google (Gmail), pour l’envoi des emails du service.",
       ],
       "Ces prestataires traitent les données pour le compte de Filloo et selon ses instructions. Filloo ne partage vos données avec aucun annonceur, aucun courtier en données et aucun réseau social.",
     ],
