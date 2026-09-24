@@ -9,6 +9,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/cn";
 import { signUpAction, createLinkedProfileAction, type ActionState } from "@/lib/actions/auth";
 import Link from "next/link";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 function RoleCard({
   icon: Icon,
@@ -77,7 +78,7 @@ export function SignupForm({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
       <input type="hidden" name="role" value={role} />
       {next ? <input type="hidden" name="next" value={next} /> : null}
 

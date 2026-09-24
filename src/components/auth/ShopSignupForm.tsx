@@ -7,12 +7,13 @@ import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { createMerchantAction } from "@/lib/actions/merchants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(createMerchantAction, null);
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-1 flex-col">
       <ScreenBody>
         <Section className="gap-4">
           <div className="flex items-center gap-2">

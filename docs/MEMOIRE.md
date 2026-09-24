@@ -161,6 +161,21 @@ trompera.
   les produits en ligne disparaîtraient du catalogue. C'est un choix du
   code, que le porteur du projet n'a pas tranché : un commerçant validé
   peut donc renommer sa boutique sans nouvel appel.
+- **Défauts trouvés le 2026-09-24 en saisissant n'importe quoi, pas
+  encore corrigés.** Constatés dans un navigateur sauf mention contraire :
+  - les erreurs inconnues s'affichent brutes et en anglais :
+    `translateAuthError` renvoie le message tel quel, et 18
+    `return { error: x.message }` font de même ;
+  - trois tapes rapides sur « Créer mon compte » envoient deux requêtes :
+    `disabled={pending}` arrive un rendu trop tard. `Composer`
+    a la même forme, d'où un double message probable ;
+  - un nom « . », trois espaces invisibles (U+200B) ou 5 000 caractères
+    passent l'inscription, et un mot de passe de huit espaces aussi ;
+  - lu dans le code : la catégorie d'un produit accepte `-3`, `1.5` ou
+    `99999`, et l'erreur de la base remonte brute ;
+  - lu dans le code : `/produit/<pas-un-uuid>` doit donner un 500, pas
+    un 404 : aucune route ne vérifie l'identifiant, et `getProduct`
+    relance l'erreur `22P02`. *À constater* en production.
 - **`/inscription/boutique` hérite du squelette de chargement client** et
   affiche brièvement « Conakry » pendant l'inscription commerçant.
 
@@ -444,6 +459,13 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   quoi dans les formulaires. **Une saisie se lit avec la règle écrite du
   format attendu** (`src/lib/prix.ts`), jamais avec le convertisseur du
   langage, qui a ses propres idées.
+- **React 19 VIDE un `<form action={fonction}>` après chaque envoi,
+  erreur comprise.** Un chiffre manquant dans le téléphone effaçait les
+  cinq champs de l'inscription. D'où `garderLaSaisie`
+  (`src/lib/garder-la-saisie.ts`) sur neuf formulaires — pas sur la
+  zone de message ni sur le changement de mot de passe, qui DOIVENT se
+  vider après un succès. **Un formulaire se teste en se trompant**, pas
+  seulement en réussissant.
 - **`Intl.NumberFormat` en français** sépare les milliers par une espace
   fine insécable, illisible sur mobile. Remplacée dans
   `src/lib/format.ts`.
@@ -531,10 +553,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-181 commits, du plus récent au plus ancien.
+182 commits, du plus récent au plus ancien.
 
 ### 2026-09-24
 
+- `1942531` Le prix d'un produit se lit comme l'écrit un commerçant
 - `dc48399` Les notifications push changent de clé VAPID
 - `994e06c` Le contact et l'envoi des emails passent par filloo.gn@gmail.com
 

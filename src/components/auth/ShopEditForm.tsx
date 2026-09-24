@@ -7,6 +7,7 @@ import { updateMerchantAction } from "@/lib/actions/merchants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
 import type { Merchant } from "@/lib/types";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 /**
  * `merchant.status` ne change jamais ici (voir `updateMerchantAction`).
@@ -23,7 +24,7 @@ export function ShopEditForm({
   const [state, formAction] = useActionState<ActionState | null, FormData>(updateMerchantAction, null);
 
   return (
-    <form id="shop-edit-form" action={formAction} className="flex flex-col gap-4">
+    <form id="shop-edit-form" action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
       <div className="flex items-center gap-3.5">
         <Avatar name={merchant.shopName} kind="shop" size={64} />
       </div>

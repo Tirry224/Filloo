@@ -4,12 +4,13 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { updatePasswordAction, type ActionState } from "@/lib/actions/auth";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 export function UpdatePasswordForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(updatePasswordAction, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Nouveau mot de passe" htmlFor="password">
         <Input id="password" name="password" type="password" autoComplete="new-password" placeholder="8 caractères minimum" />

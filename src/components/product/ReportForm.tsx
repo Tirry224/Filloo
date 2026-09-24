@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { reportProductAction } from "@/lib/actions/messages";
 import type { ActionState } from "@/lib/actions/auth";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 export function ReportForm({ productId, reasons }: { productId: string; reasons: string[] }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(reportProductAction, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3.5">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-3.5">
       <input type="hidden" name="productId" value={productId} />
       <div>
         {reasons.map((reason, index) => (

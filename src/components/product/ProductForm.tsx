@@ -10,6 +10,7 @@ import { createProductAction, updateProductAction } from "@/lib/actions/products
 import type { ActionState } from "@/lib/actions/auth";
 import type { CategoryOption } from "@/lib/data/reference";
 import { PHOTOS_MAX } from "@/lib/storage";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 type ProductFormProps = {
   merchantId: string;
@@ -57,7 +58,7 @@ export function ProductForm(props: ProductFormProps) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(action, null);
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-1 flex-col">
       <input type="hidden" name="productId" value={productId} />
       <ScreenBody>
         <Section className="gap-4">

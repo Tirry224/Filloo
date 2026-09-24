@@ -6,6 +6,7 @@ import { updateProfileAction } from "@/lib/actions/account";
 import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 export function ProfileForm({
   id,
@@ -28,7 +29,7 @@ export function ProfileForm({
   const [state, formAction] = useActionState<ActionState | null, FormData>(updateProfileAction, null);
 
   return (
-    <form id={id} action={formAction} className="flex flex-col gap-4">
+    <form id={id} action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
       {/* L'espace voyage dans le formulaire parce que l'action serveur ne
           peut pas le deviner : une connexion qui a les DEUX comptes est
           légitime des deux côtés, donc le déduire des profils renverrait

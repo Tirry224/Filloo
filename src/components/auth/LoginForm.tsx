@@ -5,12 +5,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { signInAction, type ActionState } from "@/lib/actions/auth";
+import { garderLaSaisie } from "@/lib/garder-la-saisie";
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<ActionState | null, FormData>(signInAction, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Email" htmlFor="email">
         <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
