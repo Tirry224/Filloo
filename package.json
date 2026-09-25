@@ -14,7 +14,8 @@
     "espaces": "node scripts/verifier-espaces.mjs",
     "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
     "tests": "node --experimental-strip-types --test 'tests/*.test.ts'",
-    "memoire": "node scripts/memoire.mjs"
+    "memoire": "node scripts/memoire.mjs",
+    "migrations": "node scripts/migrations.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

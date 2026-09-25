@@ -80,6 +80,19 @@ endroit qui décide si une adresse de reprise est sûre, les règles de
 saisie vérifiées côté serveur, et l'adresse du site dont dépendent tous
 les liens partant en email.
 
+Les migrations du dépôt et celles de la production se comparent dans les
+deux sens — une migration commitée mais jamais appliquée, ou appliquée au
+tableau de bord mais jamais commitée :
+
+```bash
+npm run migrations                       # lit la production par l'API de gestion
+npm run migrations -- --json liste.json  # ou compare à une liste déjà obtenue
+```
+
+La première forme demande `SUPABASE_ACCESS_TOKEN` (supabase.com → Account
+→ Access Tokens) dans `.env.local`, **jamais dans `.env`** : ce jeton ouvre
+tous les projets du compte.
+
 ## Démarrer l'application
 
 ```bash

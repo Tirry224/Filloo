@@ -331,6 +331,8 @@ npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
 npm run parcours               # mesure d'un parcours
 npm run tests                  # couche applicative (node --test, sans dépendance)
 npm run memoire                # régénère l'historique de ce fichier
+npm run migrations             # dépôt ↔ production ; SUPABASE_ACCESS_TOKEN
+                               # dans .env.local, ou -- --json liste.json
 ```
 
 ---
@@ -440,8 +442,11 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   tant qu'elle n'est pas appliquée.** `0026` (cinq photos) a été
   commitée le 2026-09-24 et déployée côté code, jamais appliquée : du
   24 au 25, la base refusait la 4e photo que l'app proposait. Trouvé en
-  lisant `list_migrations` avant d'appliquer `0027`. Après chaque
-  migration, comparer `supabase/migrations/` à `schema_migrations`.
+  lisant `list_migrations` avant d'appliquer `0027`. Depuis,
+  `npm run migrations` fait la comparaison dans les deux sens : à
+  lancer avant de pousser tout commit qui touche `supabase/migrations/`.
+  En session, sans accès à `api.supabase.com`, passer la sortie de
+  `list_migrations` du connecteur par `--json`.
 
 ### Couche applicative
 
@@ -609,10 +614,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-196 commits, du plus récent au plus ancien.
+197 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `960045d` La mémoire note 0026 restée un jour sans être appliquée
 - `3cc22c2` Un seul signalement en attente par personne et par cible
 - `704fde0` La mémoire dit ce que le test de chaos a corrigé, et ce qu'il laisse
 - `79580d9` Les saisies absurdes sont refusées avant la base, en français
