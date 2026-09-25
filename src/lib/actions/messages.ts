@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -131,6 +132,47 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
 
   backToThread(conversationId, context.iAmMerchant);
+}
+
+/**
+ * Marquer comme lu ce que je viens de voir — seuls les messages reçus,
+ * jamais les miens (policy "messages: marquer comme lu", 0002).
+ *
+ * Une ACTION, et pas une écriture pendant le rendu de `ThreadScreen`, pour
+ * deux raisons :
+ *   - la barre d'onglets et son badge vivent dans le layout `(onglets)`,
+ *     que le cache client de Next garde jusqu'à 5 minutes (préchargement
+ *     jusqu'à `loading.tsx`) : écrit pendant le rendu, le « lu » n'y
+ *     arrivait qu'à l'expiration. `revalidatePath("/", "layout")` vide ce
+ *     cache, c'est le seul moyen qu'offre Next ;
+ *   - un rendu serveur peut tourner pour un PRÉCHARGEMENT : un fil
+ *     « ouvert » sans avoir été vu. Un effet client ne tourne que sur une
+ *     vraie visite.
+ *
+ * Renvoie `true` si quelque chose a changé : la page a alors été rendue à
+ * nouveau avec la réponse, l'appelant n'a pas à rafraîchir.
+ */
+export async function markThreadReadAction(conversationId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const context = await getThreadContext(supabase, conversationId);
+  if (!context) return false;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .is("read_at", null)
+    .neq("sender_id", context.myParticipantId)
+    .select("id");
+  if (error) {
+    console.error("marquage lu impossible :", error.message);
+    return false;
+  }
+  // Vider le cache client a un prix (tous les préchargements repartent) :
+  // on ne le paie que si un badge a réellement changé.
+  if (data.length === 0) return false;
+  revalidatePath("/", "layout");
+  return true;
 }
 
 /** Je ne peux désigner que MOI-MÊME

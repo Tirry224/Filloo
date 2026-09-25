@@ -36,15 +36,8 @@ export async function ThreadScreen({
     produit ? getProduct(supabase, produit) : Promise.resolve(null),
   ]);
 
-  // Marquer comme lu ce que je viens de voir — seuls les messages reçus,
-  // jamais les miens (policy "messages: marquer comme lu", 0002).
-  const { error: readError } = await supabase
-    .from("messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("conversation_id", id)
-    .is("read_at", null)
-    .neq("sender_id", context.myParticipantId);
-  if (readError) console.error("marquage lu impossible :", readError.message);
+  // Le marquage « lu » est fait par `RealtimeThread`, côté client : voir
+  // `markThreadReadAction` pour la raison.
 
   /* La garde de ce fil, dans les deux sens : le côté réel est un FAIT que
      `getThreadContext` connaît, il ne se lit pas dans l'URL. Un commerçant

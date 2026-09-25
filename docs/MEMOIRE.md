@@ -414,6 +414,12 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   erreur. Le badge de non-lus n'a jamais bougé pour cette raison. D'où
   `createRealtimeClient`, qui pose le jeton AVANT `subscribe()`. Vu en
   lisant les trames WebSocket : `phx_join` sans `access_token`.
+- **Une écriture pendant un rendu serveur n'atteint pas le layout déjà
+  en cache.** Le fil se marquait « lu » dans `ThreadScreen`, mais le badge
+  vit dans le layout `(onglets)`, que le cache client de Next garde jusqu'à
+  5 minutes : le badge restait allumé sur un fil ouvert. Le marquage est
+  passé dans `markThreadReadAction`, qui appelle
+  `revalidatePath("/", "layout")`. Correctif *à constater* sur téléphone.
 - **Supprimer toutes les photos puis les réinsérer dépubliait le
   produit.** Le trigger de `0011` voyait un produit publié sans photo entre
   les deux requêtes : toute modification d'un produit publié, même un
