@@ -214,15 +214,20 @@ export async function requestPasswordResetAction(
      `safeNextPath` des deux côtés, à l'aller comme au retour, parce que ce
      chemin voyage dans un email que n'importe qui peut réécrire. */
   const suite = safeNextPath(formData.get("next"));
-  /* SANS `next`, aucun paramètre du tout. La liste blanche de redirection
-     de Supabase compare l'URL ENTIÈRE, chaîne de requête comprise, et un
-     motif `https://site/**` ne couvre pas un `?` de façon fiable. Une URL
-     rejetée ne produit pas d'erreur : Supabase retombe en silence sur le
-     « Site URL » du tableau de bord — l'accueil — et la personne ne voit
-     jamais le formulaire. Le cas est arrivé en production. */
-  const redirectTo = suite
-    ? `${origin}/auth/confirm?next=${encodeURIComponent(`/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`)}`
-    : `${origin}/auth/confirm`;
+  /* TOUJOURS une chaîne de requête, `next` compris : le modèle d'email
+     Supabase colle `&token_hash=…&type=recovery` au bout de cette adresse
+     (`{{ .RedirectTo }}&token_hash=…`, voir `/auth/confirm`), ce qui
+     exige un `?` déjà présent. La destination par défaut est donc écrite
+     en clair plutôt que laissée au défaut de `/auth/confirm`.
+
+     La liste blanche de Supabase doit couvrir ce `?` : une URL rejetée
+     ne produit pas d'erreur, Supabase retombe en silence sur le « Site
+     URL » — l'accueil. Avec `https://filloo.vercel.app/**`, l'adresse
+     avec `?next=` est bien acceptée (journaux du 2026-09-25). */
+  const apres = suite
+    ? `/reinitialiser-mot-de-passe?next=${encodeURIComponent(suite)}`
+    : "/reinitialiser-mot-de-passe";
+  const redirectTo = `${origin}/auth/confirm?next=${encodeURIComponent(apres)}`;
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   // `sent: true` dans TOUS les cas : répondre autrement pour une adresse
   // inconnue révélerait qui a un compte ici. L'erreur se journalise —

@@ -49,6 +49,22 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
+- **Le modèle d'email « Reset Password » de Supabase doit passer au
+  `token_hash`.** Sans ce réglage, le lien de réinitialisation échoue dès
+  qu'il est ouvert ailleurs que dans le navigateur qui l'a demandé (app
+  installée contre Safari) ou après une seconde demande — constaté le
+  2026-09-25. Le code accepte les deux voies (`/auth/confirm`) ; le
+  tableau de bord doit porter, dans Authentication → Emails → Reset
+  Password, le lien
+  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`. Même
+  jour, deux autres réglages corrigés à la main : `NEXT_PUBLIC_SITE_URL`
+  valait l'adresse de SUPABASE (tous les liens d'email partaient
+  ailleurs), et le « Site URL » de Supabase désignait encore
+  `makiti-beryl.vercel.app`.
+- **Les emails partent du serveur d'essai de Supabase** : classés en
+  indésirables et limités à quelques envois par heure. Il faut un SMTP
+  (Resend, Brevo…) sur un domaine à nous, SPF et DKIM compris ;
+  `filloo.vercel.app` ne permet pas de poser ces enregistrements.
 - **`VAPID_PRIVATE_KEY` n'est probablement toujours PAS lue en
   production.** Constaté le 2026-09-25 : deux appareils abonnés (un
   `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
@@ -587,6 +603,11 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 - **Le client anonyme ne sait pas révoquer UNE session.** Un jeton obtenu
   pour vérifier un mot de passe vit jusqu'à son expiration : c'est le
   prix, bien moindre que déconnecter quelqu'un.
+- **Le lien PKCE (`?code=`) ne vit que dans le navigateur qui a fait la
+  demande** : la clé qui le valide est un cookie posé à ce moment-là.
+  L'app installée sur l'écran d'accueil et Safari n'ont pas les mêmes
+  cookies, et chaque nouvelle demande écrase la clé. Pour un lien reçu
+  par email, `token_hash` + `verifyOtp` est la voie qui tient.
 
 ### Méthode
 
