@@ -104,7 +104,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
  * `auth.users` n'est PAS supprimé : `messages.sender_id` référence
  * `profiles` SANS cascade, donc un `deleteUser` échouerait sur une clé
  * étrangère. Un BANNISSEMENT (`ban_duration`) coupe l'accès en laissant
- * l'historique lisible.
+ * l'historique lisible, et l'email est remplacé pour pouvoir resservir.
  */
 export async function deleteAccountAction() {
   const supabase = await createClient();
@@ -195,7 +195,23 @@ async function anonymiserEtBannir(userId: string) {
     .eq("auth_user_id", userId);
   if (pushError) throw pushError;
 
-  // ~100 ans : Supabase n'a pas de bannissement permanent dédié.
-  const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
+  /* L'EMAIL est libéré en même temps que l'accès est coupé : la ligne
+     `auth.users` survit (voir plus haut), et tant qu'elle portait
+     l'adresse, se réinscrire avec elle répondait « un compte existe
+     déjà ». Remplacée par une adresse propre à cette ligne, sur `.invalid`
+     (domaine réservé, RFC 2606 : rien n'y sera jamais envoyé), elle se
+     réutilise pour un compte NEUF, sans rien hériter de l'ancien. Les
+     métadonnées d'inscription (nom, téléphone) partent aussi : ce bouton
+     promet de les effacer. `null` et non `{}` : Supabase FUSIONNE les
+     métadonnées, un objet vide n'efface rien.
+     Un seul appel : l'adresse libérée sur un compte encore ouvert
+     laisserait une connexion sans email pour se retrouver.
+     ~100 ans : Supabase n'a pas de bannissement permanent dédié. */
+  const { error: banError } = await admin.auth.admin.updateUserById(userId, {
+    email: `supprime-${userId}@filloo.invalid`,
+    email_confirm: true,
+    user_metadata: { full_name: null, phone: null },
+    ban_duration: "876000h",
+  });
   if (banError) throw banError;
 }
