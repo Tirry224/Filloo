@@ -128,7 +128,8 @@ vus fonctionner par personne :
 - la **messagerie entre deux comptes réels** ;
 - l'**envoi d'une photo depuis un téléphone** ;
 - la **photo de profil d'une boutique** (0029, 2026-09-25) : choisir,
-  enregistrer, la voir sur la page publique et sur la fiche produit ;
+  enregistrer, la voir sur la page publique, la fiche produit, les
+  résultats de recherche et la messagerie côté client ;
 - le **parcours de refus d'une boutique**.
 
 `/ecrans` (en local uniquement) liste les écrans et allume chaque lien dès
@@ -272,6 +273,9 @@ ne se recopient pas.
   contrainte interdit de citer le fichier d'une autre boutique. Le
   dossier ne garde qu'un fichier : l'enregistrement efface les autres,
   et la suppression de compte efface la photo.
+  Visible aussi dans la recherche et le fil (`search_products` renvoie
+  `shop_photo_path` depuis 0030) et dans la messagerie : en-tête du fil,
+  et pastille sur la vignette produit de la liste des fils.
 
 ### Front-end — Next.js 16, React 19, TypeScript, Tailwind 4
 
@@ -652,10 +656,15 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-204 commits, du plus récent au plus ancien.
+209 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `71f14f2` La photo de la boutique dans la recherche et la messagerie
+- `7bec856` 0030 : search_products renvoie la photo de la boutique
+- `c7a8864` La mémoire note la photo de boutique, à vérifier sur un téléphone
+- `8d910da` Le commerçant choisit la photo de sa boutique, le client la voit
+- `9491005` 0029 : une boutique a une photo de profil, dans son propre bucket
 - `f035468` La mémoire dit ce que npm run e2e couvre, et ce qu'il a trouvé
 - `c168c3e` Les parcours se jouent dans un vrai navigateur : npm run e2e
 - `2ec4ddb` Le cron du matin efface aussi les photos orphelines
