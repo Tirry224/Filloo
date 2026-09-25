@@ -9,9 +9,12 @@ import { clientSpaceFallback, getMyProfiles } from "@/lib/data/session";
 export default async function ConfirmDeleteAccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; depuis?: string }>;
 }) {
-  const { erreur } = await searchParams;
+  const { erreur, depuis } = await searchParams;
+  // Le bouton vit à côté de « Se déconnecter », dans les deux espaces :
+  // fermer doit ramener là d'où l'on vient.
+  const retour = depuis === "vendeur" ? "/vendeur/boutique" : "/compte";
   const supabase = await createClient();
   // Neutre au rôle : la suppression porte sur la CONNEXION entière, donc
   // exiger un profil client fermerait l'écran à un commerçant seul.
@@ -22,7 +25,7 @@ export default async function ConfirmDeleteAccountPage({
     <Sheet
       title="Supprimer votre compte ?"
       description="Votre nom et votre téléphone seront effacés. Vos conversations restent lisibles par vos interlocuteurs, sans votre identité. Si vous avez une boutique, vos produits seront retirés du catalogue. Cette action est irréversible."
-      closeHref="/compte/informations"
+      closeHref={retour}
       tone="danger"
     >
       <Notice>{erreur}</Notice>

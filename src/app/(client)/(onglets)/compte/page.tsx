@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BellRing, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, User } from "lucide-react";
+import { BellRing, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -73,6 +73,7 @@ export default async function AccountPage() {
           </MenuList>
 
           <MenuList>
+            <MenuItem icon={Trash2} label="Supprimer mon compte" href="/compte/informations/supprimer" tone="danger" />
             <MenuItem icon={LogOut} label="Se déconnecter" tone="danger" action={signOutAction} />
           </MenuList>
         </Section>

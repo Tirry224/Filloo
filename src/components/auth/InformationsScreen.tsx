@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Trash2 } from "lucide-react";
 import { Field, Input } from "@/components/ui/Field";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
@@ -51,16 +49,6 @@ export async function InformationsScreen({ espace }: { espace: Espace }) {
           >
             <Input id="email" type="email" defaultValue={user.email ?? ""} disabled />
           </Field>
-
-          {espace === "client" ? (
-            <Link
-              href="/compte/informations/supprimer"
-              className="mt-1 flex cursor-pointer items-center gap-2.5 text-base font-semibold text-danger"
-            >
-              <Trash2 size={19} strokeWidth={2} aria-hidden />
-              Supprimer mon compte
-            </Link>
-          ) : null}
         </Section>
       </ScreenBody>
     </Screen>

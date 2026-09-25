@@ -141,7 +141,7 @@ export default async function EditShopPage() {
             <MenuItem
               icon={Trash2}
               label="Supprimer mon compte"
-              href="/compte/informations/supprimer"
+              href="/compte/informations/supprimer?depuis=vendeur"
               tone="danger"
             />
             <MenuItem icon={LogOut} label="Se déconnecter" tone="danger" action={signOutAction} />
