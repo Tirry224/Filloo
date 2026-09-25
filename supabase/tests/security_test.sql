@@ -2200,5 +2200,79 @@ select pg_temp.check('la purge retire une mesure, une seule', public.purger_mesu
 select pg_temp.check('la mesure de 12 mois reste, celle de 14 mois est partie',
   (select count(*) = 1 from public.analytics_events where occurred_at < now() - interval '11 months'));
 
+
+-- =====================================================================
+-- La photo de boutique (0029)
+-- =====================================================================
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+
+update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+reset role;
+select pg_temp.check('un commercant pose la photo de sa boutique',
+  (select photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
+     from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
+
+-- La faille que la contrainte ferme : afficher la photo d'un concurrent.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+begin
+  update public.merchants set photo_path = 'bbbbbbbb-0000-0000-0000-000000000002/sa-photo.webp'
+   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  raise exception 'ECHEC une boutique affiche la photo d''une autre';
+exception when check_violation then
+  raise notice 'OK    la photo d''une autre boutique est refusee';
+end $$;
+do $$
+begin
+  update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/../bbbbbbbb-0000-0000-0000-000000000002/x.webp'
+   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  raise exception 'ECHEC un chemin en .. passe la contrainte';
+exception when check_violation then
+  raise notice 'OK    un chemin en .. est refuse';
+end $$;
+
+-- Le stockage : écrire chez soi, jamais chez l'autre.
+insert into storage.objects (bucket_id, name)
+values ('shop-photos', 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp');
+do $$
+begin
+  insert into storage.objects (bucket_id, name)
+  values ('shop-photos', 'bbbbbbbb-0000-0000-0000-000000000002/pirate.webp');
+  raise exception 'ECHEC un commercant envoie une photo dans le dossier d''une autre boutique';
+exception when insufficient_privilege then
+  raise notice 'OK    envoi refuse dans le dossier d''une autre boutique';
+end $$;
+reset role;
+select pg_temp.check('un commercant envoie la photo dans son dossier',
+  exists (select 1 from storage.objects
+           where bucket_id = 'shop-photos' and name = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'));
+
+-- Un client n'est pas une boutique : `my_merchant_id()` est nul pour lui.
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+do $$
+begin
+  insert into storage.objects (bucket_id, name) values ('shop-photos', 'x/client.webp');
+  raise exception 'ECHEC un client envoie une photo de boutique';
+exception when insufficient_privilege then
+  raise notice 'OK    un client ne peut pas envoyer de photo de boutique';
+end $$;
+reset role;
+
+set role anon;
+select pg_temp.check('un visiteur voit la photo d''une boutique',
+  exists (select 1 from storage.objects
+           where bucket_id = 'shop-photos' and name = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'));
+reset role;
+
+-- La raison du bucket séparé : le ménage de 0028 ne doit JAMAIS la voir.
+update storage.objects set created_at = now() - interval '2 days'
+ where bucket_id = 'shop-photos';
+select pg_temp.check('le menage des photos de produits ignore les photos de boutique',
+  'aaaaaaaa-0000-0000-0000-000000000001/moi.webp' not in (select public.photos_orphelines()));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

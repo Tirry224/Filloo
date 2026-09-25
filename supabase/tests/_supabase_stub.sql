@@ -20,7 +20,10 @@ create table auth.users (
 create or replace function auth.uid() returns uuid
   language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 
-create table storage.buckets (id text primary key, name text, public boolean default false);
+create table storage.buckets (
+  id text primary key, name text, public boolean default false,
+  file_size_limit bigint, allowed_mime_types text[]
+);
 create table storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text references storage.buckets(id),
@@ -36,5 +39,9 @@ create or replace function storage.foldername(name text) returns text[]
 -- anon / authenticated : on reproduit ce comportement pour que les REVOKE
 -- des migrations aient un sens.
 grant usage on schema public, extensions, storage to anon, authenticated;
+-- Comme chez Supabase : les droits sur la table existent, c'est le RLS
+-- (0004, 0029) qui trie. Sans eux, un test de policy du stockage
+-- tomberait sur le droit manquant et passerait pour un refus du RLS.
+grant select, insert, update, delete on storage.objects to anon, authenticated;
 alter default privileges in schema public
   grant all on tables to anon, authenticated;
