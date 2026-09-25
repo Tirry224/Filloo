@@ -436,6 +436,12 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   qu'elle n'est pas commitée.** Cinq migrations et une décision
   d'architecture entière ont vécu uniquement dans
   `supabase_migrations.schema_migrations`.
+- **Et l'inverse : une migration commitée n'existe pas en production
+  tant qu'elle n'est pas appliquée.** `0026` (cinq photos) a été
+  commitée le 2026-09-24 et déployée côté code, jamais appliquée : du
+  24 au 25, la base refusait la 4e photo que l'app proposait. Trouvé en
+  lisant `list_migrations` avant d'appliquer `0027`. Après chaque
+  migration, comparer `supabase/migrations/` à `schema_migrations`.
 
 ### Couche applicative
 
@@ -603,10 +609,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-195 commits, du plus récent au plus ancien.
+196 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `3cc22c2` Un seul signalement en attente par personne et par cible
 - `704fde0` La mémoire dit ce que le test de chaos a corrigé, et ce qu'il laisse
 - `79580d9` Les saisies absurdes sont refusées avant la base, en français
 - `5a23b3b` Un identifiant absurde dans l'adresse mène à « introuvable », pas à un 500
