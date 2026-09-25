@@ -106,14 +106,33 @@ export async function deleteAccountAction() {
   const user = await getSessionUser(supabase);
   if (!user) redirect("/connexion");
 
+  /* Un échec REVIENT sur l'écran de confirmation au lieu de lever : levée,
+     l'erreur tombait sur `error.tsx`, et la personne concluait à une panne
+     de réseau pour un compte resté intact. Le détail part dans les
+     journaux Vercel, préfixé pour s'y chercher. */
+  try {
+    await anonymiserEtBannir(user.id);
+  } catch (erreur) {
+    console.error("[suppression] compte non supprimé :", erreur instanceof Error ? erreur.message : erreur);
+    redirect(
+      `/compte/informations/supprimer?erreur=${encodeURIComponent(
+        "La suppression n'a pas abouti. Réessayez plus tard ; si cela se répète, écrivez-nous.",
+      )}`,
+    );
+  }
+
+  await supabase.auth.signOut();
+  redirect("/connexion");
+}
+
+async function anonymiserEtBannir(userId: string) {
   const admin = createAdminClient();
 
   const { data: profiles, error: profilesError } = await admin
     .from("profiles")
     .select("id, role")
-    .eq("auth_user_id", user.id);
+    .eq("auth_user_id", userId);
   if (profilesError) throw profilesError;
-
   for (const profile of profiles) {
     if (profile.role === "merchant") {
       const { data: merchant } = await admin
@@ -152,13 +171,10 @@ export async function deleteAccountAction() {
   const { error: pushError } = await admin
     .from("push_subscriptions")
     .delete()
-    .eq("auth_user_id", user.id);
+    .eq("auth_user_id", userId);
   if (pushError) throw pushError;
 
   // ~100 ans : Supabase n'a pas de bannissement permanent dédié.
-  const { error: banError } = await admin.auth.admin.updateUserById(user.id, { ban_duration: "876000h" });
+  const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
   if (banError) throw banError;
-
-  await supabase.auth.signOut();
-  redirect("/connexion");
 }

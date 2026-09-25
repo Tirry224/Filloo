@@ -49,6 +49,18 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
+- **`SUPABASE_SERVICE_ROLE_KEY` de Vercel est REFUSÉE par Supabase.**
+  Constaté le 2026-09-25 dans les journaux Supabase (connecteur) : toutes
+  les requêtes `service_role` des dernières 24 h répondent **401** — la
+  lecture des profils de `deleteAccountAction` (d'où « supprimer mon
+  compte » sans effet) et 47 écritures `analytics_events`. La variable
+  EXISTE (sinon `createAdminClient` lèverait avant toute requête) mais sa
+  valeur ne correspond pas au projet `bfmsruzyrgbndbueikcb` : autre projet,
+  clé tronquée ou guillemets collés. Les clés « legacy » du projet sont
+  actives. Recopier la clé `service_role` depuis Supabase → Settings →
+  API Keys, puis redéployer. Même client pour `push.ts`, le cron et
+  `notifications-decisions.ts` : probablement une part des pannes push et
+  emails ci-dessous. *À constater après correction.*
 - **Poser le SMTP Gmail de `filloo.gn@gmail.com` dans Supabase.** Filloo
   se lance sans domaine, et Resend n'écrit sans domaine vérifié qu'au
   propriétaire du compte : c'est la cause la plus probable de toute la
