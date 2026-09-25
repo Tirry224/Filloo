@@ -201,7 +201,7 @@ async function anonymiserEtBannir(userId: string) {
      déjà ». Remplacée par une adresse propre à cette ligne, sur `.invalid`
      (domaine réservé, RFC 2606 : rien n'y sera jamais envoyé), elle se
      réutilise pour un compte NEUF, sans rien hériter de l'ancien. Les
-     métadonnées d'inscription (nom, téléphone) partent aussi : ce bouton
+     métadonnées d'inscription (nom, téléphone, copie de l'email) partent : ce bouton
      promet de les effacer. `null` et non `{}` : Supabase FUSIONNE les
      métadonnées, un objet vide n'efface rien.
      Un seul appel : l'adresse libérée sur un compte encore ouvert
@@ -210,7 +210,7 @@ async function anonymiserEtBannir(userId: string) {
   const { error: banError } = await admin.auth.admin.updateUserById(userId, {
     email: `supprime-${userId}@filloo.invalid`,
     email_confirm: true,
-    user_metadata: { full_name: null, phone: null },
+    user_metadata: { full_name: null, phone: null, email: null },
     ban_duration: "876000h",
   });
   if (banError) throw banError;
