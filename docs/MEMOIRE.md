@@ -127,6 +127,8 @@ vus fonctionner par personne :
 
 - la **messagerie entre deux comptes réels** ;
 - l'**envoi d'une photo depuis un téléphone** ;
+- la **photo de profil d'une boutique** (0029, 2026-09-25) : choisir,
+  enregistrer, la voir sur la page publique et sur la fiche produit ;
 - le **parcours de refus d'une boutique**.
 
 `/ecrans` (en local uniquement) liste les écrans et allume chaque lien dès
@@ -263,6 +265,13 @@ ne se recopient pas.
   supprimé pour tester avec de vraies données. `supabase/seed_demo.sql`
   reste pour le rejouer — ses lignes de photos ne désignent aucun fichier
   réel.
+
+- **Photo de profil des boutiques** (0029, 2026-09-25) : colonne
+  `merchants.photo_path`, bucket **`shop-photos` séparé** — dans
+  `product-images`, le ménage de 0028 l'aurait effacée en 24 h. Une
+  contrainte interdit de citer le fichier d'une autre boutique. Le
+  dossier ne garde qu'un fichier : l'enregistrement efface les autres,
+  et la suppression de compte efface la photo.
 
 ### Front-end — Next.js 16, React 19, TypeScript, Tailwind 4
 
@@ -643,10 +652,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-203 commits, du plus récent au plus ancien.
+204 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `f035468` La mémoire dit ce que npm run e2e couvre, et ce qu'il a trouvé
 - `c168c3e` Les parcours se jouent dans un vrai navigateur : npm run e2e
 - `2ec4ddb` Le cron du matin efface aussi les photos orphelines
 - `6b3c95c` 0028 : la base désigne les photos orphelines et purge les mesures
