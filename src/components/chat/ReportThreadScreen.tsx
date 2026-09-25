@@ -7,6 +7,7 @@ import { getThreadContext } from "@/lib/data/messages";
 import { reportConversationAction } from "@/lib/actions/messages";
 import { conversationReportReasons } from "@/lib/mock";
 import { messagesBase, type Espace } from "@/lib/espace";
+import { PRECISIONS_MAX } from "@/lib/saisie";
 
 export async function ReportThreadScreen({
   espace,
@@ -55,6 +56,7 @@ export async function ReportThreadScreen({
         </div>
         <Textarea
           name="details"
+          maxLength={PRECISIONS_MAX}
           rows={3}
           placeholder="Précisez si besoin (facultatif)…"
           aria-label="Précisions"

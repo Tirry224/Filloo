@@ -6,6 +6,7 @@ import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { createMerchantAction } from "@/lib/actions/merchants";
 import type { CityOption } from "@/lib/data/reference";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { NOM_MAX } from "@/lib/saisie";
 
 export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(createMerchantAction);
@@ -25,7 +26,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           </p>
 
           <Field label="Nom de la boutique" htmlFor="shopName">
-            <Input id="shopName" name="shopName" placeholder="Chez Aïssatou" />
+            <Input id="shopName" name="shopName" maxLength={NOM_MAX} placeholder="Chez Aïssatou" />
           </Field>
 
           <Field label="Ville" htmlFor="cityId">
@@ -46,7 +47,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
             htmlFor="addressHint"
             hint="Un repère que vos clients comprennent. C'est là que se fera la vente."
           >
-            <Input id="addressHint" name="addressHint" placeholder="Marché de Madina, allée 3" />
+            <Input id="addressHint" name="addressHint" maxLength={200} placeholder="Marché de Madina, allée 3" />
           </Field>
 
           <Field
@@ -58,7 +59,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           </Field>
 
           <Field label="Que vendez-vous ?" htmlFor="description">
-            <Textarea id="description" name="description" rows={3} placeholder="Alimentation générale : riz, huile, sucre, lait…" />
+            <Textarea id="description" name="description" maxLength={1000} rows={3} placeholder="Alimentation générale : riz, huile, sucre, lait…" />
           </Field>
 
           {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}

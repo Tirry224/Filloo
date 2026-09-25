@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { reportProductAction } from "@/lib/actions/messages";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { PRECISIONS_MAX } from "@/lib/saisie";
 
 export function ReportForm({ productId, reasons }: { productId: string; reasons: string[] }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(reportProductAction);
@@ -29,7 +30,7 @@ export function ReportForm({ productId, reasons }: { productId: string; reasons:
           </label>
         ))}
       </div>
-      <Textarea name="details" rows={3} placeholder="Précisez si besoin (facultatif)…" aria-label="Précisions" />
+      <Textarea name="details" maxLength={PRECISIONS_MAX} rows={3} placeholder="Précisez si besoin (facultatif)…" aria-label="Précisions" />
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
       <Button type="submit" disabled={pending}>
         {pending ? "Envoi…" : "Envoyer le signalement"}

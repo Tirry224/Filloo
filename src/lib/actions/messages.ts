@@ -7,7 +7,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
 import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
-import { estUuid } from "@/lib/saisie";
+import { estUuid, longueur, PRECISIONS_MAX, texteNettoye } from "@/lib/saisie";
+
+/** La borne de `messages.body` (0001). */
+const MESSAGE_MAX = 2000;
 import { getThreadContext } from "@/lib/data/messages";
 import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
@@ -92,9 +95,13 @@ export async function findOrCreateConversation(
  */
 export async function sendMessageAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const conversationId = String(formData.get("conversationId") ?? "");
-  const body = String(formData.get("body") ?? "").trim();
+  // Trois U+200B passaient pour un message et s'affichaient en bulle vide.
+  const body = texteNettoye(formData.get("body"));
   const productId = String(formData.get("productId") ?? "") || null;
   if (!conversationId || !body) return { error: "Écrivez un message avant d'envoyer." };
+  if (longueur(body) > MESSAGE_MAX) {
+    return { error: `Message trop long : ${MESSAGE_MAX} caractères maximum. Coupez-le en deux.` };
+  }
   if (productId && !estUuid(productId)) return { error: "Ce produit n'existe plus. Retirez-le, puis renvoyez votre message." };
 
   const supabase = await createClient();
@@ -205,8 +212,8 @@ export async function blockPeerAction(formData: FormData) {
 
 export async function reportConversationAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  const details = String(formData.get("details") ?? "").trim();
+  const reason = texteNettoye(formData.get("reason"));
+  const details = texteNettoye(formData.get("details"));
   if (!conversationId) redirect(await landingForSession(await createClient()));
 
   const supabase = await createClient();
@@ -216,6 +223,9 @@ export async function reportConversationAction(formData: FormData) {
   // Après la lecture du contexte : sans lui, ce refus ne sait pas dans
   // quel espace renvoyer.
   if (!reason) backToThread(conversationId, context.iAmMerchant, "Choisissez un motif de signalement.");
+  if (longueur(details) > PRECISIONS_MAX) {
+    backToThread(conversationId, context.iAmMerchant, `Précisions : ${PRECISIONS_MAX} caractères maximum.`);
+  }
 
   const { data, error } = await supabase
     .from("reports")
@@ -241,8 +251,9 @@ export async function reportConversationAction(formData: FormData) {
  * convient : "reports: je signale" ne distingue pas le rôle. */
 export async function reportProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  const details = String(formData.get("details") ?? "").trim();
+  const reason = texteNettoye(formData.get("reason"));
+  const details = texteNettoye(formData.get("details"));
+  if (longueur(details) > PRECISIONS_MAX) return { error: `Précisions : ${PRECISIONS_MAX} caractères maximum.` };
   const fullReason = details ? `${reason} — ${details}` : reason;
   if (!estUuid(productId)) return { error: "Ce produit n'existe plus." };
   if (fullReason.length < 3) return { error: "Choisissez un motif." };

@@ -10,6 +10,7 @@ import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
+import { erreurNom, texteNettoye } from "@/lib/saisie";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -49,7 +50,7 @@ function translateAuthError(message: string): string {
  * des métadonnées envoyées ici. */
 export async function signUpAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const role = formData.get("role") === "merchant" ? "merchant" : "client";
-  const fullName = String(formData.get("fullName") ?? "").trim();
+  const fullName = texteNettoye(formData.get("fullName"));
   const phone = String(formData.get("phone") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -58,6 +59,8 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (!fullName || !phone || !email || !password) {
     return { error: "Tous les champs sont obligatoires." };
   }
+  const erreurNomComplet = erreurNom(fullName, "Nom complet");
+  if (erreurNomComplet) return { error: erreurNomComplet };
   const erreurNumero = erreurTelephone(phone, true);
   if (erreurNumero) return { error: erreurNumero };
   const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);

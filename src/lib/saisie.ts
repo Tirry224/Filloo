@@ -65,3 +65,8 @@ export function lireIdEntier(valeur: unknown): number | null {
   const n = Number(texte);
   return n > 0 ? n : null;
 }
+
+/** Les précisions d'un signalement. `reports.reason` (0001) est borné à
+ * 1 000 caractères, motif compris : 5 000 caractères faisaient répondre
+ * la base en anglais, dans la bannière de l'écran (2026-09-25). */
+export const PRECISIONS_MAX = 900;

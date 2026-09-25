@@ -92,6 +92,9 @@ export function PhotoPicker({
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Dit au serveur qu'un envoi n'est pas fini : sans lui, « Publier »
+          pendant l'envoi répondait « ajoutez au moins une photo ». */}
+      {slots.some((slot) => slot.uploading) ? <input type="hidden" name="photosEnCours" value="1" /> : null}
       <div className="flex flex-wrap gap-3">
         {slots.map((slot) => (
           <div key={slot.id} className="relative">

@@ -6,6 +6,7 @@ import { updateMerchantAction } from "@/lib/actions/merchants";
 import type { CityOption } from "@/lib/data/reference";
 import type { Merchant } from "@/lib/types";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { NOM_MAX } from "@/lib/saisie";
 
 /**
  * `merchant.status` ne change jamais ici (voir `updateMerchantAction`).
@@ -28,7 +29,7 @@ export function ShopEditForm({
       </div>
 
       <Field label="Nom de la boutique" htmlFor="shopName">
-        <Input id="shopName" name="shopName" defaultValue={merchant.shopName} />
+        <Input id="shopName" name="shopName" maxLength={NOM_MAX} defaultValue={merchant.shopName} />
       </Field>
 
       <Field label="Ville" htmlFor="cityId">
@@ -42,7 +43,7 @@ export function ShopEditForm({
       </Field>
 
       <Field label="Où vous trouver" htmlFor="addressHint">
-        <Input id="addressHint" name="addressHint" defaultValue={merchant.addressHint ?? ""} />
+        <Input id="addressHint" name="addressHint" maxLength={200} defaultValue={merchant.addressHint ?? ""} />
       </Field>
 
       <Field label="Numéro WhatsApp" htmlFor="whatsappPhone">
@@ -56,7 +57,7 @@ export function ShopEditForm({
       </Field>
 
       <Field label="Description" htmlFor="description">
-        <Textarea id="description" name="description" rows={3} defaultValue={merchant.description ?? ""} />
+        <Textarea id="description" name="description" maxLength={1000} rows={3} defaultValue={merchant.description ?? ""} />
       </Field>
 
       {/* La CONFIRMATION par mot de passe reste exigée pour enregistrer —

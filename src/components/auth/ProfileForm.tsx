@@ -5,6 +5,7 @@ import { updateProfileAction } from "@/lib/actions/account";
 import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { NOM_MAX } from "@/lib/saisie";
 
 export function ProfileForm({
   id,
@@ -36,7 +37,7 @@ export function ProfileForm({
           lui fait pas davantage confiance que ça. */}
       <input type="hidden" name="espace" value={espace} />
       <Field label="Nom complet" htmlFor="fullName">
-        <Input id="fullName" name="fullName" autoComplete="name" defaultValue={fullName} />
+        <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" defaultValue={fullName} />
       </Field>
       <Field label="Téléphone" htmlFor="phone">
         <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={phone} />

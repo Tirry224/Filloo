@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { signUpAction, createLinkedProfileAction } from "@/lib/actions/auth";
 import Link from "next/link";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { NOM_MAX } from "@/lib/saisie";
 
 function RoleCard({
   icon: Icon,
@@ -130,7 +131,7 @@ export function SignupForm({
       ) : (
         <>
           <Field label="Nom complet" htmlFor="fullName">
-            <Input id="fullName" name="fullName" autoComplete="name" placeholder="Mariama Diallo" defaultValue={defaultFullName} />
+            <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Mariama Diallo" defaultValue={defaultFullName} />
           </Field>
 
           <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">

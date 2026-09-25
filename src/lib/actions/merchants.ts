@@ -8,22 +8,48 @@ import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
+import { erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+
+/** Les champs d'une boutique, lus ET validés en un geste, pour la
+ * création comme pour la modification. Le nom est ce qu'un client lit en
+ * premier : trois caractères invisibles ou 5 000 lettres passaient, et
+ * une ville forgée (`1.5`, `999`) faisait répondre la base en anglais
+ * (2026-09-25). */
+function lireBoutique(formData: FormData):
+  | { shopName: string; cityId: number; addressHint: string; whatsappPhone: string; description: string }
+  | { error: string } {
+  const shopName = texteNettoye(formData.get("shopName"));
+  const cityId = lireIdEntier(formData.get("cityId"));
+  const addressHint = texteNettoye(formData.get("addressHint"));
+  const whatsappPhone = String(formData.get("whatsappPhone") ?? "").trim();
+  const description = texteNettoye(formData.get("description"));
+
+  if (!shopName || !cityId) {
+    return { error: "Le nom de la boutique et la ville sont obligatoires." };
+  }
+  const erreurNomBoutique = erreurNom(shopName, "Nom de la boutique");
+  if (erreurNomBoutique) return { error: erreurNomBoutique };
+  if (longueur(addressHint) > ADRESSE_MAX) return { error: `« Où vous trouver » : ${ADRESSE_MAX} caractères maximum.` };
+  if (longueur(description) > DESCRIPTION_BOUTIQUE_MAX) {
+    return { error: `La description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.` };
+  }
+  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
+  if (erreurWhatsapp) return { error: erreurWhatsapp };
+
+  return { shopName, cityId, addressHint, whatsappPhone, description };
+}
+
+const ADRESSE_MAX = 200;
+const DESCRIPTION_BOUTIQUE_MAX = 1000;
 
 /** La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
  * `profile_id` appartient au commerçant connecté ; inutile de le
  * revérifier ici, mais on a besoin de l'id pour l'insertion. */
 export async function createMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const shopName = String(formData.get("shopName") ?? "").trim();
-  const cityId = Number(formData.get("cityId") ?? 0);
-  const addressHint = String(formData.get("addressHint") ?? "").trim();
-  const whatsappPhone = String(formData.get("whatsappPhone") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const lu = lireBoutique(formData);
+  if ("error" in lu) return lu;
+  const { shopName, cityId, addressHint, whatsappPhone, description } = lu;
 
-  if (!shopName || !cityId) {
-    return { error: "Le nom de la boutique et la ville sont obligatoires." };
-  }
-  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
-  if (erreurWhatsapp) return { error: erreurWhatsapp };
 
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");
@@ -73,18 +99,11 @@ export async function resubmitMerchantAction() {
  * maquette encore ouverte — voir docs/MEMOIRE.md, « Dettes techniques ».
  */
 export async function updateMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const shopName = String(formData.get("shopName") ?? "").trim();
-  const cityId = Number(formData.get("cityId") ?? 0);
-  const addressHint = String(formData.get("addressHint") ?? "").trim();
-  const whatsappPhone = String(formData.get("whatsappPhone") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const lu = lireBoutique(formData);
+  if ("error" in lu) return lu;
+  const { shopName, cityId, addressHint, whatsappPhone, description } = lu;
   const currentPassword = String(formData.get("currentPassword") ?? "");
 
-  if (!shopName || !cityId) {
-    return { error: "Le nom de la boutique et la ville sont obligatoires." };
-  }
-  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
-  if (erreurWhatsapp) return { error: erreurWhatsapp };
 
   if (!currentPassword) {
     return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };

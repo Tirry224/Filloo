@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lirePrixGnf } from "../src/lib/prix.ts";
+import { lirePrixGnf, PRIX_MAX_GNF } from "../src/lib/prix.ts";
 
 /**
  * Chaque cas ici a été trouvé en tapant n'importe quoi dans le champ
@@ -44,5 +44,12 @@ test("ce qui n'est pas un montant en francs entiers est refusé avec un message"
 
 test("un montant que JavaScript arrondirait est refusé plutôt que modifié", () => {
   assert.ok("erreur" in lirePrixGnf("99999999999999999999"));
-  assert.deepEqual(lirePrixGnf(String(Number.MAX_SAFE_INTEGER)), { prix: Number.MAX_SAFE_INTEGER });
+  assert.ok("erreur" in lirePrixGnf(String(Number.MAX_SAFE_INTEGER)));
+});
+
+test("au-delà de dix milliards de francs, c'est une faute de frappe", () => {
+  // 9 007 199 254 740 991 GNF passait et débordait de la fiche produit
+  // (2026-09-25). Dix milliards couvrent un terrain ou un camion.
+  assert.deepEqual(lirePrixGnf("10 000 000 000"), { prix: PRIX_MAX_GNF });
+  assert.ok("erreur" in lirePrixGnf("10 000 000 001"));
 });

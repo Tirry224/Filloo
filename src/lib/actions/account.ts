@@ -8,6 +8,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
+import { erreurNom, lireIdEntier, texteNettoye } from "@/lib/saisie";
 
 /**
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
@@ -18,7 +19,7 @@ import { messagePourErreur } from "@/lib/erreurs";
  *
  * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par 0010. */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const fullName = String(formData.get("fullName") ?? "").trim();
+  const fullName = texteNettoye(formData.get("fullName"));
   const phone = String(formData.get("phone") ?? "").trim();
   /* Présente et vide, ou absente : les confondre efface une donnée. Le
      montage commerçant ne rend pas le menu des villes, donc `cityId`
@@ -27,8 +28,10 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   const cityBrut = formData.get("cityId");
   const villeFournie = cityBrut !== null;
   const cityIdRaw = String(cityBrut ?? "").trim();
-  const cityId = cityIdRaw ? Number(cityIdRaw) : null;
+  const cityId = cityIdRaw ? lireIdEntier(cityIdRaw) : null;
   if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
+  const erreurNomComplet = erreurNom(fullName, "Nom complet");
+  if (erreurNomComplet) return { error: erreurNomComplet };
   const erreurNumero = erreurTelephone(phone, true);
   if (erreurNumero) return { error: erreurNumero };
 
@@ -38,7 +41,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (!currentPassword) {
     return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
   }
-  if (cityIdRaw && (!cityId || Number.isNaN(cityId))) return { error: "Ville invalide." };
+  if (cityIdRaw && !cityId) return { error: "Ville invalide." };
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);

@@ -13,6 +13,10 @@
 
 const EXEMPLE = "exemple : 450 000";
 
+/** Dix milliards de francs : un terrain, un camion. Au-delà, c'est une
+ * touche restée appuyée — et le montant débordait de la fiche produit. */
+export const PRIX_MAX_GNF = 10_000_000_000;
+
 /** Groupes de trois séparés par UN SEUL et même signe : « 1.500.000 » ou
  * « 1,500,000 », jamais « 1.500,000 », qui ressemble à un décimal. */
 const MILLIERS_GROUPES = /^\d{1,3}(?:([.,])\d{3})(?:\1\d{3})*$/;
@@ -41,6 +45,8 @@ export function lirePrixGnf(saisie: string): { prix: number } | { erreur: string
   const prix = Number(chiffres);
   // Au-delà, `Number` arrondit déjà : le montant enregistré ne serait plus
   // celui qui a été tapé.
-  if (!Number.isSafeInteger(prix)) return { erreur: "Ce prix est trop grand." };
+  if (!Number.isSafeInteger(prix) || prix > PRIX_MAX_GNF) {
+    return { erreur: "Ce prix est trop grand : 10 000 000 000 GNF au maximum." };
+  }
   return { prix };
 }

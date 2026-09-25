@@ -9,7 +9,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
-import { estUuid } from "@/lib/saisie";
+import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -37,19 +37,27 @@ type ProductFields = {
 /** Lire ET valider en un seul geste : le prix n'existe comme nombre
  * qu'une fois la saisie acceptée par `lirePrixGnf`. */
 function readProductFields(formData: FormData): { fields: ProductFields } | { error: string } {
-  const title = String(formData.get("title") ?? "").trim();
-  const categoryId = Number(formData.get("categoryId") ?? 0);
+  // Sans les caractères invisibles : six U+200B faisaient un titre de
+  // « 6 caractères » qui s'affichait vide dans le catalogue (2026-09-25).
+  const title = texteNettoye(formData.get("title"));
+  const categoryId = lireIdEntier(formData.get("categoryId"));
   const prix = lirePrixGnf(String(formData.get("priceGnf") ?? ""));
-  const description = String(formData.get("description") ?? "").trim();
+  const description = texteNettoye(formData.get("description"));
   const imagePaths = formData.getAll("imagePaths").map(String).filter(Boolean);
 
-  if (title.length < 3 || title.length > 120) {
+  if (longueur(title) < 3 || longueur(title) > 120) {
     return { error: "Le titre doit faire entre 3 et 120 caractères." };
   }
   if (!categoryId) return { error: "Choisissez une catégorie." };
   if ("erreur" in prix) return { error: prix.erreur };
-  if (description.length > 2000) return { error: "La description est trop longue." };
+  if (longueur(description) > 2000) return { error: "La description est trop longue : 2 000 caractères maximum." };
   if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos au maximum.` };
+  /* `PhotoPicker` pose ce champ tant qu'une photo s'envoie encore : le
+     bouton restait actif, et publier à ce moment-là répondait « ajoutez
+     au moins une photo » à quelqu'un qui venait d'en ajouter une. */
+  if (formData.get("photosEnCours")) {
+    return { error: "Une photo est encore en cours d'envoi. Attendez qu'elle s'affiche, puis réessayez." };
+  }
 
   return {
     fields: {
@@ -61,6 +69,19 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
       imagePaths,
     },
   };
+}
+
+/**
+ * Une photo n'est acceptée que rangée là où `PhotoPicker` la dépose :
+ * `{merchant_id}/{product_id}/{nom}.webp`, le chemin que le RLS du
+ * stockage (0004) impose à l'ENVOI. Rien ne l'imposait à
+ * l'enregistrement : un champ caché forgé faisait afficher sur son
+ * produit les photos d'une autre boutique, ou un chemin en `../`
+ * (2026-09-25).
+ */
+function photosRangees(chemins: string[], merchantId: string, productId: string): boolean {
+  const dossier = `${merchantId}/${productId}/`;
+  return chemins.every((c) => c.startsWith(dossier) && /^[\w-]+\.webp$/.test(c.slice(dossier.length)));
 }
 
 /**
@@ -82,6 +103,10 @@ export async function createProductAction(_prevState: ActionState | null, formDa
   const lu = readProductFields(formData);
   if ("error" in lu) return lu;
   const { fields } = lu;
+
+  if (!photosRangees(fields.imagePaths, owner.merchantId, productId)) {
+    return { error: "Formulaire invalide, rechargez la page." };
+  }
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
@@ -179,9 +204,16 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   const productId = String(formData.get("productId") ?? "");
   if (!estUuid(productId)) return { error: "Formulaire invalide, rechargez la page." };
 
+  const owner = await requireMerchantId();
+  if ("error" in owner) return owner;
+
   const lu = readProductFields(formData);
   if ("error" in lu) return lu;
   const { fields } = lu;
+
+  if (!photosRangees(fields.imagePaths, owner.merchantId, productId)) {
+    return { error: "Formulaire invalide, rechargez la page." };
+  }
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {

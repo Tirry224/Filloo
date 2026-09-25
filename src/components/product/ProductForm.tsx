@@ -66,7 +66,7 @@ export function ProductForm(props: ProductFormProps) {
           </Field>
 
           <Field label="Titre" htmlFor="title">
-            <Input id="title" name="title" defaultValue={initial?.title} placeholder="Sac de riz importé 50 kg" />
+            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Sac de riz importé 50 kg" />
           </Field>
 
           <Field label="Catégorie" htmlFor="categoryId">
@@ -106,6 +106,7 @@ export function ProductForm(props: ProductFormProps) {
             <Textarea
               id="description"
               name="description"
+              maxLength={2000}
               rows={4}
               defaultValue={initial?.description}
               placeholder="Riz parfumé importé, sac de 50 kg. Retrait au marché de Madina…"
