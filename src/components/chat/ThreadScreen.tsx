@@ -9,6 +9,7 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ProductRef } from "@/components/chat/ProductRef";
 import { Composer } from "@/components/chat/Composer";
 import { RealtimeThread } from "@/components/chat/RealtimeThread";
+import { ScrollToLatest } from "@/components/chat/ScrollToLatest";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext, getMessages } from "@/lib/data/messages";
 import { getProduct } from "@/lib/data/products";
@@ -61,10 +62,12 @@ export async function ThreadScreen({
   // `check_message_product`, 0002) : sans citation en attente sur un fil
   // encore vide, écrire échouerait — autant le dire avant plutôt qu'après.
   const mustCiteFirst = messages.length === 0 && !citing && !frozen;
+  const lastMessage = messages.at(-1);
 
   return (
     <Screen largeur="rangees">
       <RealtimeThread conversationId={id} myParticipantId={context.myParticipantId} />
+      <ScrollToLatest lastMessageId={lastMessage?.id ?? null} lastIsMine={lastMessage?.mine ?? false} />
       <TopBar
         backHref={base}
         title={
