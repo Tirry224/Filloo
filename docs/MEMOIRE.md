@@ -101,9 +101,13 @@ cassés.
   créée le 17 et jamais envoyée : le cron quotidien de 7 h avait échoué
   quatre fois, et un commerçant validé n'a jamais appris qu'il l'était.
   Personne n'a encore vu un email arriver dans une vraie boîte.
-- **`CRON_SECRET` sur Vercel.** Sans elle, `/api/notifications` refuse
-  tout et aucune décision d'administration n'est annoncée. Premier
-  suspect de la panne ci-dessus. *À constater.*
+- **`CRON_SECRET` sur Vercel.** Sans elle, le cron du matin
+  (`/api/quotidien` depuis le 2026-09-25, qui enchaîne notifications et
+  ménage des photos orphelines) refuse tout : aucune décision
+  d'administration n'est annoncée et aucune photo abandonnée n'est
+  effacée. Le ménage a AUSSI besoin de la clé `service_role` ci-dessus.
+  Premier suspect de la panne ci-dessus. *À constater.* La purge des
+  mesures, elle, tourne dans la base (pg_cron) et n'en dépend pas.
 - **`NEXT_PUBLIC_SITE_URL` sur Vercel.** Depuis le 2026-09-22,
   `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
   quand elle manque, donc son absence ne devrait plus éteindre les emails
@@ -377,6 +381,13 @@ suivante ne doit pas rouvrir.
   répondre** (`0012`, `0021`) : un refus sans motif est un vendeur perdu
   définitivement, et la boîte de `EMAIL_FROM` doit être relevée par un
   humain.
+- **Durées de conservation (2026-09-25).** Les mesures
+  (`analytics_events`) s'effacent après 13 mois (pg_cron
+  `purger-mesures`, 0028). Les photos que plus aucun produit ne
+  référence s'effacent après 24 heures (`/api/quotidien`). Messages,
+  signalements et comptes anonymisés sont gardés SANS limite : les
+  effacer attend un avis sur la loi guinéenne L/2016/037, qui n'a pas été
+  pris.
 - **Pas de notation**, **aucune monétisation en v1**.
 - Direction visuelle **« A — Marché »** : fond papier chaud, accent terre
   cuite, bordures plutôt qu'ombres.
@@ -618,10 +629,12 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-198 commits, du plus récent au plus ancien.
+200 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `19949c0` L'Action Migrations passe à checkout et setup-node v5
+- `99c06da` Une Action GitHub compare les migrations à chaque push et chaque matin
 - `98c1b33` npm run migrations compare le dépôt à la production, dans les deux sens
 - `960045d` La mémoire note 0026 restée un jour sans être appliquée
 - `3cc22c2` Un seul signalement en attente par personne et par cible

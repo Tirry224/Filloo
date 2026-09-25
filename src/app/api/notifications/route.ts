@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { drainNotifications } from "@/lib/notifications-decisions";
+import { refusCron } from "@/lib/cron";
 
 /**
- * Appelée par Vercel Cron, avec `Authorization: Bearer $CRON_SECRET` —
- * seule façon d'entrer : cette adresse lit `auth.users` et envoie des
- * emails.
+ * Les notifications seules, à lancer à la main (même porte que
+ * `/api/quotidien`, qui l'enchaîne chaque matin avec le ménage) : cette
+ * adresse lit `auth.users` et envoie des emails.
  *
  * `GET` parce que Vercel Cron n'émet que des `GET`, bien que la route
  * écrive.
@@ -15,20 +16,8 @@ import { drainNotifications } from "@/lib/notifications-decisions";
    en retrait en 16 dès que Cache Components est activé. */
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-
-  // Pas de secret posé = route FERMÉE : le défaut d'une protection doit
-  // être le refus, sinon une variable oubliée ouvre l'envoi d'emails.
-  if (!secret) {
-    console.error("[notifications] CRON_SECRET absente : balayage refusé.");
-    return NextResponse.json({ erreur: "non configurée" }, { status: 503 });
-  }
-
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    // 404 et non 401 : répondre « mauvais mot de passe » confirmerait à
-    // un inconnu que l'adresse existe et vaut la peine d'être forcée.
-    return NextResponse.json({ erreur: "introuvable" }, { status: 404 });
-  }
+  const refus = refusCron(request, "notifications");
+  if (refus) return refus;
 
   try {
     const rapport = await drainNotifications();
