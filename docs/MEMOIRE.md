@@ -187,21 +187,28 @@ trompera.
   les produits en ligne disparaîtraient du catalogue. C'est un choix du
   code, que le porteur du projet n'a pas tranché : un commerçant validé
   peut donc renommer sa boutique sans nouvel appel.
-- **Défauts trouvés le 2026-09-24 en saisissant n'importe quoi, pas
-  encore corrigés.** Constatés dans un navigateur sauf mention contraire :
-  - les erreurs inconnues s'affichent brutes et en anglais :
-    `translateAuthError` renvoie le message tel quel, et 18
-    `return { error: x.message }` font de même ;
-  - trois tapes rapides sur « Créer mon compte » envoient deux requêtes :
-    `disabled={pending}` arrive un rendu trop tard. `Composer`
-    a la même forme, d'où un double message probable ;
-  - un nom « . », trois espaces invisibles (U+200B) ou 5 000 caractères
-    passent l'inscription, et un mot de passe de huit espaces aussi ;
-  - lu dans le code : la catégorie d'un produit accepte `-3`, `1.5` ou
-    `99999`, et l'erreur de la base remonte brute ;
-  - lu dans le code : `/produit/<pas-un-uuid>` doit donner un 500, pas
-    un 404 : aucune route ne vérifie l'identifiant, et `getProduct`
-    relance l'erreur `22P02`. *À constater* en production.
+- **Test de chaos du 2026-09-25 : ce qui reste après corrections.**
+  L'application a été lancée en build de production contre une pile
+  Supabase IMITÉE (auth, REST et stockage réécrits sur un Postgres local
+  portant les 26 migrations), et pilotée dans Chromium au format
+  téléphone. Les défauts trouvés sont corrigés dans les commits du jour ;
+  restent :
+  - **la même personne peut signaler dix fois le même produit** : il
+    faudrait un index unique `(reporter_id, target_type, target_id)` —
+    donc une migration, à décider ;
+  - **un compte supprimé ne peut plus revenir avec son email** : la
+    connexion, bannie, dit désormais « compte supprimé ou fermé », mais
+    l'inscription répond « un compte existe déjà ». Décision produit ;
+  - **un prix de 0 GNF est accepté** : `tests/prix.test.ts` l'affirme,
+    rien ne dit si c'est voulu ;
+  - **les bannières `?erreur=` et `?info=` affichent n'importe quel texte
+    mis dans l'adresse**, sur les écrans connectés : un lien piégé peut y
+    écrire ce qu'il veut, sans pouvoir exécuter de script ;
+  - **« trois tapes sur Créer mon compte envoient deux requêtes »** (noté
+    le 2026-09-24) ne s'est pas reproduit ; `useFormulaire` pose de toute
+    façon un verrou sur les onze formulaires ;
+  - **non testés faute de service** : temps réel, push, emails, affichage
+    des images par `next/image`. *À constater* sur un téléphone.
 - **`/inscription/boutique` hérite du squelette de chargement client** et
   affiche brièvement « Conakry » pendant l'inscription commerçant.
 
@@ -508,6 +515,17 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   affichait un motif de suspension que la base ne stocke pas : retiré
   plutôt que simulé.
 
+- **Un formulaire n'est robuste que s'il survit à l'échec.** Le
+  2026-09-25, trois défauts graves avaient la même forme : un envoi raté
+  (réseau coupé, refus, session fermée ailleurs) emportait la saisie, et
+  `useActionState` mettait deux tapes rapides EN FILE au lieu d'en
+  ignorer une. Tout formulaire passe désormais par `useFormulaire`
+  (`src/lib/use-formulaire.ts`) ; en écrire un avec `useActionState`
+  directement refait ces trois bugs.
+- **Le middleware ne redirige jamais une action serveur.** Un POST
+  portant `next-action` redirigé vers `/connexion` ne reçoit pas la
+  réponse de l'action, et l'écran tombe sur `error.tsx`.
+
 ### Supabase Auth
 
 - **`signOut()` sans argument est GLOBAL** : il révoque TOUS les jetons de
@@ -588,10 +606,25 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-182 commits, du plus récent au plus ancien.
+194 commits, du plus récent au plus ancien.
+
+### 2026-09-25
+
+- `79580d9` Les saisies absurdes sont refusées avant la base, en français
+- `5a23b3b` Un identifiant absurde dans l'adresse mène à « introuvable », pas à un 500
+- `0015a21` Plus aucune erreur technique en anglais sous les yeux de l'utilisateur
+- `89c2b8c` Un envoi raté ne détruit plus la saisie, et ne part qu'une fois
+- `5e94532` La suite de sécurité suit la limite de cinq photos
+- `69dcf43` Ouvrir une conversation amène aux derniers messages
+- `4742fe9` Le son d'un message relance le contexte audio au lieu de se taire
+- `d6db7c7` L'en-tête des écrans reste en haut pendant le défilement
+- `37de05a` Une suppression de compte refusée le dit au lieu de parler de wifi
+- `1de4d64` Un fil ouvert éteint le badge de non-lus tout de suite
+- `6a12be1` Le son d'un message reçu se déverrouille aussi sur iPhone
 
 ### 2026-09-24
 
+- `4cd71bf` Un formulaire refusé garde ce qui a été tapé
 - `1942531` Le prix d'un produit se lit comme l'écrit un commerçant
 - `dc48399` Les notifications push changent de clé VAPID
 - `994e06c` Le contact et l'envoi des emails passent par filloo.gn@gmail.com
