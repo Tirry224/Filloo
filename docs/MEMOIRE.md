@@ -49,6 +49,20 @@ cassés.
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
+- **`VAPID_PRIVATE_KEY` n'est probablement toujours PAS lue en
+  production.** Constaté le 2026-09-25 : deux appareils abonnés (un
+  `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
+  installé et autorisé), `last_used_at` vide sur les deux, et sur 30
+  messages envoyés en 24 h, AUCUNE requête de `notifyNewMessage` dans les
+  journaux Supabase. La fonction sort donc avant sa première lecture : la
+  seule sortie possible à ce point est « ni push ni email configuré ». La
+  clé publique, elle, est dans le build (l'abonnement a réussi). Vérifier
+  que `VAPID_PRIVATE_KEY` est cochée pour **Production**, qu'elle est la
+  moitié de la paire publique de `.env`, puis redéployer. Ensuite la clé
+  `service_role` ci-dessous bloquera l'étape suivante : les deux sont à
+  corriger ensemble. Ce que « marche en arrière-plan sur Android » veut
+  dire : Chrome garde la page vivante quelques minutes, c'est le son de
+  l'app, pas un push. iOS suspend la page dès qu'elle quitte l'écran.
 - **`SUPABASE_SERVICE_ROLE_KEY` de Vercel est REFUSÉE par Supabase.**
   Constaté le 2026-09-25 dans les journaux Supabase (connecteur) : toutes
   les requêtes `service_role` des dernières 24 h répondent **401** — la

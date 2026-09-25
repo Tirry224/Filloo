@@ -37,8 +37,31 @@ function deverrouillerSon() {
   muet.start();
 }
 
+/**
+ * Un contexte déverrouillé une fois ne reste pas « running » : Safari le
+ * repasse en pause après une interruption ou une période sans son. On tente
+ * alors une relance AVANT de jouer plutôt que d'abandonner en silence —
+ * Safari la refuse hors geste si la page n'a jamais été touchée, et ce
+ * refus coûte seulement le son de CE message, le bandeau s'affiche quand
+ * même.
+ */
 function jouerSon() {
-  if (!audio || audio.state !== "running") return;
+  if (!audio) return;
+  if (audio.state === "running") return bip(audio);
+  /* Safari peut aussi laisser la promesse EN SUSPENS jusqu'au prochain
+     geste : sans cette limite, le bip sonnerait des minutes plus tard, au
+     premier toucher, pour un message déjà lu. */
+  const contexte = audio;
+  const demande = Date.now();
+  contexte.resume().then(
+    () => {
+      if (Date.now() - demande < 1000) bip(contexte);
+    },
+    () => {},
+  );
+}
+
+function bip(audio: AudioContext) {
   const debut = audio.currentTime;
   for (const [frequence, decalage] of [[880, 0], [1320, 0.14]] as const) {
     const oscillateur = audio.createOscillator();
