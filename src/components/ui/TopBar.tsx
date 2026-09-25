@@ -13,10 +13,16 @@ export function TopBar({
   right?: React.ReactNode;
   className?: string;
 }) {
+  /* `sticky` et non `fixed` : c'est le DOCUMENT qui défile (voir
+     `ScreenFooter`, `NavBar`), et un en-tête collant garde sa place dans le
+     flux — aucune marge à deviner sous lui. Il suffit qu'aucun ancêtre ne
+     pose d'`overflow` pour que cela tienne. `z-10` : sous les panneaux
+     (`z-20`, `Sheet` en `z-30`), au-dessus du contenu positionné qui défile
+     dessous (badges, pastilles de photo). */
   return (
     <header
       className={cn(
-        "flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-3.5",
+        "sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-3.5",
         className,
       )}
     >

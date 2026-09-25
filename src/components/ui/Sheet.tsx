@@ -15,7 +15,7 @@ export function Sheet({
   tone?: "default" | "danger";
 }) {
   return (
-    <div className="fixed inset-0 flex flex-col justify-end sm:justify-center sm:p-gutter">
+    <div className="fixed inset-0 z-30 flex flex-col justify-end sm:justify-center sm:p-gutter">
       <Link href={closeHref} aria-label="Fermer" className="absolute inset-0 bg-overlay" />
       <div className="relative mx-auto w-full max-w-app rounded-t-2xl bg-surface px-4.5 pt-2.5 pb-5 shadow-sheet sm:max-w-lecture sm:rounded-2xl sm:pt-4 sm:pb-6">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line sm:hidden" aria-hidden />
