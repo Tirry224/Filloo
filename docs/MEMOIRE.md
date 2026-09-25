@@ -162,13 +162,26 @@ trompera.
   guillemets simples de `'tests/*.test.ts'` ne sont pas retirés par
   `cmd.exe`, et le script affiche « pass 0 » sans échouer.
   `node --experimental-strip-types --test tests/*.test.ts` depuis Git Bash
-  les lance (33 au 2026-09-23).
-- **La couche applicative est à peine testée.** `npm run tests` couvre
-  `safeNextPath`, les règles de saisie et l'adresse du site ; les actions
-  serveur, là où vivent les écritures, n'ont aucun test. Deux mille lignes
-  de tests couvrent le SQL, alors que TOUS les bugs de terrain ont été
-  trouvés dans la couche applicative : la couche la mieux testée n'est
-  pas celle qui casse.
+  les lance (48 au 2026-09-25).
+- **La couche applicative n'est testée que par ses parcours.** Depuis le
+  2026-09-25, `npm run e2e` joue vingt parcours dans Chromium contre une
+  pile Supabase locale (voir `e2e/README.md`) : les actions serveur
+  d'inscription, de publication, de message, de signalement et de
+  suppression y passent pour de vrai. Aucune action n'a encore de test
+  unitaire, et les cas limites (prix, longueurs, quotas) restent à écrire.
+  La suite ne tourne pas en CI : il faut Docker et un build fait contre la
+  pile locale.
+- **L'envoi de photo charge un script depuis `cdn.jsdelivr.net`.**
+  `PhotoPicker.tsx` passe `useWebWorker: true` à `browser-image-compression`,
+  qui va alors chercher son code de travail sur ce CDN à chaque envoi.
+  Constaté par Playwright le 2026-09-25 : CDN bloqué, l'envoi réussit quand
+  même, la bibliothèque retombant sur le fil principal. Sur un téléphone
+  lent, c'est une requête externe de plus avant chaque photo et un écran
+  figé pendant la compression. À trancher : servir ce script depuis Filloo,
+  ou `useWebWorker: false`.
+- **`scripts/parcours.mjs` est remplacé par `e2e/`** mais pas encore
+  supprimé : il vise des données de démonstration effacées et ne tourne
+  plus.
 - **Le dépôt et la production ne portent pas les mêmes commentaires
   SQL.** Le mécanisme d'application les retire ; la logique est
   identique. À traiter en corrigeant le mécanisme, **jamais en réécrivant
@@ -334,6 +347,7 @@ npm run gardes                 # gardes de route
 npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
 npm run parcours               # mesure d'un parcours
 npm run tests                  # couche applicative (node --test, sans dépendance)
+npm run e2e                    # parcours dans Chromium ; pile locale : e2e/README.md
 npm run memoire                # régénère l'historique de ce fichier
 npm run migrations             # dépôt ↔ production ; SUPABASE_ACCESS_TOKEN
                                # dans .env.local, ou -- --json liste.json
@@ -629,10 +643,13 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-200 commits, du plus récent au plus ancien.
+203 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `c168c3e` Les parcours se jouent dans un vrai navigateur : npm run e2e
+- `2ec4ddb` Le cron du matin efface aussi les photos orphelines
+- `6b3c95c` 0028 : la base désigne les photos orphelines et purge les mesures
 - `19949c0` L'Action Migrations passe à checkout et setup-node v5
 - `99c06da` Une Action GitHub compare les migrations à chaque push et chaque matin
 - `98c1b33` npm run migrations compare le dépôt à la production, dans les deux sens
