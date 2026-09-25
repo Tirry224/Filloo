@@ -270,7 +270,10 @@ ne se recopient pas.
   rafraîchit badge et tableau de bord à chaque message reçu, sur tous les
   écrans. Le push part à chaque message (vibration ; muet si l'application
   est au premier plan), l'email seulement au premier non lu du fil. Un
-  navigateur ne joue aucun son avant un premier geste sur la page.
+  navigateur ne joue aucun son avant un premier geste sur la page. **Sur
+  iPhone, ce son se tait si l'interrupteur silencieux est mis** (Web Audio
+  le respecte, c'est voulu) et il n'y a jamais de vibration (Safari n'a
+  pas `navigator.vibrate`). Son iPhone *à constater*.
 - **Installation de l'application** proposée à l'entrée, et **mise en
   page tenue sur grand écran**.
 

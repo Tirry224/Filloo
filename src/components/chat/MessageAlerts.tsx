@@ -20,9 +20,21 @@ type Alerte = { titre: string; extrait: string; href: string };
 
 let audio: AudioContext | null = null;
 
+/**
+ * Appelé à chaque geste, pas une seule fois : Safari repasse le contexte en
+ * « interrupted » (et non « suspended ») après un appel ou un passage en
+ * arrière-plan, et seul un nouveau geste le relance. Le tampon muet joué
+ * pendant le geste est ce qui déverrouille réellement la sortie sur iPhone ;
+ * `resume()` seul n'y suffit pas toujours.
+ */
 function deverrouillerSon() {
   audio ??= new AudioContext();
-  if (audio.state === "suspended") void audio.resume();
+  if (audio.state === "running") return;
+  void audio.resume();
+  const muet = audio.createBufferSource();
+  muet.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+  muet.connect(audio.destination);
+  muet.start();
 }
 
 function jouerSon() {
@@ -78,9 +90,12 @@ export function MessageAlerts() {
       minuterie = setTimeout(() => router.refresh(), 300);
     };
 
+    /* Un toucher n'active la page qu'au RELÂCHEMENT (`pointerup`) : c'est la
+       règle HTML, que Safari applique à la lettre et Chrome Android non.
+       Écouter seulement `pointerdown` laissait l'iPhone muet. */
+    const gestes = ["pointerdown", "pointerup", "keydown"] as const;
     const onGeste = () => deverrouillerSon();
-    window.addEventListener("pointerdown", onGeste);
-    window.addEventListener("keydown", onGeste);
+    for (const geste of gestes) window.addEventListener(geste, onGeste);
 
     const onVisible = () => {
       if (document.visibilityState === "visible") rafraichir();
@@ -133,8 +148,7 @@ export function MessageAlerts() {
     return () => {
       arrete = true;
       clearTimeout(minuterie);
-      window.removeEventListener("pointerdown", onGeste);
-      window.removeEventListener("keydown", onGeste);
+      for (const geste of gestes) window.removeEventListener(geste, onGeste);
       document.removeEventListener("visibilitychange", onVisible);
       nettoyer();
     };
