@@ -445,6 +445,10 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   lisant `list_migrations` avant d'appliquer `0027`. Depuis,
   `npm run migrations` fait la comparaison dans les deux sens : à
   lancer avant de pousser tout commit qui touche `supabase/migrations/`.
+  L'Action GitHub `Migrations` (`.github/workflows/migrations.yml`) le
+  relance à chaque push sur `main` qui touche une migration, et chaque
+  matin à 6 h 17 pour attraper ce qui a été appliqué au tableau de
+  bord ; elle exige le secret `SUPABASE_ACCESS_TOKEN` dans GitHub.
   En session, sans accès à `api.supabase.com`, passer la sortie de
   `list_migrations` du connecteur par `--json`.
 
@@ -614,10 +618,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-197 commits, du plus récent au plus ancien.
+198 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `98c1b33` npm run migrations compare le dépôt à la production, dans les deux sens
 - `960045d` La mémoire note 0026 restée un jour sans être appliquée
 - `3cc22c2` Un seul signalement en attente par personne et par cible
 - `704fde0` La mémoire dit ce que le test de chaos a corrigé, et ce qu'il laisse
