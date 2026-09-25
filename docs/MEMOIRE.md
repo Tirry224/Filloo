@@ -193,9 +193,6 @@ trompera.
   portant les 26 migrations), et pilotée dans Chromium au format
   téléphone. Les défauts trouvés sont corrigés dans les commits du jour ;
   restent :
-  - **la même personne peut signaler dix fois le même produit** : il
-    faudrait un index unique `(reporter_id, target_type, target_id)` —
-    donc une migration, à décider ;
   - **un compte supprimé ne peut plus revenir avec son email** : la
     connexion, bannie, dit désormais « compte supprimé ou fermé », mais
     l'inscription répond « un compte existe déjà ». Décision produit ;
@@ -606,10 +603,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-194 commits, du plus récent au plus ancien.
+195 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `704fde0` La mémoire dit ce que le test de chaos a corrigé, et ce qu'il laisse
 - `79580d9` Les saisies absurdes sont refusées avant la base, en français
 - `5a23b3b` Un identifiant absurde dans l'adresse mène à « introuvable », pas à un 500
 - `0015a21` Plus aucune erreur technique en anglais sous les yeux de l'utilisateur

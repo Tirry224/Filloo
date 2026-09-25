@@ -2119,5 +2119,40 @@ exception when unique_violation then
 end $$;
 
 
+
+-- =====================================================================
+-- Signalements : un seul EN ATTENTE par personne et par cible (0027)
+-- =====================================================================
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+insert into public.reports (reporter_id, target_type, target_id, reason)
+values ((select id from public.profiles where auth_user_id = '11111111-1111-1111-1111-111111111111' limit 1),
+        'product', 'cccccccc-0000-0000-0000-000000000001', 'Prix suspect');
+
+do $$
+begin
+  insert into public.reports (reporter_id, target_type, target_id, reason)
+  values ((select id from public.profiles where auth_user_id = '11111111-1111-1111-1111-111111111111' limit 1),
+          'product', 'cccccccc-0000-0000-0000-000000000001', 'Prix suspect');
+  raise exception 'ECHEC un meme produit a ete signale deux fois par la meme personne';
+exception when unique_violation then
+  raise notice 'OK    un second signalement en attente est refuse';
+end $$;
+reset role;
+
+-- Traité, le signalement libère la place : la cible peut revenir.
+update public.reports set handled_at = now()
+ where target_id = 'cccccccc-0000-0000-0000-000000000001';
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+insert into public.reports (reporter_id, target_type, target_id, reason)
+values ((select id from public.profiles where auth_user_id = '11111111-1111-1111-1111-111111111111' limit 1),
+        'product', 'cccccccc-0000-0000-0000-000000000001', 'Toujours suspect');
+reset role;
+select pg_temp.check('apres traitement, la meme cible peut etre signalee de nouveau',
+  (select count(*) = 2 from public.reports
+    where target_id = 'cccccccc-0000-0000-0000-000000000001'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

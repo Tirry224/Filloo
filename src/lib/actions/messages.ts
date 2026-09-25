@@ -9,6 +9,8 @@ import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/ses
 import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
 import { estUuid, longueur, PRECISIONS_MAX, texteNettoye } from "@/lib/saisie";
 
+const DEJA_SIGNALE = "Vous l'avez déjà signalé : notre équipe n'a pas encore traité votre signalement.";
+
 /** La borne de `messages.body` (0001). */
 const MESSAGE_MAX = 2000;
 import { getThreadContext } from "@/lib/data/messages";
@@ -240,6 +242,12 @@ export async function reportConversationAction(formData: FormData) {
   // Un signalement avalé en silence est pire qu'un bouton absent. Le RLS
   // lève bien une erreur ici ; le `.select("id")` couvre l'autre cas, un
   // trigger `before insert` qui renvoie NULL sans erreur.
+  /* 23505 : un signalement de cette personne attend déjà sur ce fil
+     (index partiel de 0027). La plainte est reçue : on le dit, sans
+     l'enregistrer une seconde fois. */
+  if (error?.code === "23505") {
+    backToThread(conversationId, context.iAmMerchant, undefined, DEJA_SIGNALE);
+  }
   if (error) backToThread(conversationId, context.iAmMerchant, messagePourErreur(error, "messages"));
   if (!data || data.length === 0) {
     backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous, puis réessayez.");
@@ -272,6 +280,8 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
       reason: fullReason,
     })
     .select("id");
+  // Même cas que pour un fil : déjà signalé et pas encore traité (0027).
+  if (error?.code === "23505") redirect(`/produit/${productId}?info=${encodeURIComponent(DEJA_SIGNALE)}`);
   if (error) return { error: messagePourErreur(error, "messages") };
   if (!data || data.length === 0) {
     return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
