@@ -24,3 +24,12 @@ design/filloo-maquette.html
 # et des captures, tous deux régénérables et volumineux.
 .chrome-profil/
 .captures/
+
+# Tests de navigateur (npm run e2e) : captures, traces et rapport,
+# régénérés à chaque passage.
+e2e/resultats/
+e2e/rapport/
+
+# État local de la CLI Supabase (npx supabase start)
+supabase/.temp/
+supabase/.branches/

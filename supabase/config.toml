@@ -1,0 +1,31 @@
+# Pile Supabase LOCALE, pour les tests de navigateur (`e2e/`).
+#
+# Ce fichier ne règle rien en production : le projet en ligne se configure
+# dans le tableau de bord Supabase. Il sert à `npx supabase start`, qui
+# monte dans Docker une base portant TOUTES les migrations de
+# `supabase/migrations/`, avec la vraie authentification, le vrai REST et
+# le vrai stockage — ce que le PostgreSQL nu de `supabase/tests/` n'a pas.
+#
+# Seuls les écarts aux valeurs par défaut de la CLI sont écrits ici.
+
+project_id = "filloo"
+
+[db]
+major_version = 17
+
+[db.seed]
+# `seed_demo.sql` suppose des comptes qui n'existent pas en local ; les
+# tests créent eux-mêmes leurs données.
+enabled = false
+
+[studio]
+enabled = false
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/**"]
+
+[auth.email]
+# En production, la confirmation par email est active ; en local, la
+# couper laisse les tests se connecter juste après l'inscription.
+enable_confirmations = false

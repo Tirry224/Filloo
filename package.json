@@ -15,7 +15,8 @@
     "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
     "tests": "node --experimental-strip-types --test 'tests/*.test.ts'",
     "memoire": "node scripts/memoire.mjs",
-    "migrations": "node scripts/migrations.mjs"
+    "migrations": "node scripts/migrations.mjs",
+    "e2e": "playwright test -c e2e"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -30,6 +31,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
