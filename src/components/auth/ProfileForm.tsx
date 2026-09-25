@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, Input, Select } from "@/components/ui/Field";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { updateProfileAction } from "@/lib/actions/account";
 import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
@@ -40,7 +41,7 @@ export function ProfileForm({
         <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" defaultValue={fullName} />
       </Field>
       <Field label="Téléphone" htmlFor="phone">
-        <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={phone} />
+        <PhoneInput id="phone" name="phone" autoComplete="tel" defaultValue={phone} />
       </Field>
       {espace === "client" ? (
         <Field label="Ville de résidence" htmlFor="cityId">

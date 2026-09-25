@@ -2,6 +2,7 @@
 
 import { ShopPhotoPicker } from "@/components/auth/ShopPhotoPicker";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { updateMerchantAction } from "@/lib/actions/merchants";
 import type { CityOption } from "@/lib/data/reference";
 import type { Merchant } from "@/lib/types";
@@ -47,13 +48,7 @@ export function ShopEditForm({
       </Field>
 
       <Field label="Numéro WhatsApp" htmlFor="whatsappPhone">
-        <Input
-          id="whatsappPhone"
-          name="whatsappPhone"
-          type="tel"
-          inputMode="tel"
-          defaultValue={merchant.whatsappPhone ?? ""}
-        />
+        <PhoneInput id="whatsappPhone" name="whatsappPhone" defaultValue={merchant.whatsappPhone} />
       </Field>
 
       <Field label="Description" htmlFor="description">

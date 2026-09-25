@@ -57,3 +57,25 @@ export function lienWhatsApp(numero: string | null | undefined): string | null {
   if (!estTelephone(nettoye)) return null;
   return `https://wa.me/${INDICATIF_GUINEE}${nettoye}`;
 }
+
+/** Chiffres d'un numéro guinéen : neuf, sans l'indicatif. */
+export const CHIFFRES_TELEPHONE = 9;
+
+/**
+ * Ce que le champ AFFICHE pendant la saisie : chiffres seuls, neuf au
+ * plus, groupés « 622 33 44 55 ». L'indicatif collé depuis un contact
+ * (« +224 », « 00224 ») est retiré AVANT de couper à neuf, sinon il
+ * mangerait trois chiffres du vrai numéro. Un mobile guinéen commence
+ * par 6 : un « 224 » en tête ne peut être que l'indicatif.
+ *
+ * Confort seulement : `erreurTelephone` reste le seul contrôle qui vaille.
+ */
+export function formaterSaisieTelephone(valeur: string): string {
+  let chiffres = valeur.replace(/\D/g, "");
+  if (chiffres.startsWith("00224")) chiffres = chiffres.slice(5);
+  else if (chiffres.startsWith("224")) chiffres = chiffres.slice(3);
+  chiffres = chiffres.slice(0, CHIFFRES_TELEPHONE);
+  return [chiffres.slice(0, 3), chiffres.slice(3, 5), chiffres.slice(5, 7), chiffres.slice(7, 9)]
+    .filter(Boolean)
+    .join(" ");
+}

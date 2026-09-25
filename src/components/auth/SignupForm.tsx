@@ -5,6 +5,7 @@ import { ArrowLeftRight, Package, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/cn";
 import { signUpAction, createLinkedProfileAction } from "@/lib/actions/auth";
@@ -135,11 +136,9 @@ export function SignupForm({
           </Field>
 
           <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">
-            <Input
+            <PhoneInput
               id="phone"
               name="phone"
-              type="tel"
-              inputMode="tel"
               autoComplete="tel"
               placeholder="620 00 00 00"
               defaultValue={defaultPhone}

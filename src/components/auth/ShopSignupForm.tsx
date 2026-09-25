@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { createMerchantAction } from "@/lib/actions/merchants";
 import type { CityOption } from "@/lib/data/reference";
@@ -55,7 +56,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
             htmlFor="whatsappPhone"
             hint="Affiché sur vos produits, en plus de la messagerie. Laissez vide pour utiliser le numéro de votre compte."
           >
-            <Input id="whatsappPhone" name="whatsappPhone" type="tel" inputMode="tel" placeholder="622 33 44 55" />
+            <PhoneInput id="whatsappPhone" name="whatsappPhone" placeholder="622 33 44 55" />
           </Field>
 
           <Field label="Que vendez-vous ?" htmlFor="description">
