@@ -24,6 +24,16 @@ function translateAuthError(message: string): string {
   if (message.includes("Password should be at least")) {
     return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
   }
+  /* Règles réglées au tableau de bord Supabase (Authentication → Sign In
+     / Providers → Email), pas dans le code : sans ces deux cas, un mot de
+     passe refusé pour sa composition tombait dans « Une erreur est
+     survenue » — constaté le 2026-09-25 sur la réinitialisation. */
+  if (message.includes("should contain at least one character")) {
+    return "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre.";
+  }
+  if (message.includes("known to be weak") || message.includes("easy to guess")) {
+    return "Ce mot de passe figure dans des listes de mots de passe piratés. Choisissez-en un autre.";
+  }
   if (message.includes("should be different from the old password")) {
     return "Le nouveau mot de passe doit être différent de l'actuel.";
   }
