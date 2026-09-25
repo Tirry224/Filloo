@@ -7,6 +7,7 @@ import { getSessionUser, getMyProfiles } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
+import { messagePourErreur } from "@/lib/erreurs";
 
 /**
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
@@ -63,7 +64,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     .update({ full_name: fullName, phone: nettoyerTelephone(phone) })
     .eq("auth_user_id", user.id)
     .select("id");
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "compte") };
   // Le `using` de la policy filtre des LIGNES : s'il les écarte, la
   // réponse est un succès à zéro ligne. Sans ce contrôle, un profil
   // suspendu voit ses modifications acceptées à l'écran et perdues en base.

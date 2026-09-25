@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { getSessionUser } from "@/lib/data/session";
-import { DECONNECTE } from "@/lib/erreurs";
+import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
@@ -114,7 +114,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
      appartenant à un autre commerçant ne ramène zéro ligne et se dit
      autrement. */
   if (insertError) {
-    if (insertError.code !== "23505") return { error: insertError.message };
+    if (insertError.code !== "23505") return { error: messagePourErreur(insertError, "produits") };
 
     const { data: repris, error: repriseError } = await supabase
       .from("products")
@@ -127,7 +127,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       })
       .eq("id", productId)
       .select("id");
-    if (repriseError) return { error: repriseError.message };
+    if (repriseError) return { error: messagePourErreur(repriseError, "produits") };
     if (!repris || repris.length === 0) {
       return { error: "Ce produit existe déjà et n'est pas le vôtre. Rechargez la page pour en créer un nouveau." };
     }
@@ -141,12 +141,12 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .from("product_images")
       .delete()
       .eq("product_id", productId);
-    if (clearError) return { error: clearError.message };
+    if (clearError) return { error: messagePourErreur(clearError, "produits") };
 
     const { error: imagesError } = await supabase.from("product_images").insert(
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),
     );
-    if (imagesError) return { error: imagesError.message };
+    if (imagesError) return { error: messagePourErreur(imagesError, "produits") };
   }
 
   if (publish) {
@@ -155,7 +155,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .update({ status: "active" })
       .eq("id", productId)
       .select("id");
-    if (publishError) return { error: publishError.message };
+    if (publishError) return { error: messagePourErreur(publishError, "produits") };
     // Deux refus, deux canaux : « pas de photo » et « boutique non
     // validée » remontent par `publishError` ; le succès muet à zéro ligne
     // vient du RLS, qui n'écarte que compte suspendu, supprimé ou produit
@@ -216,7 +216,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     })
     .eq("id", productId)
     .select("id");
-  if (updateError) return { error: updateError.message };
+  if (updateError) return { error: messagePourErreur(updateError, "produits") };
   if (!updated || updated.length === 0) {
     return { error: "Modification impossible : ce produit n'est pas le vôtre, ou votre compte commerçant n'est plus actif." };
   }
@@ -234,14 +234,14 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       fields.imagePaths.map((storage_path, position) => ({ product_id: productId, storage_path, position })),
       { onConflict: "product_id,position" },
     );
-    if (imagesError) return { error: imagesError.message };
+    if (imagesError) return { error: messagePourErreur(imagesError, "produits") };
   }
   const { error: clearError } = await supabase
     .from("product_images")
     .delete()
     .eq("product_id", productId)
     .gte("position", fields.imagePaths.length);
-  if (clearError) return { error: clearError.message };
+  if (clearError) return { error: messagePourErreur(clearError, "produits") };
 
   /* Le ménage dans Storage vient APRÈS l'écriture en base : supprimer
      d'abord laisserait `product_images` pointer sur un fichier détruit si
@@ -277,7 +277,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       .eq("id", productId)
       .eq("status", "draft")
       .select("id");
-    if (publishError) return { error: publishError.message };
+    if (publishError) return { error: messagePourErreur(publishError, "produits") };
     if (!published || published.length === 0) {
       return { error: "Publication impossible : ce produit n'est plus un brouillon, ou votre compte commerçant n'est plus actif. Vos modifications sont enregistrées." };
     }
@@ -318,7 +318,7 @@ async function setProductStatus(formData: FormData, status: "active" | "sold" | 
     .eq("id", productId)
     .select("id");
 
-  if (error) backToSeller(error.message);
+  if (error) backToSeller(messagePourErreur(error, "produits"));
   if (!data || data.length === 0) {
     backToSeller("Action impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
   }
@@ -361,7 +361,7 @@ export async function deleteProductAction(formData: FormData) {
 
   const { data, error } = await supabase.from("products").delete().eq("id", productId).select("id");
 
-  if (error) backToSeller(error.message);
+  if (error) backToSeller(messagePourErreur(error, "produits"));
   // Comme `setProductStatus` : écartée par le RLS, la suppression ne lève
   // rien et supprime zéro ligne. On ne se tait pas sur un geste
   // irréversible.

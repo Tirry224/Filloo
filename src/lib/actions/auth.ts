@@ -9,6 +9,7 @@ import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/passwo
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
+import { messagePourErreur } from "@/lib/erreurs";
 
 export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
 
@@ -22,7 +23,25 @@ function translateAuthError(message: string): string {
   if (message.includes("Password should be at least")) {
     return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
   }
-  return message;
+  if (message.includes("should be different from the old password")) {
+    return "Le nouveau mot de passe doit être différent de l'actuel.";
+  }
+  if (message.includes("validate email") || message.includes("invalid format")) {
+    return "Cette adresse email n'est pas valide. Vérifiez-la (exemple : mariama@exemple.com).";
+  }
+  /* `deleteAccountAction` BANNIT la connexion au lieu de la supprimer
+     (voir `account.ts`) : c'est donc aussi ce que lit quelqu'un qui a
+     supprimé son compte, pas seulement un compte sanctionné. */
+  if (message.includes("banned")) {
+    return "Ce compte a été supprimé ou fermé. Si vous pensez qu'il s'agit d'une erreur, écrivez-nous depuis la page Contact.";
+  }
+  if (message.includes("rate limit") || message.includes("too many")) {
+    return "Trop d'essais en peu de temps. Patientez quelques minutes, puis réessayez.";
+  }
+  /* Tout le reste s'affichait tel quel, en anglais. Le texte d'origine
+     part dans les journaux, où il sert. */
+  console.error("[auth]", message);
+  return "Une erreur est survenue. Réessayez dans un instant.";
 }
 
 /** Premier compte de la connexion : le trigger
@@ -120,7 +139,7 @@ export async function createLinkedProfileAction(
     });
   if (error) {
     if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
-    return { error: error.message };
+    return { error: messagePourErreur(error, "compte") };
   }
 
   compter("inscription", { role });

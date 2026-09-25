@@ -7,6 +7,7 @@ import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
+import { messagePourErreur } from "@/lib/erreurs";
 
 /** La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
  * `profile_id` appartient au commerçant connecté ; inutile de le
@@ -40,7 +41,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   });
   if (error) {
     if (error.code === "23505") return { error: "Vous avez déjà une boutique." };
-    return { error: error.message };
+    return { error: messagePourErreur(error, "boutique") };
   }
 
   compter("boutique_creee", { role: "merchant", cityId: cityId });
@@ -60,7 +61,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 export async function resubmitMerchantAction() {
   const supabase = await createClient();
   const { error } = await supabase.rpc("resubmit_my_merchant");
-  if (error) redirect(`/vendeur/refusee?erreur=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/vendeur/refusee?erreur=${encodeURIComponent(messagePourErreur(error, "boutique"))}`);
   redirect("/vendeur/attente");
 }
 
@@ -124,7 +125,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     })
     .eq("profile_id", merchantProfile.id)
     .select("id");
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "boutique") };
   // Comme pour le profil client : un `update` écarté par le RLS répond un
   // succès à zéro ligne, qu'on ne laisse pas passer pour un enregistrement.
   if (!data || data.length === 0) {

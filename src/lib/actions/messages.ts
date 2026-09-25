@@ -6,7 +6,7 @@ import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
-import { DECONNECTE } from "@/lib/erreurs";
+import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
 import { getThreadContext } from "@/lib/data/messages";
 import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
@@ -121,7 +121,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
     if (error.code === "42501") {
       return { error: "Ce fil n'accepte plus de nouveaux messages. Vos échanges restent consultables." };
     }
-    return { error: error.message };
+    return { error: messagePourErreur(error, "messages") };
   }
 
   /* L'email part APRÈS la réponse : `after` s'exécute une fois celle-ci
@@ -196,7 +196,7 @@ export async function blockPeerAction(formData: FormData) {
 
   // Le RLS écarte une ligne par un succès à zéro ligne, sans erreur. On ne
   // croit pas un blocage fait sans preuve : quelqu'un compte dessus.
-  if (error) backToThread(conversationId, context.iAmMerchant, error.message);
+  if (error) backToThread(conversationId, context.iAmMerchant, messagePourErreur(error, "messages"));
   if (!data || data.length === 0) backToThread(conversationId, context.iAmMerchant, "Blocage impossible. Réessayez.");
   backToThread(conversationId, context.iAmMerchant);
 }
@@ -228,7 +228,7 @@ export async function reportConversationAction(formData: FormData) {
   // Un signalement avalé en silence est pire qu'un bouton absent. Le RLS
   // lève bien une erreur ici ; le `.select("id")` couvre l'autre cas, un
   // trigger `before insert` qui renvoie NULL sans erreur.
-  if (error) backToThread(conversationId, context.iAmMerchant, error.message);
+  if (error) backToThread(conversationId, context.iAmMerchant, messagePourErreur(error, "messages"));
   if (!data || data.length === 0) {
     backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous, puis réessayez.");
   }
@@ -258,7 +258,7 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
       reason: fullReason,
     })
     .select("id");
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "messages") };
   if (!data || data.length === 0) {
     return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
   }

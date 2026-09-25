@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
 import { sendPushToUser } from "@/lib/push";
 import type { ActionState } from "@/lib/actions/auth";
+import { messagePourErreur } from "@/lib/erreurs";
 
 /**
  * Le client de SESSION, non `service_role` : contrairement à l'envoi
@@ -48,7 +49,7 @@ export async function savePushSubscriptionAction(
     },
     { onConflict: "endpoint" },
   );
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "push") };
 
   return { sent: true };
 }
@@ -63,7 +64,7 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
   // Pas de `eq("auth_user_id", …)` : le RLS le fait, et le répéter ici
   // laisserait croire que c'est ce filtre qui protège.
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "push") };
 
   return { sent: true };
 }
@@ -76,7 +77,7 @@ export async function sendTestPushAction(): Promise<ActionState> {
   const { count, error } = await supabase
     .from("push_subscriptions")
     .select("id", { count: "exact", head: true });
-  if (error) return { error: error.message };
+  if (error) return { error: messagePourErreur(error, "push") };
   if (!count) return { error: "Aucun appareil abonné. Activez d'abord les notifications." };
 
   await sendPushToUser(user.id, {
