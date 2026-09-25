@@ -11,10 +11,11 @@ import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
 import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
 
-/** `{merchant_id}/{uuid}.webp`, le seul chemin que `ShopPhotoPicker`
+/** `{merchant_id}/{uuid}.webp` — ou `.jpg` là où le navigateur n'encode
+ * pas le WebP (Safari, 0031) : les seuls chemins que `ShopPhotoPicker`
  * produit. Que le dossier soit bien CELUI de la boutique, c'est la base
  * qui le garantit (`merchants_photo_path_dans_son_dossier`, 0029). */
-const CHEMIN_PHOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;
+const CHEMIN_PHOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webp|jpg)$/;
 
 /** Les champs d'une boutique, lus ET validés en un geste, pour la
  * création comme pour la modification. Le nom est ce qu'un client lit en

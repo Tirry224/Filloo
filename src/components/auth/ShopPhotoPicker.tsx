@@ -42,19 +42,22 @@ export function ShopPhotoPicker({
     try {
       // Un avatar s'affiche à 64 px au plus : 512 px couvrent les écrans
       // denses sans envoyer une photo de 3 Mo depuis un forfait mobile.
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.2,
-        maxWidthOrHeight: 512,
-        useWebWorker: true,
-        fileType: "image/webp",
-      });
-      const newPath = `${merchantId}/${crypto.randomUUID()}.webp`;
+      const options = { maxSizeMB: 0.2, maxWidthOrHeight: 512, useWebWorker: true };
+      let compressed = await imageCompression(file, { ...options, fileType: "image/webp" });
+      // Safari n'encode pas le WebP : il rend du PNG sans prévenir, que le
+      // bucket refuse (0031). Le JPEG, lui, sort partout.
+      if (compressed.type !== "image/webp") {
+        compressed = await imageCompression(file, { ...options, fileType: "image/jpeg" });
+      }
+      const extension = compressed.type === "image/webp" ? "webp" : "jpg";
+      const newPath = `${merchantId}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await createClient()
         .storage.from(SHOP_PHOTOS_BUCKET)
-        .upload(newPath, compressed, { contentType: "image/webp" });
+        .upload(newPath, compressed, { contentType: compressed.type });
       if (uploadError) throw uploadError;
       setPath(newPath);
-    } catch {
+    } catch (e) {
+      console.error("[photo boutique] envoi échoué :", e);
       setError("Échec de l'envoi. Réessayez.");
       setPreview(path ? shopPhotoUrl(path) : null);
     } finally {
