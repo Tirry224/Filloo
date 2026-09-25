@@ -9,6 +9,7 @@ import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, lireIdEntier, texteNettoye } from "@/lib/saisie";
+import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
 
 /**
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
@@ -150,6 +151,22 @@ async function anonymiserEtBannir(userId: string) {
           .update({ status: "hidden" })
           .eq("merchant_id", merchant.id);
         if (hideError) throw hideError;
+
+        /* La photo de boutique peut être un visage : « supprimer mon
+           compte » l'efface, fichier compris. Tout le dossier, pour
+           emporter aussi les envois jamais enregistrés. */
+        const { error: photoError } = await admin
+          .from("merchants")
+          .update({ photo_path: null })
+          .eq("id", merchant.id);
+        if (photoError) throw photoError;
+        const { data: fichiers } = await admin.storage.from(SHOP_PHOTOS_BUCKET).list(merchant.id);
+        if (fichiers && fichiers.length > 0) {
+          const { error: storageError } = await admin.storage
+            .from(SHOP_PHOTOS_BUCKET)
+            .remove(fichiers.map((fichier) => `${merchant.id}/${fichier.name}`));
+          if (storageError) console.error("[suppression] photo de boutique restée :", storageError.message);
+        }
       }
     }
 

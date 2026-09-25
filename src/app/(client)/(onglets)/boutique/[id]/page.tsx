@@ -54,7 +54,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
       <ScreenBody>
         <Section className="gap-4">
           <div className="flex items-center gap-3.5">
-            <Avatar name={merchant.shopName} kind="shop" size={64} />
+            <Avatar name={merchant.shopName} kind="shop" size={64} src={merchant.photoUrl} />
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold">{merchant.shopName}</h2>
               <p className="text-sm text-ink-soft">{merchant.description}</p>

@@ -6,6 +6,7 @@ const aissatou: Product["merchant"] = {
   city: "Conakry",
   addressHint: "Marché de Madina, allée 3",
   whatsappPhone: null,
+  photoUrl: null,
 };
 
 const techKaloum: Product["merchant"] = {
@@ -14,6 +15,7 @@ const techKaloum: Product["merchant"] = {
   city: "Conakry",
   addressHint: "Avenue de la République",
   whatsappPhone: null,
+  photoUrl: null,
 };
 
 const fanta: Product["merchant"] = {
@@ -22,6 +24,7 @@ const fanta: Product["merchant"] = {
   city: "Conakry",
   addressHint: "Marché de Matam",
   whatsappPhone: null,
+  photoUrl: null,
 };
 
 export const merchantAissatou: Merchant = {
@@ -29,6 +32,7 @@ export const merchantAissatou: Merchant = {
   description: "Alimentation générale : riz, huile, sucre, lait.",
   whatsappPhone: "622334455",
   status: "approved",
+  photoUrl: null,
   rejectionReason: null,
 };
 
@@ -39,6 +43,7 @@ export const merchantRejected: Merchant = {
   addressHint: "Marché de Madina, allée 3",
   description: "Alimentation générale : riz, huile, sucre, lait.",
   whatsappPhone: "622334455",
+  photoUrl: null,
   status: "rejected",
   rejectionReason:
     "Le numéro de téléphone indiqué ne répond pas. Nous devons pouvoir vous joindre avant d'ouvrir votre boutique aux clients.",

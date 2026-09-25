@@ -160,6 +160,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          photo_path: string | null
           profile_id: string
           rejection_reason: string | null
           shop_name: string
@@ -174,6 +175,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          photo_path?: string | null
           profile_id: string
           rejection_reason?: string | null
           shop_name: string
@@ -188,6 +190,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          photo_path?: string | null
           profile_id?: string
           rejection_reason?: string | null
           shop_name?: string

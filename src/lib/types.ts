@@ -9,13 +9,15 @@ export type Merchant = {
   city: string;
   addressHint: string | null;
   whatsappPhone: string | null;
+  /** Null : pas de photo, l'icône par défaut s'affiche. */
+  photoUrl: string | null;
   status: MerchantStatus;
   rejectionReason: string | null;
 };
 
 export type Product = {
   id: string;
-  merchant: Pick<Merchant, "id" | "shopName" | "city" | "addressHint" | "whatsappPhone">;
+  merchant: Pick<Merchant, "id" | "shopName" | "city" | "addressHint" | "whatsappPhone" | "photoUrl">;
   category: string;
   title: string;
   description: string | null;

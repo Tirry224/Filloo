@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Merchant, Product } from "@/lib/types";
-import { productImageUrl } from "@/lib/storage";
+import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import { getMyProfile } from "@/lib/data/session";
 import { estUuid } from "@/lib/saisie";
 
@@ -12,6 +12,7 @@ type MerchantRow = {
   description: string | null;
   address_hint: string | null;
   whatsapp_phone: string | null;
+  photo_path: string | null;
   status: Database["public"]["Enums"]["merchant_status"];
   rejection_reason: string | null;
   cities: { name: string } | null;
@@ -25,6 +26,7 @@ function mapMerchant(row: MerchantRow): Merchant {
     city: row.cities?.name ?? "",
     addressHint: row.address_hint,
     whatsappPhone: row.whatsapp_phone,
+    photoUrl: row.photo_path ? shopPhotoUrl(row.photo_path) : null,
     status: row.status,
     rejectionReason: row.rejection_reason,
   };
@@ -40,7 +42,7 @@ export async function getMerchant(supabase: SupabaseClient<Database>, id: string
   if (!estUuid(id)) return null;
   const { data, error } = await supabase
     .from("merchants")
-    .select("id, shop_name, description, address_hint, whatsapp_phone, status, rejection_reason, cities(name)")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, status, rejection_reason, cities(name)")
     .eq("id", id)
     .maybeSingle<MerchantRow>();
   if (error) throw error;
@@ -58,7 +60,7 @@ export const getMyMerchant = cache(async (supabase: SupabaseClient<Database>): P
   if (!merchantProfile) return null;
   const { data, error } = await supabase
     .from("merchants")
-    .select("id, shop_name, description, address_hint, whatsapp_phone, status, rejection_reason, cities(name)")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, status, rejection_reason, cities(name)")
     .eq("profile_id", merchantProfile.id)
     .maybeSingle<MerchantRow>();
   if (error) throw error;
@@ -104,6 +106,7 @@ export async function getMerchantProducts(
         city: merchant.city,
         addressHint: merchant.addressHint,
         whatsappPhone: merchant.whatsappPhone,
+        photoUrl: merchant.photoUrl,
       },
       category: row.categories?.name ?? "",
       title: row.title,

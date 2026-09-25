@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { ShopPhotoPicker } from "@/components/auth/ShopPhotoPicker";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { updateMerchantAction } from "@/lib/actions/merchants";
 import type { CityOption } from "@/lib/data/reference";
@@ -14,19 +14,19 @@ import { NOM_MAX } from "@/lib/saisie";
 export function ShopEditForm({
   merchant,
   cityId,
+  photoPath,
   cities,
 }: {
   merchant: Merchant;
   cityId: number;
+  photoPath: string | null;
   cities: CityOption[];
 }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(updateMerchantAction);
 
   return (
     <form id="shop-edit-form" action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-      <div className="flex items-center gap-3.5">
-        <Avatar name={merchant.shopName} kind="shop" size={64} />
-      </div>
+      <ShopPhotoPicker merchantId={merchant.id} shopName={merchant.shopName} initialPath={photoPath} />
 
       <Field label="Nom de la boutique" htmlFor="shopName">
         <Input id="shopName" name="shopName" maxLength={NOM_MAX} defaultValue={merchant.shopName} />

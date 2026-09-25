@@ -9,6 +9,12 @@ import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
+
+/** `{merchant_id}/{uuid}.webp`, le seul chemin que `ShopPhotoPicker`
+ * produit. Que le dossier soit bien CELUI de la boutique, c'est la base
+ * qui le garantit (`merchants_photo_path_dans_son_dossier`, 0029). */
+const CHEMIN_PHOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;
 
 /** Les champs d'une boutique, lus ET validés en un geste, pour la
  * création comme pour la modification. Le nom est ce qu'un client lit en
@@ -103,7 +109,14 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   if ("error" in lu) return lu;
   const { shopName, cityId, addressHint, whatsappPhone, description } = lu;
   const currentPassword = String(formData.get("currentPassword") ?? "");
+  const photoPath = String(formData.get("photoPath") ?? "");
 
+  if (formData.get("photoEnCours")) {
+    return { error: "La photo est encore en cours d'envoi. Attendez qu'elle s'affiche, puis réessayez." };
+  }
+  if (photoPath && !CHEMIN_PHOTO.test(photoPath)) {
+    return { error: "Photo invalide. Choisissez-la de nouveau." };
+  }
 
   if (!currentPassword) {
     return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
@@ -141,6 +154,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
       address_hint: addressHint || null,
       whatsapp_phone: nettoyerTelephone(whatsappPhone) || null,
       description: description || null,
+      photo_path: photoPath || null,
     })
     .eq("profile_id", merchantProfile.id)
     .select("id");
@@ -151,5 +165,31 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
   }
 
+  await effacerAnciennesPhotos(data[0].id, photoPath || null);
+
   redirect("/vendeur/boutique");
+}
+
+/**
+ * Tout ce que le dossier de la boutique porte en plus de la photo
+ * retenue : la photo remplacée ou retirée, et celles envoyées puis
+ * abandonnées (formulaire quitté sans enregistrer). Le dossier ne garde
+ * ainsi jamais qu'un fichier au plus, sans passer par le ménage du matin.
+ *
+ * Un échec ici ne défait pas l'enregistrement : la boutique affiche déjà
+ * la bonne photo, il ne reste qu'un fichier de trop.
+ */
+async function effacerAnciennesPhotos(merchantId: string, garder: string | null) {
+  const supabase = await createClient();
+  const { data: fichiers, error } = await supabase.storage.from(SHOP_PHOTOS_BUCKET).list(merchantId);
+  if (error) {
+    console.error("[photo boutique] dossier non lu :", error.message);
+    return;
+  }
+  const aEffacer = (fichiers ?? [])
+    .map((fichier) => `${merchantId}/${fichier.name}`)
+    .filter((chemin) => chemin !== garder);
+  if (aEffacer.length === 0) return;
+  const { error: erreurEffacement } = await supabase.storage.from(SHOP_PHOTOS_BUCKET).remove(aEffacer);
+  if (erreurEffacement) console.error("[photo boutique] anciennes photos non effacées :", erreurEffacement.message);
 }

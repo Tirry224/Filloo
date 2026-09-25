@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Product } from "@/lib/types";
-import { productImageUrl } from "@/lib/storage";
+import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import { estUuid } from "@/lib/saisie";
 
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
@@ -14,9 +14,10 @@ function mapRow(row: SearchRow): Product {
       shopName: row.shop_name,
       city: row.city_name,
       addressHint: null,
-      // `search_products` ne remonte pas le numéro : nul ici veut dire
-      // « non chargé », pas « la boutique n'en a pas ».
+      // `search_products` ne remonte ni le numéro ni la photo : nul ici
+      // veut dire « non chargé », pas « la boutique n'en a pas ».
       whatsappPhone: null,
+      photoUrl: null,
     },
     category: row.category_name,
     title: row.title,
@@ -47,6 +48,7 @@ type ProductDetailRow = {
     shop_name: string;
     address_hint: string | null;
     whatsapp_phone: string | null;
+    photo_path: string | null;
     cities: { name: string } | null;
   } | null;
 };
@@ -60,6 +62,7 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
       city: row.merchants?.cities?.name ?? "",
       addressHint: row.merchants?.address_hint ?? null,
       whatsappPhone: row.merchants?.whatsapp_phone ?? null,
+      photoUrl: row.merchants?.photo_path ? shopPhotoUrl(row.merchants.photo_path) : null,
     },
     category: row.categories?.name ?? "",
     title: row.title,
@@ -81,7 +84,7 @@ export async function getProduct(supabase: SupabaseClient<Database>, id: string)
     supabase
       .from("products")
       .select(
-        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, cities(name))",
+        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name))",
       )
       .eq("id", id)
       .maybeSingle<ProductDetailRow>(),

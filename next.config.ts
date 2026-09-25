@@ -45,6 +45,11 @@ const nextConfig: NextConfig = {
             hostname: imageHost,
             pathname: "/storage/v1/object/public/product-images/**",
           },
+          {
+            protocol: "https" as const,
+            hostname: imageHost,
+            pathname: "/storage/v1/object/public/shop-photos/**",
+          },
         ]
       : [],
   },
