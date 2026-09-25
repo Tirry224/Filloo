@@ -11,10 +11,24 @@ export function ThreadRow({ thread, basePath }: { thread: Thread; basePath: stri
       href={`${basePath}/${thread.id}`}
       className="flex items-start gap-3 border-b border-line py-3.5"
     >
+      {/* Le produit dit DE QUOI on parle, la pastille dit AVEC QUI : sans
+          elle, la photo de la boutique ne se verrait presque jamais ici,
+          puisque le premier message d'un fil cite toujours un produit. */}
       {thread.lastProductImageUrl ? (
-        <Photo ratio="free" src={thread.lastProductImageUrl} className="size-11 shrink-0 rounded-md" />
+        <div className="relative shrink-0">
+          <Photo ratio="free" src={thread.lastProductImageUrl} className="size-11 rounded-md" />
+          {thread.peerPhotoUrl ? (
+            <Avatar
+              name={thread.peerName}
+              kind={thread.peerKind}
+              size={22}
+              src={thread.peerPhotoUrl}
+              className="absolute -right-1.5 -bottom-1.5 ring-2 ring-paper"
+            />
+          ) : null}
+        </div>
       ) : (
-        <Avatar name={thread.peerName} kind={thread.peerKind} />
+        <Avatar name={thread.peerName} kind={thread.peerKind} src={thread.peerPhotoUrl} />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">

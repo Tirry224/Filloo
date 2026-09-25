@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Photo } from "@/components/ui/Photo";
@@ -16,9 +17,15 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="flex flex-col gap-1.5 px-3 pt-2.5 pb-3">
           <h3 className="text-sm leading-snug font-semibold">{product.title}</h3>
           <PriceTag amount={product.priceGnf} struck={sold} />
-          <p className="text-2xs text-ink-soft">
-            {product.merchant.shopName} · {product.merchant.city}
-          </p>
+          {/* `div` et non `p` : `Avatar` est une `div`, interdite dans un `p`. */}
+          <div className="flex items-center gap-1.5 text-2xs text-ink-soft">
+            {product.merchant.photoUrl ? (
+              <Avatar name={product.merchant.shopName} kind="shop" size={18} src={product.merchant.photoUrl} />
+            ) : null}
+            <span>
+              {product.merchant.shopName} · {product.merchant.city}
+            </span>
+          </div>
           {sold ? (
             <Badge>Vendu</Badge>
           ) : product.isNegotiable ? (

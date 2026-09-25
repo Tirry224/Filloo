@@ -630,6 +630,7 @@ export type Database = {
           price_gnf: number
           product_id: string
           shop_name: string
+          shop_photo_path: string | null
           status: Database["public"]["Enums"]["product_status"]
           title: string
         }[]

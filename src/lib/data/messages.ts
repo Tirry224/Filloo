@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Message, Thread } from "@/lib/types";
-import { productImageUrl } from "@/lib/storage";
+import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import { coverPath, summarizeThreadRows, type ImageRow, type ThreadMessageRow } from "@/lib/thread-summary";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
@@ -74,10 +74,10 @@ export async function getMyThreadsAsClient(supabase: SupabaseClient<Database>): 
 
   const { data, error } = await supabase
     .from("conversations")
-    .select("id, merchants(shop_name)")
+    .select("id, merchants(shop_name, photo_path)")
     .eq("client_id", profile.id)
     .order("last_message_at", { ascending: false })
-    .returns<{ id: string; merchants: { shop_name: string } | null }[]>();
+    .returns<{ id: string; merchants: { shop_name: string; photo_path: string | null } | null }[]>();
   if (error) throw error;
 
   const summaries = await summarizeThreads(supabase, data.map((c) => c.id), profile.id);
@@ -87,6 +87,7 @@ export async function getMyThreadsAsClient(supabase: SupabaseClient<Database>): 
       id: c.id,
       peerName: c.merchants?.shop_name ?? "",
       peerKind: "shop",
+      peerPhotoUrl: c.merchants?.photo_path ? shopPhotoUrl(c.merchants.photo_path) : undefined,
       lastProductTitle: s?.lastProductTitle ?? "",
       lastProductImageUrl: s?.lastProductImageUrl,
       lastMessage: s?.lastMessage ?? "",
@@ -129,6 +130,7 @@ export type ThreadContext = {
   conversationId: string;
   peerName: string;
   peerKind: "shop" | "person";
+  peerPhotoUrl?: string;
   /** Mon identifiant de participant DANS ce fil précis (mon profil client
    * ou mon profil commerçant, selon le côté où je me trouve). */
   myParticipantId: string;
@@ -172,7 +174,7 @@ export async function getThreadContext(
     supabase
       .from("conversations")
       .select(
-        "id, client_id, merchant_id, blocked_by, profiles!conversations_client_id_fkey(full_name), merchants(id, shop_name, profile_id)",
+        "id, client_id, merchant_id, blocked_by, profiles!conversations_client_id_fkey(full_name), merchants(id, shop_name, profile_id, photo_path)",
       )
       .eq("id", conversationId)
       .maybeSingle<{
@@ -181,7 +183,7 @@ export async function getThreadContext(
         merchant_id: string;
         blocked_by: string | null;
         profiles: { full_name: string } | null;
-        merchants: { id: string; shop_name: string; profile_id: string } | null;
+        merchants: { id: string; shop_name: string; profile_id: string; photo_path: string | null } | null;
       }>(),
     supabase.rpc("conversation_is_open", { cid: conversationId }),
   ]);
@@ -200,6 +202,7 @@ export async function getThreadContext(
     conversationId: data.id,
     peerName: iAmMerchant ? (data.profiles?.full_name ?? "") : data.merchants.shop_name,
     peerKind: iAmMerchant ? "person" : "shop",
+    peerPhotoUrl: !iAmMerchant && data.merchants.photo_path ? shopPhotoUrl(data.merchants.photo_path) : undefined,
     myParticipantId: iAmMerchant ? data.merchants.profile_id : data.client_id,
     merchantId: data.merchants.id,
     merchantPublicId: data.merchants.id,

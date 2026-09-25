@@ -41,6 +41,9 @@ export type Thread = {
   id: string;
   peerName: string;
   peerKind: "shop" | "person";
+  /** La photo de la boutique en face ; jamais celle d'une personne,
+   * qui n'en a pas. */
+  peerPhotoUrl?: string;
   lastProductTitle: string;
   lastProductImageUrl?: string;
   lastMessage: string;

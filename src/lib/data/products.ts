@@ -14,10 +14,10 @@ function mapRow(row: SearchRow): Product {
       shopName: row.shop_name,
       city: row.city_name,
       addressHint: null,
-      // `search_products` ne remonte ni le numéro ni la photo : nul ici
-      // veut dire « non chargé », pas « la boutique n'en a pas ».
+      // `search_products` ne remonte pas le numéro : nul ici veut dire
+      // « non chargé », pas « la boutique n'en a pas ».
       whatsappPhone: null,
-      photoUrl: null,
+      photoUrl: row.shop_photo_path ? shopPhotoUrl(row.shop_photo_path) : null,
     },
     category: row.category_name,
     title: row.title,

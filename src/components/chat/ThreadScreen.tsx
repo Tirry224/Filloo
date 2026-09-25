@@ -72,7 +72,7 @@ export async function ThreadScreen({
         backHref={base}
         title={
           <div className="flex items-center gap-3">
-            <Avatar name={context.peerName} kind={context.peerKind} size={38} />
+            <Avatar name={context.peerName} kind={context.peerKind} size={38} src={context.peerPhotoUrl} />
             <span className="flex flex-col">
               <span className="text-base font-semibold">{context.peerName}</span>
             </span>
