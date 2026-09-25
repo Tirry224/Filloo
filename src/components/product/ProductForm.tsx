@@ -1,16 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { Toggle } from "@/components/ui/Toggle";
 import { PhotoPicker } from "@/components/product/PhotoPicker";
 import { createProductAction, updateProductAction } from "@/lib/actions/products";
-import type { ActionState } from "@/lib/actions/auth";
 import type { CategoryOption } from "@/lib/data/reference";
 import { PHOTOS_MAX } from "@/lib/storage";
-import { garderLaSaisie } from "@/lib/garder-la-saisie";
+import { useFormulaire } from "@/lib/use-formulaire";
 
 type ProductFormProps = {
   merchantId: string;
@@ -55,10 +54,10 @@ export function ProductForm(props: ProductFormProps) {
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? true);
 
   const action = isEdit ? updateProductAction : createProductAction;
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(action, null);
+  const { state, formAction, onSubmit, pending } = useFormulaire(action);
 
   return (
-    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-1 flex-col">
+    <form action={formAction} onSubmit={onSubmit} className="flex flex-1 flex-col">
       <input type="hidden" name="productId" value={productId} />
       <ScreenBody>
         <Section className="gap-4">

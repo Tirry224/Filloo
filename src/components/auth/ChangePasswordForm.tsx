@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
-import { changeMyPasswordAction, type ActionState } from "@/lib/actions/auth";
+import { changeMyPasswordAction } from "@/lib/actions/auth";
+import { useFormulaire } from "@/lib/use-formulaire";
 
 /**
  * Le mot de passe ACTUEL prouve que c'est bien la personne : sans lui, un
@@ -15,10 +16,17 @@ import { changeMyPasswordAction, type ActionState } from "@/lib/actions/auth";
  * à la place de l'autre.
  */
 export function ChangePasswordForm() {
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(changeMyPasswordAction, null);
+  const { state, formAction, onSubmit, pending } = useFormulaire(changeMyPasswordAction);
+  const formulaire = useRef<HTMLFormElement>(null);
+
+  // La saisie est gardée après une ERREUR ; après un succès, trois mots de
+  // passe n'ont plus rien à faire à l'écran.
+  useEffect(() => {
+    if (state?.sent) formulaire.current?.reset();
+  }, [state]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formulaire} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       <Field label="Mot de passe actuel" htmlFor="currentPassword">
         <Input
           id="currentPassword"

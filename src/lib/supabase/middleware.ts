@@ -67,7 +67,17 @@ export async function updateSession(request: NextRequest) {
   const chemin = request.nextUrl.pathname;
   const espacePrive = ESPACES_AUTHENTIFIES.some((p) => chemin === p || chemin.startsWith(`${p}/`));
 
-  if (espacePrive && !user && !panneAuth) {
+  /* Un ENVOI de formulaire (action serveur : POST portant `next-action`)
+     ne se redirige pas. Le navigateur suivait la redirection en POST vers
+     `/connexion`, recevait une page au lieu de la réponse de l'action, et
+     l'écran entier tombait sur « Une erreur est survenue de notre côté »,
+     saisie perdue — constaté le 2026-09-25 en enregistrant son profil
+     dans un onglet après s'être déconnecté dans un autre. L'action se
+     protège elle-même (session vérifiée, RLS) et répond « reconnectez-
+     vous » DANS le formulaire. */
+  const actionServeur = request.method === "POST" && request.headers.has("next-action");
+
+  if (espacePrive && !user && !panneAuth && !actionServeur) {
     /* `?next=` porte la destination voulue jusqu'à l'écran de connexion :
        le même paramètre que l'écran 16, plutôt qu'un second mécanisme avec
        sa propre validation à tenir à jour. Il est filtré par `safeNextPath`

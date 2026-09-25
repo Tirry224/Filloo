@@ -18,10 +18,11 @@ import { startTransition, type FormEvent } from "react";
  * soit chargé, c'est lui qui envoie le formulaire en POST au serveur. Sans
  * lui, le navigateur l'enverrait en GET — mots de passe dans l'adresse.
  *
- * Usage : `<form action={formAction} onSubmit={garderLaSaisie(formAction)}>`
- *
- * À NE PAS mettre sur un formulaire qui DOIT se vider après un succès,
- * comme la zone de saisie d'un message.
+ * Ne s'utilise plus directement : `useFormulaire` (`use-formulaire.ts`)
+ * l'appelle, avec le verrou contre le double envoi et le filet contre les
+ * coupures réseau. Un formulaire qui doit se vider — la zone de message —
+ * le fait lui-même, au moment de l'envoi, pour pouvoir rendre le texte si
+ * l'envoi échoue.
  */
 export function garderLaSaisie(formAction: (data: FormData) => void) {
   return (event: FormEvent<HTMLFormElement>) => {

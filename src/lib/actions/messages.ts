@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfiles, landingForSession } from "@/lib/data/session";
+import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
+import { DECONNECTE } from "@/lib/erreurs";
 import { getThreadContext } from "@/lib/data/messages";
 import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
@@ -95,6 +96,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   if (!conversationId || !body) return { error: "Écrivez un message avant d'envoyer." };
 
   const supabase = await createClient();
+  if (!(await getSessionUser(supabase))) return { error: DECONNECTE };
   const context = await getThreadContext(supabase, conversationId);
   if (!context) return { error: "Conversation introuvable." };
 

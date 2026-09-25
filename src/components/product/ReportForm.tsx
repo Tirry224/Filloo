@@ -1,17 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { reportProductAction } from "@/lib/actions/messages";
-import type { ActionState } from "@/lib/actions/auth";
-import { garderLaSaisie } from "@/lib/garder-la-saisie";
+import { useFormulaire } from "@/lib/use-formulaire";
 
 export function ReportForm({ productId, reasons }: { productId: string; reasons: string[] }) {
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(reportProductAction, null);
+  const { state, formAction, onSubmit, pending } = useFormulaire(reportProductAction);
 
   return (
-    <form action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-3.5">
+    <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-3.5">
       <input type="hidden" name="productId" value={productId} />
       <div>
         {reasons.map((reason, index) => (

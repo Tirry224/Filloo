@@ -1,12 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { updateProfileAction } from "@/lib/actions/account";
-import type { ActionState } from "@/lib/actions/auth";
 import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
-import { garderLaSaisie } from "@/lib/garder-la-saisie";
+import { useFormulaire } from "@/lib/use-formulaire";
 
 export function ProfileForm({
   id,
@@ -26,10 +24,10 @@ export function ProfileForm({
   cityId: number | null;
   cities: CityOption[];
 }) {
-  const [state, formAction] = useActionState<ActionState | null, FormData>(updateProfileAction, null);
+  const { state, formAction, onSubmit, pending } = useFormulaire(updateProfileAction);
 
   return (
-    <form id={id} action={formAction} onSubmit={garderLaSaisie(formAction)} className="flex flex-col gap-4">
+    <form id={id} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       {/* L'espace voyage dans le formulaire parce que l'action serveur ne
           peut pas le deviner : une connexion qui a les DEUX comptes est
           légitime des deux côtés, donc le déduire des profils renverrait

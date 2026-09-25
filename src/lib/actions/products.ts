@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
+import { getSessionUser } from "@/lib/data/session";
+import { DECONNECTE } from "@/lib/erreurs";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
@@ -13,6 +15,10 @@ import { lirePrixGnf } from "@/lib/prix";
  * `products_check_publishable` tant que la boutique n'est pas approuvée. */
 async function requireMerchantId(): Promise<{ merchantId: string } | { error: string }> {
   const supabase = await createClient();
+  // Sans session, « créez d'abord une boutique » enverrait sur une fausse
+  // piste : c'est la connexion qui manque (session fermée dans un autre
+  // onglet, ou expirée pendant la saisie).
+  if (!(await getSessionUser(supabase))) return { error: DECONNECTE };
   const merchant = await getMyMerchant(supabase);
   if (!merchant) return { error: "Vous devez d'abord créer une boutique." };
   return { merchantId: merchant.id };
