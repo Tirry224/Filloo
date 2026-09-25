@@ -148,19 +148,25 @@ select pg_temp.check('publication acceptée avec photo et boutique validée',
 
 
 -- =====================================================================
--- 5. Maximum 3 photos, garanti par la structure
+-- 5. Maximum 5 photos, garanti par la structure (0026)
 -- =====================================================================
+-- La limite est passée de 3 à 5 avec 0026 sans que ce bloc suive : il
+-- attendait le refus d'une 4e photo, que la base accepte désormais, et
+-- toute la suite s'arrêtait ici, à la 8e vérification — les autres ne
+-- tournaient plus.
 insert into public.product_images (product_id, storage_path, position) values
   ('cccccccc-0000-0000-0000-000000000001', 'x/1.webp', 1),
-  ('cccccccc-0000-0000-0000-000000000001', 'x/2.webp', 2);
+  ('cccccccc-0000-0000-0000-000000000001', 'x/2.webp', 2),
+  ('cccccccc-0000-0000-0000-000000000001', 'x/3.webp', 3),
+  ('cccccccc-0000-0000-0000-000000000001', 'x/4.webp', 4);
 
 do $$
 begin
   insert into public.product_images (product_id, storage_path, position)
-  values ('cccccccc-0000-0000-0000-000000000001', 'x/3.webp', 3);
-  raise exception 'ECHEC une 4e photo a été acceptée';
+  values ('cccccccc-0000-0000-0000-000000000001', 'x/5.webp', 5);
+  raise exception 'ECHEC une 6e photo a été acceptée';
 exception when check_violation then
-  raise notice 'OK    4e photo refusée par la contrainte';
+  raise notice 'OK    6e photo refusée par la contrainte';
 end $$;
 
 reset role;
