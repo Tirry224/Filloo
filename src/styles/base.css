@@ -53,3 +53,20 @@
     }
   }
 }
+
+/* iPhone : Safari ZOOME sur tout champ écrit en moins de 16 px dès qu'on
+   le touche, et la page reste agrandie après (constaté le 2026-09-25 ;
+   `--text-base` fait 15 px). 16 px suffisent à l'en empêcher.
+   - Hors de `@layer` exprès : un style sans couche passe devant les
+     utilitaires Tailwind, donc devant le `text-base` des champs.
+   - Réservé à iOS (`-webkit-touch-callout`), le seul à zoomer : ailleurs
+     les champs gardent la taille de la maquette.
+   - On ne bloque PAS le zoom dans le `viewport` (`maximum-scale=1`) : ça
+     retirerait le zoom à deux doigts à qui en a besoin pour lire. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
