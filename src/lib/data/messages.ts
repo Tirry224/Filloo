@@ -7,6 +7,7 @@ import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatMessageTime } from "@/lib/format";
 import type { Espace } from "@/lib/espace";
+import { estUuid } from "@/lib/saisie";
 
 type MessageRow = {
   id: string;
@@ -160,6 +161,8 @@ export async function getThreadContext(
      de `/messages` n'exige de session en amont. */
   const user = await getSessionUser(supabase);
   if (!user) return null;
+  // `/messages/abc` : introuvable, pas une erreur 500 (voir `estUuid`).
+  if (!estUuid(conversationId)) return null;
 
   /* L'ouverture du fil est demandée à la BASE (`conversation_is_open`,
      0017) : c'est la même fonction qui décide, dans la policy d'envoi, si

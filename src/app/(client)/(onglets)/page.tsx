@@ -19,20 +19,25 @@ import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/l
 import { landingForSession } from "@/lib/data/session";
 import { searchProducts } from "@/lib/data/products";
 import { compter } from "@/lib/analytics";
+import { premier } from "@/lib/next-param";
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ville?: string; categorie?: string; tri?: string }>;
+  searchParams: Promise<{ ville?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
 }) {
-  const { ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
+  // Même lecture prudente que `/recherche` : un paramètre peut être répété.
+  const brut = await searchParams;
+  const villeParam = premier(brut.ville);
+  const categorie = premier(brut.categorie) ?? "Tout";
+  const tri = premier(brut.tri) ?? "recent";
   const supabase = await createClient();
 
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
-  const ville = villeParam ?? (await getDefaultCityName(supabase, cities));
+  const ville = cities.some((c) => c.name === villeParam) ? villeParam! : await getDefaultCityName(supabase, cities);
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
 
   const sort = tri === "populaire" ? "popular" : "recent";

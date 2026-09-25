@@ -35,3 +35,10 @@ export function safeNextPath(value: unknown): string | null {
   // que le navigateur aurait compris, non un texte encore à interpréter.
   return `${resolue.pathname}${resolue.search}${resolue.hash}`;
 }
+
+/** La première valeur d'un paramètre d'URL. Next rend un TABLEAU quand le
+ * paramètre est répété (`?q=riz&q=huile`), ce que le type `string` des
+ * pages ne dit pas. */
+export function premier(valeur: string | string[] | undefined): string | undefined {
+  return Array.isArray(valeur) ? valeur[0] : valeur;
+}

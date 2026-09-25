@@ -5,6 +5,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { getCategories } from "@/lib/data/reference";
+import { estUuid } from "@/lib/saisie";
 
 /**
  * « Modifier le produit », ouvert depuis l'écran 25. Le RLS ("products: je
@@ -14,6 +15,7 @@ import { getCategories } from "@/lib/data/reference";
  */
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!estUuid(id)) notFound();
   const supabase = await createClient();
 
   const [merchant, { data: product, error }, { data: images }, categories] = await Promise.all([

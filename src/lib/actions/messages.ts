@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
 import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
+import { estUuid } from "@/lib/saisie";
 import { getThreadContext } from "@/lib/data/messages";
 import { messagesBase } from "@/lib/espace";
 import { notifyNewMessage } from "@/lib/notifications";
@@ -94,6 +95,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   const body = String(formData.get("body") ?? "").trim();
   const productId = String(formData.get("productId") ?? "") || null;
   if (!conversationId || !body) return { error: "Écrivez un message avant d'envoyer." };
+  if (productId && !estUuid(productId)) return { error: "Ce produit n'existe plus. Retirez-le, puis renvoyez votre message." };
 
   const supabase = await createClient();
   if (!(await getSessionUser(supabase))) return { error: DECONNECTE };
@@ -242,7 +244,8 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
   const reason = String(formData.get("reason") ?? "").trim();
   const details = String(formData.get("details") ?? "").trim();
   const fullReason = details ? `${reason} — ${details}` : reason;
-  if (!productId || fullReason.length < 3) return { error: "Choisissez un motif." };
+  if (!estUuid(productId)) return { error: "Ce produit n'existe plus." };
+  if (fullReason.length < 3) return { error: "Choisissez un motif." };
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);

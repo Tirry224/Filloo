@@ -15,19 +15,29 @@ import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/l
 import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
+import { premier } from "@/lib/next-param";
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; ville?: string; categorie?: string; tri?: string }>;
+  searchParams: Promise<{ q?: string | string[]; ville?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
 }) {
-  const { q = "", ville: villeParam, categorie = "Tout", tri = "recent" } = await searchParams;
+  /* Un paramètre répété (`?q=riz&q=huile`) arrive en TABLEAU : il faisait
+     planter `RecentSearches` sur `q.trim`. Une ville ou une catégorie
+     inconnue (`?categorie=abc`) s'affichait comme un filtre actif qui ne
+     filtrait rien. Constaté le 2026-09-25. */
+  const brut = await searchParams;
+  const q = premier(brut.q) ?? "";
+  const tri = premier(brut.tri) ?? "recent";
   const supabase = await createClient();
 
   const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
 
+  const villeParam = premier(brut.ville);
+  const categorieParam = premier(brut.categorie);
+  const categorie = categories.some((c) => c.name === categorieParam) ? categorieParam! : "Tout";
   const defaultVille = await getDefaultCityName(supabase, cities);
-  const ville = villeParam ?? defaultVille;
+  const ville = cities.some((c) => c.name === villeParam) ? villeParam! : defaultVille;
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
   const category = categorie !== "Tout" ? categories.find((c) => c.name === categorie) : undefined;
   const sort = tri === "populaire" ? "popular" : "recent";

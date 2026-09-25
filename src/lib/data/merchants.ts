@@ -4,6 +4,7 @@ import type { Database } from "@/lib/database.types";
 import type { Merchant, Product } from "@/lib/types";
 import { productImageUrl } from "@/lib/storage";
 import { getMyProfile } from "@/lib/data/session";
+import { estUuid } from "@/lib/saisie";
 
 type MerchantRow = {
   id: string;
@@ -35,6 +36,8 @@ function mapMerchant(row: MerchantRow): Merchant {
  * n'existait pas — un visiteur n'a pas à savoir qu'elle attend.
  */
 export async function getMerchant(supabase: SupabaseClient<Database>, id: string): Promise<Merchant | null> {
+  // Voir `estUuid` : un identifiant mal formé est une page introuvable.
+  if (!estUuid(id)) return null;
   const { data, error } = await supabase
     .from("merchants")
     .select("id, shop_name, description, address_hint, whatsapp_phone, status, rejection_reason, cities(name)")

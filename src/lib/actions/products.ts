@@ -9,6 +9,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
+import { estUuid } from "@/lib/saisie";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -76,7 +77,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
   if ("error" in owner) return owner;
 
   const productId = String(formData.get("productId") ?? "");
-  if (!productId) return { error: "Formulaire invalide, rechargez la page." };
+  if (!estUuid(productId)) return { error: "Formulaire invalide, rechargez la page." };
 
   const lu = readProductFields(formData);
   if ("error" in lu) return lu;
@@ -176,7 +177,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
  */
 export async function updateProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
-  if (!productId) return { error: "Formulaire invalide, rechargez la page." };
+  if (!estUuid(productId)) return { error: "Formulaire invalide, rechargez la page." };
 
   const lu = readProductFields(formData);
   if ("error" in lu) return lu;
@@ -309,7 +310,7 @@ const STATUS_DONE = {
  */
 async function setProductStatus(formData: FormData, status: "active" | "sold" | "hidden") {
   const productId = String(formData.get("productId") ?? "");
-  if (!productId) backToSeller("Formulaire invalide, rechargez la page.");
+  if (!estUuid(productId)) backToSeller("Formulaire invalide, rechargez la page.");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -345,7 +346,7 @@ export async function republishProductAction(formData: FormData) {
  * disparaît mais pas les messages qui le citaient. */
 export async function deleteProductAction(formData: FormData) {
   const productId = String(formData.get("productId") ?? "");
-  if (!productId) backToSeller("Formulaire invalide, rechargez la page.");
+  if (!estUuid(productId)) backToSeller("Formulaire invalide, rechargez la page.");
 
   const supabase = await createClient();
 

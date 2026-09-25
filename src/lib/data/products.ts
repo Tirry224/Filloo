@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { Product } from "@/lib/types";
 import { productImageUrl } from "@/lib/storage";
+import { estUuid } from "@/lib/saisie";
 
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
 
@@ -73,6 +74,9 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
 }
 
 export async function getProduct(supabase: SupabaseClient<Database>, id: string): Promise<Product | null> {
+  /* `/produit/abc` : sans ce refus, PostgreSQL répond 22P02, relancé
+     ci-dessous, et la page devient une erreur 500 au lieu d'un 404. */
+  if (!estUuid(id)) return null;
   const [{ data: row, error }, { data: images }] = await Promise.all([
     supabase
       .from("products")
