@@ -553,6 +553,11 @@ export type Database = {
         Returns: string
       }
       owns_profile: { Args: { pid: string }; Returns: boolean }
+      photos_orphelines: {
+        Args: { age?: unknown; limite?: number }
+        Returns: string[]
+      }
+      purger_mesures: { Args: never; Returns: number }
       reject_merchant: {
         Args: { p_reason: string; p_shop_name: string }
         Returns: {

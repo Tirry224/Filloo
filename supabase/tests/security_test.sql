@@ -2154,5 +2154,51 @@ select pg_temp.check('apres traitement, la meme cible peut etre signalee de nouv
   (select count(*) = 2 from public.reports
     where target_id = 'cccccccc-0000-0000-0000-000000000001'));
 
+
+-- =====================================================================
+-- Le ménage (0028) : photos orphelines et mesures anciennes
+-- =====================================================================
+-- Une photo d'hier que rien ne référence est orpheline ; une photo
+-- d'il y a une heure non, son formulaire est peut-être encore ouvert ;
+-- une photo référencée jamais.
+insert into storage.objects (bucket_id, name, created_at) values
+  ('product-images', 'test-menage/abandonnee.webp', now() - interval '2 days'),
+  ('product-images', 'test-menage/en-cours.webp',   now() - interval '1 hour'),
+  ('product-images', 'x/1.webp',                    now() - interval '2 days');
+
+select pg_temp.check('une photo abandonnee depuis plus de 24 h est orpheline',
+  'test-menage/abandonnee.webp' in (select public.photos_orphelines()));
+select pg_temp.check('une photo envoyee il y a une heure n''est pas touchee',
+  'test-menage/en-cours.webp' not in (select public.photos_orphelines()));
+select pg_temp.check('une photo referencee par un produit n''est jamais orpheline',
+  'x/1.webp' not in (select public.photos_orphelines()));
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+begin
+  perform public.photos_orphelines();
+  raise exception 'ECHEC un utilisateur peut lister les photos orphelines';
+exception when insufficient_privilege then
+  raise notice 'OK    la liste des orphelines est reservee au serveur';
+end $$;
+do $$
+begin
+  perform public.purger_mesures();
+  raise exception 'ECHEC un utilisateur peut purger les mesures';
+exception when insufficient_privilege then
+  raise notice 'OK    la purge des mesures est reservee au serveur';
+end $$;
+reset role;
+
+insert into public.analytics_events (name, occurred_at) values
+  ('visite', now() - interval '14 months'),
+  ('visite', now() - interval '12 months');
+-- Deux instructions : dans une seule, la lecture verrait les lignes
+-- d'avant la purge (même instantané).
+select pg_temp.check('la purge retire une mesure, une seule', public.purger_mesures() = 1);
+select pg_temp.check('la mesure de 12 mois reste, celle de 14 mois est partie',
+  (select count(*) = 1 from public.analytics_events where occurred_at < now() - interval '11 months'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
