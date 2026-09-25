@@ -73,7 +73,8 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
 
 /**
  * Une photo n'est acceptée que rangée là où `PhotoPicker` la dépose :
- * `{merchant_id}/{product_id}/{nom}.webp`, le chemin que le RLS du
+ * `{merchant_id}/{product_id}/{nom}.webp` (ou `.jpg` là où le navigateur
+ * n'encode pas le WebP, voir `compresserPhoto`), le chemin que le RLS du
  * stockage (0004) impose à l'ENVOI. Rien ne l'imposait à
  * l'enregistrement : un champ caché forgé faisait afficher sur son
  * produit les photos d'une autre boutique, ou un chemin en `../`
@@ -81,7 +82,7 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
  */
 function photosRangees(chemins: string[], merchantId: string, productId: string): boolean {
   const dossier = `${merchantId}/${productId}/`;
-  return chemins.every((c) => c.startsWith(dossier) && /^[\w-]+\.webp$/.test(c.slice(dossier.length)));
+  return chemins.every((c) => c.startsWith(dossier) && /^[\w-]+\.(webp|jpg)$/.test(c.slice(dossier.length)));
 }
 
 /**

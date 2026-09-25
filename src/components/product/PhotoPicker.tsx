@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import imageCompression from "browser-image-compression";
+import { compresserPhoto } from "@/lib/compression";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTOS_MAX, productImageUrl } from "@/lib/storage";
 
@@ -58,20 +58,16 @@ export function PhotoPicker({
       files.map(async (file, i) => {
         const slot = added[i];
         try {
-          const compressed = await imageCompression(file, {
-            maxSizeMB: 0.5,
-            maxWidthOrHeight: 1280,
-            useWebWorker: true,
-            fileType: "image/webp",
-          });
-          const path = `${merchantId}/${productId}/${slot.id}.webp`;
+          const { fichier, extension } = await compresserPhoto(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1280 });
+          const path = `${merchantId}/${productId}/${slot.id}.${extension}`;
           const supabase = createClient();
           const { error } = await supabase.storage
             .from("product-images")
-            .upload(path, compressed, { contentType: "image/webp" });
+            .upload(path, fichier, { contentType: fichier.type });
           if (error) throw error;
           setSlots((s) => s.map((x) => (x.id === slot.id ? { ...x, path, uploading: false } : x)));
-        } catch {
+        } catch (e) {
+          console.error("[photo produit] envoi échoué :", e);
           setSlots((s) =>
             s.map((x) => (x.id === slot.id ? { ...x, uploading: false, error: "Échec de l'envoi." } : x)),
           );

@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
-import imageCompression from "browser-image-compression";
 import { Avatar } from "@/components/ui/Avatar";
+import { compresserPhoto } from "@/lib/compression";
 import { createClient } from "@/lib/supabase/client";
 import { SHOP_PHOTOS_BUCKET, shopPhotoUrl } from "@/lib/storage";
 
@@ -42,18 +42,11 @@ export function ShopPhotoPicker({
     try {
       // Un avatar s'affiche à 64 px au plus : 512 px couvrent les écrans
       // denses sans envoyer une photo de 3 Mo depuis un forfait mobile.
-      const options = { maxSizeMB: 0.2, maxWidthOrHeight: 512, useWebWorker: true };
-      let compressed = await imageCompression(file, { ...options, fileType: "image/webp" });
-      // Safari n'encode pas le WebP : il rend du PNG sans prévenir, que le
-      // bucket refuse (0031). Le JPEG, lui, sort partout.
-      if (compressed.type !== "image/webp") {
-        compressed = await imageCompression(file, { ...options, fileType: "image/jpeg" });
-      }
-      const extension = compressed.type === "image/webp" ? "webp" : "jpg";
+      const { fichier, extension } = await compresserPhoto(file, { maxSizeMB: 0.2, maxWidthOrHeight: 512 });
       const newPath = `${merchantId}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await createClient()
         .storage.from(SHOP_PHOTOS_BUCKET)
-        .upload(newPath, compressed, { contentType: compressed.type });
+        .upload(newPath, fichier, { contentType: fichier.type });
       if (uploadError) throw uploadError;
       setPath(newPath);
     } catch (e) {
