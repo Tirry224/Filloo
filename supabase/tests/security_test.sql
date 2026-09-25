@@ -2274,5 +2274,13 @@ update storage.objects set created_at = now() - interval '2 days'
 select pg_temp.check('le menage des photos de produits ignore les photos de boutique',
   'aaaaaaaa-0000-0000-0000-000000000001/moi.webp' not in (select public.photos_orphelines()));
 
+-- 0030 : la recherche remonte la photo, pour un visiteur non connecté.
+set role anon;
+select pg_temp.check('la recherche remonte la photo de la boutique',
+  exists (select 1 from public.search_products()
+           where merchant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+             and shop_photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'));
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
