@@ -19,6 +19,15 @@ les sections concernées si le commit ferme un point, en ouvre un ou
 enseigne quelque chose. Un commit ne peut pas citer sa propre empreinte :
 la liste générée s'arrête au commit précédent, et le suivant la rattrape.
 
+**Depuis le 2026-09-27, `npm run memoire` tourne tout seul** : le hook
+`.githooks/pre-commit`, branché par `npm install`, régénère l'historique
+et l'ajoute au commit. Il refuse le commit si ce fichier porte des
+retouches non ajoutées, et dans un clone partiel (`git fetch
+--unshallow` d'abord). La mise à jour à la main, elle, reste à faire :
+aucune machine ne sait qu'un commit ferme un point. Un clone qui n'a pas
+lancé `npm install` n'a pas le hook — `git config core.hooksPath` doit
+répondre `.githooks`.
+
 **Citer ce fichier par le TITRE d'une section, jamais par un numéro.**
 Les numéros de l'ancien fichier désignaient un plan disparu depuis
 plusieurs réécritures, et une vingtaine de commentaires de code les
@@ -688,7 +697,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-219 commits, du plus récent au plus ancien.
+220 commits, du plus récent au plus ancien.
+
+### 2026-09-27
+
+- `1bc77ea` La mémoire rattrape les dix derniers commits
 
 ### 2026-09-25
 

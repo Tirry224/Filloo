@@ -15,6 +15,7 @@
     "gardes": "node --experimental-strip-types scripts/verifier-gardes.mjs",
     "tests": "node --experimental-strip-types --test 'tests/*.test.ts'",
     "memoire": "node scripts/memoire.mjs",
+    "prepare": "node scripts/hooks.mjs",
     "migrations": "node scripts/migrations.mjs",
     "e2e": "playwright test -c e2e"
   },

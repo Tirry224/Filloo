@@ -1,0 +1,18 @@
+#!/bin/sh
+# Régénère l'historique de docs/MEMOIRE.md avant chaque commit, pour que
+# la règle « npm run memoire à chaque commit » ne dépende plus de la
+# mémoire de celui qui committe. Branché par `npm install` (script
+# `prepare`, voir scripts/hooks.mjs). Contourner une fois : --no-verify.
+
+FICHIER=docs/MEMOIRE.md
+
+# Des retouches à la main pas encore ajoutées : les ajouter d'office les
+# glisserait dans un commit qui ne les a pas choisies.
+if ! git diff --quiet -- "$FICHIER"; then
+  echo "pre-commit : $FICHIER a des modifications non ajoutées."
+  echo "Ajoute-les (git add $FICHIER) ou mets-les de côté, puis recommence."
+  exit 1
+fi
+
+node scripts/memoire.mjs || exit 1
+git add -- "$FICHIER"
