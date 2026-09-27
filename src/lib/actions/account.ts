@@ -172,7 +172,10 @@ async function anonymiserEtBannir(userId: string) {
 
     // `throw` : en `service_role` le RLS n'écarte rien, une erreur est une
     // panne. Si l'anonymisation échoue et que le bannissement réussit, la
-    // personne perd l'accès en laissant son nom en base.
+    // personne perd l'accès en laissant son nom en base. D'où cet ordre :
+    // tout ce qui suit est rejouable, et l'écran de confirmation reste
+    // ouvert tant que la connexion l'est, pour relancer un bannissement
+    // qui aurait échoué.
     const { error: anonError } = await admin
       .from("profiles")
       .update({

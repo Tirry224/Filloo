@@ -18,8 +18,12 @@ export default async function ConfirmDeleteAccountPage({
   const supabase = await createClient();
   // Neutre au rôle : la suppression porte sur la CONNEXION entière, donc
   // exiger un profil client fermerait l'écran à un commerçant seul.
+  // Des profils TOUS supprimés restent admis : une connexion encore
+  // ouverte dans cet état est une suppression interrompue avant le
+  // bannissement, qui doit pouvoir être relancée — la fermer ici laissait
+  // la personne connectée, son email bloqué, sans chemin pour finir.
   const profiles = await getMyProfiles(supabase);
-  if (!profiles.some((p) => !p.isDeleted)) redirect(await clientSpaceFallback(supabase));
+  if (profiles.length === 0) redirect(await clientSpaceFallback(supabase));
 
   return (
     <Sheet
