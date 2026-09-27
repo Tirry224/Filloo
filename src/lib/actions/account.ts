@@ -154,8 +154,8 @@ async function anonymiserEtBannir(userId: string) {
 
         /* La photo de boutique peut être un visage : « supprimer mon
            compte » l'efface, fichier compris. Tout le dossier, pour
-           emporter aussi les envois jamais enregistrés. */
-        /* Les coordonnées partent avec : un ancien client lit encore la
+           emporter aussi les envois jamais enregistrés.
+           Les coordonnées partent avec : un ancien client lit encore la
            boutique par ses fils (`i_talk_with_merchant`, 0016), et l'écran
            promet d'effacer le téléphone — le WhatsApp en est un. Le nom
            de la boutique reste, pour que ces fils disent à qui ils
@@ -172,6 +172,14 @@ async function anonymiserEtBannir(userId: string) {
             .remove(fichiers.map((fichier) => `${merchant.id}/${fichier.name}`));
           if (storageError) console.error("[suppression] photo de boutique restée :", storageError.message);
         }
+
+        /* Les photos produit aussi : le bucket est PUBLIC, et masquer le
+           produit ne ferme pas une adresse déjà partagée sur WhatsApp.
+           Rangées en `{merchant_id}/{product_id}/{fichier}` (0004) : on
+           parcourt les dossiers plutôt que `product_images`, pour
+           emporter aussi les envois jamais enregistrés. Les lignes
+           restent, sans conséquence : leurs produits sont masqués. */
+        await effacerPhotosProduits(admin, merchant.id);
       }
     }
 
@@ -222,4 +230,23 @@ async function anonymiserEtBannir(userId: string) {
     ban_duration: "876000h",
   });
   if (banError) throw banError;
+}
+
+/* Journalise au lieu de lever, comme la photo de boutique : un fichier
+   resté ne doit pas bloquer l'effacement du nom et du téléphone. */
+async function effacerPhotosProduits(admin: ReturnType<typeof createAdminClient>, merchantId: string) {
+  const bucket = admin.storage.from("product-images");
+  const { data: dossiers, error: listError } = await bucket.list(merchantId, { limit: 1000 });
+  if (listError) {
+    console.error("[suppression] photos produit restées :", listError.message);
+    return;
+  }
+  for (const dossier of dossiers) {
+    const { data: fichiers } = await bucket.list(`${merchantId}/${dossier.name}`, { limit: 1000 });
+    if (!fichiers || fichiers.length === 0) continue;
+    const { error: removeError } = await bucket.remove(
+      fichiers.map((fichier) => `${merchantId}/${dossier.name}/${fichier.name}`),
+    );
+    if (removeError) console.error("[suppression] photos produit restées :", removeError.message);
+  }
 }
