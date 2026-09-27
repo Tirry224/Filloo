@@ -189,7 +189,21 @@ async function anonymiserEtBannir(userId: string) {
            Rangées en `{merchant_id}/{product_id}/{fichier}` (0004) : on
            parcourt les dossiers plutôt que `product_images`, pour
            emporter aussi les envois jamais enregistrés. Les lignes
-           restent, sans conséquence : leurs produits sont masqués. */
+           `product_images` partent aussi : elles ne désigneraient plus
+           que des fichiers effacés. */
+        const { data: produits, error: produitsError } = await admin
+          .from("products")
+          .select("id")
+          .eq("merchant_id", merchant.id);
+        if (produitsError) throw produitsError;
+        // Par paquets : les identifiants voyagent dans l'URL de la requête.
+        for (let i = 0; i < produits.length; i += 100) {
+          const { error: imagesError } = await admin
+            .from("product_images")
+            .delete()
+            .in("product_id", produits.slice(i, i + 100).map((produit) => produit.id));
+          if (imagesError) throw imagesError;
+        }
         await effacerPhotosProduits(admin, merchant.id);
       }
     }

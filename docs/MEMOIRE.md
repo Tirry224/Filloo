@@ -697,10 +697,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-225 commits, du plus récent au plus ancien.
+226 commits, du plus récent au plus ancien.
 
 ### 2026-09-27
 
+- `459e795` Supprimer son compte demande le mot de passe
 - `b32d879` Supprimer son compte efface aussi les photos produit
 - `b146b8b` Supprimer son compte efface aussi les coordonnées de la boutique
 - `ef3fdff` Une suppression interrompue avant le bannissement peut être relancée
