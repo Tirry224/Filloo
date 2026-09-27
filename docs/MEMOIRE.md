@@ -697,10 +697,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-222 commits, du plus récent au plus ancien.
+223 commits, du plus récent au plus ancien.
 
 ### 2026-09-27
 
+- `ef3fdff` Une suppression interrompue avant le bannissement peut être relancée
 - `eeb53ca` CLAUDE.md : répondre avec le strict nécessaire
 - `2fc3cc2` Un hook pre-commit régénère la mémoire à chaque commit
 - `1bc77ea` La mémoire rattrape les dix derniers commits

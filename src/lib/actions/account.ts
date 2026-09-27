@@ -155,9 +155,14 @@ async function anonymiserEtBannir(userId: string) {
         /* La photo de boutique peut être un visage : « supprimer mon
            compte » l'efface, fichier compris. Tout le dossier, pour
            emporter aussi les envois jamais enregistrés. */
+        /* Les coordonnées partent avec : un ancien client lit encore la
+           boutique par ses fils (`i_talk_with_merchant`, 0016), et l'écran
+           promet d'effacer le téléphone — le WhatsApp en est un. Le nom
+           de la boutique reste, pour que ces fils disent à qui ils
+           parlaient. */
         const { error: photoError } = await admin
           .from("merchants")
-          .update({ photo_path: null })
+          .update({ photo_path: null, whatsapp_phone: null, address_hint: null, description: null })
           .eq("id", merchant.id);
         if (photoError) throw photoError;
         const { data: fichiers } = await admin.storage.from(SHOP_PHOTOS_BUCKET).list(merchant.id);

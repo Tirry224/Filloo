@@ -28,7 +28,7 @@ export default async function ConfirmDeleteAccountPage({
   return (
     <Sheet
       title="Supprimer votre compte ?"
-      description="Votre nom et votre téléphone seront effacés. Vos conversations restent lisibles par vos interlocuteurs, sans votre identité. Si vous avez une boutique, vos produits seront retirés du catalogue. Cette action est irréversible."
+      description="Votre nom et votre téléphone seront effacés. Vos conversations restent lisibles par vos interlocuteurs, sans votre identité. Si vous avez une boutique, vos produits seront retirés du catalogue et ses coordonnées effacées. Cette action est irréversible."
       closeHref={retour}
       tone="danger"
     >
