@@ -83,3 +83,15 @@ reconstituer la liste lui-même — et c'est exactement ce qui était arrivé
 Cette règle porte sur la FORME des comptes rendus, pas sur le reste :
 une explication technique, un raisonnement ou une réponse à une question
 directe gardent la forme qui les sert le mieux.
+
+## Le strict nécessaire
+
+Règle donnée par le porteur du projet le 2026-09-27 : **répondre court.**
+Il ne veut pas lire beaucoup de texte.
+
+- Seulement ce qui compte : ce qui a été fait, ce qui bloque, ce qu'il
+  doit décider. Pas de contexte qu'il connaît déjà, pas de répétition.
+- Les listes de la règle ci-dessus restent, mais courtes : peu
+  d'entrées, une phrase brève chacune.
+- Pas de leçon ni de question de réflexion par défaut ; seulement si
+  elle change vraiment quelque chose.
