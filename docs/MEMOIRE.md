@@ -191,8 +191,11 @@ trompera.
   La suite ne tourne pas en CI : il faut Docker et un build fait contre la
   pile locale.
 - **L'envoi de photo charge un script depuis `cdn.jsdelivr.net`.**
-  `PhotoPicker.tsx` passe `useWebWorker: true` à `browser-image-compression`,
-  qui va alors chercher son code de travail sur ce CDN à chaque envoi.
+  `compresserPhoto` (`src/lib/compression.ts`, partagé depuis le
+  2026-09-25 par les deux sélecteurs de photo) passe `useWebWorker: true`
+  à `browser-image-compression`, qui va alors chercher son code de travail
+  sur ce CDN à chaque envoi. Sur iPhone, le repli WebP → JPEG compresse
+  la photo DEUX fois : le coût ci-dessous y est doublé.
   Constaté par Playwright le 2026-09-25 : CDN bloqué, l'envoi réussit quand
   même, la bibliothèque retombant sur le fil principal. Sur un téléphone
   lent, c'est une requête externe de plus avant chaque photo et un écran
@@ -229,9 +232,6 @@ trompera.
   portant les 26 migrations), et pilotée dans Chromium au format
   téléphone. Les défauts trouvés sont corrigés dans les commits du jour ;
   restent :
-  - **un compte supprimé ne peut plus revenir avec son email** : la
-    connexion, bannie, dit désormais « compte supprimé ou fermé », mais
-    l'inscription répond « un compte existe déjà ». Décision produit ;
   - **un prix de 0 GNF est accepté** : `tests/prix.test.ts` l'affirme,
     rien ne dit si c'est voulu ;
   - **les bannières `?erreur=` et `?info=` affichent n'importe quel texte
@@ -292,6 +292,17 @@ ne se recopient pas.
   Visible aussi dans la recherche et le fil (`search_products` renvoie
   `shop_photo_path` depuis 0030) et dans la messagerie : en-tête du fil,
   et pastille sur la vignette produit de la liste des fils.
+  **Depuis iPhone (0031, 2026-09-25)** : Safari n'encode pas le WebP
+  dans un canvas et rendait du PNG, que le bucket refusait. Les deux
+  sélecteurs retombent sur le JPEG (`compresserPhoto`), et `shop-photos`
+  accepte `image/webp` et `image/jpeg` — le PNG reste refusé.
+- **Un compte supprimé libère son email** (2026-09-25) : dans le même
+  appel que le bannissement, l'adresse de `auth.users` devient
+  `supprime-<id>@filloo.invalid` et les métadonnées d'inscription (nom,
+  téléphone) sont effacées. La ligne reste, les messages la référencent.
+  Passe par la clé `service_role` : *à constater* une fois celle-ci
+  corrigée sur Vercel (voir « Bloquant pour ouvrir à un vrai
+  commerçant »).
 
 ### Front-end — Next.js 16, React 19, TypeScript, Tailwind 4
 
@@ -677,10 +688,20 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-209 commits, du plus récent au plus ancien.
+219 commits, du plus récent au plus ancien.
 
 ### 2026-09-25
 
+- `67e155c` La suppression efface aussi la copie de l'email dans les métadonnées
+- `560d27c` Un email dont le compte a été supprimé peut resservir
+- `a220d4a` Le champ téléphone n'accepte que neuf chiffres
+- `3f673b6` Un seul bouton « Supprimer mon compte », à côté de « Se déconnecter »
+- `f521ccf` Un mot de passe refusé pour sa composition dit pourquoi
+- `43c345f` Le lien de réinitialisation marche quel que soit le navigateur qui l'ouvre
+- `14bf1c6` L'iPhone ne zoome plus quand on touche un champ
+- `1e671d9` Les photos de produits retombent aussi sur le JPEG hors WebP
+- `5977f36` La photo de boutique s'envoie depuis un iPhone
+- `856a66e` La mémoire note la photo de boutique dans la recherche et la messagerie
 - `71f14f2` La photo de la boutique dans la recherche et la messagerie
 - `7bec856` 0030 : search_products renvoie la photo de la boutique
 - `c7a8864` La mémoire note la photo de boutique, à vérifier sur un téléphone
