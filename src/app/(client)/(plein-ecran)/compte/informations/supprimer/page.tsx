@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Field, Input } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Notice";
 import { Sheet } from "@/components/ui/Sheet";
 import { deleteAccountAction } from "@/lib/actions/account";
@@ -33,7 +34,17 @@ export default async function ConfirmDeleteAccountPage({
       tone="danger"
     >
       <Notice>{erreur}</Notice>
-      <form action={deleteAccountAction}>
+      <form action={deleteAccountAction} className="space-y-4">
+        <Field label="Mot de passe" htmlFor="currentPassword" hint="Il confirme que c'est bien vous.">
+          <Input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Votre mot de passe"
+            required
+          />
+        </Field>
         <Button type="submit" variant="danger">
           Supprimer définitivement mon compte
         </Button>

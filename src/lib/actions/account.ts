@@ -106,10 +106,21 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
  * étrangère. Un BANNISSEMENT (`ban_duration`) coupe l'accès en laissant
  * l'historique lisible, et l'email est remplacé pour pouvoir resservir.
  */
-export async function deleteAccountAction() {
+export async function deleteAccountAction(formData: FormData) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/connexion");
+
+  /* Mot de passe exigé, comme pour changer de téléphone : un téléphone
+     laissé déverrouillé ne doit pas suffire à effacer un compte. */
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  if (!user.email || !currentPassword || !(await passwordIsValid(user.email, currentPassword))) {
+    redirect(
+      `/compte/informations/supprimer?erreur=${encodeURIComponent(
+        "Mot de passe incorrect. Votre compte n'a pas été supprimé.",
+      )}`,
+    );
+  }
 
   /* Un échec REVIENT sur l'écran de confirmation au lieu de lever : levée,
      l'erreur tombait sur `error.tsx`, et la personne concluait à une panne

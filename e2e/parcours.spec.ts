@@ -164,6 +164,10 @@ test("le commerçant supprime son compte : produit retiré, connexion refusée",
   const page = await personne(browser);
   await connecter(page, V.email, V.mdp);
   await page.goto("/compte/informations/supprimer");
+  await page.getByLabel("Mot de passe").fill("pas-le-bon");
+  await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
+  await expect(page.getByText(/Mot de passe incorrect/)).toBeVisible();
+  await page.getByLabel("Mot de passe").fill(V.mdp);
   await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
   await expect(page).toHaveURL(/\/connexion/);
 
