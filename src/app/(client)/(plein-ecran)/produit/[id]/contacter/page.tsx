@@ -28,12 +28,21 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
      dans le tri « populaires ». La base refuse l'insertion (0016) ; ici on
      évite seulement que ce refus se présente comme une panne.
 
-     espaces:autorise — le départ vers `/vendeur` est déclenché par la
-     personne sur son propre produit, et la réponse utile à son geste
-     n'existe que dans son espace commerçant. */
+     On le DIT au lieu de rediriger vers `/vendeur` : la personne est dans
+     son espace client, l'y arracher lui faisait croire à un bug
+     (constaté le 2026-09-28). Le bouton est déjà masqué sur la fiche ;
+     cet écran ne sert qu'à qui arrive par l'adresse directe. */
   const myMerchant = await getMyMerchant(supabase);
   if (myMerchant && myMerchant.id === product.merchant.id) {
-    redirect(`/vendeur/produits/${product.id}/actions`);
+    return (
+      <Sheet
+        title="C'est votre produit"
+        description="Vous ne pouvez pas vous écrire à vous-même. Pour le modifier, passez par votre espace vendeur."
+        closeHref={`/produit/${product.id}`}
+      >
+        <Button href={`/produit/${product.id}`}>Revenir au produit</Button>
+      </Sheet>
+    );
   }
 
   /* Sans cet arrêt, un client suspendu atteint `findOrCreateConversation`,

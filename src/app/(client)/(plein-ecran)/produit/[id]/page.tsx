@@ -10,6 +10,7 @@ import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
+import { getMyMerchant } from "@/lib/data/merchants";
 import { formatGnf } from "@/lib/format";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
@@ -82,6 +83,12 @@ export default async function ProductPage({
 
   const sold = product.status === "sold";
 
+  /* Les deux comptes étant liés (décision 8), un client peut tomber sur un
+     produit de sa propre boutique. « Contacter le vendeur » ne mènerait
+     nulle part : on ne se contacte pas soi-même. */
+  const myMerchant = await getMyMerchant(supabase);
+  const own = myMerchant?.id === product.merchant.id;
+
   compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
   return (
@@ -145,6 +152,8 @@ export default async function ProductPage({
       <ScreenFooter className="flex gap-2.5">
         {sold ? (
           <Button variant="secondary">Ce produit n&apos;est plus disponible</Button>
+        ) : own ? (
+          <Button variant="secondary">C&apos;est votre produit</Button>
         ) : (
           <>
             <Button icon={MessageCircle} href={`/produit/${product.id}/contacter`}>
