@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ESPACE_COOKIE } from "@/lib/espace";
 import { refusEspaceClient, refusEspaceCommercant } from "@/lib/data/espace-decision";
 import { cache } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -74,6 +76,14 @@ export async function landingForSession(supabase: SupabaseClient<Database>): Pro
      lecture : le catalogue public est là où cette personne a le droit
      d'être tant que sa boutique lui est fermée. */
   if (onlyMerchant && merchant?.isSuspended) return "/";
+
+  /* Avec les deux comptes, l'app rouvre sur l'espace quitté en dernier
+     (`EspaceMemo`). Jamais vers une boutique suspendue : même boucle que
+     ci-dessus. */
+  if (merchant && !merchant.isSuspended) {
+    const dernier = (await cookies()).get(ESPACE_COOKIE)?.value;
+    if (dernier === "merchant") return "/vendeur";
+  }
 
   return onlyMerchant ? "/vendeur" : "/";
 }

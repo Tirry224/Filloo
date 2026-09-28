@@ -2,6 +2,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { MerchantNav } from "@/components/nav/MerchantNav";
 import { AppBadge } from "@/components/nav/AppBadge";
+import { EspaceMemo } from "@/components/nav/EspaceMemo";
 import { createClient } from "@/lib/supabase/server";
 import { countUnreadMessages } from "@/lib/data/messages";
 
@@ -23,6 +24,7 @@ export default async function MerchantTabsLayout({ children }: { children: React
     <AppShell nav={<MerchantNav unreadCount={unreadCount} />}>
       {children}
       <AppBadge count={unreadCount + unreadClient} />
+      <EspaceMemo espace="merchant" />
       <InstallPrompt />
     </AppShell>
   );

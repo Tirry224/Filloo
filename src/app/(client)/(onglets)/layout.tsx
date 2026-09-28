@@ -2,6 +2,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { ClientNav } from "@/components/nav/ClientNav";
 import { AppBadge } from "@/components/nav/AppBadge";
+import { EspaceMemo } from "@/components/nav/EspaceMemo";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { countUnreadMessages } from "@/lib/data/messages";
@@ -25,6 +26,7 @@ export default async function ClientTabsLayout({ children }: { children: React.R
     <AppShell nav={<ClientNav unreadCount={unreadCount} />}>
       {children}
       <AppBadge count={unreadCount + unreadMerchant} />
+      {profile ? <EspaceMemo espace="client" /> : null}
       <InstallPrompt />
     </AppShell>
   );
