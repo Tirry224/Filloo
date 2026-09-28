@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
-import { sendPushToUser } from "@/lib/push";
+import { envoyerPush } from "@/lib/push";
 import type { ActionState } from "@/lib/actions/auth";
 import { messagePourErreur } from "@/lib/erreurs";
 
@@ -80,12 +80,13 @@ export async function sendTestPushAction(): Promise<ActionState> {
   if (error) return { error: messagePourErreur(error, "push") };
   if (!count) return { error: "Aucun appareil abonné. Activez d'abord les notifications." };
 
-  await sendPushToUser(user.id, {
+  const { raison } = await envoyerPush(user.id, {
     titre: "Filloo",
     corps: "Test réussi : les notifications fonctionnent sur cet appareil.",
     url: "/compte",
     tag: "filloo-test",
   });
+  if (raison) return { error: raison };
 
   return { sent: true };
 }

@@ -698,10 +698,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-231 commits, du plus récent au plus ancien.
+232 commits, du plus récent au plus ancien.
 
 ### 2026-09-28
 
+- `106bc0f` Le prix se groupe par milliers pendant la saisie
 - `f83b85f` L'application rouvre sur l'espace quitté en dernier
 - `b763e03` Débloquer une personne, et un blocage ferme le fil dans les deux sens
 - `7be1feb` Pastille des messages non lus sur l'icône de l'application

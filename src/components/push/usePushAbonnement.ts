@@ -84,7 +84,19 @@ export function usePushAbonnement(): PushAbonnement {
         if (!enregistrement) return false;
         const abonnement = await enregistrement.pushManager.getSubscription();
         const cle = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        return Boolean(abonnement && cle && memeCle(abonnement, cle));
+        const estAbonne = Boolean(abonnement && cle && memeCle(abonnement, cle));
+        /* Le navigateur peut se croire abonné alors que la base a perdu la
+           ligne (compte changé sur ce téléphone, ligne purgée après un
+           410) : le serveur n'avait alors personne à qui envoyer, et le
+           bouton restait « Activé ». On réenregistre en silence ; l'upsert
+           rend le geste sans effet quand la ligne existe déjà. */
+        if (estAbonne && abonnement) {
+          void savePushSubscriptionAction(
+            abonnement.toJSON() as { endpoint: string; keys?: { p256dh?: string; auth?: string } },
+            navigator.userAgent,
+          ).catch(() => {});
+        }
+        return estAbonne;
       })
       .then((estAbonne) => {
         if (vivant) setAbonne(estAbonne);

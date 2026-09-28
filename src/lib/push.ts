@@ -45,8 +45,23 @@ export type ContenuPush = {
 };
 
 export async function sendPushToUser(authUserId: string, contenu: ContenuPush): Promise<number> {
-  if (!configurer()) return 0;
+  return (await envoyerPush(authUserId, contenu)).atteints;
+}
 
+/**
+ * Comme `sendPushToUser`, avec la RAISON quand personne n'est atteint. Le
+ * bouton de test en a besoin : « envoyée » sans preuve faisait chercher la
+ * panne sur le téléphone alors qu'elle était sur le serveur.
+ */
+export async function envoyerPush(
+  authUserId: string,
+  contenu: ContenuPush,
+): Promise<{ atteints: number; raison?: string }> {
+  if (!configurer()) {
+    return { atteints: 0, raison: "Le serveur n'a pas ses clés de notification (VAPID)." };
+  }
+
+  const echecs: string[] = [];
   try {
     const admin = createAdminClient();
     const { data: abonnements, error } = await admin
@@ -55,9 +70,9 @@ export async function sendPushToUser(authUserId: string, contenu: ContenuPush): 
       .eq("auth_user_id", authUserId);
     if (error) {
       console.error("[push] abonnements illisibles :", error.message);
-      return 0;
+      return { atteints: 0, raison: `Le serveur ne peut pas lire les appareils abonnés (${error.message}).` };
     }
-    if (!abonnements.length) return 0;
+    if (!abonnements.length) return { atteints: 0, raison: "Aucun appareil abonné pour ce compte." };
 
     const charge = JSON.stringify(contenu);
     let atteints = 0;
@@ -86,16 +101,25 @@ export async function sendPushToUser(authUserId: string, contenu: ContenuPush): 
              (429, 500, réseau) est passager. */
           if (statut === 404 || statut === 410) {
             await admin.from("push_subscriptions").delete().eq("id", abonnement.id);
+            echecs.push("abonnement expiré, supprimé : réactivez les notifications");
             return;
           }
+          /* 401/403 : le service de push refuse notre signature — la clé
+             privée n'est pas la moitié de la clé publique du navigateur. */
+          echecs.push(
+            statut === 401 || statut === 403
+              ? `refusé (${statut}) : VAPID_PRIVATE_KEY ne correspond pas à la clé publique`
+              : `refusé (${statut ?? "sans code"})`,
+          );
           console.error(`[push] envoi impossible (${statut ?? "sans code"}) :`, cause);
         }
       }),
     );
 
-    return atteints;
+    return atteints > 0 ? { atteints } : { atteints, raison: `Envoi échoué : ${echecs.join(" ; ")}.` };
   } catch (cause) {
     console.error("[push] envoi impossible :", cause);
-    return 0;
+    const message = cause instanceof Error ? cause.message : String(cause);
+    return { atteints: 0, raison: `Envoi impossible côté serveur (${message}).` };
   }
 }
