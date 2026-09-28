@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/ui/AppShell";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { MerchantNav } from "@/components/nav/MerchantNav";
+import { AppBadge } from "@/components/nav/AppBadge";
 import { createClient } from "@/lib/supabase/server";
 import { countUnreadMessages } from "@/lib/data/messages";
 
@@ -11,11 +12,17 @@ import { countUnreadMessages } from "@/lib/data/messages";
  */
 export default async function MerchantTabsLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const unreadCount = await countUnreadMessages(supabase, "merchant");
+  /* L'onglet ne compte que l'espace commerçant ; l'icône de
+     l'application, elle, additionne les deux (`AppBadge`). */
+  const [unreadCount, unreadClient] = await Promise.all([
+    countUnreadMessages(supabase, "merchant"),
+    countUnreadMessages(supabase, "client"),
+  ]);
 
   return (
     <AppShell nav={<MerchantNav unreadCount={unreadCount} />}>
       {children}
+      <AppBadge count={unreadCount + unreadClient} />
       <InstallPrompt />
     </AppShell>
   );

@@ -697,7 +697,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-227 commits, du plus récent au plus ancien.
+228 commits, du plus récent au plus ancien.
+
+### 2026-09-28
+
+- `a0dc56f` Son propre produit ne renvoie plus vers l'espace vendeur
 
 ### 2026-09-27
 

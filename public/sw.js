@@ -83,8 +83,17 @@ self.addEventListener("push", (evenement) => {
      arrière-plan », ce qui est pire que rien. */
   /* Application au premier plan : `MessageAlerts` joue déjà le son. La
      notification reste affichée — Chrome en exige une par push — mais muette. */
+  /* Pastille sur l'icône, application fermée, pour un MESSAGE seulement.
+     Le push ne porte pas le nombre de non-lus : on allume une pastille
+     sans chiffre, et `AppBadge` pose le nombre exact à la prochaine
+     ouverture. */
+  const badge =
+    String(options.tag).startsWith("conversation-") && self.navigator.setAppBadge
+      ? self.navigator.setAppBadge().catch(() => {})
+      : Promise.resolve();
+
   evenement.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
+    badge.then(() => self.clients.matchAll({ type: "window", includeUncontrolled: true })).then((fenetres) => {
       const auPremierPlan = fenetres.some((f) => f.focused && f.visibilityState === "visible");
       if (!auPremierPlan) return self.registration.showNotification(titre, options);
       const { vibrate, ...muette } = options;
