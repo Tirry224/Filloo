@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { PriceInput } from "@/components/ui/PriceInput";
 import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { Toggle } from "@/components/ui/Toggle";
 import { PhotoPicker } from "@/components/product/PhotoPicker";
@@ -83,10 +84,9 @@ export function ProductForm(props: ProductFormProps) {
           </Field>
 
           <Field label="Prix" htmlFor="priceGnf">
-            <Input
+            <PriceInput
               id="priceGnf"
               name="priceGnf"
-              inputMode="numeric"
               defaultValue={initial?.priceGnf}
               placeholder="450 000"
               className="pr-14"

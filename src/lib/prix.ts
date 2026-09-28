@@ -21,6 +21,20 @@ export const PRIX_MAX_GNF = 10_000_000_000;
  * « 1,500,000 », jamais « 1.500,000 », qui ressemble à un décimal. */
 const MILLIERS_GROUPES = /^\d{1,3}(?:([.,])\d{3})(?:\1\d{3})*$/;
 
+/** Chiffres d'un prix au plus : 10 000 000 000 en compte onze. */
+const CHIFFRES_PRIX = 11;
+
+/**
+ * Ce que le champ prix AFFICHE pendant la saisie : chiffres seuls, groupés
+ * par milliers — « 1 500 000 ». Espace ordinaire, que `lirePrixGnf` retire.
+ *
+ * Confort seulement : `lirePrixGnf` reste le seul contrôle qui vaille.
+ */
+export function formaterSaisiePrix(valeur: string): string {
+  const chiffres = valeur.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, CHIFFRES_PRIX);
+  return chiffres.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 export function lirePrixGnf(saisie: string): { prix: number } | { erreur: string } {
   const texte = saisie
     // `\s` couvre aussi l'insécable et l'espace fine que colle un

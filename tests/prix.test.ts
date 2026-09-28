@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lirePrixGnf, PRIX_MAX_GNF } from "../src/lib/prix.ts";
+import { formaterSaisiePrix, lirePrixGnf, PRIX_MAX_GNF } from "../src/lib/prix.ts";
 
 /**
  * Chaque cas ici a été trouvé en tapant n'importe quoi dans le champ
@@ -52,4 +52,18 @@ test("au-delà de dix milliards de francs, c'est une faute de frappe", () => {
   // (2026-09-25). Dix milliards couvrent un terrain ou un camion.
   assert.deepEqual(lirePrixGnf("10 000 000 000"), { prix: PRIX_MAX_GNF });
   assert.ok("erreur" in lirePrixGnf("10 000 000 001"));
+});
+
+test("le champ prix sépare les milliers pendant la saisie", () => {
+  assert.equal(formaterSaisiePrix("1"), "1");
+  assert.equal(formaterSaisiePrix("1500"), "1 500");
+  assert.equal(formaterSaisiePrix("450000"), "450 000");
+  assert.equal(formaterSaisiePrix("1500000"), "1 500 000");
+  assert.equal(formaterSaisiePrix("1 5000"), "15 000");
+  assert.equal(formaterSaisiePrix("1.500.000 GNF"), "1 500 000");
+  assert.equal(formaterSaisiePrix("007"), "7");
+  assert.equal(formaterSaisiePrix(""), "");
+  assert.equal(formaterSaisiePrix("123456789012345"), "12 345 678 901");
+  // Ce que le champ affiche, le serveur le relit au même montant.
+  assert.deepEqual(lirePrixGnf(formaterSaisiePrix("1500000")), { prix: 1_500_000 });
 });

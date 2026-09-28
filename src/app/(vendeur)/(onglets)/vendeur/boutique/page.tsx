@@ -17,6 +17,7 @@ import { signOutAction } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import type { Merchant } from "@/lib/types";
 import { shopPhotoUrl } from "@/lib/storage";
+import { formaterSaisieTelephone } from "@/lib/telephone";
 
 type MerchantRow = {
   id: string;
@@ -71,7 +72,7 @@ export default async function EditShopPage() {
     { label: "Nom de la boutique", value: merchant.shopName },
     { label: "Ville", value: merchant.city || "—" },
     { label: "Où vous trouver", value: merchant.addressHint || "—" },
-    { label: "Numéro WhatsApp", value: merchant.whatsappPhone || "—" },
+    { label: "Numéro WhatsApp", value: formaterSaisieTelephone(merchant.whatsappPhone ?? "") || "—" },
     { label: "Description", value: merchant.description || "—" },
   ];
 
