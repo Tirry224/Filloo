@@ -520,14 +520,21 @@ select pg_temp.check('un participant peut se désigner lui-même comme bloqueur'
   (select blocked_by from public.conversations
     where id = 'dddddddd-0000-0000-0000-000000000002') = '11111111-1111-1111-1111-111111111111');
 
--- Boutique A a bloqué : elle peut donc toujours écrire...
-insert into public.messages (conversation_id, sender_id, product_id, body)
-values ('dddddddd-0000-0000-0000-000000000002',
-        '11111111-1111-1111-1111-111111111111',
-        'cccccccc-0000-0000-0000-000000000001', 'Dernier mot du bloqueur');
+-- Boutique A a bloqué : le fil est fermé pour elle aussi (0032). Écrire à
+-- quelqu'un qui ne peut pas répondre n'est pas un service rendu.
+do $$
+begin
+  insert into public.messages (conversation_id, sender_id, product_id, body)
+  values ('dddddddd-0000-0000-0000-000000000002',
+          '11111111-1111-1111-1111-111111111111',
+          'cccccccc-0000-0000-0000-000000000001', 'Dernier mot du bloqueur');
+  raise exception 'ECHEC le bloqueur a pu écrire dans un fil qu''il a bloqué';
+exception when insufficient_privilege then
+  raise notice 'OK    écriture refusée au bloqueur aussi';
+end $$;
 reset role;
 
--- ...mais Client D, bloqué, ne peut plus.
+-- Client D, bloqué, ne peut plus écrire...
 set role authenticated;
 select pg_temp.login('44444444-4444-4444-4444-444444444444');   -- Client D
 
@@ -541,6 +548,47 @@ begin
 exception when insufficient_privilege then
   raise notice 'OK    écriture refusée à la personne bloquée, le fil reste lisible';
 end $$;
+
+-- ...ni lever le blocage d'un autre, ni s'y substituer (le « contre-
+-- blocage » que 0002 laissait passer). Le RLS écarte la ligne : zéro
+-- ligne modifiée, sans erreur.
+with leve as (
+  update public.conversations set blocked_by = null
+   where id = 'dddddddd-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('la personne bloquée ne peut pas débloquer', (select count(*) from leve) = 0);
+
+with contre as (
+  update public.conversations set blocked_by = '44444444-4444-4444-4444-444444444444'
+   where id = 'dddddddd-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('la personne bloquée ne peut pas contre-bloquer', (select count(*) from contre) = 0);
+
+reset role;
+
+-- Le bloqueur, lui, débloque, et le fil se rouvre dans les deux sens.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');   -- Boutique A
+
+update public.conversations set blocked_by = null
+ where id = 'dddddddd-0000-0000-0000-000000000002';
+select pg_temp.check('le bloqueur peut débloquer',
+  (select blocked_by from public.conversations
+    where id = 'dddddddd-0000-0000-0000-000000000002') is null);
+
+insert into public.messages (conversation_id, sender_id, product_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '11111111-1111-1111-1111-111111111111',
+        'cccccccc-0000-0000-0000-000000000001', 'On reprend');
+reset role;
+
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');   -- Client D
+insert into public.messages (conversation_id, sender_id, product_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444',
+        'cccccccc-0000-0000-0000-000000000001', 'Merci');
+select pg_temp.check('après déblocage, les deux écrivent de nouveau', true);
 
 reset role;
 

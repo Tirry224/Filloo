@@ -431,9 +431,10 @@ suivante ne doit pas rouvrir.
 - **La suspension coupe l'écriture, jamais la lecture**, et **dans les
   deux sens** (`0017`, `0022`). Un refus de validation n'est PAS une
   suspension : il retire du catalogue sans geler les fils.
-- **Le blocage entre personnes est définitif en v1** : la policy
-  n'autorise qu'à POSER `blocked_by`, aucun écran ne débloque, et l'écran
-  le dit.
+- **Un blocage ferme le fil dans les deux sens, et seul le bloqueur le
+  lève** (`0032`, décision du 2026-09-28, qui remplace « définitif en
+  v1 »). Débloquer se fait depuis le fil ou depuis « Personnes
+  bloquées » dans les paramètres de chaque espace.
 - **On ne contacte pas sa propre boutique** — sans quoi le compteur de
   contacts, qui sert au tri « populaires », se remplit tout seul.
 - **L'intention survit à l'authentification.** Qui s'inscrit depuis
@@ -697,10 +698,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-228 commits, du plus récent au plus ancien.
+229 commits, du plus récent au plus ancien.
 
 ### 2026-09-28
 
+- `7be1feb` Pastille des messages non lus sur l'icône de l'application
 - `a0dc56f` Son propre produit ne renvoie plus vers l'espace vendeur
 
 ### 2026-09-27

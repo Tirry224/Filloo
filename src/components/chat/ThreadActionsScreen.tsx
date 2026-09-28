@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
-import { Ban, Flag, User } from "lucide-react";
+import { Ban, Flag, Unlock, User } from "lucide-react";
 import { ActionRow } from "@/components/ui/ActionRow";
 import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext } from "@/lib/data/messages";
-import { blockPeerAction } from "@/lib/actions/messages";
+import { blockPeerAction, unblockPeerAction } from "@/lib/actions/messages";
 import { messagesBase, type Espace } from "@/lib/espace";
 
 export async function ThreadActionsScreen({
@@ -50,22 +50,26 @@ export async function ThreadActionsScreen({
           />
         ) : null}
 
+        {/* Bloqué PAR L'AUTRE : aucune action. Seul le bloqueur débloque,
+            et re-bloquer par-dessus lui est refusé en base (0032). */}
         {blockedByMe ? (
-          <p className="py-3.5 text-sm text-ink-soft">Vous avez bloqué cette personne.</p>
-        ) : (
+          <ActionRow
+            icon={Unlock}
+            label="Débloquer cette personne"
+            description="Vous pourrez de nouveau vous écrire, dans les deux sens."
+            action={unblockPeerAction}
+            hiddenFields={{ conversationId: id }}
+          />
+        ) : context.blockedBy === null ? (
           <ActionRow
             icon={Ban}
             label="Bloquer cette personne"
-            // Le blocage est DÉFINITIF : la policy « conversations: je
-            // bloque mon interlocuteur » n'autorise qu'à POSER
-            // `blocked_by`, et aucun écran ne débloque (décision de v1,
-            // docs/MEMOIRE.md, « Décisions prises »). L'écran doit le dire.
-            description="Elle ne pourra plus vous écrire. Le fil reste consultable. C'est définitif : on ne peut pas débloquer."
+            description="Plus aucun message dans ce fil, ni d'elle ni de vous. Le fil reste consultable, et vous pourrez débloquer."
             tone="danger"
             action={blockPeerAction}
             hiddenFields={{ conversationId: id }}
           />
-        )}
+        ) : null}
       </div>
     </Sheet>
   );

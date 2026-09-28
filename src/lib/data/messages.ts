@@ -303,3 +303,41 @@ export async function countUnreadMessages(
   if (error) throw error;
   return count ?? 0;
 }
+
+export type BlockedPeer = { conversationId: string; peerName: string };
+
+/** Les personnes que J'AI bloquées dans cet espace, une par fil. Celles qui
+ * m'ont bloqué n'y figurent pas : je ne peux rien y faire (0032). */
+export async function getPeersBlockedByMe(
+  supabase: SupabaseClient<Database>,
+  space: Espace,
+): Promise<BlockedPeer[]> {
+  if (space === "merchant") {
+    const [merchant, merchantProfile] = await Promise.all([
+      getMyMerchant(supabase),
+      getMyProfile(supabase, "merchant"),
+    ]);
+    if (!merchant || !merchantProfile) return [];
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("id, profiles!conversations_client_id_fkey(full_name)")
+      .eq("merchant_id", merchant.id)
+      .eq("blocked_by", merchantProfile.id)
+      .order("last_message_at", { ascending: false })
+      .returns<{ id: string; profiles: { full_name: string } | null }[]>();
+    if (error) throw error;
+    return data.map((c) => ({ conversationId: c.id, peerName: c.profiles?.full_name ?? "" }));
+  }
+
+  const clientProfile = await getMyProfile(supabase, "client");
+  if (!clientProfile) return [];
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id, merchants(shop_name)")
+    .eq("client_id", clientProfile.id)
+    .eq("blocked_by", clientProfile.id)
+    .order("last_message_at", { ascending: false })
+    .returns<{ id: string; merchants: { shop_name: string } | null }[]>();
+  if (error) throw error;
+  return data.map((c) => ({ conversationId: c.id, peerName: c.merchants?.shop_name ?? "" }));
+}

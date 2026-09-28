@@ -52,7 +52,9 @@ export async function ThreadScreen({
 
   const base = messagesBase(espace);
 
-  const blockedByPeer = context.blockedBy !== null && context.blockedBy !== context.myParticipantId;
+  // Un blocage ferme le fil dans les DEUX sens (0032) ; seul le texte change.
+  const blockedByMe = context.blockedBy === context.myParticipantId;
+  const blockedByPeer = context.blockedBy !== null && !blockedByMe;
   /* Fil gelé : un compte suspendu ou supprimé en face (0017). Lecture
      seule, jamais suppression. Sans cet état, le champ resterait allumé et
      le message tapé serait perdu contre un refus du RLS illisible — dire
@@ -133,6 +135,13 @@ export async function ThreadScreen({
               : context.iAmMerchant
                 ? "Cette personne n'est plus joignable sur Filloo. Vous pouvez relire vos échanges, mais plus lui écrire."
                 : "Cette boutique n'est plus joignable sur Filloo. Vous pouvez relire vos échanges, mais plus lui écrire."}
+          </p>
+        ) : blockedByMe ? (
+          <p className="py-2 text-center text-sm text-ink-soft">
+            Vous avez bloqué cette personne.{" "}
+            <Link href={`${base}/${id}/actions`} className="font-semibold text-accent">
+              Débloquer
+            </Link>
           </p>
         ) : blockedByPeer ? (
           <p className="py-2 text-center text-sm text-ink-soft">Vous ne pouvez plus écrire dans ce fil.</p>

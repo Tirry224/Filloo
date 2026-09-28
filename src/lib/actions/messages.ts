@@ -212,6 +212,41 @@ export async function blockPeerAction(formData: FormData) {
   backToThread(conversationId, context.iAmMerchant);
 }
 
+/** Seul celui qui a bloqué peut débloquer (policy « conversations: je
+ * bloque ou débloque mon interlocuteur », 0032). Appelée depuis le fil ou
+ * depuis la liste des personnes bloquées : `retour` dit laquelle. */
+export async function unblockPeerAction(formData: FormData) {
+  const conversationId = String(formData.get("conversationId") ?? "");
+  const depuisListe = formData.get("retour") === "liste";
+  if (!conversationId) redirect(await landingForSession(await createClient()));
+
+  const supabase = await createClient();
+  const context = await getThreadContext(supabase, conversationId);
+  if (!context) backToThread(conversationId, false, "Conversation introuvable.");
+
+  const liste = context.iAmMerchant ? "/vendeur/bloques" : "/compte/bloques";
+  const echec = (message: string): never =>
+    depuisListe
+      ? redirect(`${liste}?erreur=${encodeURIComponent(message)}`)
+      : backToThread(conversationId, context.iAmMerchant, message);
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .update({ blocked_by: null })
+    .eq("id", conversationId)
+    .select("id");
+
+  // Même prudence qu'au blocage : zéro ligne sans erreur est un refus du RLS.
+  if (error) echec(messagePourErreur(error, "messages"));
+  if (!data || data.length === 0) echec("Déblocage impossible. Réessayez.");
+
+  if (depuisListe) {
+    revalidatePath(liste);
+    redirect(`${liste}?info=${encodeURIComponent(`${context.peerName} est débloqué.`)}`);
+  }
+  backToThread(conversationId, context.iAmMerchant, undefined, "Personne débloquée. Vous pouvez de nouveau vous écrire.");
+}
+
 export async function reportConversationAction(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
   const reason = texteNettoye(formData.get("reason"));
