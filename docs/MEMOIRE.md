@@ -684,10 +684,12 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-239 commits, du plus récent au plus ancien.
+241 commits, du plus récent au plus ancien.
 
 ### 2026-10-02
 
+- `5646bea` Reapply "Les conditions disent qu'une boutique est en ligne dès sa création"
+- `1c632c4` Reapply "Une boutique est en ligne dès sa création"
 - `7e22be2` README et MEMOIRE disent où en est le projet au 2 octobre
 - `fc971cb` La confirmation de l'email ramène au bon endroit, et se renvoie
 - `635452e` Revert "Une boutique est en ligne dès sa création"

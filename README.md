@@ -30,20 +30,16 @@ conclut hors de l'application.
 - [ ] Parcours complet des écrans dans un navigateur (commencé le 12/09)
 - [x] Notification par email des nouveaux messages (code + Resend branché
       sur Vercel — reste à constater un envoi réel dans une vraie boîte)
-- [x] Notification par email des décisions d'administration : boutique
-      validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
+- [x] Une boutique est en ligne dès sa création, sans validation manuelle
+      (`0033`) ; le lien de confirmation de l'email est la seule
+      vérification. Seule la suspension d'un compte est encore annoncée
+      par email (`0021` + Vercel Cron)
 - [x] SMTP Gmail (`filloo.gn@gmail.com`) côté Supabase — posé, et
       fonctionnel selon le porteur du projet (2026-10-02). Aucun envoi
       encore vu dans les journaux d'authentification
-- [ ] **La chaîne d'envoi des décisions d'administration est CASSÉE, et
-      c'est constaté, pas supposé** : la file `notifications` de la base
-      de production portait le 2026-09-21 une ligne `merchant_approved`
-      créée le 17 et jamais envoyée. Le cron passe tous les jours à 7 h,
-      il a donc échoué quatre fois. Deux causes possibles, toutes deux à
-      vérifier sur le tableau de bord Vercel : `CRON_SECRET` absente
-      (`/api/notifications` refuse alors tout), ou l'adresse du site
-      absente — ce second cas est désormais couvert par un repli
-      automatique sur `VERCEL_PROJECT_PRODUCTION_URL`
+- [ ] **Le cron du matin n'a jamais vidé la file `notifications`**
+      (constaté le 2026-09-21). Elle ne porte plus que les suspensions
+      depuis `0033`. Suspect : `CRON_SECRET` absente de Vercel
 - [ ] Confirmation d'email : code en production depuis le 2026-10-02
       (`fc971cb`), reste à poser les trois réglages Supabase de la
       section « Confirmation de l'email à l'inscription »
