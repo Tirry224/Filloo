@@ -6,7 +6,7 @@
  * nouvelle version indiquera sa date de mise à jour.
  */
 
-export const CONDITIONS_MISE_A_JOUR = "2 octobre 2026";
+export const CONDITIONS_MISE_A_JOUR = "17 septembre 2026";
 
 export const CONDITIONS_PREAMBULE = [
   "Les présentes Conditions d’utilisation (« Conditions ») régissent l’accès et l’utilisation de Filloo (« Filloo », « nous », « notre » ou « la plateforme »).",
@@ -84,12 +84,19 @@ export const CONDITIONS: ArticleConditions[] = [
   },
   {
     numero: 5,
-    titre: "Compte commerçant",
+    titre: "Compte commerçant et validation",
     blocs: [
-      "La boutique est visible des clients dès sa création, une fois l’adresse email du commerçant confirmée.",
-      "Filloo ne vérifie pas les boutiques avant leur mise en ligne.",
-      "Filloo peut suspendre ou supprimer une boutique ou un compte commerçant dans les conditions prévues par les présentes Conditions.",
-      "La présence d’une boutique sur Filloo ne constitue pas une certification, une garantie de solvabilité ou une garantie concernant les produits du commerçant.",
+      "La création d’un espace commerçant ne signifie pas que la boutique est automatiquement approuvée.",
+      "Filloo peut effectuer un contrôle avant l’activation de la boutique.",
+      "Un commerçant en attente de validation peut préparer sa boutique et ses produits en brouillon.",
+      "Filloo peut :",
+      [
+        "approuver une boutique ;",
+        "demander des corrections ou informations complémentaires ;",
+        "refuser une boutique ;",
+        "suspendre une boutique précédemment approuvée.",
+      ],
+      "La validation d’une boutique ne constitue pas une certification, une garantie de solvabilité ou une garantie concernant les produits du commerçant.",
     ],
   },
   {
