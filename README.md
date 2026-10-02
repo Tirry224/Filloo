@@ -32,9 +32,9 @@ conclut hors de l'application.
       sur Vercel — reste à constater un envoi réel dans une vraie boîte)
 - [x] Notification par email des décisions d'administration : boutique
       validée, boutique refusée, compte suspendu (`0021` + Vercel Cron)
-- [ ] SMTP Gmail (`filloo.gn@gmail.com`) côté Supabase — mot de passe
-      oublié et confirmation d'inscription. Le SMTP Resend du 2026-09-17
-      n'écrivait qu'au propriétaire du compte, faute de domaine
+- [x] SMTP Gmail (`filloo.gn@gmail.com`) côté Supabase — posé, et
+      fonctionnel selon le porteur du projet (2026-10-02). Aucun envoi
+      encore vu dans les journaux d'authentification
 - [ ] **La chaîne d'envoi des décisions d'administration est CASSÉE, et
       c'est constaté, pas supposé** : la file `notifications` de la base
       de production portait le 2026-09-21 une ligne `merchant_approved`
@@ -44,10 +44,9 @@ conclut hors de l'application.
       (`/api/notifications` refuse alors tout), ou l'adresse du site
       absente — ce second cas est désormais couvert par un repli
       automatique sur `VERCEL_PROJECT_PRODUCTION_URL`
-- [ ] Confirmation d'email à ACTIVER côté Supabase (décidée, le code la
-      gère déjà) — possible maintenant que le SMTP fonctionne, et sans
-      risque de perdre l'intention depuis que `signUpAction` passe un
-      `emailRedirectTo`
+- [ ] Confirmation d'email : code en production depuis le 2026-10-02
+      (`fc971cb`), reste à poser les trois réglages Supabase de la
+      section « Confirmation de l'email à l'inscription »
 - [x] Partage et référencement : Open Graph sur les fiches produit et
       boutique, `sitemap.xml`, `robots.txt`
 - [x] Politique de confidentialité (`/confidentialite`) et écran de

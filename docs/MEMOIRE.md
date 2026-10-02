@@ -40,17 +40,20 @@ réécrit pas, même pour un commentaire. Pour relire ce qu'elles citaient :
 fichier, et `git show <empreinte>:docs/REPRISE.md` en affiche une, à la
 date de la migration.
 
-**État en une phrase :** l'application est complète, branchée sur la
-vraie base et en ligne ; ce qui la sépare d'un vrai commerçant n'est plus
-du code mais une chaîne d'emails à réparer et trois parcours à faire sur
-un téléphone.
+**État en une phrase (2026-10-02) :** l'application est complète et en
+ligne, conditions d'utilisation comprises ; ce qui la sépare d'un vrai
+commerçant n'est plus du code mais des réglages de production (les trois
+réglages Supabase de la confirmation d'email, `CRON_SECRET`, les clés
+`VAPID_PRIVATE_KEY` et `service_role` de Vercel), la preuve qu'un email et
+un push arrivent vraiment, et trois parcours à faire sur un téléphone.
 
 **Ce qu'une session peut vérifier, et ce qu'elle ne peut pas.** Tout ce
 qui porte sur le dépôt se relit dans le code. Tout ce qui porte sur la
 production (Vercel, Supabase, une boîte email) est invérifiable depuis
-une session : pas d'accès aux variables Vercel (403), `*.supabase.co`
-injoignable. Ces points sont marqués **« à constater »** — ni faits ni
-cassés.
+une session, sauf par les connecteurs Supabase et Vercel quand la session
+en dispose (le 2026-10-02, le connecteur Supabase lisait la base et les
+journaux, mais pas la configuration Auth). Ces points sont marqués
+**« à constater »** — ni faits ni cassés.
 
 ---
 
@@ -696,10 +699,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-237 commits, du plus récent au plus ancien.
+238 commits, du plus récent au plus ancien.
 
 ### 2026-10-02
 
+- `fc971cb` La confirmation de l'email ramène au bon endroit, et se renvoie
 - `635452e` Revert "Une boutique est en ligne dès sa création"
 - `29bcd1a` Revert "Les conditions disent qu'une boutique est en ligne dès sa création"
 - `3d744c6` Les conditions disent qu'une boutique est en ligne dès sa création
