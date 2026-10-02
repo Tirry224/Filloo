@@ -162,10 +162,8 @@ export type Database = {
           id: string
           photo_path: string | null
           profile_id: string
-          rejection_reason: string | null
           shop_name: string
           status: Database["public"]["Enums"]["merchant_status"]
-          valider: boolean
           whatsapp_phone: string | null
         }
         Insert: {
@@ -177,10 +175,8 @@ export type Database = {
           id?: string
           photo_path?: string | null
           profile_id: string
-          rejection_reason?: string | null
           shop_name: string
           status?: Database["public"]["Enums"]["merchant_status"]
-          valider?: boolean
           whatsapp_phone?: string | null
         }
         Update: {
@@ -192,10 +188,8 @@ export type Database = {
           id?: string
           photo_path?: string | null
           profile_id?: string
-          rejection_reason?: string | null
           shop_name?: string
           status?: Database["public"]["Enums"]["merchant_status"]
-          valider?: boolean
           whatsapp_phone?: string | null
         }
         Relationships: [
@@ -523,29 +517,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_merchant: {
-        Args: { p_shop_name: string }
-        Returns: {
-          address_hint: string | null
-          approved_at: string | null
-          city_id: number
-          created_at: string
-          description: string | null
-          id: string
-          profile_id: string
-          rejection_reason: string | null
-          shop_name: string
-          status: Database["public"]["Enums"]["merchant_status"]
-          valider: boolean
-          whatsapp_phone: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "merchants"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
@@ -561,52 +532,6 @@ export type Database = {
         Returns: string[]
       }
       purger_mesures: { Args: never; Returns: number }
-      reject_merchant: {
-        Args: { p_reason: string; p_shop_name: string }
-        Returns: {
-          address_hint: string | null
-          approved_at: string | null
-          city_id: number
-          created_at: string
-          description: string | null
-          id: string
-          profile_id: string
-          rejection_reason: string | null
-          shop_name: string
-          status: Database["public"]["Enums"]["merchant_status"]
-          valider: boolean
-          whatsapp_phone: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "merchants"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      resubmit_my_merchant: {
-        Args: never
-        Returns: {
-          address_hint: string | null
-          approved_at: string | null
-          city_id: number
-          created_at: string
-          description: string | null
-          id: string
-          profile_id: string
-          rejection_reason: string | null
-          shop_name: string
-          status: Database["public"]["Enums"]["merchant_status"]
-          valider: boolean
-          whatsapp_phone: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "merchants"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       search_products: {
         Args: {
           p_category_id?: number

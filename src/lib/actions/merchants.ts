@@ -79,32 +79,9 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 
   compter("boutique_creee", { role: "merchant", cityId: cityId });
 
-  redirect("/vendeur/attente");
+  redirect("/vendeur");
 }
 
-/**
- * Le statut est écrit par `resubmit_my_merchant()` (0015), qui n'autorise
- * que 'rejected' → 'pending' sur la boutique de l'appelant : le commerçant
- * n'a aucun droit d'écriture sur `merchants.status`, et c'est la base qui
- * le garantit, pas cet écran.
- *
- * `<form>` serveur sans `useActionState` : son erreur voyage dans l'URL,
- * lue par `Notice` sur `/vendeur/refusee`.
- */
-export async function resubmitMerchantAction() {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("resubmit_my_merchant");
-  if (error) redirect(`/vendeur/refusee?erreur=${encodeURIComponent(messagePourErreur(error, "boutique"))}`);
-  redirect("/vendeur/attente");
-}
-
-/**
- * Ne touche jamais `status` : changer le
- * nom ou la ville ne déclenche PAS de nouvelle vérification, et en ajouter
- * une ferait disparaître du catalogue les produits en ligne (la policy
- * "products: catalogue public" exige `approved`). Contradiction avec la
- * maquette encore ouverte — voir docs/MEMOIRE.md, « Dettes techniques ».
- */
 export async function updateMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const lu = lireBoutique(formData);
   if ("error" in lu) return lu;

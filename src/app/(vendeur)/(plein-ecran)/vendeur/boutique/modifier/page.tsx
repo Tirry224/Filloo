@@ -6,7 +6,6 @@ import { ShopEditForm } from "@/components/auth/ShopEditForm";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data/session";
 import { getCities } from "@/lib/data/reference";
-import type { Database } from "@/lib/database.types";
 import type { Merchant } from "@/lib/types";
 import { shopPhotoUrl } from "@/lib/storage";
 import { ConfirmPasswordSave } from "@/components/auth/ConfirmPasswordSave";
@@ -18,8 +17,6 @@ type MerchantRow = {
   address_hint: string | null;
   whatsapp_phone: string | null;
   photo_path: string | null;
-  status: Database["public"]["Enums"]["merchant_status"];
-  rejection_reason: string | null;
   city_id: number;
   cities: { name: string } | null;
 };
@@ -37,7 +34,7 @@ export default async function EditShopPage() {
 
   const { data: row, error } = await supabase
     .from("merchants")
-    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, status, rejection_reason, city_id, cities(name)")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, city_id, cities(name)")
     .eq("profile_id", merchantProfile.id)
     .single<MerchantRow>();
   if (error) throw error;
@@ -50,8 +47,6 @@ export default async function EditShopPage() {
     addressHint: row.address_hint,
     whatsappPhone: row.whatsapp_phone,
     photoUrl: row.photo_path ? shopPhotoUrl(row.photo_path) : null,
-    status: row.status,
-    rejectionReason: row.rejection_reason,
   };
 
   return (

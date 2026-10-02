@@ -15,10 +15,6 @@ export type ProfilPourDecision = {
  *   - COMMERÇANT SUSPENDU → `/compte/suspendu` : la suspension frappe le
  *     PROFIL et coupe l'écriture, pas la lecture du catalogue.
  *   - COMMERÇANT ACTIF → `null`.
- *
- * Le statut de la BOUTIQUE (`pending`, `rejected`) ne se regarde pas ici :
- * `/vendeur/attente` et `/vendeur/refusee` vivent DANS cet espace et
- * doivent rester joignables.
  */
 export function refusEspaceCommercant(profils: ProfilPourDecision[]): string | null {
   const commercant = profils.find((p) => p.role === "merchant");

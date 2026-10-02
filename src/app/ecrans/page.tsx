@@ -56,8 +56,6 @@ function screenGroups(ids: ScreenIds): {
     {
       title: "Commerçant",
       screens: [
-        ["20", "Boutique en attente", "/vendeur/attente"],
-        ["21", "Boutique refusée", "/vendeur/refusee"],
         ["22", "Mes produits", "/vendeur/produits"],
         ["22b", "Accueil commerçant", "/vendeur"],
         ["23", "Mes produits — vide", "/vendeur?etat=vide"],
@@ -116,7 +114,7 @@ export default async function ScreensIndexPage() {
   const [produit, produitVendu, boutique, conversation] = await Promise.all([
     supabase.from("products").select("id").eq("status", "active").limit(1).maybeSingle(),
     supabase.from("products").select("id").eq("status", "sold").limit(1).maybeSingle(),
-    supabase.from("merchants").select("id").eq("status", "approved").limit(1).maybeSingle(),
+    supabase.from("merchants").select("id").limit(1).maybeSingle(),
     supabase.from("conversations").select("id").limit(1).maybeSingle(),
   ]);
 

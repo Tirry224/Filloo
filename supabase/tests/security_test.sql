@@ -67,24 +67,19 @@ select pg_temp.check('le rôle envoyé à l''inscription est respecté',
 
 
 -- =====================================================================
--- 2. Un commerçant non validé prépare mais ne publie pas
+-- 2. Une boutique est en ligne dès sa création (0033)
 -- =====================================================================
+select pg_temp.check('une boutique creee est validee d''office',
+  (select status from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001') = 'approved');
+select pg_temp.check('sa date de mise en ligne est posee',
+  (select approved_at is not null from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
+
 set role authenticated;
 select pg_temp.login('11111111-1111-1111-1111-111111111111');
 
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
 values ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001',
         1, 'Sac de riz importé 50kg', 450000, 'draft');
-
-do $$
-begin
-  update public.products set status = 'active'
-   where id = 'cccccccc-0000-0000-0000-000000000001';
-  raise exception 'ECHEC un commerçant en attente a pu publier';
-exception when others then
-  if sqlerrm like 'ECHEC%' then raise; end if;
-  raise notice 'OK    publication refusée tant que la boutique n''est pas validée';
-end $$;
 
 reset role;
 
@@ -104,21 +99,7 @@ exception when insufficient_privilege then
   raise notice 'OK    auto-validation refusée (colonne non accordée)';
 end $$;
 
--- Même logique pour le motif de refus : lui aussi n'appartient qu'à
--- l'administrateur. Sinon un commerçant refusé pourrait effacer la trace
--- de son propre refus, ou en inventer une plus flatteuse.
-do $$
-begin
-  update public.merchants set rejection_reason = 'raison inventée'
-   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
-  raise exception 'ECHEC un commerçant a pu écrire son motif de refus';
-exception when insufficient_privilege then
-  raise notice 'OK    écriture du motif de refus réservée à l''admin';
-end $$;
-
 reset role;
-update public.merchants set status = 'approved', approved_at = now()
- where id in ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002');
 
 
 -- =====================================================================
@@ -751,14 +732,8 @@ select pg_temp.check('supprimer un produit publie reste possible (cascade des ph
 
 
 -- =====================================================================
--- 22. Valider une boutique : un seul geste, et réservé à l'administrateur
+-- 22. Plus aucun chemin ne sort une boutique de la vitrine, hors suspension
 -- =====================================================================
--- 0012 rend `merchants.status` suffisant à lui seul (la date de
--- validation se pose, un motif périmé s'effrace, un refus sans motif est
--- refusé). Le risque de ce genre de confort, c'est d'ouvrir un chemin
--- d'auto-validation : c'est la faille que la partie 4 de 0002 avait
--- fermée, et ces tests sont ce qui l'empêche de se rouvrir.
-
 insert into auth.users (id, email, raw_user_meta_data) values
   ('77777777-7777-7777-7777-777777777777', 'g@test.gn',
    '{"role":"merchant","full_name":"Boutique G","phone":"620000007"}');
@@ -766,58 +741,29 @@ insert into auth.users (id, email, raw_user_meta_data) values
 insert into public.merchants (profile_id, shop_name, city_id)
   select id, 'Boutique G', 1 from public.profiles where full_name = 'Boutique G';
 
--- Approuver en écrivant la SEULE colonne `status` remplit la date.
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+select pg_temp.check('la boutique G est en ligne des sa creation',
+  (select status from public.merchants where shop_name = 'Boutique G') = 'approved');
 
-select pg_temp.check('approuver pose la date de validation toute seule',
-  (select approved_at is not null from public.merchants where shop_name = 'Boutique G'));
-
--- Un refus sans motif est refusé par la base, pas rattrapé en silence.
 do $$
 begin
-  update public.merchants set status = 'rejected' where shop_name = 'Boutique G';
-  raise exception 'ECHEC un refus sans motif a été accepté';
+  update public.merchants set status = 'pending' where shop_name = 'Boutique G';
+  raise exception 'ECHEC une boutique a pu repasser en attente';
 exception when check_violation then
-  raise notice 'OK    un refus sans motif est refuse';
+  raise notice 'OK    une boutique ne repasse pas en attente';
 end $$;
-
--- Un motif de refus ne survit pas à une nouvelle validation : il
--- réapparaîtrait sur /vendeur/refusee comme s'il venait d'être écrit.
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Motif temporaire de test.'
- where shop_name = 'Boutique G';
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
-
-select pg_temp.check('revalider effrace le motif de refus perime',
-  (select rejection_reason is null from public.merchants where shop_name = 'Boutique G'));
-
--- Et le point qui compte : le commerçant PROPRIÉTAIRE ne peut pas
--- s'auto-valider, ni en écrivant la colonne, ni par la fonction.
-update public.merchants set status = 'pending' where shop_name = 'Boutique G';
 
 select pg_temp.login('77777777-7777-7777-7777-777777777777');
 set role authenticated;
 
 do $$
 begin
-  update public.merchants set status = 'approved' where shop_name = 'Boutique G';
+  update public.merchants set status = 'pending' where shop_name = 'Boutique G';
   raise exception 'ECHEC un commerçant a écrit son propre status';
 exception when insufficient_privilege then
   raise notice 'OK    un commercant ne peut pas ecrire son propre status';
 end $$;
 
-do $$
-begin
-  perform public.approve_merchant('Boutique G');
-  raise exception 'ECHEC un commerçant a pu appeler approve_merchant()';
-exception when insufficient_privilege then
-  raise notice 'OK    approve_merchant() n''est pas appelable par un commercant';
-end $$;
-
 reset role;
-
-select pg_temp.check('la boutique est restee en attente malgre les deux tentatives',
-  (select status from public.merchants where shop_name = 'Boutique G') = 'pending');
 
 
 -- =====================================================================
@@ -829,7 +775,6 @@ select pg_temp.check('la boutique est restee en attente malgre les deux tentativ
 -- n'était pas qu'il reste visible, c'est qu'on pouvait lui ÉCRIRE sans
 -- qu'il puisse jamais répondre.
 
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
 -- En brouillon d'abord : `check_product_publishable` (0011) refuse de
 -- publier un produit sans photo, et c'est exactement ce qu'il doit faire.
 insert into public.products (merchant_id, category_id, title, price_gnf, status)
@@ -885,147 +830,6 @@ reset role;
 
 
 -- =====================================================================
--- 12. Renvoyer une boutique refusée à la vérification (0015)
--- =====================================================================
--- La règle du projet : toute nouvelle porte ouverte dans la base
--- s'accompagne d'un test qui prouve ce qu'elle NE laisse PAS faire.
--- `resubmit_my_merchant()` est `security definer` — donc exécutée avec les
--- droits du propriétaire de la fonction, RLS contourné — et c'est
--- précisément le genre de fonction qui a déjà rouvert une faille ici
--- (voir 0012). Ces vérifications tiennent sa promesse, clause par clause :
--- une seule transition ('rejected' → 'pending'), sur sa propre boutique,
--- jamais vers 'approved', jamais pour un compte suspendu, jamais pour un
--- anonyme ni pour un compte client.
-
-reset role;
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Numéro injoignable'
- where shop_name in ('Chez A', 'Chez B');
-
--- 1. Le commerçant renvoie SA boutique : c'est le parcours attendu.
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-set role authenticated;
-select public.resubmit_my_merchant();
-reset role;
-select pg_temp.check('une boutique refusee repasse en attente',
-  (select status from public.merchants where shop_name = 'Chez A') = 'pending');
--- Le motif périmé s'efface (trigger de 0012) : il décrivait un refus qui
--- n'a plus cours.
-select pg_temp.check('le motif de refus disparait au renvoi',
-  (select rejection_reason from public.merchants where shop_name = 'Chez A') is null);
--- Et la boutique du voisin, refusée elle aussi, n'a pas bougé d'un pouce.
-select pg_temp.check('renvoyer la sienne ne touche pas celle du voisin',
-  (select status from public.merchants where shop_name = 'Chez B') = 'rejected');
-
--- 2. Rien à renvoyer : la fonction refuse au lieu de mentir.
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-set role authenticated;
-do $$
-begin
-  perform public.resubmit_my_merchant();
-  raise exception 'ECHEC une boutique en attente a ete renvoyee une seconde fois';
-exception when raise_exception then
-  if sqlerrm like 'ECHEC%' then raise; end if;
-  raise notice 'OK    une boutique non refusee ne se renvoie pas';
-end $$;
-
--- 3. Toujours aucun droit d'écriture sur `status` : renvoyer n'est pas
---    s'auto-valider, et la liste blanche de colonnes de 0002 tient.
-do $$
-begin
-  update public.merchants set status = 'approved'
-   where profile_id = public.my_profile_id('merchant');
-  raise exception 'ECHEC un commercant s''est auto-valide apres 0015';
-exception when insufficient_privilege then
-  raise notice 'OK    renvoyer sa boutique ne donne pas le droit de la valider';
-end $$;
-
--- 4. Un visiteur non connecté n'a même pas le droit d'appeler la fonction.
-reset role;
-select pg_temp.login(null);
-set role anon;
-do $$
-begin
-  perform public.resubmit_my_merchant();
-  raise exception 'ECHEC un anonyme a appele resubmit_my_merchant';
-exception when insufficient_privilege then
-  raise notice 'OK    un anonyme ne peut pas appeler resubmit_my_merchant';
-end $$;
-reset role;
-
--- 5. Le cas le plus dangereux, posé explicitement : A est APPROUVÉE, B est
---    REFUSÉE. Si la fonction se trompait de boutique ou de transition, ce
---    test le dirait — il vérifie les deux à la fois.
---    'approved' → 'pending' déclasserait une boutique validée ; toucher
---    celle du voisin serait pire encore, puisque la sienne est justement
---    dans l'état que la fonction sait traiter.
-reset role;
-update public.merchants set status = 'approved' where shop_name = 'Chez A';
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Numéro injoignable'
- where shop_name = 'Chez B';
-
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-set role authenticated;
-do $$
-begin
-  perform public.resubmit_my_merchant();
-  raise exception 'ECHEC une boutique approuvee a ete renvoyee en attente';
-exception when raise_exception then
-  if sqlerrm like 'ECHEC%' then raise; end if;
-  raise notice 'OK    une boutique approuvee ne repasse pas en attente';
-end $$;
-reset role;
-select pg_temp.check('une boutique approuvee reste approuvee',
-  (select status from public.merchants where shop_name = 'Chez A') = 'approved');
-select pg_temp.check('la boutique refusee du voisin reste refusee',
-  (select status from public.merchants where shop_name = 'Chez B') = 'rejected');
-
--- 6. Un commerçant SUSPENDU ne renvoie pas sa boutique. La fonction
---    contourne le RLS par construction : sans ce test, rien ne prouverait
---    qu'elle n'est pas devenue la porte dérobée de la suspension.
-reset role;
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Numéro injoignable'
- where shop_name = 'Chez A';
-update public.profiles set is_suspended = true
- where id = '11111111-1111-1111-1111-111111111111';
-
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-set role authenticated;
-do $$
-begin
-  perform public.resubmit_my_merchant();
-  raise exception 'ECHEC un commercant suspendu a renvoye sa boutique';
-exception when raise_exception then
-  if sqlerrm like 'ECHEC%' then raise; end if;
-  raise notice 'OK    un commercant suspendu ne renvoie pas sa boutique';
-end $$;
-reset role;
-select pg_temp.check('la boutique du commercant suspendu reste refusee',
-  (select status from public.merchants where shop_name = 'Chez A') = 'rejected');
-update public.profiles set is_suspended = false
- where id = '11111111-1111-1111-1111-111111111111';
-
--- 7. Un compte CLIENT n'a pas de boutique à renvoyer, et la fonction ne
---    doit pas en trouver une pour lui.
-select pg_temp.login('33333333-3333-3333-3333-333333333333');
-set role authenticated;
-do $$
-begin
-  perform public.resubmit_my_merchant();
-  raise exception 'ECHEC un client a appele resubmit_my_merchant';
-exception when raise_exception then
-  if sqlerrm like 'ECHEC%' then raise; end if;
-  raise notice 'OK    un compte client ne renvoie aucune boutique';
-end $$;
-reset role;
-select pg_temp.check('aucune boutique n''a bouge sur appel d''un client',
-  (select count(*) from public.merchants where status = 'rejected') = 2);
-
-
-
--- =====================================================================
 -- 24. Une conversation survit à la suspension de la boutique (0016)
 -- =====================================================================
 -- Le pendant du test 23 : celui-ci vérifie ce que la suspension NE doit
@@ -1035,7 +839,6 @@ select pg_temp.check('aucune boutique n''a bouge sur appel d''un client',
 -- répond « page introuvable » pour une conversation qui est la sienne.
 
 reset role;
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
 update public.profiles set is_suspended = false where full_name = 'Boutique G';
 
 -- Le client D ouvre un fil avec la Boutique G, tant qu'elle est en ligne.
@@ -1097,7 +900,6 @@ update public.profiles set is_suspended = false where full_name = 'Boutique G';
 -- faire monter ses propres produits en s'écrivant à lui-même.
 
 reset role;
-update public.merchants set status = 'approved' where shop_name = 'Chez A';
 update public.profiles set is_suspended = false
  where id = '11111111-1111-1111-1111-111111111111';
 
@@ -1117,7 +919,6 @@ reset role;
 -- aucune boutique reste libre de contacter n'importe quel commerçant.
 -- (`merchant_id <> my_merchant_id()` vaut NULL quand la personne n'a pas
 -- de boutique — d'où le `is null or` de la policy, que ce test protège.)
-update public.merchants set status = 'approved' where shop_name = 'Chez B';
 -- Le client D, et non E : E a épuisé son quota de 20 conversations dans
 -- les tests de limite, et son refus n'aurait rien prouvé ici.
 select pg_temp.login('44444444-4444-4444-4444-444444444444');
@@ -1148,7 +949,6 @@ reset role;
 -- qu'il n'accepte plus d'écriture, et que l'historique ne bouge pas.
 
 reset role;
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
 update public.profiles set is_suspended = false where full_name = 'Boutique G';
 
 -- (a) Boutique ACTIVE : lecture ET écriture, le cas normal d'abord —
@@ -1275,8 +1075,7 @@ select pg_temp.check('conversation_is_open est muette pour un tiers',
 reset role;
 
 -- Et un visiteur non connecté n'a pas même le droit de poser la
--- question : `execute` lui est révoqué (0017), comme pour
--- `resubmit_my_merchant` (0015).
+-- question : `execute` lui est révoqué (0017).
 select pg_temp.login(null);
 set role anon;
 do $$
@@ -1288,22 +1087,6 @@ exception when insufficient_privilege then
 end $$;
 reset role;
 
--- (f) Une boutique renvoyée à la VÉRIFICATION n'est pas une boutique
---     suspendue : ses fils continuent. C'est la raison pour laquelle
---     0017 n'emploie pas `merchant_is_public`, qui exige 'approved' —
---     sans ce test, un futur « simplifions, une seule fonction » gèlerait
---     les conversations d'un commerçant qui n'a rien fait de mal.
-update public.merchants set status = 'pending' where shop_name = 'Boutique G';
-select pg_temp.login('44444444-4444-4444-4444-444444444444');
-set role authenticated;
-select pg_temp.check('une boutique en attente de validation garde ses fils ouverts',
-  public.conversation_is_open(
-    (select c.id from public.conversations c
-       join public.merchants m on m.id = c.merchant_id
-      where c.client_id = '44444444-4444-4444-4444-444444444444'
-        and m.shop_name = 'Boutique G')));
-reset role;
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
 
 
 -- =====================================================================
@@ -1378,55 +1161,24 @@ reset role;
 -- suffisait donc d'un PATCH direct sur PostgREST pour faire passer un
 -- brouillon sans photo à 'sold' et le poser au catalogue, en sautant les
 -- deux conditions de publication.
---
--- Ces tests décrivent TOUTES les transitions, pas seulement celle qui a
--- fuité : c'est la seule façon de vérifier que la correction ferme cette
--- porte sans en fermer d'autres au passage. Le cas 9 est le plus
--- important à ce titre — il tient le parcours 'rejected'.
 
 reset role;
 
--- Trois boutiques, une par statut, avec leurs propres comptes : cette
--- section ne dépend d'aucun état laissé par les sections précédentes, et
--- n'en laisse aucun aux suivantes.
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('88880000-0000-0000-0000-000000000001', 'pending@test.gn',  '{"role":"merchant","full_name":"Boutique P","phone":"620000101"}'),
-  ('88880000-0000-0000-0000-000000000002', 'rejected@test.gn', '{"role":"merchant","full_name":"Boutique R","phone":"620000102"}'),
   ('88880000-0000-0000-0000-000000000003', 'approved@test.gn', '{"role":"merchant","full_name":"Boutique V","phone":"620000103"}');
 
 update public.profiles set id = auth_user_id
- where auth_user_id in ('88880000-0000-0000-0000-000000000001',
-                        '88880000-0000-0000-0000-000000000002',
-                        '88880000-0000-0000-0000-000000000003');
+ where auth_user_id = '88880000-0000-0000-0000-000000000003';
 
-insert into public.merchants (id, profile_id, shop_name, city_id, status, rejection_reason) values
-  ('88881111-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000001', 'Boutique P', 1, 'pending',  null),
-  ('88881111-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000002', 'Boutique R', 1, 'rejected', 'Photos illisibles.'),
-  ('88881111-0000-0000-0000-000000000003', '88880000-0000-0000-0000-000000000003', 'Boutique V', 1, 'approved', null);
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('88881111-0000-0000-0000-000000000003', '88880000-0000-0000-0000-000000000003', 'Boutique V', 1);
 
-select pg_temp.check('les trois boutiques de la section 28 ont le statut voulu',
-  (select count(*) from public.merchants
-    where id in ('88881111-0000-0000-0000-000000000001',
-                 '88881111-0000-0000-0000-000000000002',
-                 '88881111-0000-0000-0000-000000000003')
-      and status = case shop_name when 'Boutique P' then 'pending'
-                                  when 'Boutique R' then 'rejected'
-                                  else 'approved' end::public.merchant_status) = 3);
-
--- Un brouillon chez chacune. Une photo pour P et R : sans elle, un refus
--- ne prouverait rien — il pourrait venir de la photo manquante plutôt
--- que de la boutique non validée, et les tests 1 à 4 diraient « OK »
--- sans rien vérifier de ce qui nous intéresse ici.
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
-  ('88882222-0000-0000-0000-000000000001', '88881111-0000-0000-0000-000000000001', 1, 'Brouillon chez P', 50000, 'draft'),
-  ('88882222-0000-0000-0000-000000000002', '88881111-0000-0000-0000-000000000002', 1, 'Brouillon chez R', 50000, 'draft'),
   ('88882222-0000-0000-0000-000000000003', '88881111-0000-0000-0000-000000000003', 1, 'Brouillon chez V', 50000, 'draft'),
   ('88882222-0000-0000-0000-000000000004', '88881111-0000-0000-0000-000000000003', 1, 'Second chez V',    50000, 'draft'),
   ('88882222-0000-0000-0000-000000000005', '88881111-0000-0000-0000-000000000003', 1, 'Sans photo chez V', 50000, 'draft');
 
 insert into public.product_images (product_id, storage_path, position) values
-  ('88882222-0000-0000-0000-000000000001', 'p/1.jpg', 0),
-  ('88882222-0000-0000-0000-000000000002', 'r/1.jpg', 0),
   ('88882222-0000-0000-0000-000000000003', 'v/1.jpg', 0),
   ('88882222-0000-0000-0000-000000000004', 'v/2.jpg', 0);
 
@@ -1465,20 +1217,6 @@ exception when raise_exception then
   if sqlerrm like 'ECHEC%' then raise; end if;
   raise exception 'ECHEC % : transition refusée alors qu''elle est légitime (%)', label, sqlerrm;
 end $$;
-
--- --- 1 & 2 : boutique en attente -------------------------------------
-select pg_temp.login('88880000-0000-0000-0000-000000000001');
-set role authenticated;
-select pg_temp.refus_attendu('pending + draft → active refusé', '88882222-0000-0000-0000-000000000001', 'active');
-select pg_temp.refus_attendu('pending + draft → sold refusé (LA FAILLE)', '88882222-0000-0000-0000-000000000001', 'sold');
-reset role;
-
--- --- 3 & 4 : boutique refusée ----------------------------------------
-select pg_temp.login('88880000-0000-0000-0000-000000000002');
-set role authenticated;
-select pg_temp.refus_attendu('rejected + draft → active refusé', '88882222-0000-0000-0000-000000000002', 'active');
-select pg_temp.refus_attendu('rejected + draft → sold refusé (LA FAILLE)', '88882222-0000-0000-0000-000000000002', 'sold');
-reset role;
 
 -- --- 5, 6, 7 : boutique validée --------------------------------------
 select pg_temp.login('88880000-0000-0000-0000-000000000003');
@@ -1541,320 +1279,18 @@ select pg_temp.check('un produit vendu légitime reste visible du public',
 select pg_temp.check('sa photo reste visible elle aussi',
   exists (select 1 from public.product_images
            where product_id = '88882222-0000-0000-0000-000000000004'));
-select pg_temp.check('le brouillon passé en force reste invisible du public',
+select pg_temp.check('le brouillon sans photo reste invisible du public',
   not exists (select 1 from public.products
-               where id = '88882222-0000-0000-0000-000000000001'));
+               where id = '88882222-0000-0000-0000-000000000005'));
 reset role;
-
--- --- 9 : la correction ne casse pas le parcours 'rejected' -----------
--- Le cas qui a écarté la correction la plus courte (`new.status in
--- ('active','sold')`, sans regarder d'où l'on vient). Un produit publié
--- dans les règles, dont la boutique est ensuite refusée : son commerçant
--- doit pouvoir le marquer vendu. Il ne publie rien — le produit est déjà
--- dans l'ensemble visible, et le RLS le masque de toute façon tant que
--- la boutique n'est pas approuvée.
-reset role;
-update public.merchants set status = 'rejected', rejection_reason = 'Contrôle a posteriori.'
- where id = '88881111-0000-0000-0000-000000000003';
-
-select pg_temp.login('88880000-0000-0000-0000-000000000003');
-set role authenticated;
-select pg_temp.transition_attendue('active → sold accepté même si la boutique a été refusée depuis',
-  '88882222-0000-0000-0000-000000000004', 'sold');
--- Mais republier, elle, redevient impossible : on ENTRE au catalogue.
-select pg_temp.refus_attendu('rejected + hidden → active refusé',
-  '88882222-0000-0000-0000-000000000003', 'active');
-reset role;
-
--- On rend la boutique V à son état d'origine : une section de test ne
--- laisse pas derrière elle un décor que la suivante devra deviner.
-update public.merchants set status = 'approved', rejection_reason = null
- where id = '88881111-0000-0000-0000-000000000003';
-
 
 
 -- =====================================================================
--- 29. La case « valider » est un miroir de `status` (0018, puis 0019)
--- =====================================================================
--- Ces deux migrations ont vécu plusieurs jours EN PRODUCTION sans exister
--- dans le dépôt, et donc sans un seul test. C'est cette section qui
--- comble ce trou-là ; elle est écrite après coup, ce qui est déjà un
--- aveu — la règle du README (« toute nouvelle policy s'accompagne d'un
--- test qui prouve qu'elle bloque bien ce qu'elle prétend bloquer »)
--- n'avait pas été suivie.
---
--- CE QUI EST VÉRIFIÉ ICI, ET POURQUOI C'EST DÉLICAT
--- `valider` est une colonne qui PILOTE une autre colonne. Deux écritures
--- de la même décision, donc deux occasions de diverger — exactement la
--- « deuxième source de vérité » que 0012 refusait. Ce qui la rend
--- acceptable est une propriété, et une seule : après CHAQUE écriture,
---
---     valider = (status = 'approved')
---
--- sans exception, quel que soit le chemin emprunté. Ce n'est pas une
--- promesse tenue par l'application : `sync_merchant_approval` recalcule
--- la case à chaque passage. Les tests ci-dessous attaquent donc cette
--- égalité par tous les chemins qu'on a su imaginer — par la case, par
--- `status`, par les deux en même temps, et par une écriture qui ne parle
--- ni de l'une ni de l'autre.
---
--- Le rappel qui vaut pour toute la section : la case est un confort
--- d'ADMINISTRATION. Un commerçant qui pourrait la cocher se validerait
--- lui-même — la toute première faille de ce projet (partie 4 de 0002),
--- rouverte par une colonne ajoutée trois mois plus tard. Les tests 11 et
--- 12 sont là pour ça, et ils comptent plus que les dix premiers.
-
-reset role;
-
--- Un invariant qu'on va redemander après chaque écriture. L'écrire une
--- fois évite de le paraphraser dix fois — et surtout évite qu'une des
--- dix paraphrases soit fausse sans que personne ne le voie.
-create or replace function pg_temp.miroir_intact(label text) returns void
-language plpgsql as $$
-declare
-  v_coupables text;
-begin
-  select string_agg(shop_name || ' (status=' || status || ', valider=' || valider || ')', ', ')
-    into v_coupables
-    from public.merchants
-   where valider is distinct from (status = 'approved');
-
-  if v_coupables is not null then
-    raise exception 'ECHEC % : la case et le statut ont divergé — %', label, v_coupables;
-  end if;
-  raise notice 'OK    % (valider = (status = approved) partout)', label;
-end $$;
-
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('99990000-0000-0000-0000-000000000001', 'switch1@test.gn',
-   '{"role":"merchant","full_name":"Boutique S","phone":"620000201"}'),
-  ('99990000-0000-0000-0000-000000000002', 'switch2@test.gn',
-   '{"role":"merchant","full_name":"Boutique T","phone":"620000202"}');
-
-update public.profiles set id = auth_user_id
- where auth_user_id in ('99990000-0000-0000-0000-000000000001',
-                        '99990000-0000-0000-0000-000000000002');
-
--- --- 1 : une boutique neuve est en attente, case décochée ------------
--- Le chemin de l'INSERT est traité à part dans `sync_merchant_approval`
--- (il n'y a pas d'`old`), donc il se teste à part.
-insert into public.merchants (id, profile_id, shop_name, city_id) values
-  ('99991111-0000-0000-0000-000000000001', '99990000-0000-0000-0000-000000000001', 'Boutique S', 1);
-
-select pg_temp.check('une boutique neuve arrive en attente, case decochee',
-  (select status = 'pending' and valider = false
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.check('une boutique neuve n''a pas de date de validation',
-  (select approved_at is null
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 2 : une boutique créée DÉJÀ approuvée coche sa case -------------
--- Le cas que le seed de démonstration emprunte. S'il n'était pas traité,
--- `supabase/seed_demo.sql` produirait des boutiques approuvées à case
--- décochée : l'éditeur de table afficherait « non validée » sur des
--- boutiques en vitrine.
-insert into public.merchants (id, profile_id, shop_name, city_id, status) values
-  ('99991111-0000-0000-0000-000000000002', '99990000-0000-0000-0000-000000000002', 'Boutique T', 1, 'approved');
-
-select pg_temp.check('une boutique creee approuvee a sa case cochee',
-  (select valider = true
-     from public.merchants where id = '99991111-0000-0000-0000-000000000002'));
-
-select pg_temp.check('une boutique creee approuvee a sa date de validation',
-  (select approved_at is not null
-     from public.merchants where id = '99991111-0000-0000-0000-000000000002'));
-
-select pg_temp.miroir_intact('apres les deux insertions');
-
--- --- 3 : cocher valide, ET LA CASE RESTE COCHÉE ----------------------
--- Le défaut précis que 0019 corrige. Sous 0018, le trigger reposait la
--- case à `false` dans la même écriture : l'administrateur cochait,
--- enregistrait, et voyait la case décochée — l'image exacte d'un échec,
--- alors que `status` avait bien changé deux colonnes plus loin. Ce test
--- échouerait si quelqu'un réintroduisait le comportement « bouton ».
-update public.merchants set valider = true
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('cocher la case valide la boutique',
-  (select status = 'approved'
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.check('la case RESTE cochee apres validation (le defaut de 0018)',
-  (select valider = true
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.check('cocher la case pose aussi la date de validation',
-  (select approved_at is not null
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 4 : recocher ne DÉPLACE pas la date de validation ---------------
--- `approved_at` doit dire quand la boutique a été validée, pas quand on
--- a touché sa ligne pour la dernière fois. Une écriture idempotente qui
--- ne l'est pas se remarque des mois plus tard, sur un historique faux.
-do $$
-declare v_avant timestamptz; v_apres timestamptz;
-begin
-  select approved_at into v_avant from public.merchants
-   where id = '99991111-0000-0000-0000-000000000001';
-  perform pg_sleep(0.01);
-  update public.merchants set valider = true
-   where id = '99991111-0000-0000-0000-000000000001';
-  select approved_at into v_apres from public.merchants
-   where id = '99991111-0000-0000-0000-000000000001';
-
-  if v_apres is distinct from v_avant then
-    raise exception 'ECHEC recocher a deplace la date de validation (% → %)', v_avant, v_apres;
-  end if;
-  raise notice 'OK    recocher une boutique deja validee ne deplace pas sa date';
-end $$;
-
--- --- 5 : décocher remet en attente, et fait quitter la vitrine -------
--- Décocher n'est PAS un refus : pas de motif à fournir, la boutique
--- repart simplement en attente. La conséquence visible compte autant que
--- le statut, donc on la vérifie par `merchant_is_public` plutôt que de
--- la supposer.
-select pg_temp.check('avant de decocher, la boutique est bien en vitrine',
-  public.merchant_is_public('99991111-0000-0000-0000-000000000001'));
-
-update public.merchants set valider = false
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('decocher remet la boutique en attente',
-  (select status = 'pending' and valider = false
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.check('decocher fait quitter la vitrine',
-  not public.merchant_is_public('99991111-0000-0000-0000-000000000001'));
-
--- --- 6 : écrire `status` directement met la case à jour --------------
--- L'autre sens du miroir. Sans lui, l'éditeur de table afficherait une
--- case décochée sur une boutique validée par SQL — et l'administrateur
--- la cocherait « pour corriger », sans effet visible.
-update public.merchants set status = 'approved'
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('ecrire status directement coche la case',
-  (select valider = true
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 7 : un refus décoche la case, et garde son motif ----------------
--- Un refus ne passe jamais par la case : il s'écrit sur `status`, avec
--- son motif, et la contrainte de 0012 l'exige.
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Photos illisibles.'
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('un refus decoche la case',
-  (select valider = false
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.check('un refus garde son motif',
-  (select rejection_reason = 'Photos illisibles.'
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 8 : revalider par la case efface le motif périmé ----------------
--- Sans ça, `/vendeur/refusee` réafficherait un motif de refus à un
--- commerçant qui vient d'être validé. Même exigence qu'en 0012, par un
--- chemin que 0012 ne surveillait pas.
-update public.merchants set valider = true
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('revalider par la case efface le motif de refus perime',
-  (select status = 'approved' and rejection_reason is null
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-select pg_temp.miroir_intact('apres les allers-retours valider/refuser');
-
--- --- 9 : quand les deux bougent ensemble, `status` commande ----------
--- Le cas qu'on n'aurait pas pensé à tester sans lire le trigger : une
--- écriture qui touche les DEUX colonnes en se contredisant. Choisir un
--- statut dans une liste est un geste délibéré ; la case est un
--- raccourci, et un raccourci ne l'emporte pas. Sans cet arbitrage, le
--- résultat dépendrait de l'ordre des `if` — autrement dit du hasard.
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Le statut doit gagner.', valider = true
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('status l''emporte sur la case quand les deux se contredisent',
-  (select status = 'rejected' and valider = false
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 10 : une écriture ordinaire ne touche à rien --------------------
--- Le trigger est `before insert or update` SANS liste de colonnes : il
--- se réveille donc sur toutes les écritures, y compris celles qui ne
--- parlent ni de la case ni du statut. C'était le prix à payer pour
--- n'avoir qu'un seul trigger, et ce test est ce qui rend ce prix sûr.
-update public.merchants set status = 'approved'
- where id = '99991111-0000-0000-0000-000000000001';
-
-update public.merchants set description = 'Description de test.'
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('une edition ordinaire ne touche ni la case ni le statut',
-  (select status = 'approved' and valider = true and description = 'Description de test.'
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
--- --- 11 : LE TEST QUI COMPTE — un commerçant ne coche pas sa case ----
--- Une colonne neuve accordée par inadvertance, c'est l'auto-validation
--- revenue par la fenêtre. 0018 et 0019 écrivent tous deux le `revoke`,
--- volontairement redondant ; ce test est ce qui prouve qu'il tient, au
--- lieu de faire confiance à un effet de bord.
-select pg_temp.login('99990000-0000-0000-0000-000000000001');
-set role authenticated;
-
-do $$
-begin
-  update public.merchants set valider = true
-   where id = '99991111-0000-0000-0000-000000000001';
-  raise exception 'ECHEC un commerçant a coché sa propre case valider';
-exception when insufficient_privilege then
-  raise notice 'OK    un commercant ne peut pas cocher sa propre case valider';
-end $$;
-
--- Et il modifie toujours sa boutique : 0019 ne devait pas se payer en
--- cassant l'édition ordinaire. Un test de refus sans son test
--- d'autorisation ne dit que la moitié de la vérité.
-update public.merchants set description = 'Vente de tissus au détail.'
- where id = '99991111-0000-0000-0000-000000000001';
-
-select pg_temp.check('un commercant modifie toujours sa propre boutique',
-  (select description = 'Vente de tissus au détail.'
-     from public.merchants where id = '99991111-0000-0000-0000-000000000001'));
-
-reset role;
-
--- --- 12 : un visiteur non connecté non plus --------------------------
-set role anon;
-
-do $$
-begin
-  update public.merchants set valider = true
-   where id = '99991111-0000-0000-0000-000000000002';
-  raise exception 'ECHEC un anonyme a coché une case de validation';
-exception when insufficient_privilege then
-  raise notice 'OK    un anonyme ne peut pas cocher une case de validation';
-end $$;
-
-reset role;
-
-select pg_temp.check('la boutique visee est restee telle quelle',
-  (select status = 'approved' and valider = true
-     from public.merchants where id = '99991111-0000-0000-0000-000000000002'));
-
--- --- 13 : l'invariant tient sur TOUTE la table -----------------------
--- Y compris sur les boutiques créées par les 28 sections précédentes,
--- qui ont subi des dizaines d'écritures de `status` sans jamais
--- mentionner `valider`. Si le miroir devait se fêler quelque part, c'est
--- ici qu'on le verrait.
-select pg_temp.miroir_intact('sur toutes les boutiques du fichier');
-
-
--- =====================================================================
+-- 30. Une décision-- =====================================================================
 -- 30. Une décision d'administration entre dans la file (0021)
 -- =====================================================================
--- Trois décisions doivent laisser une trace à envoyer par email, et la
--- file qui les porte ne doit être visible de personne. Les deux moitiés
+-- La suspension doit laisser une trace à envoyer par email, et la file
+-- qui la porte ne doit être visible de personne. Les deux moitiés
 -- comptent : une file muette ne prévient personne, une file lisible est
 -- la liste de ce que l'administration a décidé sur chaque compte.
 
@@ -1876,56 +1312,11 @@ delete from public.notifications
  where profile_id in ('bbbb0000-0000-0000-0000-000000000001',
                       'bbbb0000-0000-0000-0000-000000000002');
 
--- --- 1 : LE TEST QUI COMPTE — valider EN COCHANT remplit la file -----
--- C'est le piège de 0018, pris par l'autre bout. Un trigger déclaré
--- `after update OF status` n'aurait PAS été réveillé ici : la commande
--- ci-dessous ne mentionne que `valider`, et c'est `sync_merchant_approval`
--- (0019) qui pose `status` ensuite. La boutique serait passée à
--- 'approved' et la file serait restée vide — un commerçant validé que
--- personne n'aurait jamais prévenu, sans la moindre erreur nulle part.
-update public.merchants set valider = true
- where id = 'bbbb1111-0000-0000-0000-000000000001';
-
-select pg_temp.check('cocher la case remplit la file de notifications',
+-- --- 1 : ouvrir une boutique ne remplit pas la file (0033) ----------
+select pg_temp.check('ouvrir une boutique ne remplit pas la file',
   (select count(*) from public.notifications
-    where profile_id = 'bbbb0000-0000-0000-0000-000000000001'
-      and kind = 'merchant_approved') = 1);
-
--- --- 2 : une validation déjà acquise ne se renotifie pas -------------
--- Une édition ordinaire réécrit `valider` à sa valeur courante. Sans le
--- `is distinct from`, chaque modification de description aurait produit
--- un email « votre boutique est en ligne ».
-update public.merchants set description = 'Tissus et accessoires.'
- where id = 'bbbb1111-0000-0000-0000-000000000001';
-
-select pg_temp.check('editer une boutique deja validee ne renotifie rien',
-  (select count(*) from public.notifications
-    where profile_id = 'bbbb0000-0000-0000-0000-000000000001') = 1);
-
--- --- 3 : un refus entre dans la file, avec son motif à côté ----------
-update public.merchants
-   set status = 'rejected', rejection_reason = 'Photo de devanture illisible.'
- where id = 'bbbb1111-0000-0000-0000-000000000002';
-
-select pg_temp.check('un refus remplit la file de notifications',
-  (select count(*) from public.notifications
-    where profile_id = 'bbbb0000-0000-0000-0000-000000000002'
-      and kind = 'merchant_rejected') = 1);
-
--- --- 4 : un RENVOI de boutique ne notifie rien (0015) ----------------
--- 'rejected' → 'pending' est une demande, pas un verdict. Notifier ici
--- reviendrait à écrire au commerçant pour lui annoncer ce qu'il vient
--- lui-même de faire.
--- Par la fonction de 0015, jamais par un UPDATE direct : `authenticated`
--- n'a pas ce privilège sur `merchants`, et c'est bien le but.
-select pg_temp.login('bbbb0000-0000-0000-0000-000000000002');
-set role authenticated;
-select public.resubmit_my_merchant();
-reset role;
-
-select pg_temp.check('renvoyer sa boutique ne remplit pas la file',
-  (select count(*) from public.notifications
-    where profile_id = 'bbbb0000-0000-0000-0000-000000000002') = 1);
+    where profile_id in ('bbbb0000-0000-0000-0000-000000000001',
+                         'bbbb0000-0000-0000-0000-000000000002')) = 0);
 
 -- --- 5 : une suspension entre dans la file ---------------------------
 update public.profiles set is_suspended = true, suspended_at = now()
@@ -2009,7 +1400,6 @@ reset role;
 -- n'importe laquelle des sections précédentes.
 update public.profiles set is_suspended = false where full_name = 'Boutique G';
 update public.profiles set is_suspended = false where id = '44444444-4444-4444-4444-444444444444';
-update public.merchants set status = 'approved' where shop_name = 'Boutique G';
 update public.conversations c set blocked_by = null
   from public.merchants m
  where m.id = c.merchant_id

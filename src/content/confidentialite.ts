@@ -3,7 +3,7 @@
  * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "24 septembre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "2 octobre 2026";
 
 export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
@@ -115,10 +115,10 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 8,
     titre: "Les emails et notifications que vous recevez",
     blocs: [
-      "Filloo vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message, décision concernant votre boutique (validée, refusée) ou suspension de votre compte.",
+      "Filloo vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message ou suspension de votre compte.",
       "Aucun email publicitaire, aucune lettre d’information.",
       "Si vous avez activé les notifications, chaque nouveau message vous est signalé sur votre téléphone. L’email, lui, n’est envoyé que si vous n’avez pas déjà un message non lu dans la même conversation : deux emails pour la même chose n’apprendraient rien de plus.",
-      "Les notifications affichées sur un écran verrouillé ne contiennent jamais le motif d’un refus ni celui d’une suspension : elles disent qu’une décision vous attend, et l’email dit laquelle. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
+      "Les notifications affichées sur un écran verrouillé ne contiennent jamais le motif d’une suspension : elles disent qu’une décision vous attend, et l’email dit laquelle. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
       "Les notifications sur téléphone se désactivent à tout moment depuis « Mon compte », et depuis les réglages de votre appareil.",
     ],
   },

@@ -16,7 +16,7 @@ export default async function ShopSignupPage() {
     .select("id")
     .eq("profile_id", merchantProfile.id)
     .maybeSingle();
-  if (merchant) redirect("/vendeur/attente");
+  if (merchant) redirect("/vendeur");
 
   const cities = await getCities(supabase);
 

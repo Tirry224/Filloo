@@ -2,8 +2,8 @@ import { expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Les gestes que l'application n'offre à personne — valider une boutique,
- * suspendre un compte — se font en production dans le tableau de bord
+ * Les gestes que l'application n'offre à personne, comme suspendre un
+ * compte, se font en production dans le tableau de bord
  * Supabase. Ici, par la clé `service_role` de la pile LOCALE.
  */
 function admin() {
@@ -16,11 +16,6 @@ function admin() {
     throw new Error(`Refus : ces tests écrivent en base, et ${url} n'est pas une pile locale.`);
   }
   return createClient(url, cle, { auth: { persistSession: false } });
-}
-
-export async function validerBoutique(nom: string) {
-  const { error } = await admin().from("merchants").update({ valider: true }).eq("shop_name", nom);
-  if (error) throw error;
 }
 
 export async function suspendre(nom: string, role: "client" | "merchant", oui: boolean) {
