@@ -42,10 +42,11 @@ date de la migration.
 
 **État en une phrase (2026-10-02) :** l'application est complète et en
 ligne, conditions d'utilisation comprises ; ce qui la sépare d'un vrai
-commerçant n'est plus du code mais des réglages de production (les trois
-réglages Supabase de la confirmation d'email, `CRON_SECRET`, les clés
-`VAPID_PRIVATE_KEY` et `service_role` de Vercel), la preuve qu'un email et
-un push arrivent vraiment, et trois parcours à faire sur un téléphone.
+commerçant n'est plus du code mais la panne des push (jamais un seul
+distribué), la preuve que le lien de réinitialisation marche hors du
+navigateur qui l'a demandé, et les parcours à faire sur un téléphone. Le
+porteur du projet déclare le 2026-10-02 toutes les clés posées sur Vercel
+et l'email de réinitialisation reçu et fonctionnel.
 
 **Ce qu'une session peut vérifier, et ce qu'elle ne peut pas.** Tout ce
 qui porte sur le dépôt se relit dans le code. Tout ce qui porte sur la
@@ -62,7 +63,11 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
 ### Bloquant pour ouvrir à un vrai commerçant
 
 - **Le modèle d'email « Reset Password » de Supabase doit passer au
-  `token_hash`.** Sans ce réglage, le lien de réinitialisation échoue dès
+  `token_hash`.** Le 2026-10-02, le porteur du projet a reçu et utilisé
+  un email de réinitialisation : les envois marchent, mais le test qui
+  prouve le réglage est d'ouvrir le lien dans un AUTRE navigateur que
+  celui qui l'a demandé. Le même jour à 18:38 UTC, deux `POST
+  /auth/v1/verify` ont répondu 403 (lien expiré ou déjà consommé). Sans ce réglage, le lien de réinitialisation échoue dès
   qu'il est ouvert ailleurs que dans le navigateur qui l'a demandé (app
   installée contre Safari) ou après une seconde demande — constaté le
   2026-09-25. Le code accepte les deux voies (`/auth/confirm`) ; le
@@ -77,8 +82,15 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   indésirables et limités à quelques envois par heure. Il faut un SMTP
   (Resend, Brevo…) sur un domaine à nous, SPF et DKIM compris ;
   `filloo.vercel.app` ne permet pas de poser ces enregistrements.
-- **`VAPID_PRIVATE_KEY` n'est probablement toujours PAS lue en
-  production.** Constaté le 2026-09-25 : deux appareils abonnés (un
+- **Les push ne partent toujours pas, clés posées ou non.** Constaté
+  le 2026-10-02 (connecteur) : un seul abonnement, créé le 25/09,
+  `last_used_at` toujours vide après 58 messages envoyés depuis (on ne
+  sait pas combien lui étaient destinés). Le porteur du projet déclare
+  `VAPID_PRIVATE_KEY` posée : reste à lire les lignes `[notification]` et
+  `[push]` des journaux Vercel après un message envoyé à ce compte depuis
+  un autre. Historique du diagnostic ci-dessous.
+- **`VAPID_PRIVATE_KEY` n'était probablement PAS lue en production le
+  2026-09-25.** Constaté le 2026-09-25 : deux appareils abonnés (un
   `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
   installé et autorisé), `last_used_at` vide sur les deux, et sur 30
   messages envoyés en 24 h, AUCUNE requête de `notifyNewMessage` dans les
@@ -91,7 +103,10 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   corriger ensemble. Ce que « marche en arrière-plan sur Android » veut
   dire : Chrome garde la page vivante quelques minutes, c'est le son de
   l'app, pas un push. iOS suspend la page dès qu'elle quitte l'écran.
-- **`SUPABASE_SERVICE_ROLE_KEY` de Vercel est REFUSÉE par Supabase.**
+- **`SUPABASE_SERVICE_ROLE_KEY` : réglée.** Le 2026-10-02, aucun 401
+  dans les journaux Supabase des dernières 24 h. Le diagnostic d'origine
+  reste ci-dessous pour mémoire.
+- **`SUPABASE_SERVICE_ROLE_KEY` de Vercel était REFUSÉE par Supabase.**
   Constaté le 2026-09-25 dans les journaux Supabase (connecteur) : toutes
   les requêtes `service_role` des dernières 24 h répondent **401** — la
   lecture des profils de `deleteAccountAction` (d'où « supprimer mon
@@ -118,7 +133,8 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   ménage des photos orphelines) refuse tout : aucune suspension
   n'est annoncée et aucune photo abandonnée n'est
   effacée. Le ménage a AUSSI besoin de la clé `service_role` ci-dessus.
-  Premier suspect de la panne ci-dessus. *À constater.* La purge des
+  Déclarée posée par le porteur du projet le 2026-10-02 ; la file
+  `notifications` n'a aucune ligne en attente ce jour-là. *À constater.* La purge des
   mesures, elle, tourne dans la base (pg_cron) et n'en dépend pas.
 - **`NEXT_PUBLIC_SITE_URL` sur Vercel.** Depuis le 2026-09-22,
   `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
@@ -684,10 +700,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-241 commits, du plus récent au plus ancien.
+242 commits, du plus récent au plus ancien.
 
 ### 2026-10-02
 
+- `3099723` Le README dit qu'une boutique est en ligne dès sa création
 - `5646bea` Reapply "Les conditions disent qu'une boutique est en ligne dès sa création"
 - `1c632c4` Reapply "Une boutique est en ligne dès sa création"
 - `7e22be2` README et MEMOIRE disent où en est le projet au 2 octobre
