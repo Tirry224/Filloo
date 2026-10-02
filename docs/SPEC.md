@@ -24,7 +24,7 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 | 8 | Rôles | **Comptes liés** : une personne peut avoir un compte client **et** un compte commerçant derrière **une seule connexion** (email + mot de passe), avec bascule rapide depuis l'app, sans se reconnecter. **Jamais les deux mélangés sur un même écran** : à tout instant on est soit client, soit commerçant. Chaque profil a son propre historique et sa propre modération — suspendre le compte client ne gèle pas la boutique. Le second compte se crée depuis l'application, sans repasser par l'inscription. Révise l'ancienne règle « un compte = un seul rôle, modifiable à la main par l'admin ». |
 | 9 | Ville | Filtre **manuel** choisi par le client. Jamais de filtrage automatique. |
 | 10 | Disponibilité | Binaire (disponible / vendu). **Pas de gestion de stock.** |
-| 11 | Validation commerçant | **Aucune, depuis le 2026-10-02 (migration `0033`).** Le lien de confirmation envoyé par email suffit : la boutique est en ligne dès sa création. Ni refus ni attente. Le porteur du projet garde la suspension et la suppression d'un compte, depuis le tableau de bord Supabase. Remplace le critère du 2026-09-17 (appel téléphonique avant validation). |
+| 11 | Validation commerçant | Manuelle, via le tableau de bord Supabase. Aucune page admin en v1. **Critère arrêté le 2026-09-17 : le porteur du projet APPELLE le commerçant et confirme de vive voix.** Un numéro qui répond et une personne qui assume sa boutique, c'est tout le filtre — il ne passe pas à l'échelle, et c'est voulu tant qu'on vise la densité avant le volume (décision 7). |
 | 12 | Commerçant en attente | Voit un message d'attente, peut préparer sa boutique et ses produits en **brouillon**. |
 | 13 | Abus | Bouton « signaler » + suspension de compte + deux quotas : 20 boutiques contactées/jour et 100 messages/jour par compte. |
 | 14 | Recherche | Sur le titre, la description et le nom de la boutique. Insensible aux accents. |
@@ -48,8 +48,8 @@ ouvre une fiche produit. Pour écrire, on lui demande de créer un compte.
 conversation sur un produit, échange avec le commerçant, peut signaler.
 
 **Commerçant** — s'inscrit, renseigne sa boutique (nom, ville, téléphone
-WhatsApp) après avoir confirmé son email, et publie aussitôt. Il reçoit
-les messages et répond.
+WhatsApp), attend la validation en préparant ses produits en brouillon. Une
+fois approuvé, il publie, reçoit les messages et répond.
 
 **Une même personne, client et commerçant** — une seule connexion (email +
 mot de passe) donne accès aux deux comptes liés si les deux existent. Un

@@ -39,6 +39,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         mode="edit"
         productId={product.id}
         isDraft={product.status === "draft"}
+        canPublish={merchant.status === "approved"}
         merchantId={merchant.id}
         categories={categories}
         initial={{

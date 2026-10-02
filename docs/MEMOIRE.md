@@ -100,19 +100,20 @@ cassés.
   API Keys, puis redéployer. Même client pour `push.ts`, le cron et
   `notifications-decisions.ts` : probablement une part des pannes push et
   emails ci-dessous. *À constater après correction.*
-- **Appliquer la migration `0033` en production, juste après le
-  déploiement qui la porte.** Le code ne lit plus `rejection_reason` ni
-  `valider` et n'envoie plus vers `/vendeur/attente` : sans elle, toute
-  boutique créée reste « en attente » en base, donc invisible du
-  catalogue, sans écran pour le dire.
-- **Cocher « Confirm email » dans Supabase** (Authentication, Sign In /
-  Providers, Email). Le SMTP Gmail de `filloo.gn@gmail.com` est posé et
-  fonctionne selon le porteur du projet (2026-10-02). Le code gère déjà
-  tout (`needsConfirmation`, message d'attente dans `SignupForm`,
-  `emailRedirectTo`, `/auth/confirm`). Depuis `0033`, ce lien est la
-  SEULE vérification d'un commerçant avant sa mise en ligne. Les emails
-  envoyés par l'app elle-même (`src/lib/email.ts`, Resend) restent
-  éteints au lancement : le push les remplace.
+- **Poser le SMTP Gmail de `filloo.gn@gmail.com` dans Supabase.** Filloo
+  se lance sans domaine, et Resend n'écrit sans domaine vérifié qu'au
+  propriétaire du compte : c'est la cause la plus probable de toute la
+  panne d'emails ci-dessous. Valeurs dans le README, « Emails
+  d'authentification ». Les emails envoyés par l'app elle-même
+  (`src/lib/email.ts`, Resend) restent éteints au lancement : le push
+  les remplace.
+- **Les trois `merchant_approved` en file ont `attempts = 0`** (constaté
+  le 2026-09-23 par le connecteur Supabase) : le cron n'a jamais lu la
+  file, il est refusé avant. `CRON_SECRET` est le suspect.
+- **La confirmation d'email est DÉSACTIVÉE depuis le 2026-09-23.** Elle
+  avait été activée avant que le SMTP soit prouvé, et toute inscription
+  échouait sur « Error sending confirmation email » sans créer de compte.
+  Le porteur du projet l'a décochée ; la réactiver attend toujours le SMTP.
 - **Aucun push n'a jamais été distribué.** Le 2026-09-23,
   `push_subscriptions.last_used_at` était vide sur les quatre abonnements,
   alors que des messages étaient arrivés après leur création. Premier
@@ -120,13 +121,15 @@ cassés.
   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Les abandons de `notifyNewMessage` sont
   désormais journalisés (`[notification]`, `[push]`) : les journaux Vercel
   diront lequel. *À constater.*
-- **La file `notifications` n'a jamais été vidée par le cron.** Le
-  2026-09-21, une ligne créée le 17 n'était toujours pas envoyée. Elle ne
-  porte plus que les suspensions depuis `0033`.
+- **La chaîne d'envoi d'emails est CASSÉE.** Le 2026-09-21, la file
+  `notifications` de production portait une ligne `merchant_approved`
+  créée le 17 et jamais envoyée : le cron quotidien de 7 h avait échoué
+  quatre fois, et un commerçant validé n'a jamais appris qu'il l'était.
+  Personne n'a encore vu un email arriver dans une vraie boîte.
 - **`CRON_SECRET` sur Vercel.** Sans elle, le cron du matin
   (`/api/quotidien` depuis le 2026-09-25, qui enchaîne notifications et
-  ménage des photos orphelines) refuse tout : aucune suspension
-  n'est annoncée et aucune photo abandonnée n'est
+  ménage des photos orphelines) refuse tout : aucune décision
+  d'administration n'est annoncée et aucune photo abandonnée n'est
   effacée. Le ménage a AUSSI besoin de la clé `service_role` ci-dessus.
   Premier suspect de la panne ci-dessus. *À constater.* La purge des
   mesures, elle, tourne dans la base (pg_cron) et n'en dépend pas.
@@ -134,6 +137,11 @@ cassés.
   `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
   quand elle manque, donc son absence ne devrait plus éteindre les emails
   — mais c'est le filet, pas l'adresse voulue. *À constater.*
+- **Activer la confirmation d'email côté Supabase.** Décidée (SPEC,
+  décision 1), gérée de bout en bout par le code (`needsConfirmation`,
+  message d'attente dans `SignupForm`, `emailRedirectTo`). C'est une case
+  à cocher — **et elle ne se coche qu'après le SMTP prouvé**, sinon plus
+  personne ne peut s'inscrire.
 
 ### À faire sur un vrai téléphone, par toi
 
@@ -147,8 +155,7 @@ vus fonctionner par personne :
 - la **photo de profil d'une boutique** (0029, 2026-09-25) : choisir,
   enregistrer, la voir sur la page publique, la fiche produit, les
   résultats de recherche et la messagerie côté client ;
-- l'**inscription d'un commerçant par le lien de confirmation**, jusqu'à
-  sa boutique en ligne.
+- le **parcours de refus d'une boutique**.
 
 `/ecrans` (en local uniquement) liste les écrans et allume chaque lien dès
 que l'enregistrement correspondant existe. **Noter les défauts au fil de
@@ -223,9 +230,11 @@ trompera.
   `npx @next/codemod@canary middleware-to-proxy .`. Le faire débloquerait
   aussi un vrai 404 sur `/ecrans`, aujourd'hui un 200 qui porte la page
   « n'existe pas ».
-- **`merchants.status` est un vestige** depuis `0033` : la contrainte
-  `merchants_always_approved` le fige à `'approved'`, mais les policies RLS
-  le lisent encore. Le retirer demande de réécrire ces policies.
+- **Modifier sa boutique ne relance PAS la vérification, contrairement
+  à la maquette.** `updateMerchantAction` ne touche jamais `status`, sinon
+  les produits en ligne disparaîtraient du catalogue. C'est un choix du
+  code, que le porteur du projet n'a pas tranché : un commerçant validé
+  peut donc renommer sa boutique sans nouvel appel.
 - **Test de chaos du 2026-09-25 : ce qui reste après corrections.**
   L'application a été lancée en build de production contre une pile
   Supabase IMITÉE (auth, REST et stockage réécrits sur un Postgres local
@@ -347,8 +356,8 @@ ne se recopient pas.
   refuse `anon` et `authenticated` des deux côtés (RLS sans policy ET
   privilèges révoqués), vérifié en `set role anon`.
 - **Notifications push** de bout en bout (`public/sw.js`,
-  `src/lib/push.ts`, `0023`). **Une suspension ne
-  s'annonce PAS en clair sur un écran verrouillé** : le push dit qu'une
+  `src/lib/push.ts`, `0023`). **Un refus et une suspension ne
+  s'annoncent PAS en clair sur un écran verrouillé** : le push dit qu'une
   décision attend, l'email dit laquelle. Le service worker **ne met rien
   en cache**.
 - **Temps réel et alertes** : `RealtimeThread` affiche un message reçu
@@ -407,10 +416,10 @@ suivante ne doit pas rouvrir.
 - **Deux comptes liés derrière une seule connexion**, avec bascule sans
   se reconnecter, et **jamais les deux mélangés sur un même écran** :
   barre d'onglets, écran d'ouverture et « Mon compte » compris.
-- **Une boutique est en ligne dès sa création** (`0033`, décision du
-  porteur du projet du 2026-10-02). Ni validation ni refus : l'email
-  confirmé par lien suffit, et la suspension ou la suppression du compte,
-  depuis le tableau de bord Supabase, restent les seuls retraits.
+- **Validation manuelle des boutiques par un APPEL téléphonique**, depuis
+  le tableau de bord Supabase. Aucune page d'administration en v1 : ça ne
+  passe pas à l'échelle, et c'est voulu tant qu'on vise la densité avant
+  le volume.
 - **Neuf catégories** sur un seul niveau, sans « Autre » (`0025`), et
   **douze villes**. Mots et nombre arrêtés par le porteur du projet le
   2026-09-23 : rien ne bouge avant qu'un besoin réel, constaté chez un
@@ -420,7 +429,8 @@ suivante ne doit pas rouvrir.
 - **Disponibilité binaire** : disponible ou vendu, pas de stock.
 - **Filtre de ville manuel**, jamais automatique.
 - **La suspension coupe l'écriture, jamais la lecture**, et **dans les
-  deux sens** (`0017`, `0022`).
+  deux sens** (`0017`, `0022`). Un refus de validation n'est PAS une
+  suspension : il retire du catalogue sans geler les fils.
 - **Un blocage ferme le fil dans les deux sens, et seul le bloqueur le
   lève** (`0032`, décision du 2026-09-28, qui remplace « définitif en
   v1 »). Débloquer se fait depuis le fil ou depuis « Personnes
@@ -431,6 +441,10 @@ suivante ne doit pas rouvrir.
   « Contacter le vendeur » revient sur CE produit. `?next=` porte cette
   intention et `safeNextPath` est le seul endroit qui décide s'il est
   sûr.
+- **L'email de refus d'une boutique porte un motif et invite à
+  répondre** (`0012`, `0021`) : un refus sans motif est un vendeur perdu
+  définitivement, et la boîte de `EMAIL_FROM` doit être relevée par un
+  humain.
 - **Durées de conservation (2026-09-25).** Les mesures
   (`analytics_events`) s'effacent après 13 mois (pg_cron
   `purger-mesures`, 0028). Les photos que plus aucun produit ne

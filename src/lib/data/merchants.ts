@@ -13,6 +13,8 @@ type MerchantRow = {
   address_hint: string | null;
   whatsapp_phone: string | null;
   photo_path: string | null;
+  status: Database["public"]["Enums"]["merchant_status"];
+  rejection_reason: string | null;
   cities: { name: string } | null;
 };
 
@@ -25,20 +27,22 @@ function mapMerchant(row: MerchantRow): Merchant {
     addressHint: row.address_hint,
     whatsappPhone: row.whatsapp_phone,
     photoUrl: row.photo_path ? shopPhotoUrl(row.photo_path) : null,
+    status: row.status,
+    rejectionReason: row.rejection_reason,
   };
 }
 
 /**
- * Boutique publique (écran 11). Le RLS ne laisse lire qu'une boutique dont
- * le propriétaire n'est pas suspendu : sinon `null`, comme si elle
- * n'existait pas.
+ * Boutique publique (écran 11). Le RLS ne laisse lire qu'une boutique
+ * `approved` : en attente ou refusée, elle renvoie `null`, comme si elle
+ * n'existait pas — un visiteur n'a pas à savoir qu'elle attend.
  */
 export async function getMerchant(supabase: SupabaseClient<Database>, id: string): Promise<Merchant | null> {
   // Voir `estUuid` : un identifiant mal formé est une page introuvable.
   if (!estUuid(id)) return null;
   const { data, error } = await supabase
     .from("merchants")
-    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, cities(name)")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, status, rejection_reason, cities(name)")
     .eq("id", id)
     .maybeSingle<MerchantRow>();
   if (error) throw error;
@@ -46,12 +50,17 @@ export async function getMerchant(supabase: SupabaseClient<Database>, id: string
   return mapMerchant(data);
 }
 
+/**
+ * La boutique de la connexion active avec son statut RÉEL, contrairement à
+ * `getMerchant` : seul son propriétaire a le droit de savoir où elle en
+ * est.
+ */
 export const getMyMerchant = cache(async (supabase: SupabaseClient<Database>): Promise<Merchant | null> => {
   const merchantProfile = await getMyProfile(supabase, "merchant");
   if (!merchantProfile) return null;
   const { data, error } = await supabase
     .from("merchants")
-    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, cities(name)")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, status, rejection_reason, cities(name)")
     .eq("profile_id", merchantProfile.id)
     .maybeSingle<MerchantRow>();
   if (error) throw error;

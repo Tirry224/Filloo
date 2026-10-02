@@ -9,6 +9,9 @@ import type { Merchant } from "@/lib/types";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
 
+/**
+ * `merchant.status` ne change jamais ici (voir `updateMerchantAction`).
+ */
 export function ShopEditForm({
   merchant,
   cityId,

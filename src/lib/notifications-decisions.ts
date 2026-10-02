@@ -140,14 +140,29 @@ type Composition =
   | { kind: "echec"; raison: string };
 
 /**
- * Un écran verrouillé se lit par-dessus l'épaule : le push dit qu'une
+ * Un écran verrouillé se lit par-dessus l'épaule : seule la validation
+ * s'annonce en clair. Pour un refus ou une suspension, le push dit qu'une
  * décision attend ; l'email, qui exige de déverrouiller, dit laquelle.
  */
-const PUSH_SUSPENSION: ContenuPush = {
-  titre: "Filloo",
-  corps: "Une décision concernant votre compte vous attend.",
-  url: "/compte/suspendu",
-  tag: "decision-compte",
+const PUSH_PAR_DECISION = {
+  merchant_approved: (shopName: string): ContenuPush => ({
+    titre: "Filloo",
+    corps: `Votre boutique « ${shopName} » est validée. Publiez vos produits.`,
+    url: "/vendeur",
+    tag: "decision-boutique",
+  }),
+  merchant_rejected: (): ContenuPush => ({
+    titre: "Filloo",
+    corps: "Une décision concernant votre boutique vous attend.",
+    url: "/vendeur/refusee",
+    tag: "decision-boutique",
+  }),
+  profile_suspended: (): ContenuPush => ({
+    titre: "Filloo",
+    corps: "Une décision concernant votre compte vous attend.",
+    url: "/compte/suspendu",
+    tag: "decision-compte",
+  }),
 };
 
 async function composeFor(
@@ -156,10 +171,6 @@ async function composeFor(
   profileId: string,
   siteUrl: string | null,
 ): Promise<Composition> {
-  if (kind !== "profile_suspended") {
-    return { kind: "abandon", raison: "validation des boutiques supprimée" };
-  }
-
   const { data: profile, error } = await admin
     .from("profiles")
     .select("auth_user_id, full_name, is_suspended, is_deleted")
@@ -184,14 +195,56 @@ async function composeFor(
     if (!to) return { kind: "abandon", raison: "aucune adresse email sur la connexion" };
   }
 
-  // La décision a pu être reprise entre le trigger et ce passage :
-  // annoncer une sanction levée est pire que ne rien annoncer.
-  if (!profile.is_suspended) return { kind: "abandon", raison: "suspension déjà levée" };
+  if (kind === "profile_suspended") {
+    // La décision a pu être reprise entre le trigger et ce passage :
+    // annoncer une sanction levée est pire que ne rien annoncer.
+    if (!profile.is_suspended) return { kind: "abandon", raison: "suspension déjà levée" };
+    return {
+      kind: "envoi",
+      authUserId: profile.auth_user_id,
+      email: to && siteUrl ? suspensionEmail({ to, siteUrl, name: profile.full_name }) : null,
+      push: PUSH_PAR_DECISION.profile_suspended(),
+    };
+  }
+
+  const { data: merchant, error: merchantError } = await admin
+    .from("merchants")
+    .select("shop_name, status, rejection_reason")
+    .eq("profile_id", profileId)
+    .single();
+  if (merchantError) return { kind: "echec", raison: `boutique illisible : ${merchantError.message}` };
+  if (!merchant) return { kind: "abandon", raison: "boutique introuvable" };
+
+  // Statut relu MAINTENANT, jamais recopié dans la file : la décision a pu
+  // être reprise entre-temps.
+  if (kind === "merchant_approved") {
+    if (merchant.status !== "approved") return { kind: "abandon", raison: "validation reprise" };
+    return {
+      kind: "envoi",
+      authUserId: profile.auth_user_id,
+      email:
+        to && siteUrl
+          ? approvalEmail({ to, siteUrl, name: profile.full_name, shopName: merchant.shop_name })
+          : null,
+      push: PUSH_PAR_DECISION.merchant_approved(merchant.shop_name),
+    };
+  }
+
+  if (merchant.status !== "rejected") return { kind: "abandon", raison: "refus repris" };
   return {
     kind: "envoi",
     authUserId: profile.auth_user_id,
-    email: to && siteUrl ? suspensionEmail({ to, siteUrl, name: profile.full_name }) : null,
-    push: PUSH_SUSPENSION,
+    email:
+      to && siteUrl
+        ? rejectionEmail({
+            to,
+            siteUrl,
+            name: profile.full_name,
+            shopName: merchant.shop_name,
+            reason: merchant.rejection_reason,
+          })
+        : null,
+    push: PUSH_PAR_DECISION.merchant_rejected(),
   };
 }
 
@@ -214,6 +267,57 @@ async function marquerEchouee(
     .update({ attempts: attempts + 1, last_error: raison })
     .eq("id", id);
   if (error) console.error(`[notifications] échec non consigné (${id}) : ${error.message}`);
+}
+
+function approvalEmail(input: { to: string; siteUrl: string; name: string; shopName: string }) {
+  const link = `${input.siteUrl}/vendeur`;
+  const subject = `${input.shopName} est en ligne sur Filloo`;
+
+  const text = [
+    `Bonjour ${input.name},`,
+    `Votre boutique « ${input.shopName} » a été validée : elle est visible par les clients sur Filloo.`,
+    `Vos produits en brouillon peuvent maintenant être publiés — c'est ce qui vous rendra visible dans le fil.`,
+    `Votre boutique : ${link}`,
+  ].join("\n\n");
+
+  const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.name)},</p>
+      <p style="margin:0 0 16px;">Votre boutique <strong>${escapeHtml(input.shopName)}</strong> a été validée : elle est visible par les clients sur Filloo.</p>
+      <p style="margin:0 0 24px;">Vos produits en brouillon peuvent maintenant être publiés — c'est ce qui vous rendra visible dans le fil.</p>
+      ${emailButton(link, "Ouvrir ma boutique")}
+      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Filloo.")}`);
+
+  return { to: input.to, subject, text, html };
+}
+
+function rejectionEmail(input: {
+  to: string;
+  siteUrl: string;
+  name: string;
+  shopName: string;
+  reason: string | null;
+}) {
+  const link = `${input.siteUrl}/vendeur/refusee`;
+  const subject = `Votre boutique ${input.shopName} n'a pas été validée`;
+
+  const motif =
+    input.reason?.trim() ||
+    "Aucun motif n'a été enregistré. Répondez à cet email pour en connaître la raison.";
+
+  const text = [
+    `Bonjour ${input.name},`,
+    `Votre boutique « ${input.shopName} » n'a pas été validée pour le moment.`,
+    `Motif : ${motif}`,
+    `Vos produits en brouillon sont conservés. Corrigez ce qui est signalé, puis renvoyez votre boutique : ${link}`,
+  ].join("\n\n");
+
+  const html = emailShell(`      <p style="margin:0 0 16px;">Bonjour ${escapeHtml(input.name)},</p>
+      <p style="margin:0 0 16px;">Votre boutique <strong>${escapeHtml(input.shopName)}</strong> n'a pas été validée pour le moment.</p>
+      <blockquote style="margin:0 0 16px;padding:12px 16px;background:#faf6f0;border-left:3px solid #c1613a;white-space:pre-wrap;">${escapeHtml(motif)}</blockquote>
+      <p style="margin:0 0 24px;">Vos produits en brouillon sont conservés. Corrigez ce qui est signalé, puis renvoyez votre boutique.</p>
+      ${emailButton(link, "Renvoyer ma boutique")}
+      ${emailFooter("Vous recevez cet email parce que vous avez demandé l'ouverture d'une boutique sur Filloo.")}`);
+
+  return { to: input.to, subject, text, html };
 }
 
 function suspensionEmail(input: { to: string; siteUrl: string; name: string }) {

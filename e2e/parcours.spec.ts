@@ -7,6 +7,7 @@ import {
   signalementsEnAttente,
   suspendre,
   unique,
+  validerBoutique,
 } from "./aide";
 
 /* Un seul récit, dans l'ordre : chaque test part de ce que le précédent a
@@ -33,7 +34,7 @@ test.afterEach(async () => {
   while (ouverts.length) await ouverts.pop()!.close();
 });
 
-test("un commerçant s’inscrit et sa boutique est en ligne aussitôt", async ({ page }) => {
+test("un commerçant s’inscrit et envoie sa boutique en vérification", async ({ page }) => {
   await inscrire(page, { role: "Vendre", ...V });
   await expect(page).toHaveURL(/\/inscription\/boutique/);
   await page.getByLabel("Nom de la boutique").fill(BOUTIQUE);
@@ -41,12 +42,21 @@ test("un commerçant s’inscrit et sa boutique est en ligne aussitôt", async (
   await page.getByLabel("Où vous trouver").fill("Marché de Madina, allée 3");
   await page.getByLabel("Numéro WhatsApp").fill(V.tel);
   await page.getByLabel("Que vendez-vous ?").fill("Alimentation générale");
-  await page.getByRole("button", { name: "Ouvrir ma boutique" }).click();
-  await expect(page).toHaveURL(/\/vendeur$/);
-  await expect(page.locator("body")).toContainText(`Bonjour, ${BOUTIQUE}`);
+  await page.getByRole("button", { name: "Envoyer pour vérification" }).click();
+  await expect(page).toHaveURL(/\/vendeur/);
+  await expect(page.locator("body")).toContainText(/vérification|attente/i);
 });
 
-test("la nouvelle boutique publie un produit avec photo", async ({ browser }) => {
+test("avant validation, un produit ne peut être qu’un brouillon", async ({ browser }) => {
+  const page = await personne(browser);
+  await connecter(page, V.email, V.mdp);
+  await page.goto("/vendeur/produits/nouveau");
+  await expect(page.getByText("Publication disponible après validation de votre boutique.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Publier le produit" })).toHaveCount(0);
+});
+
+test("la boutique validée publie un produit avec photo", async ({ browser }) => {
+  await validerBoutique(BOUTIQUE);
   const page = await personne(browser);
   await connecter(page, V.email, V.mdp);
   await page.goto("/vendeur/produits/nouveau");

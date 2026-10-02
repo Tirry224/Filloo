@@ -3,7 +3,7 @@
 Les parcours de Filloo, joués par Playwright dans Chromium au format
 téléphone, contre une pile Supabase **locale** — jamais la production :
 `aide.ts` refuse toute adresse qui n'est pas `127.0.0.1` ou `localhost`,
-parce que ces tests créent des comptes, ouvrent des boutiques et en
+parce que ces tests créent des comptes, valident des boutiques et en
 suppriment.
 
 ## Ce qu'ils couvrent
@@ -12,7 +12,7 @@ suppriment.
   connexion avec le bon `next`, refus d'un mauvais mot de passe et d'une
   confirmation différente, 404.
 - **`parcours.spec.ts`** — un seul récit, dans l'ordre : un commerçant
-  s'inscrit, sa boutique est en ligne aussitôt, il publie avec
+  s'inscrit, ne peut que garder un brouillon, est validé, publie avec
   photo ; un visiteur trouve le produit ; un client écrit, le commerçant
   répond ; puis les refus : espace commerçant fermé au client,
   signalement unique, client suspendu, boutique suspendue hors du

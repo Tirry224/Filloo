@@ -102,8 +102,9 @@ export async function getMyProfile(
  * qu'une garde recopiée par écran finit par manquer quelque part. Le RLS
  * protège les données, pas la navigation.
  *
- * Elle ne regarde pas l'existence de la boutique, état normal que
- * `/vendeur/page.tsx` traite.
+ * Volontairement, elle ne regarde ni `merchants.status` — `/vendeur/attente`
+ * et `/vendeur/refusee` vivent dans cet espace — ni l'existence de la
+ * boutique, état normal que `/vendeur/page.tsx` traite.
  */
 export async function requireMerchantSpace(
   supabase: SupabaseClient<Database>,

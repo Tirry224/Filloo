@@ -18,9 +18,21 @@ export default async function MerchantProductsPage({
   const { erreur, info } = await searchParams;
   const supabase = await createClient();
 
-  // Rôle et suspension sont traités par `(vendeur)/layout.tsx`.
+  // Rôle et suspension sont traités par `(vendeur)/layout.tsx` ; ne reste
+  // ici que le profil commerçant qui n'a pas encore de boutique.
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
+
+  /* Une boutique non validée n'a pas sa place dans les onglets de gestion :
+     `/vendeur/attente` et `/vendeur/refusee` sont ses écrans. Le message
+     d'erreur voyage avec la redirection, sinon il meurt ici. */
+  const suite = erreur
+    ? `?erreur=${encodeURIComponent(erreur)}`
+    : info
+      ? `?info=${encodeURIComponent(info)}`
+      : "";
+  if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
+  if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
 
   const catalogue = await getMerchantProducts(supabase, merchant);
 

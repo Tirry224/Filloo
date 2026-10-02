@@ -1,4 +1,5 @@
 export type ProductStatus = "draft" | "active" | "sold" | "hidden";
+export type MerchantStatus = "pending" | "approved" | "rejected";
 export type UserRole = "client" | "merchant";
 
 export type Merchant = {
@@ -10,6 +11,8 @@ export type Merchant = {
   whatsappPhone: string | null;
   /** Null : pas de photo, l'icône par défaut s'affiche. */
   photoUrl: string | null;
+  status: MerchantStatus;
+  rejectionReason: string | null;
 };
 
 export type Product = {

@@ -23,7 +23,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           </div>
 
           <p className="text-base leading-relaxed text-ink-soft">
-            Votre boutique sera en ligne dès que vous aurez validé ces informations.
+            Ces informations seront vérifiées avant la mise en ligne de votre boutique.
           </p>
 
           <Field label="Nom de la boutique" htmlFor="shopName">
@@ -68,7 +68,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
       </ScreenBody>
 
       <ScreenFooter>
-        <Button type="submit" disabled={pending}>{pending ? "Création…" : "Ouvrir ma boutique"}</Button>
+        <Button type="submit" disabled={pending}>{pending ? "Envoi…" : "Envoyer pour vérification"}</Button>
       </ScreenFooter>
     </form>
   );

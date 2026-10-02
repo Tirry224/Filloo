@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
@@ -58,6 +58,12 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold">{merchant.shopName}</h2>
               <p className="text-sm text-ink-soft">{merchant.description}</p>
+              {merchant.status === "approved" ? (
+                <p className="flex items-center gap-1 text-xs font-semibold text-success">
+                  <Check size={14} strokeWidth={2.6} aria-hidden />
+                  Boutique vérifiée
+                </p>
+              ) : null}
             </div>
           </div>
 
