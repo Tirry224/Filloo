@@ -110,10 +110,6 @@ cassés.
 - **Les trois `merchant_approved` en file ont `attempts = 0`** (constaté
   le 2026-09-23 par le connecteur Supabase) : le cron n'a jamais lu la
   file, il est refusé avant. `CRON_SECRET` est le suspect.
-- **La confirmation d'email est DÉSACTIVÉE depuis le 2026-09-23.** Elle
-  avait été activée avant que le SMTP soit prouvé, et toute inscription
-  échouait sur « Error sending confirmation email » sans créer de compte.
-  Le porteur du projet l'a décochée ; la réactiver attend toujours le SMTP.
 - **Aucun push n'a jamais été distribué.** Le 2026-09-23,
   `push_subscriptions.last_used_at` était vide sur les quatre abonnements,
   alors que des messages étaient arrivés après leur création. Premier
@@ -137,11 +133,13 @@ cassés.
   `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
   quand elle manque, donc son absence ne devrait plus éteindre les emails
   — mais c'est le filet, pas l'adresse voulue. *À constater.*
-- **Activer la confirmation d'email côté Supabase.** Décidée (SPEC,
-  décision 1), gérée de bout en bout par le code (`needsConfirmation`,
-  message d'attente dans `SignupForm`, `emailRedirectTo`). C'est une case
-  à cocher — **et elle ne se coche qu'après le SMTP prouvé**, sinon plus
-  personne ne peut s'inscrire.
+- **Activer la confirmation d'email côté Supabase : trois réglages,
+  listés dans le README (« Confirmation de l'email à l'inscription »).**
+  Le code est prêt depuis le 2026-10-02 : le lien ramène vers l'intention
+  de départ ou l'espace du compte, un lien expiré mène à `/connexion`, et
+  « Renvoyer l'email » est proposé après l'inscription et à la connexion.
+  Le SMTP Gmail fonctionne selon le porteur du projet ; les 3 comptes
+  existants sont déjà confirmés, l'activation ne bloque personne.
 
 ### À faire sur un vrai téléphone, par toi
 
@@ -698,10 +696,18 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-232 commits, du plus récent au plus ancien.
+237 commits, du plus récent au plus ancien.
+
+### 2026-10-02
+
+- `635452e` Revert "Une boutique est en ligne dès sa création"
+- `29bcd1a` Revert "Les conditions disent qu'une boutique est en ligne dès sa création"
+- `3d744c6` Les conditions disent qu'une boutique est en ligne dès sa création
+- `1c1d539` Une boutique est en ligne dès sa création
 
 ### 2026-09-28
 
+- `cc97c9c` Le test de notification dit pourquoi il échoue
 - `106bc0f` Le prix se groupe par milliers pendant la saisie
 - `f83b85f` L'application rouvre sur l'espace quitté en dernier
 - `b763e03` Débloquer une personne, et un blocage ferme le fil dans les deux sens

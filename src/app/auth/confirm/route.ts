@@ -2,6 +2,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/next-param";
+import { landingForSession } from "@/lib/data/session";
 
 /** Les seuls types de lien email que `/auth/confirm` accepte par
  * `token_hash`. */
@@ -24,7 +25,9 @@ export async function GET(request: Request) {
 
      Même liste blanche que les écrans d'authentification
      (`safeNextPath`) : un chemin interne, ou le défaut. */
-  const next = safeNextPath(searchParams.get("next")) ?? "/reinitialiser-mot-de-passe";
+  const next = safeNextPath(searchParams.get("next"));
+  const inscription =
+    searchParams.get("origine") === "inscription" || type === "signup" || type === "email";
 
   /* LE JETON DANS LE LIEN (`token_hash`), voie normale depuis le
      2026-09-25. Le lien porte à lui seul la preuve : il marche quel que
@@ -39,17 +42,23 @@ export async function GET(request: Request) {
      précédent. Elle reste pour les liens déjà envoyés et tant que le
      modèle d'email Supabase n'est pas passé au `token_hash`
      (docs/MEMOIRE.md). */
+  const supabase = await createClient();
+  let erreur: string | null = "lien sans jeton";
   if (tokenHash && type && TYPES_ACCEPTES.has(type)) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
-    console.error("[auth/confirm] verifyOtp a échoué :", error.message);
+    erreur = (await supabase.auth.verifyOtp({ type, token_hash: tokenHash })).error?.message ?? null;
   } else if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
-    console.error("[auth/confirm] exchangeCodeForSession a échoué :", error.message);
+    erreur = (await supabase.auth.exchangeCodeForSession(code)).error?.message ?? null;
   }
 
-  return NextResponse.redirect(`${origin}/mot-de-passe-oublie?erreur=lien_invalide`);
+  if (!erreur) {
+    const destination = next ?? (inscription ? await landingForSession(supabase) : "/reinitialiser-mot-de-passe");
+    return NextResponse.redirect(`${origin}${destination}`);
+  }
+
+  console.error("[auth/confirm]", erreur);
+  return NextResponse.redirect(
+    inscription
+      ? `${origin}/connexion?erreur=lien_confirmation`
+      : `${origin}/mot-de-passe-oublie?erreur=lien_invalide`,
+  );
 }

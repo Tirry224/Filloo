@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { signInAction } from "@/lib/actions/auth";
@@ -10,31 +11,34 @@ export function LoginForm({ next }: { next?: string }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(signInAction);
 
   return (
-    <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-      {next ? <input type="hidden" name="next" value={next} /> : null}
-      <Field label="Email" htmlFor="email">
-        <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
-      </Field>
+    <div className="flex flex-col gap-4">
+      <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+        {next ? <input type="hidden" name="next" value={next} /> : null}
+        <Field label="Email" htmlFor="email">
+          <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
+        </Field>
 
-      <Field label="Mot de passe" htmlFor="password">
-        <Input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" />
-      </Field>
+        <Field label="Mot de passe" htmlFor="password">
+          <Input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" />
+        </Field>
 
-      <Link
-        href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
-        className="-mt-1 self-end text-sm font-semibold text-accent"
-      >
-        Mot de passe oublié ?
-      </Link>
+        <Link
+          href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
+          className="-mt-1 self-end text-sm font-semibold text-accent"
+        >
+          Mot de passe oublié ?
+        </Link>
 
-      {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
+        {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Connexion…" : "Se connecter"}
-      </Button>
-      <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
-        Créer un compte
-      </Button>
-    </form>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Connexion…" : "Se connecter"}
+        </Button>
+        <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
+          Créer un compte
+        </Button>
+      </form>
+      {state?.email ? <ResendConfirmationForm email={state.email} /> : null}
+    </div>
   );
 }

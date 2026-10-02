@@ -293,6 +293,19 @@ passe un **mot de passe d'application** Google (validation en deux
 étapes obligatoire ; le mot de passe du compte est refusé). Limite
 d'environ 500 envois par jour.
 
+### Confirmation de l'email à l'inscription
+
+Trois réglages du tableau de bord, tous nécessaires :
+
+- **Authentication → Sign In / Providers → Email → Confirm email : activé.**
+- **Authentication → Emails → Confirm signup**, le lien du modèle :
+  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email`.
+  `RedirectTo` porte toujours `?origine=inscription` (`lienDeConfirmation`,
+  `src/lib/actions/auth.ts`), d'où le `&`.
+- **Authentication → URL Configuration → Redirect URLs** contient
+  `https://filloo.vercel.app/**`. Sinon Supabase remplace `RedirectTo` par
+  le Site URL, sans `?`, et le lien est cassé.
+
 ### Sur Vercel — à faire avant le premier déploiement
 
 `.env.local` n'est pas versionné : Vercel ne le reçoit donc **jamais**. Les

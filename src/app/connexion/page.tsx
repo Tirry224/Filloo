@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { Wordmark } from "@/components/ui/TopBar";
 import { safeNextPath } from "@/lib/next-param";
@@ -7,9 +8,10 @@ import { safeNextPath } from "@/lib/next-param";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; erreur?: string }>;
 }) {
-  const next = safeNextPath((await searchParams).next) ?? undefined;
+  const params = await searchParams;
+  const next = safeNextPath(params.next) ?? undefined;
   return (
     <Screen>
       <ScreenBody className="justify-center">
@@ -18,6 +20,17 @@ export default async function LoginPage({
             <Wordmark size="lg" />
             <p className="text-base text-ink-soft">Trouvez des produits et des commerçants près de chez vous.</p>
           </div>
+
+          {params.erreur === "lien_confirmation" ? (
+            <div className="flex flex-col gap-2.5">
+              <p className="rounded-lg bg-warn-soft px-3.5 py-3 text-sm leading-normal text-warn-ink">
+                Ce lien de confirmation n&apos;est plus valable : il a expiré ou a déjà servi.
+                Si votre adresse est déjà confirmée, connectez-vous. Sinon, demandez un
+                nouveau lien.
+              </p>
+              <ResendConfirmationForm />
+            </div>
+          ) : null}
 
           <LoginForm next={next} />
 

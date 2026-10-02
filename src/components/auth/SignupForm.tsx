@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeftRight, Package, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { PhoneInput } from "@/components/ui/PhoneInput";
@@ -72,10 +73,13 @@ export function SignupForm({
 
   if (state?.needsConfirmation) {
     return (
-      <p className="rounded-lg bg-success-soft px-3.5 py-3 text-sm leading-normal text-success-ink">
-        Compte créé. Vérifiez votre email pour confirmer votre adresse avant de vous
-        connecter — pensez aux courriers indésirables.
-      </p>
+      <div className="flex flex-col gap-4">
+        <p className="rounded-lg bg-success-soft px-3.5 py-3 text-sm leading-normal text-success-ink">
+          Compte créé. Ouvrez le lien envoyé à <b>{state.email}</b> pour confirmer votre
+          adresse. Pensez aux courriers indésirables.
+        </p>
+        <ResendConfirmationForm email={state.email} />
+      </div>
     );
   }
 

@@ -12,11 +12,30 @@ import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, texteNettoye } from "@/lib/saisie";
 
-export type ActionState = { error?: string; needsConfirmation?: boolean; sent?: boolean };
+export type ActionState = {
+  error?: string;
+  needsConfirmation?: boolean;
+  sent?: boolean;
+  /** L'adresse à qui renvoyer le lien de confirmation. */
+  email?: string;
+};
+
+/** `origine=inscription` dit à `/auth/confirm` qu'il traite un lien
+ * d'inscription, même par l'ancienne voie (`code`) qui ne porte pas de
+ * `type`. Le paramètre doit exister : le modèle d'email Supabase y colle
+ * `&token_hash=…`. */
+function lienDeConfirmation(next: string | null): string {
+  return `${siteUrlOuLocalhost()}/auth/confirm?origine=inscription${
+    next ? `&next=${encodeURIComponent(next)}` : ""
+  }`;
+}
 
 function translateAuthError(message: string): string {
   if (message.includes("already registered") || message.includes("already exists")) {
     return "Un compte existe déjà avec cet email. Connectez-vous : vous pourrez ajouter votre second compte depuis « Mon compte », sans changer d'adresse.";
+  }
+  if (message.includes("Email not confirmed")) {
+    return "Votre adresse email n'est pas encore confirmée. Ouvrez le lien reçu par email (pensez aux courriers indésirables).";
   }
   if (message.includes("Invalid login credentials")) {
     return "Email ou mot de passe incorrect.";
@@ -78,21 +97,9 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
 
   const supabase = await createClient();
 
-  /* L'INTENTION DOIT SURVIVRE AU LIEN DE CONFIRMATION. Sans
-     `emailRedirectTo`, Supabase ramène à la racine du site : quelqu'un qui
-     s'inscrit depuis « Contacter le vendeur » perd le produit qu'il
-     voulait justement contacter, et se retrouve sur l'accueil sans
-     comprendre pourquoi. On repasse donc par `/auth/confirm`, qui échange
-     le jeton puis suit `next` — le même chemin que la réinitialisation de
-     mot de passe.
-
-     Latent tant que la confirmation d'email est désactivée côté Supabase,
-     et bloquant le jour où on l'active : c'est pour ce jour-là que ces
-     trois lignes existent. */
-  const apresConfirmation = safeNextPath(formData.get("next"));
-  const retour = `${siteUrlOuLocalhost()}/auth/confirm${
-    apresConfirmation ? `?next=${encodeURIComponent(apresConfirmation)}` : ""
-  }`;
+  /* Sans `next`, `/auth/confirm` choisit l'espace du compte : un
+     commerçant y trouve `/inscription/boutique`. */
+  const retour = lienDeConfirmation(safeNextPath(formData.get("next")));
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -107,9 +114,8 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   compter("inscription", { role });
 
   // `data.session` est null quand la confirmation par email est activée
-  // (réglage Supabase) : le compte existe, mais aucune session tant que le
-  // lien n'est pas cliqué. On le dit plutôt que de rediriger dans le vide.
-  if (!data.session) return { needsConfirmation: true };
+  // (réglage Supabase) : aucune session tant que le lien n'est pas cliqué.
+  if (!data.session) return { needsConfirmation: true, email };
 
   if (role === "merchant") redirect("/inscription/boutique");
   // `next` porte l'intention qui a mené ici, presque toujours « contacter
@@ -186,13 +192,37 @@ export async function signInAction(_prevState: ActionState | null, formData: For
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: translateAuthError(error.message) };
+  if (error) {
+    return {
+      error: translateAuthError(error.message),
+      email: error.message.includes("Email not confirmed") ? email : undefined,
+    };
+  }
 
   /* Où atterrir : jamais `/` en dur, `landingForSession` tranche
      (décision 8 de SPEC). `next` n'est suivi que s'il reste dans l'espace
      autorisé — un paramètre d'URL ne défait pas la décision 8, il choisit
      seulement une destination à l'intérieur. */
   redirect(await destinationApresAuthentification(supabase, formData.get("next")));
+}
+
+/** Supabase répond pareil que l'adresse existe ou non, et ce message aussi :
+ * il ne doit pas révéler qui a un compte. */
+export async function resendConfirmationAction(
+  _prevState: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Adresse email manquante." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: lienDeConfirmation(null) },
+  });
+  if (error) return { error: translateAuthError(error.message), email };
+  return { sent: true, email };
 }
 
 export async function signOutAction() {
