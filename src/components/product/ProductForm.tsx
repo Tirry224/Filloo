@@ -18,19 +18,11 @@ type ProductFormProps = {
 } & (
   | {
       mode: "create";
-      /** UNE question, pas le statut complet : ce formulaire n'a pas à
-       * connaître les valeurs de `merchant_status`.
-       *
-       * Venant du navigateur, ce booléen ne PROTÈGE rien, il décide de ce
-       * qui s'affiche : la publication reste refusée en base par
-       * `products_check_publishable` (0002). */
-      canPublish: boolean;
     }
   | {
       mode: "edit";
       productId: string;
       isDraft: boolean;
-      canPublish: boolean;
       initial: {
         title: string;
         categoryId: number;
@@ -45,7 +37,6 @@ type ProductFormProps = {
 export function ProductForm(props: ProductFormProps) {
   const { merchantId, categories } = props;
   const isEdit = props.mode === "edit";
-  const canPublish = props.canPublish;
   const isDraft = props.mode === "create" || props.isDraft;
   const initial = isEdit ? props.initial : undefined;
 
@@ -122,22 +113,13 @@ export function ProductForm(props: ProductFormProps) {
           <Button type="submit" disabled={pending}>
             {pending ? "Enregistrement…" : "Enregistrer"}
           </Button>
-        ) : canPublish ? (
+        ) : (
           <>
             <Button type="submit" name="intent" value="publish" disabled={pending}>
               {pending ? "Publication…" : "Publier le produit"}
             </Button>
             <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
               {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}
-            </Button>
-          </>
-        ) : (
-          <>
-            <p className="text-center text-xs text-ink-soft">
-              Publication disponible après validation de votre boutique.
-            </p>
-            <Button type="submit" name="intent" value="draft" disabled={pending}>
-              {pending ? "Enregistrement…" : "Enregistrer le brouillon"}
             </Button>
           </>
         )}

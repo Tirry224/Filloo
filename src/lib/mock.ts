@@ -31,22 +31,7 @@ export const merchantAissatou: Merchant = {
   ...aissatou,
   description: "Alimentation générale : riz, huile, sucre, lait.",
   whatsappPhone: "622334455",
-  status: "approved",
   photoUrl: null,
-  rejectionReason: null,
-};
-
-export const merchantRejected: Merchant = {
-  id: "m-rejected-demo",
-  shopName: "Chez Aïssatou",
-  city: "Conakry",
-  addressHint: "Marché de Madina, allée 3",
-  description: "Alimentation générale : riz, huile, sucre, lait.",
-  whatsappPhone: "622334455",
-  photoUrl: null,
-  status: "rejected",
-  rejectionReason:
-    "Le numéro de téléphone indiqué ne répond pas. Nous devons pouvoir vous joindre avant d'ouvrir votre boutique aux clients.",
 };
 
 function product(p: Omit<Product, "status" | "isFeatured" | "contactCount" | "imageUrls"> &

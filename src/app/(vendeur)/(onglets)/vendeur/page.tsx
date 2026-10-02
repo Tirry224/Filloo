@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Check, MessageCircle, Package, Plus, Users } from "lucide-react";
+import { MessageCircle, Package, Plus, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -20,17 +20,9 @@ export default async function MerchantHomePage({
 }) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
-  /* La suspension et le rôle sont traités par `(vendeur)/layout.tsx`. Ne
-     reste ici que ce qu'il laisse volontairement passer : un profil sans
-     boutique, et une boutique dont le statut décide de l'écran. */
+  /* La suspension et le rôle sont traités par `(vendeur)/layout.tsx`. */
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
-
-  // Le message d'erreur SUIT la redirection : sans ça, une boutique non
-  // validée part vers son écran de statut en laissant le paramètre ici.
-  const suite = erreur ? `?erreur=${encodeURIComponent(erreur)}` : "";
-  if (merchant.status === "pending") redirect(`/vendeur/attente${suite}`);
-  if (merchant.status === "rejected") redirect(`/vendeur/refusee${suite}`);
 
   const [catalogue, unreadCount, threads] = await Promise.all([
     getMerchantProducts(supabase, merchant),
@@ -44,15 +36,7 @@ export default async function MerchantHomePage({
 
   return (
     <TabScreen largeur="rangees">
-      <TopBar
-        title={<Wordmark />}
-        right={
-          <span className="flex items-center gap-1 text-2xs font-semibold text-success">
-            <Check size={13} strokeWidth={2.8} aria-hidden />
-            Boutique validée
-          </span>
-        }
-      />
+      <TopBar title={<Wordmark />} />
 
       <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}
