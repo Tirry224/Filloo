@@ -722,10 +722,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-259 commits, du plus récent au plus ancien.
+260 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `db74a74` App mobile : mot de passe oublié, mes informations, changer de mot de passe
 - `fca5c39` App mobile : bloquer, débloquer et signaler
 - `e27ae6e` App mobile : inscription commerçant et boutique
 - `1f590cc` App mobile : messagerie côté commerçant
