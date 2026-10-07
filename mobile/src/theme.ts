@@ -5,12 +5,14 @@
 export const couleurs = {
   paper: "#fcf8f3",
   surface: "#ffffff",
+  placeholder: "#efe8e0",
   ink: "#271f18",
   inkSoft: "#776e68",
   line: "#e3ded6",
   accent: "#b64c1b",
   accentSoft: "#ffebe2",
   onAccent: "#ffffff",
+  success: "#05893e",
   danger: "#b02b27",
   dangerSoft: "#ffe7e4",
 } as const;

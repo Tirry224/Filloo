@@ -21,4 +21,9 @@ un vrai compte.
 ## Où en est l'app
 
 - Fait : connexion, session gardée entre deux ouvertures, déconnexion.
-- `src/app/accueil.tsx` est provisoire : il prouve seulement que la base répond.
+- Fait : catalogue sans compte (ville, catégories, à la une, récents ou
+  populaires) et fiche produit (photos, prix, boutique, WhatsApp).
+- Provisoire : l'onglet « Compte » montre seulement les comptes de la connexion.
+- Manque : recherche, page boutique, messagerie, signalement, inscription,
+  espace commerçant, notifications, et les mesures d'usage (`analytics_events`
+  s'écrit côté serveur : l'app ne compte encore rien).

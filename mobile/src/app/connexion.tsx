@@ -26,7 +26,10 @@ export default function Connexion() {
       setErreur(messageErreurAuth(error.message));
       return;
     }
-    router.replace("/accueil");
+    /* Retour là d'où la personne venait : la connexion s'ouvre par-dessus
+       un écran, elle ne le remplace pas. */
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
   }
 
   return (

@@ -707,10 +707,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-251 commits, du plus récent au plus ancien.
+252 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `a6ca44b` App mobile : squelette Expo dans mobile/, connexion à Supabase
 - `157c1a7` Suivi : retrait du diagnostic temporaire
 - `660f27d` Suivi : diagnostic temporaire du compte propriétaire
 - `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion
