@@ -7,9 +7,10 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { cn } from "@/lib/cn";
 import { getSessionUser } from "@/lib/data/session";
+import { signOutAction } from "@/lib/actions/auth";
+import { estProprietaire } from "@/lib/proprietaire";
 import {
   PERIODES,
-  estProprietaire,
   lireChiffres,
   lireConnexions,
   lirePeriode,
@@ -55,7 +56,16 @@ export default async function SuiviPage({ searchParams }: { searchParams: Promis
 
   return (
     <Screen largeur="rangees">
-      <TopBar title="Suivi" backHref="/" />
+      <TopBar
+        title="Suivi"
+        right={
+          <form action={signOutAction}>
+            <button type="submit" className="text-sm font-medium text-ink-soft underline underline-offset-2">
+              Se déconnecter
+            </button>
+          </form>
+        }
+      />
       <ScreenBody>
         <Section>
           <nav aria-label="Période" className="flex gap-2">

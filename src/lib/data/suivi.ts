@@ -1,4 +1,3 @@
-import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -7,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * TOUT passe par `service_role` : les mesures (0024) refusent `anon` et
  * `authenticated`, et compter les comptes demande l'API d'administration
  * de l'authentification. C'est exactement pourquoi la garde
- * `estProprietaire` doit avoir répondu OUI avant le premier appel ici.
+ * `estProprietaire` (`src/lib/proprietaire.ts`) doit avoir répondu OUI avant le premier appel ici.
  */
 
 export const PERIODES = {
@@ -20,19 +19,6 @@ export type Periode = keyof typeof PERIODES;
 
 export function lirePeriode(valeur: unknown): Periode {
   return typeof valeur === "string" && valeur in PERIODES ? (valeur as Periode) : "7j";
-}
-
-/**
- * Une adresse, pas un rôle en base : un seul lecteur, et aucune table à
- * protéger de plus. L'adresse doit être CONFIRMÉE — sans quoi n'importe
- * qui pourrait s'inscrire avec elle avant le propriétaire. Sans
- * `OWNER_EMAIL`, personne n'entre : une variable oubliée ferme la porte
- * au lieu de l'ouvrir.
- */
-export function estProprietaire(user: User | null): boolean {
-  const attendu = process.env.OWNER_EMAIL?.trim().toLowerCase();
-  if (!attendu || !user?.email || !user.email_confirmed_at) return false;
-  return user.email.trim().toLowerCase() === attendu;
 }
 
 type Roles = { total: number; anon: number; client: number; merchant: number };
