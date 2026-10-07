@@ -16,17 +16,18 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Etiquette } from "../../composants/Etiquette";
+import { FeuilleSignalement } from "../../composants/FeuilleSignalement";
 import { lireProduit, type Produit } from "../../lib/catalogue";
 import { formatGnf, lienWhatsApp } from "../../lib/format";
 import { ouvrirFil } from "../../lib/messages";
+import { MOTIFS_PRODUIT, signalerProduit } from "../../lib/moderation";
 import { useComptes } from "../../lib/profil";
 import { couleurs } from "../../theme";
 
 /**
- * La fiche produit. Ce qui manque encore par rapport au site, faute des
- * parcours correspondants : « Signaler », et les compteurs
- * `contact_ouvert` et `whatsapp_ouvert` (écrits côté serveur, que l'app
- * n'a pas encore).
+ * La fiche produit. Seule différence avec le site : les compteurs
+ * `contact_ouvert` et `whatsapp_ouvert` ne sont pas écrits, ils exigent le
+ * serveur, que l'app n'a pas.
  */
 export default function FicheProduit() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +38,7 @@ export default function FicheProduit() {
   const marges = useSafeAreaInsets();
   const comptes = useComptes();
   const [ouverture, setOuverture] = useState(false);
+  const [signalement, setSignalement] = useState(false);
 
   useEffect(() => {
     lireProduit(id)
@@ -75,6 +77,18 @@ export default function FicheProduit() {
 
   const vendu = produit.statut === "sold";
   const whatsapp = lienWhatsApp(produit.boutique.whatsapp);
+
+  /** Signaler demande un compte : la plainte doit venir de quelqu'un (« reports: je signale »). */
+  function ouvrirSignalement() {
+    if (comptes.session) {
+      setSignalement(true);
+      return;
+    }
+    Alert.alert("Connectez-vous pour signaler", "Un signalement est lu par notre équipe : il doit venir d'un compte.", [
+      { text: "Annuler", style: "cancel" },
+      { text: "Se connecter", onPress: () => router.push("/connexion") },
+    ]);
+  }
 
   /** Même parcours que `/produit/[id]/contacter` du site. */
   async function contacter() {
@@ -191,8 +205,25 @@ export default function FicheProduit() {
             </View>
             <Ionicons name="chevron-forward" size={20} color={couleurs.inkSoft} />
           </Pressable>
+
+          <Pressable style={styles.signaler} onPress={ouvrirSignalement} hitSlop={6}>
+            <Ionicons name="flag-outline" size={16} color={couleurs.inkSoft} />
+            <Text style={styles.discret}>Signaler ce produit</Text>
+          </Pressable>
         </View>
       </ScrollView>
+
+      <FeuilleSignalement
+        visible={signalement}
+        titre="Signaler ce produit"
+        motifs={MOTIFS_PRODUIT}
+        onEnvoyer={(motif, precisions) =>
+          comptes.session
+            ? signalerProduit(comptes.session.user.id, produit.id, motif, precisions)
+            : Promise.resolve({ ok: false, message: "Connectez-vous pour signaler un produit." })
+        }
+        onFermer={() => setSignalement(false)}
+      />
 
       <View style={[styles.pied, { paddingBottom: marges.bottom + 12 }]}>
         {vendu ? (
@@ -289,6 +320,7 @@ const styles = StyleSheet.create({
   boutiqueNom: { fontSize: 16, fontWeight: "600", color: couleurs.ink },
   discret: { fontSize: 12, color: couleurs.inkSoft },
   boutons: { flexDirection: "row", gap: 10 },
+  signaler: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 4 },
   carre: { width: 52, paddingVertical: 0 },
   pied: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: couleurs.line, backgroundColor: couleurs.surface },
   bouton: {

@@ -15,7 +15,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { EtatVide } from "../composants/EtatVide";
+import { EtatVide } from "./EtatVide";
+import { FeuilleSignalement } from "./FeuilleSignalement";
 import { lireProduit, lireProduitsBoutique, type Produit } from "../lib/catalogue";
 import { formatGnf } from "../lib/format";
 import {
@@ -27,6 +28,7 @@ import {
   type ContexteFil,
   type Message,
 } from "../lib/messages";
+import { MOTIFS_FIL, bloquer, debloquer, signalerFil } from "../lib/moderation";
 import { supabase } from "../lib/supabase";
 import { couleurs } from "../theme";
 
@@ -35,7 +37,7 @@ import { couleurs } from "../theme";
  * Mêmes règles des deux côtés : le premier message cite obligatoirement
  * un produit (trigger `check_message_product`), un fil bloqué ou gelé
  * reste lisible mais n'a plus de champ de saisie. Bloquer et signaler
- * viendront avec leur parcours.
+ * passent par la feuille d'actions (le drapeau en haut à droite).
  */
 export function EcranFil({
   id,
@@ -59,6 +61,9 @@ export function EcranFil({
   const [erreur, setErreur] = useState<string | null>(null);
   const [panne, setPanne] = useState(false);
   const [choixProduit, setChoixProduit] = useState(false);
+  const [actions, setActions] = useState(false);
+  const [signalement, setSignalement] = useState(false);
+  const [avis, setAvis] = useState<{ texte: string; ok: boolean } | null>(null);
   const liste = useRef<FlatList<Message>>(null);
 
   const recharger = useCallback(async () => {
@@ -135,6 +140,18 @@ export function EcranFil({
     setEnvoi(false);
   }
 
+  async function changerBlocage(bloque: boolean) {
+    if (!moi || !contexte) return;
+    setActions(false);
+    const refus = bloque ? await bloquer(id, moi.id) : await debloquer(id);
+    if (refus) {
+      setAvis({ texte: refus, ok: false });
+      return;
+    }
+    setContexte({ ...contexte, bloquePar: bloque ? moi.id : null });
+    setAvis(bloque ? null : { texte: "Personne débloquée. Vous pouvez de nouveau vous écrire.", ok: true });
+  }
+
   const ecranListe = espace === "client" ? "/messages" : "/vendeur/messages";
   const retour = () => (router.canGoBack() ? router.back() : router.replace(ecranListe));
 
@@ -186,7 +203,15 @@ export function EcranFil({
             {contexte.interlocuteur}
           </Text>
         </Pressable>
+        <Pressable onPress={() => setActions(true)} accessibilityLabel="Actions" hitSlop={8}>
+          <Ionicons name="flag-outline" size={21} color={couleurs.inkSoft} />
+        </Pressable>
       </View>
+      {avis ? (
+        <Pressable onPress={() => setAvis(null)} style={[styles.avis, { backgroundColor: avis.ok ? "#e3f5e9" : couleurs.dangerSoft }]}>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: avis.ok ? couleurs.success : couleurs.danger }}>{avis.texte}</Text>
+        </Pressable>
+      ) : null}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <FlatList
@@ -211,8 +236,10 @@ export function EcranFil({
             </Text>
           ) : bloqueParMoi ? (
             <Text style={styles.info}>
-              Vous avez bloqué {contexte.jeSuisCommercant ? "cette personne" : "cette boutique"}. Le déblocage se fait pour
-              l'instant depuis le site.
+              Vous avez bloqué {contexte.jeSuisCommercant ? "cette personne" : "cette boutique"}.{" "}
+              <Text style={styles.choisir} onPress={() => changerBlocage(false)}>
+                Débloquer
+              </Text>
             </Text>
           ) : bloqueParLui ? (
             <Text style={styles.info}>Vous ne pouvez plus écrire dans ce fil.</Text>
@@ -260,6 +287,65 @@ export function EcranFil({
         </View>
       </KeyboardAvoidingView>
 
+      <Modal visible={actions} animationType="slide" transparent onRequestClose={() => setActions(false)}>
+        <Pressable style={styles.voile} onPress={() => setActions(false)} />
+        <SafeAreaView style={styles.feuille} edges={["bottom"]}>
+          <Text style={styles.feuilleTitre}>{contexte.interlocuteur}</Text>
+          {!contexte.jeSuisCommercant ? (
+            <LigneAction
+              icone="storefront-outline"
+              libelle="Voir la boutique"
+              texte="Ville, adresse, tous ses produits."
+              onPress={() => {
+                setActions(false);
+                router.push(`/boutique/${contexte.boutiqueId}`);
+              }}
+            />
+          ) : null}
+          {contexte.bloquePar === null ? (
+            <LigneAction
+              icone="flag-outline"
+              libelle="Signaler cette conversation"
+              texte="Insultes, arnaque, spam. Notre équipe la lira."
+              danger
+              onPress={() => {
+                setActions(false);
+                setSignalement(true);
+              }}
+            />
+          ) : null}
+          {/* Bloqué PAR L'AUTRE : aucune action. Seul le bloqueur débloque (0032). */}
+          {bloqueParMoi ? (
+            <LigneAction
+              icone="lock-open-outline"
+              libelle="Débloquer cette personne"
+              texte="Vous pourrez de nouveau vous écrire, dans les deux sens."
+              onPress={() => changerBlocage(false)}
+            />
+          ) : contexte.bloquePar === null ? (
+            <LigneAction
+              icone="ban-outline"
+              libelle="Bloquer cette personne"
+              texte="Plus aucun message dans ce fil, ni d'elle ni de vous. Le fil reste consultable, et vous pourrez débloquer."
+              danger
+              onPress={() => changerBlocage(true)}
+            />
+          ) : (
+            <Text style={[styles.info, { padding: 16 }]}>Cette personne vous a bloqué : aucune action possible.</Text>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      <FeuilleSignalement
+        visible={signalement}
+        titre="Signaler cette conversation"
+        motifs={MOTIFS_FIL}
+        onEnvoyer={(motif, precisions) =>
+          moi ? signalerFil(id, moi.id, motif, precisions) : Promise.resolve({ ok: false, message: "Reconnectez-vous." })
+        }
+        onFermer={() => setSignalement(false)}
+      />
+
       <ChoixProduit
         visible={choixProduit}
         boutique={contexte}
@@ -270,6 +356,31 @@ export function EcranFil({
         onFermer={() => setChoixProduit(false)}
       />
     </SafeAreaView>
+  );
+}
+
+function LigneAction({
+  icone,
+  libelle,
+  texte,
+  danger = false,
+  onPress,
+}: {
+  icone: React.ComponentProps<typeof Ionicons>["name"];
+  libelle: string;
+  texte: string;
+  danger?: boolean;
+  onPress: () => void;
+}) {
+  const couleur = danger ? couleurs.danger : couleurs.ink;
+  return (
+    <Pressable style={styles.choix} onPress={onPress}>
+      <Ionicons name={icone} size={22} color={couleur} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: couleur }}>{libelle}</Text>
+        <Text style={{ fontSize: 13, color: couleurs.inkSoft, marginTop: 2 }}>{texte}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -368,6 +479,7 @@ function ChoixProduit({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: couleurs.paper },
   retourSeul: { padding: 16 },
+  avis: { marginHorizontal: 12, marginTop: 8, padding: 12, borderRadius: 10 },
   barre: {
     flexDirection: "row",
     alignItems: "center",

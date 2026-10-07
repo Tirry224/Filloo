@@ -722,10 +722,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-257 commits, du plus récent au plus ancien.
+258 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `e27ae6e` App mobile : inscription commerçant et boutique
 - `1f590cc` App mobile : messagerie côté commerçant
 - `2c83a8a` App mobile : espace commerçant, mes produits et formulaire produit
 - `6802873` App mobile : inscription, « Contacter le vendeur » et messagerie client
