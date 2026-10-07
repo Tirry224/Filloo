@@ -15,7 +15,7 @@ export function LoginForm({ next }: { next?: string }) {
       <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <Field label="Email" htmlFor="email">
-          <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
+          <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse e-mail" />
         </Field>
 
         <Field label="Mot de passe" htmlFor="password">

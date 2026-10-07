@@ -33,7 +33,7 @@ export function ChangePasswordForm() {
           name="currentPassword"
           type="password"
           autoComplete="current-password"
-          placeholder="Votre mot de passe d'aujourd'hui"
+          placeholder="Mot de passe actuel"
         />
       </Field>
 

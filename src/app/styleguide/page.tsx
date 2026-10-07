@@ -146,10 +146,10 @@ export default function StyleguidePage() {
 
         <Block title="Champs" note="Chaque intitulé est un vrai label relié au champ.">
           <Field label="Nom de la boutique" htmlFor="sg-shop">
-            <Input id="sg-shop" placeholder="Chez Aïssatou" />
+            <Input id="sg-shop" placeholder="Nom de votre boutique" />
           </Field>
           <Field label="Description" htmlFor="sg-desc" hint="Deux phrases suffisent.">
-            <Textarea id="sg-desc" rows={3} placeholder="Alimentation générale…" />
+            <Textarea id="sg-desc" rows={3} placeholder="Ce que vend votre boutique…" />
           </Field>
           <FakeInput className="text-ink-soft">
             <Search size={19} strokeWidth={1.8} aria-hidden />

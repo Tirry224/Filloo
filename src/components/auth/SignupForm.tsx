@@ -136,7 +136,7 @@ export function SignupForm({
       ) : (
         <>
           <Field label="Nom complet" htmlFor="fullName">
-            <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Mariama Diallo" defaultValue={defaultFullName} />
+            <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Prénom et nom" defaultValue={defaultFullName} />
           </Field>
 
           <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">
@@ -144,7 +144,7 @@ export function SignupForm({
               id="phone"
               name="phone"
               autoComplete="tel"
-              placeholder="620 00 00 00"
+              placeholder="Numéro de téléphone"
               defaultValue={defaultPhone}
             />
           </Field>
@@ -154,7 +154,7 @@ export function SignupForm({
       {mode === "new" ? (
         <>
           <Field label="Email" htmlFor="email">
-            <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="mariama@exemple.com" />
+            <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse e-mail" />
           </Field>
 
           <Field label="Mot de passe" htmlFor="password">

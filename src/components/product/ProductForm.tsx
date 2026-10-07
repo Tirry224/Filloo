@@ -58,7 +58,7 @@ export function ProductForm(props: ProductFormProps) {
           </Field>
 
           <Field label="Titre" htmlFor="title">
-            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Sac de riz importé 50 kg" />
+            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Nom du produit" />
           </Field>
 
           <Field label="Catégorie" htmlFor="categoryId">
@@ -79,7 +79,7 @@ export function ProductForm(props: ProductFormProps) {
               id="priceGnf"
               name="priceGnf"
               defaultValue={initial?.priceGnf}
-              placeholder="450 000"
+              placeholder="Montant"
               className="pr-14"
             />
           </Field>
@@ -100,7 +100,7 @@ export function ProductForm(props: ProductFormProps) {
               maxLength={2000}
               rows={4}
               defaultValue={initial?.description}
-              placeholder="Riz parfumé importé, sac de 50 kg. Retrait au marché de Madina…"
+              placeholder="Décrivez le produit : état, quantité, retrait…"
             />
           </Field>
 

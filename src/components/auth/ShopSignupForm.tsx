@@ -27,7 +27,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           </p>
 
           <Field label="Nom de la boutique" htmlFor="shopName">
-            <Input id="shopName" name="shopName" maxLength={NOM_MAX} placeholder="Chez Aïssatou" />
+            <Input id="shopName" name="shopName" maxLength={NOM_MAX} placeholder="Nom de votre boutique" />
           </Field>
 
           <Field label="Ville" htmlFor="cityId">
@@ -48,7 +48,7 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
             htmlFor="addressHint"
             hint="Un repère que vos clients comprennent. C'est là que se fera la vente."
           >
-            <Input id="addressHint" name="addressHint" maxLength={200} placeholder="Marché de Madina, allée 3" />
+            <Input id="addressHint" name="addressHint" maxLength={200} placeholder="Quartier, marché ou point de repère" />
           </Field>
 
           <Field
@@ -56,11 +56,11 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
             htmlFor="whatsappPhone"
             hint="Affiché sur vos produits, en plus de la messagerie. Laissez vide pour utiliser le numéro de votre compte."
           >
-            <PhoneInput id="whatsappPhone" name="whatsappPhone" placeholder="622 33 44 55" />
+            <PhoneInput id="whatsappPhone" name="whatsappPhone" placeholder="Numéro WhatsApp" />
           </Field>
 
           <Field label="Que vendez-vous ?" htmlFor="description">
-            <Textarea id="description" name="description" maxLength={1000} rows={3} placeholder="Alimentation générale : riz, huile, sucre, lait…" />
+            <Textarea id="description" name="description" maxLength={1000} rows={3} placeholder="Ce que vend votre boutique…" />
           </Field>
 
           {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}

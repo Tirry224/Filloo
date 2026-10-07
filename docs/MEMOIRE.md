@@ -700,10 +700,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-242 commits, du plus récent au plus ancien.
+243 commits, du plus récent au plus ancien.
 
 ### 2026-10-02
 
+- `5d092aa` MEMOIRE : service_role réglée, push toujours en panne au 2 octobre
 - `3099723` Le README dit qu'une boutique est en ligne dès sa création
 - `5646bea` Reapply "Les conditions disent qu'une boutique est en ligne dès sa création"
 - `1c632c4` Reapply "Une boutique est en ligne dès sa création"
