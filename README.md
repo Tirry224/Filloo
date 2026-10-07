@@ -304,6 +304,16 @@ Trois réglages du tableau de bord, tous nécessaires :
   `https://filloo.vercel.app/**`. Sinon Supabase remplace `RedirectTo` par
   le Site URL, sans `?`, et le lien est cassé.
 
+### Le code dans les emails, pour l'app mobile
+
+L'app mobile (`tirry224/filloo-mobile`) n'ouvre pas les liens : elle
+demande le CODE de l'email. Les modèles **Confirm signup** et **Reset
+Password** doivent donc porter, EN PLUS du lien ci-dessus, une ligne
+comme `Ou entrez ce code dans l'application : {{ .Token }}`. Sans elle,
+personne ne peut confirmer son adresse ni retrouver son mot de passe
+depuis l'app. Le lien et le code sont le même jeton : utiliser l'un
+consomme l'autre.
+
 ### Sur Vercel — à faire avant le premier déploiement
 
 `.env.local` n'est pas versionné : Vercel ne le reçoit donc **jamais**. Les

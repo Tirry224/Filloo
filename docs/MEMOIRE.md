@@ -221,10 +221,16 @@ suit reste ici parce que ça touche le site ou la base.
   n'apparaissent pas dans `/suivi`. Une route ouverte comme celle des
   messages permettrait à n'importe qui de fabriquer des chiffres : la
   solution reste à décider.
-- **Supprimer son compte** renvoie vers la page du site (clé
-  `service_role` exigée). Apple demande que la suppression soit
-  accessible depuis l'app : un lien direct est en principe accepté, à
-  vérifier au moment de la soumission.
+- **Plus rien ne renvoie vers le site** (décision du 2026-10-07 : tout
+  se passe dans l'app). Confirmation d'inscription et mot de passe
+  oublié par le CODE de l'email ; conditions et confidentialité recopiées
+  dans l'app ; suppression du compte par `POST /api/app/supprimer-compte`
+  (jeton + mot de passe, même effacement que le site, logique partagée
+  dans `src/lib/suppression-compte.ts`). **Bloquant** : les modèles
+  d'email Supabase doivent porter `{{ .Token }}` (README, « Le code dans
+  les emails ») — réglage du tableau de bord, à faire par le porteur du
+  projet. La route de suppression n'existe que sur `dev` tant que `dev`
+  n'est pas sur `main`.
 - **Pas encore dans l'app** : la liste « Personnes bloquées » (on
   débloque depuis le fil), et la publication sur les stores. Tout le reste du site y est depuis le 2026-10-07.
 
@@ -748,10 +754,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-265 commits, du plus récent au plus ancien.
+266 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `182a2af` App mobile : sortie du dépôt, elle vit dans tirry224/filloo-mobile
 - `2d5c2e2` App mobile : notifications du téléphone
 - `c4eb28d` Notifications : téléphones de l'app, et plus d'email de notification
 - `07d1440` Migration 0035 : les téléphones de l'app mobile (appliquée)
