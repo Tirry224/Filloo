@@ -235,6 +235,12 @@ async function anonymiserEtBannir(userId: string) {
     .delete()
     .eq("auth_user_id", userId);
   if (pushError) throw pushError;
+  // Les téléphones de l'app mobile (0035), pour la même raison.
+  const { error: telephonesError } = await admin
+    .from("expo_push_tokens")
+    .delete()
+    .eq("auth_user_id", userId);
+  if (telephonesError) throw telephonesError;
 
   /* L'EMAIL est libéré en même temps que l'accès est coupé : la ligne
      `auth.users` survit (voir plus haut), et tant qu'elle portait
