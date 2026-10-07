@@ -455,13 +455,20 @@ suivante ne doit pas rouvrir.
   effacer attend un avis sur la loi guinéenne L/2016/037, qui n'a pas été
   pris.
 - **Pas de notation**, **aucune monétisation en v1**.
+- **Une app mobile native, iPhone et Android, dans `mobile/`** (décision
+  du porteur du projet du 2026-10-07). Expo (React Native), réécrite et
+  non un site emballé, publiée sur l'App Store et le Play Store. Elle
+  parle à la même base Supabase que le site et ne partage aucun code
+  avec lui : ce qui en est recopié (types, messages d'erreur) le dit en
+  tête de fichier. Le site reste en ligne pendant la réécriture.
 - Direction visuelle **« A — Marché »** : fond papier chaud, accent terre
   cuite, bordures plutôt qu'ombres.
 
 ### Règles de travail
 
-- **`main` est la branche unique**, de travail ET de production. La règle
-  complète est dans `CLAUDE.md` — c'est elle qui fait foi.
+- **`dev` pour travailler, `main` pour la production** (règle du
+  2026-10-07). La règle complète est dans `CLAUDE.md` — c'est elle qui
+  fait foi.
 - **Une migration ne se réécrit jamais après avoir été appliquée** : elle
   décrit un pas déjà franchi, pas l'état final.
 - **Toute migration appliquée au tableau de bord est commitée dans la
@@ -704,7 +711,7 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 ### 2026-10-07
 
-- `6a77f33` Revert "Suivi : diagnostic temporaire du compte propriétaire"
+- `157c1a7` Suivi : retrait du diagnostic temporaire
 - `660f27d` Suivi : diagnostic temporaire du compte propriétaire
 - `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion
 - `6e093ea` Suivi : le compte du porteur du projet ne voit que /suivi
