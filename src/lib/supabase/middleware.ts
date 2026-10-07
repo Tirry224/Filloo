@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
+import { estProprietaire } from "@/lib/proprietaire";
 
 /**
  * Les préfixes qui exigent une session, quels que soient les rôles
@@ -9,6 +10,9 @@ import type { Database } from "@/lib/database.types";
  * le RÔLE se vérifie dans `src/app/(vendeur)/layout.tsx` — voir plus bas.
  */
 const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi"];
+
+/** Ce que le compte du porteur du projet peut encore ouvrir (voir plus bas). */
+const CHEMINS_DU_PROPRIETAIRE = ["/suivi", "/api", "/auth", "/reinitialiser-mot-de-passe"];
 
 /**
  * `supabaseResponse` est reconstruit après `getUser()` : `setAll` doit
@@ -76,6 +80,29 @@ export async function updateSession(request: NextRequest) {
      protège elle-même (session vérifiée, RLS) et répond « reconnectez-
      vous » DANS le formulaire. */
   const actionServeur = request.method === "POST" && request.headers.has("next-action");
+
+  /* Le compte du porteur du projet ne voit QUE `/suivi` (règle du
+     2026-10-07) : toute autre page l'y renvoie. Ici et non dans chaque
+     layout, parce que c'est le seul endroit par où passent TOUTES les
+     pages ; et sans coût, `user` étant déjà lu ci-dessus. Restent
+     ouverts : les actions serveur (la déconnexion en est une), les
+     routes techniques (`/api`, `/auth` pour les liens reçus par e-mail),
+     la réinitialisation du mot de passe, et les fichiers. */
+  if (
+    estProprietaire(user) &&
+    !actionServeur &&
+    !CHEMINS_DU_PROPRIETAIRE.some((p) => chemin === p || chemin.startsWith(`${p}/`)) &&
+    !/\.[a-z0-9]+$/i.test(chemin)
+  ) {
+    const suivi = request.nextUrl.clone();
+    suivi.pathname = "/suivi";
+    suivi.search = "";
+    // Les cookies que `getUser()` vient peut-être de rafraîchir partent
+    // avec la redirection, sinon la session expirerait au tour suivant.
+    const redirection = NextResponse.redirect(suivi);
+    supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));
+    return redirection;
+  }
 
   if (espacePrive && !user && !panneAuth && !actionServeur) {
     /* `?next=` porte la destination voulue jusqu'à l'écran de connexion :
