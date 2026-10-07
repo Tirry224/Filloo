@@ -16,23 +16,3 @@ export function estProprietaire(user: Pick<User, "email" | "email_confirmed_at">
   if (!attendu || !user?.email || !user.email_confirmed_at) return false;
   return user.email.trim().toLowerCase() === attendu;
 }
-
-/**
- * TEMPORAIRE (2026-10-07) — ce que le serveur voit, pour comprendre
- * pourquoi un déploiement ne reconnaît pas le propriétaire. Ne révèle
- * JAMAIS la valeur d'OWNER_EMAIL : seulement si elle existe, sa longueur,
- * et si elle correspond à la connexion. À retirer une fois réglé.
- */
-export function diagnosticProprietaire(user: Pick<User, "email" | "email_confirmed_at"> | null) {
-  const brute = process.env.OWNER_EMAIL;
-  const attendu = brute?.trim().toLowerCase();
-  return {
-    variablePresente: brute !== undefined,
-    longueurVariable: brute?.length ?? 0,
-    longueurNettoyee: attendu?.length ?? 0,
-    guillemets: Boolean(brute && /["']/.test(brute)),
-    emailConnecte: user?.email ?? null,
-    emailConfirme: Boolean(user?.email_confirmed_at),
-    correspond: estProprietaire(user),
-  };
-}
