@@ -65,6 +65,10 @@ export default function Connexion() {
             onSubmitEditing={seConnecter}
           />
 
+          <Pressable onPress={() => router.push("/mot-de-passe-oublie")} style={{ alignSelf: "flex-end" }} hitSlop={6}>
+            <Text style={styles.oubli}>Mot de passe oublié ?</Text>
+          </Pressable>
+
           {erreur ? <Text style={styles.erreur}>{erreur}</Text> : null}
 
           <Pressable
@@ -99,6 +103,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: couleurs.ink,
   },
+  oubli: { fontSize: 14, fontWeight: "600", color: couleurs.accent, marginTop: 4 },
   erreur: { fontSize: 14, color: couleurs.danger, marginTop: 8 },
   bouton: { backgroundColor: couleurs.accent, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 16 },
   texteBouton: { color: couleurs.onAccent, fontSize: 16, fontWeight: "700" },

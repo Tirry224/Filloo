@@ -1,7 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "expo-crypto";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import type { Database } from "./database.types";
+import { motDePasseValide } from "./compte";
 import { supabase } from "./supabase";
 
 /**
@@ -71,21 +70,6 @@ export async function creerBoutique(profilId: string, saisie: SaisieBoutique): P
   if (!error) return null;
   if (error.code === "23505") return "Vous avez déjà une boutique.";
   return lisible(error);
-}
-
-/**
- * Supabase n'a pas d'appel « vérifie ce mot de passe » : on se connecte
- * avec un client JETABLE, sans stockage, pour qu'une faute de frappe ne
- * déconnecte pas au milieu du formulaire (`passwordIsValid` du site). On
- * ne déconnecte pas ce client : `signOut()` révoquerait toutes les
- * sessions, celle de l'app comprise.
- */
-async function motDePasseValide(email: string, motDePasse: string): Promise<boolean> {
-  const jetable = createClient<Database>(process.env.EXPO_PUBLIC_SUPABASE_URL!, process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  const { data, error } = await jetable.auth.signInWithPassword({ email, password: motDePasse });
-  return !error && Boolean(data?.session);
 }
 
 /**

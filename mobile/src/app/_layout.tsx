@@ -15,6 +15,9 @@ export default function Racine() {
         <Stack.Screen name="vendeur" />
         <Stack.Screen name="connexion" options={{ presentation: "modal" }} />
         <Stack.Screen name="inscription" options={{ presentation: "modal" }} />
+        <Stack.Screen name="mot-de-passe-oublie" options={{ presentation: "modal" }} />
+        <Stack.Screen name="compte/informations" options={{ presentation: "modal" }} />
+        <Stack.Screen name="compte/mot-de-passe" options={{ presentation: "modal" }} />
       </Stack>
     </FournisseurSession>
   );

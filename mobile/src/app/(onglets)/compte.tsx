@@ -75,6 +75,12 @@ export default function Compte() {
         </View>
       ))}
 
+      <Pressable style={styles.entree} onPress={() => router.push("/compte/informations")}>
+        <Ionicons name="person-circle-outline" size={20} color={couleurs.ink} />
+        <Text style={styles.entreeTexte}>Mes informations</Text>
+        <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
+      </Pressable>
+
       {profils?.some((p) => p.role === "merchant") ? (
         <Pressable
           style={styles.entree}

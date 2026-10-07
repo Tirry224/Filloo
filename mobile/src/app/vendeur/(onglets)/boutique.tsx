@@ -58,6 +58,11 @@ export default function MaBoutique() {
           <Text style={styles.entreeTexte}>Voir ma boutique comme un client</Text>
           <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
         </Pressable>
+        <Pressable style={styles.entree} onPress={() => router.push("/compte/informations")}>
+          <Ionicons name="person-circle-outline" size={20} color={couleurs.ink} />
+          <Text style={styles.entreeTexte}>Mes informations</Text>
+          <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
+        </Pressable>
         <Pressable style={styles.entree} onPress={versClient}>
           <Ionicons name="swap-horizontal-outline" size={20} color={couleurs.ink} />
           <Text style={styles.entreeTexte}>Passer à l'espace client</Text>
