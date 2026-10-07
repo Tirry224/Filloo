@@ -193,7 +193,13 @@ connectée, ce qui n'est pas le réflexe de quelqu'un qui veut « aussi
 vendre ». Si celui qui a conçu le produit se trompe, l'utilisateur se
 trompera.
 
-### App mobile (`mobile/`) : ce qu'elle ne fait pas encore
+### App mobile : ce qu'elle ne fait pas encore
+
+L'app vit depuis le 2026-10-07 dans son propre dépôt,
+`tirry224/filloo-mobile` (décision du porteur du projet : ne plus
+mélanger les deux apps dans les mêmes commits). Son code y est ; ce qui
+suit reste ici parce que ça touche le site ou la base.
+
 
 - **Notifications « comme une vraie application », plus d'email de
   notification** (décision du 2026-10-07). Nouveaux messages, nouvelles
@@ -484,12 +490,18 @@ suivante ne doit pas rouvrir.
   effacer attend un avis sur la loi guinéenne L/2016/037, qui n'a pas été
   pris.
 - **Pas de notation**, **aucune monétisation en v1**.
-- **Une app mobile native, iPhone et Android, dans `mobile/`** (décision
-  du porteur du projet du 2026-10-07). Expo (React Native), réécrite et
+- **Une app mobile native, iPhone et Android, dans son propre dépôt
+  `tirry224/filloo-mobile`** (décision du porteur du projet du
+  2026-10-07 ; d'abord dans `mobile/`, sortie du dépôt le même jour). Expo (React Native), réécrite et
   non un site emballé, publiée sur l'App Store et le Play Store. Elle
   parle à la même base Supabase que le site et ne partage aucun code
   avec lui : ce qui en est recopié (types, messages d'erreur) le dit en
   tête de fichier. Le site reste en ligne pendant la réécriture.
+  Ce que l'app attend du site — tables, RLS, `POST
+  /api/app/message-envoye` — ne se change pas sans regarder
+  `filloo-mobile` : les téléphones gardent l'ancienne version de l'app
+  tant que l'utilisateur ne la met pas à jour. Les migrations restent
+  dans CE dépôt, la base n'en ayant qu'un historique.
 - Direction visuelle **« A — Marché »** : fond papier chaud, accent terre
   cuite, bordures plutôt qu'ombres.
 
@@ -736,10 +748,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-264 commits, du plus récent au plus ancien.
+265 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `2d5c2e2` App mobile : notifications du téléphone
 - `c4eb28d` Notifications : téléphones de l'app, et plus d'email de notification
 - `07d1440` Migration 0035 : les téléphones de l'app mobile (appliquée)
 - `56ccdb3` Notifier le destinataire d'un message envoyé depuis l'app

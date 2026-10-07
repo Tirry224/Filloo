@@ -26,6 +26,15 @@ ajouterait serait effacée à la prochaine commande.
   explicite, y compris celles qui paraissent mortes : trois d'entre elles
   portaient encore, au 2026-09-19, 61 commits absents de `main`.
 
+## L'app mobile est dans un autre dépôt
+
+Depuis le 2026-10-07, l'app mobile vit dans `tirry224/filloo-mobile`,
+pour qu'un commit ne touche jamais les deux apps à la fois. Ce dépôt-ci
+ne porte que le site, la base (migrations) et l'API que l'app appelle.
+Toute modification d'une table, d'une politique RLS ou de
+`/api/app/message-envoye` doit rester compatible avec l'app déjà
+installée sur les téléphones.
+
 ## Ce que la préversion NE protège PAS : la base de données
 
 La préversion de `dev` utilise la MÊME base Supabase que la production.
