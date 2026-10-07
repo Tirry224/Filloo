@@ -8,7 +8,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { cn } from "@/lib/cn";
 import { getSessionUser } from "@/lib/data/session";
 import { signOutAction } from "@/lib/actions/auth";
-import { estProprietaire } from "@/lib/proprietaire";
+import { diagnosticProprietaire, estProprietaire } from "@/lib/proprietaire";
 import {
   PERIODES,
   lireChiffres,
@@ -32,12 +32,46 @@ export const dynamic = "force-dynamic";
  * de SQL. Pour TOUS les autres, cette page n'existe pas — `notFound()` et
  * non un refus, pour ne pas dire qu'il y a ici quelque chose à forcer.
  */
-export default async function SuiviPage({ searchParams }: { searchParams: Promise<{ periode?: string }> }) {
+export default async function SuiviPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periode?: string; diagnostic?: string }>;
+}) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
+  const parametres = await searchParams;
+
+  /* TEMPORAIRE (2026-10-07) : `/suivi?diagnostic=1`, connecté, montre ce
+     que le serveur voit au lieu de « page introuvable ». À retirer. */
+  if (!estProprietaire(user) && user && parametres.diagnostic === "1") {
+    const d = diagnosticProprietaire(user);
+    return (
+      <Screen>
+        <TopBar title="Diagnostic" />
+        <ScreenBody>
+          <Section>
+            <Card>
+              <Ligne libelle="OWNER_EMAIL présente sur ce déploiement" valeur={d.variablePresente ? 1 : 0} />
+              <Ligne libelle="Longueur de la valeur (brute)" valeur={d.longueurVariable} />
+              <Ligne libelle="Longueur sans espaces autour" valeur={d.longueurNettoyee} />
+              <Ligne libelle="Guillemets dans la valeur" valeur={d.guillemets ? 1 : 0} />
+              <Ligne libelle="E-mail connecté confirmé" valeur={d.emailConfirme ? 1 : 0} />
+              <Ligne
+                libelle="Correspond"
+                valeur={d.correspond ? 1 : 0}
+                detail={`Connecté : ${d.emailConnecte ?? "?"} (${d.emailConnecte?.length ?? 0} caractères)`}
+              />
+            </Card>
+            <p className="text-xs text-ink-soft">1 = oui, 0 = non.</p>
+          </Section>
+        </ScreenBody>
+      </Screen>
+    );
+  }
+
   if (!estProprietaire(user)) notFound();
 
-  const periode = lirePeriode((await searchParams).periode);
+  const periode = lirePeriode(parametres.periode);
   const depuis = new Date(Date.now() - PERIODES[periode].heures * 3600 * 1000);
   const [c, connexions] = await Promise.all([lireChiffres(depuis), lireConnexions(depuis)]);
 

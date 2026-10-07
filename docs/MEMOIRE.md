@@ -700,10 +700,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-248 commits, du plus récent au plus ancien.
+249 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion
 - `6e093ea` Suivi : le compte du porteur du projet ne voit que /suivi
 - `2535655` Git : dev pour travailler et tester, main seulement sur demande
 - `7960c95` WhatsApp : chaque clic est compté
