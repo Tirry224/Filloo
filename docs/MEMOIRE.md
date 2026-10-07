@@ -734,10 +734,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-261 commits, du plus récent au plus ancien.
+262 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `56ccdb3` Notifier le destinataire d'un message envoyé depuis l'app
 - `e64aad2` App mobile : icônes, écran de démarrage et configuration de compilation
 - `db74a74` App mobile : mot de passe oublié, mes informations, changer de mot de passe
 - `fca5c39` App mobile : bloquer, débloquer et signaler

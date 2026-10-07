@@ -152,6 +152,33 @@ export type Database = {
           },
         ]
       }
+      expo_push_tokens: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          id: string
+          last_used_at: string | null
+          plateforme: string | null
+          token: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          plateforme?: string | null
+          token: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          plateforme?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       merchants: {
         Row: {
           address_hint: string | null
@@ -518,6 +545,10 @@ export type Database = {
     }
     Functions: {
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      enregistrer_telephone: {
+        Args: { p_plateforme: string; p_token: string }
+        Returns: undefined
+      }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }
