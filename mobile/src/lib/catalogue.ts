@@ -70,8 +70,10 @@ export async function chercherProduits(opts: {
   villeId: number;
   categorieId: number | null;
   tri: "recent" | "popular";
+  texte?: string;
 }): Promise<Produit[]> {
   const { data, error } = await supabase.rpc("search_products", {
+    p_query: opts.texte?.trim() || undefined,
     p_city_id: opts.villeId,
     p_category_id: opts.categorieId ?? undefined,
     p_sort: opts.tri,
@@ -160,4 +162,91 @@ export async function lireProduit(id: string): Promise<Produit | null> {
     },
     photos: (images ?? []).map((i) => photoProduit(i.storage_path)),
   };
+}
+
+/**
+ * Combien de produits correspondent HORS du filtre de ville, pour un écran
+ * de recherche vide. Jamais pour les lister : le filtre de ville reste
+ * manuel (décision 9 de SPEC). Au plafond, le compte est une borne basse,
+ * d'où `auPlafond`, qui fait écrire « 50 ou plus ».
+ */
+export async function compterAilleurs(opts: {
+  texte: string;
+  categorieId: number | null;
+}): Promise<{ nombre: number; auPlafond: boolean }> {
+  const { data, error } = await supabase.rpc("search_products", {
+    p_query: opts.texte.trim() || undefined,
+    p_category_id: opts.categorieId ?? undefined,
+    p_limit: PLAFOND,
+  });
+  if (error) throw error;
+  return { nombre: data.length, auPlafond: data.length >= PLAFOND };
+}
+
+export type FicheBoutique = Boutique & { description: string | null };
+
+/** Le RLS ne laisse lire qu'une boutique dont le propriétaire n'est pas suspendu : sinon `null`. */
+export async function lireBoutique(id: string): Promise<FicheBoutique | null> {
+  if (!UUID.test(id)) return null;
+  const { data, error } = await supabase
+    .from("merchants")
+    .select("id, shop_name, description, address_hint, whatsapp_phone, photo_path, cities(name)")
+    .eq("id", id)
+    .maybeSingle<{
+      id: string;
+      shop_name: string;
+      description: string | null;
+      address_hint: string | null;
+      whatsapp_phone: string | null;
+      photo_path: string | null;
+      cities: { name: string } | null;
+    }>();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id,
+    nom: data.shop_name,
+    description: data.description,
+    ville: data.cities?.name ?? "",
+    adresse: data.address_hint,
+    whatsapp: data.whatsapp_phone,
+    photoUrl: data.photo_path ? photoBoutique(data.photo_path) : null,
+  };
+}
+
+/** Les produits d'une boutique, du plus récent au plus ancien. Le RLS écarte brouillons et produits masqués. */
+export async function lireProduitsBoutique(boutique: Boutique): Promise<Produit[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, title, price_gnf, is_negotiable, status, is_featured, categories(name), product_images(storage_path, position)")
+    .eq("merchant_id", boutique.id)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        title: string;
+        price_gnf: number;
+        is_negotiable: boolean;
+        status: Statut;
+        is_featured: boolean;
+        categories: { name: string } | null;
+        product_images: { storage_path: string; position: number }[];
+      }[]
+    >();
+  if (error) throw error;
+  return data.map((r) => {
+    const couverture = [...r.product_images].sort((a, b) => a.position - b.position)[0];
+    return {
+      id: r.id,
+      titre: r.title,
+      description: null,
+      prixGnf: r.price_gnf,
+      negociable: r.is_negotiable,
+      statut: r.status,
+      aLaUne: r.is_featured,
+      categorie: r.categories?.name ?? "",
+      boutique,
+      photos: couverture ? [photoProduit(couverture.storage_path)] : [],
+    };
+  });
 }

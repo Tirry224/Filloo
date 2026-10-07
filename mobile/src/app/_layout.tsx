@@ -10,6 +10,7 @@ export default function Racine() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: couleurs.paper } }}>
         <Stack.Screen name="(onglets)" />
         <Stack.Screen name="produit/[id]" />
+        <Stack.Screen name="boutique/[id]" />
         <Stack.Screen name="connexion" options={{ presentation: "modal" }} />
       </Stack>
     </FournisseurSession>

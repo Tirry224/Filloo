@@ -22,7 +22,7 @@ import { couleurs } from "../../theme";
 /**
  * La fiche produit. Ce qui manque encore par rapport au site, faute des
  * parcours correspondants : « Contacter le vendeur » (messagerie),
- * « Signaler », la page boutique, et le compteur `whatsapp_ouvert`
+ * « Signaler », et le compteur `whatsapp_ouvert`
  * (écrit côté serveur, que l'app n'a pas encore).
  */
 export default function FicheProduit() {
@@ -128,7 +128,7 @@ export default function FicheProduit() {
 
           {produit.description ? <Text style={styles.description}>{produit.description}</Text> : null}
 
-          <View style={styles.boutique}>
+          <Pressable style={styles.boutique} onPress={() => router.push(`/boutique/${produit.boutique.id}`)}>
             {produit.boutique.photoUrl ? (
               <Image source={produit.boutique.photoUrl} style={styles.avatar} cachePolicy="disk" />
             ) : (
@@ -145,7 +145,8 @@ export default function FicheProduit() {
                 {produit.boutique.ville}
               </Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={couleurs.inkSoft} />
+          </Pressable>
         </View>
       </ScrollView>
 

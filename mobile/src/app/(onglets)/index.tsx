@@ -1,33 +1,16 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CarteProduit } from "../../composants/CarteProduit";
+import { EtatVide } from "../../composants/EtatVide";
 import { Etiquette } from "../../composants/Etiquette";
+import { FeuilleChoix } from "../../composants/FeuilleChoix";
+import { GrilleProduits } from "../../composants/GrilleProduits";
 import { Puce } from "../../composants/Puce";
-import {
-  VILLE_PAR_DEFAUT,
-  chercherProduits,
-  lireCategories,
-  lireVilleDuCompte,
-  lireVilles,
-  type Option,
-  type Produit,
-} from "../../lib/catalogue";
+import { VILLE_PAR_DEFAUT, chercherProduits, type Produit } from "../../lib/catalogue";
 import { formatGnf } from "../../lib/format";
-import { useSession } from "../../lib/session";
+import { useReferentiel } from "../../lib/referentiel";
 import { couleurs } from "../../theme";
 
 type Tri = "recent" | "popular";
@@ -38,9 +21,8 @@ type Tri = "recent" | "popular";
  * catégorie, « à la une » en tête.
  */
 export default function Catalogue() {
-  const { session, chargement: chargementSession } = useSession();
-  const [villes, setVilles] = useState<Option[]>([]);
-  const [categories, setCategories] = useState<Option[]>([]);
+  const referentiel = useReferentiel();
+  const { villes, categories, villeParDefaut } = referentiel;
   const [villeId, setVilleId] = useState<number | null>(null);
   const [categorie, setCategorie] = useState<string | null>(null);
   const [tri, setTri] = useState<Tri>("recent");
@@ -49,20 +31,9 @@ export default function Catalogue() {
   const [rafraichit, setRafraichit] = useState(false);
   const [choixVille, setChoixVille] = useState(false);
 
-  /* Les listes de référence, et la ville de départ : celle du compte
-     client, sinon Conakry. Attendre la session évite de partir sur
-     Conakry puis de sauter vers la ville du compte. */
   useEffect(() => {
-    if (chargementSession) return;
-    Promise.all([lireVilles(), lireCategories(), lireVilleDuCompte(session?.user.id)])
-      .then(([v, c, villeDuCompte]) => {
-        setVilles(v);
-        setCategories(c);
-        const depart = v.find((x) => x.id === villeDuCompte) ?? v.find((x) => x.name === VILLE_PAR_DEFAUT) ?? v[0];
-        setVilleId(depart?.id ?? null);
-      })
-      .catch(() => setErreur(true));
-  }, [chargementSession, session?.user.id]);
+    if (villeId === null && villeParDefaut !== null) setVilleId(villeParDefaut);
+  }, [villeId, villeParDefaut]);
 
   const charger = useCallback(async () => {
     if (villeId === null) return;
@@ -81,6 +52,7 @@ export default function Catalogue() {
 
   async function rafraichir() {
     setRafraichit(true);
+    if (referentiel.erreur) referentiel.reessayer();
     await charger();
     setRafraichit(false);
   }
@@ -149,8 +121,9 @@ export default function Catalogue() {
         <Puce libelle={ville} icone="location-outline" onPress={() => setChoixVille(true)} />
       </View>
 
-      {erreur ? (
+      {erreur || referentiel.erreur ? (
         <EtatVide
+          icone="cloud-offline-outline"
           titre="Impossible de charger les produits"
           texte="Vérifiez votre connexion internet, puis réessayez."
           action={{ libelle: "Réessayer", onPress: rafraichir }}
@@ -158,20 +131,12 @@ export default function Catalogue() {
       ) : produits === null ? (
         <ActivityIndicator style={{ marginTop: 48 }} color={couleurs.accent} />
       ) : (
-        <FlatList
-          data={grille}
-          keyExtractor={(p) => p.id}
-          numColumns={2}
-          columnWrapperStyle={styles.ligne}
-          contentContainerStyle={styles.liste}
-          ListHeaderComponent={entete}
-          renderItem={({ item }) => (
-            <View style={styles.case}>
-              <CarteProduit produit={item} />
-            </View>
-          )}
-          refreshControl={<RefreshControl refreshing={rafraichit} onRefresh={rafraichir} tintColor={couleurs.accent} />}
-          ListEmptyComponent={
+        <GrilleProduits
+          produits={grille}
+          entete={entete}
+          rafraichit={rafraichit}
+          onRafraichir={rafraichir}
+          vide={
             aLaUne ? null : categorie !== null && produits.length > 0 ? (
               <EtatVide
                 titre={`Aucun produit « ${categorie} » à ${ville}`}
@@ -196,51 +161,15 @@ export default function Catalogue() {
         />
       )}
 
-      <Modal visible={choixVille} animationType="slide" transparent onRequestClose={() => setChoixVille(false)}>
-        <Pressable style={styles.voile} onPress={() => setChoixVille(false)} />
-        <SafeAreaView style={styles.feuille} edges={["bottom"]}>
-          <Text style={styles.feuilleTitre}>Choisir une ville</Text>
-          <ScrollView>
-            {villes.map((v) => (
-              <Pressable
-                key={v.id}
-                style={styles.choix}
-                onPress={() => {
-                  setVilleId(v.id);
-                  setChoixVille(false);
-                }}
-              >
-                <Text style={styles.choixTexte}>{v.name}</Text>
-                {v.id === villeId ? <Ionicons name="checkmark" size={20} color={couleurs.accent} /> : null}
-              </Pressable>
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      <FeuilleChoix
+        titre="Choisir une ville"
+        visible={choixVille}
+        choix={villes.map((v) => ({ libelle: v.name, valeur: v.id }))}
+        actuel={villeId}
+        onChoisir={setVilleId}
+        onFermer={() => setChoixVille(false)}
+      />
     </SafeAreaView>
-  );
-}
-
-function EtatVide({
-  titre,
-  texte,
-  action,
-}: {
-  titre: string;
-  texte: string;
-  action?: { libelle: string; onPress: () => void };
-}) {
-  return (
-    <View style={styles.vide}>
-      <Ionicons name="cube-outline" size={40} color={couleurs.inkSoft} />
-      <Text style={styles.videTitre}>{titre}</Text>
-      <Text style={styles.videTexte}>{texte}</Text>
-      {action ? (
-        <Pressable style={styles.bouton} onPress={action.onPress}>
-          <Text style={styles.boutonTexte}>{action.libelle}</Text>
-        </Pressable>
-      ) : null}
-    </View>
   );
 }
 
@@ -273,31 +202,4 @@ const styles = StyleSheet.create({
   prix: { fontSize: 16, fontWeight: "800", color: couleurs.ink },
   discret: { fontSize: 12, color: couleurs.inkSoft },
   tris: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingHorizontal: 16 },
-  liste: { paddingBottom: 24 },
-  ligne: { gap: 10, paddingHorizontal: 16 },
-  case: { flex: 1, maxWidth: "50%", marginBottom: 10 },
-  vide: { alignItems: "center", gap: 8, padding: 32 },
-  videTitre: { fontSize: 18, fontWeight: "700", color: couleurs.ink, textAlign: "center" },
-  videTexte: { fontSize: 14, color: couleurs.inkSoft, textAlign: "center", lineHeight: 20 },
-  bouton: { backgroundColor: couleurs.accent, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, marginTop: 8 },
-  boutonTexte: { color: couleurs.onAccent, fontSize: 15, fontWeight: "700" },
-  voile: { flex: 1, backgroundColor: "rgba(39, 31, 24, 0.45)" },
-  feuille: {
-    maxHeight: "70%",
-    backgroundColor: couleurs.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingTop: 16,
-  },
-  feuilleTitre: { fontSize: 18, fontWeight: "700", color: couleurs.ink, paddingHorizontal: 16, paddingBottom: 8 },
-  choix: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: couleurs.line,
-  },
-  choixTexte: { fontSize: 16, color: couleurs.ink },
 });

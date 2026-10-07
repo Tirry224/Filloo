@@ -23,7 +23,9 @@ un vrai compte.
 - Fait : connexion, session gardée entre deux ouvertures, déconnexion.
 - Fait : catalogue sans compte (ville, catégories, à la une, récents ou
   populaires) et fiche produit (photos, prix, boutique, WhatsApp).
+- Fait : recherche (mot, ville, catégorie, tri, recherches récentes, nombre
+  de résultats ailleurs) et page boutique.
 - Provisoire : l'onglet « Compte » montre seulement les comptes de la connexion.
-- Manque : recherche, page boutique, messagerie, signalement, inscription,
+- Manque : messagerie, signalement, inscription,
   espace commerçant, notifications, et les mesures d'usage (`analytics_events`
   s'écrit côté serveur : l'app ne compte encore rien).
