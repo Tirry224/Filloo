@@ -204,8 +204,9 @@ trompera.
 - **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
   clé `service_role`. Visites, recherches et contacts venus de l'app
   n'apparaissent pas dans `/suivi`.
-- **Côté client seulement** : pas encore d'espace commerçant, de
-  bloquer/signaler, de mot de passe oublié, ni d'ajout d'un second compte.
+- **Pas encore dans l'app** : bloquer et signaler, mot de passe oublié,
+  modifier ses informations ou supprimer son compte, push natives. Les
+  deux espaces (client et commerçant) y sont depuis le 2026-10-07.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -721,10 +722,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-256 commits, du plus récent au plus ancien.
+257 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `1f590cc` App mobile : messagerie côté commerçant
 - `2c83a8a` App mobile : espace commerçant, mes produits et formulaire produit
 - `6802873` App mobile : inscription, « Contacter le vendeur » et messagerie client
 - `30bf0a8` App mobile : recherche et page boutique

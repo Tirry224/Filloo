@@ -21,16 +21,15 @@ un vrai compte.
 
 ## Où en est l'app
 
-- Fait : connexion, session gardée entre deux ouvertures, déconnexion.
-- Fait : catalogue sans compte (ville, catégories, à la une, récents ou
-  populaires) et fiche produit (photos, prix, boutique, WhatsApp).
-- Fait : recherche (mot, ville, catégorie, tri, recherches récentes, nombre
-  de résultats ailleurs) et page boutique.
-- Provisoire : l'onglet « Compte » montre seulement les comptes de la connexion.
-- Fait : inscription d'un client, « Contacter le vendeur », liste des
-  conversations et fil en temps réel (citation du produit, fil bloqué ou gelé).
-- Attention : un message envoyé depuis l'app ne déclenche ni email ni push
-  (voir « App mobile » dans `docs/MEMOIRE.md`).
-- Manque : bloquer et signaler, mot de passe oublié,
-  espace commerçant, notifications, et les mesures d'usage (`analytics_events`
-  s'écrit côté serveur : l'app ne compte encore rien).
+- Fait (client) : catalogue, recherche, fiche produit, page boutique,
+  inscription, connexion, « Contacter le vendeur », messagerie en temps réel.
+- Fait (commerçant) : inscription en deux temps (compte puis boutique),
+  ouverture d'une boutique depuis un compte client, accueil, mes produits
+  (publier, vendu, masquer, supprimer), création et modification d'un
+  produit avec photos, messagerie, modification de la boutique (mot de
+  passe redemandé), bascule entre les deux espaces.
+- Attention : un message envoyé depuis l'app ne déclenche ni email ni push,
+  et l'app ne compte aucune mesure (voir « App mobile » dans `docs/MEMOIRE.md`).
+- Manque : bloquer et signaler, mot de passe oublié, modifier ses
+  informations ou supprimer son compte, notifications push natives,
+  icônes et publication sur les stores.

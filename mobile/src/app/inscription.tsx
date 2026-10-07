@@ -30,11 +30,13 @@ const MOT_DE_PASSE_MIN = 8;
 const nettoyerTelephone = (v: string) => v.replace(/[\s.\-()]/g, "").replace(/^\+224/, "").replace(/^00224/, "");
 
 /**
- * Inscription d'un CLIENT (le compte commerçant viendra avec l'espace
- * commerçant). Mêmes contrôles que `signUpAction` du site ; le profil est
- * créé par le trigger `handle_new_user` à partir des métadonnées.
+ * Inscription, client ou commerçant. Mêmes contrôles que `signUpAction`
+ * du site ; le profil est créé par le trigger `handle_new_user` à partir
+ * des métadonnées. Un commerçant crée sa boutique juste après, à sa
+ * première connexion (`/vendeur/creer-boutique`).
  */
 export default function Inscription() {
+  const [role, setRole] = useState<"client" | "merchant">("client");
   const [nom, setNom] = useState("");
   const [telephone, setTelephone] = useState("");
   const [email, setEmail] = useState("");
@@ -71,7 +73,7 @@ export default function Inscription() {
       email: adresse,
       password: motDePasse,
       options: {
-        data: { role: "client", full_name: nettoyer(nom), phone: nettoyerTelephone(telephone) },
+        data: { role, full_name: nettoyer(nom), phone: nettoyerTelephone(telephone) },
         // Même lien que le site : la confirmation s'ouvre dans le navigateur.
         emailRedirectTo: SITE ? `${SITE}/auth/confirm?origine=inscription` : undefined,
       },
@@ -86,7 +88,9 @@ export default function Inscription() {
       setAConfirmer(adresse);
       return;
     }
-    if (router.canGoBack()) router.back();
+    // Un commerçant enchaîne sur la création de sa boutique.
+    if (role === "merchant") router.replace("/vendeur");
+    else if (router.canGoBack()) router.back();
     else router.replace("/");
   }
 
@@ -113,7 +117,11 @@ export default function Inscription() {
         <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
           <View style={styles.carte}>
             <Text style={styles.titre}>Créer un compte</Text>
-            <Text style={styles.texte}>Pour écrire aux vendeurs et retrouver vos échanges.</Text>
+            <Text style={styles.libelle}>Je viens sur Filloo pour</Text>
+            <View style={styles.roles}>
+              <Role actif={role === "client"} titre="Acheter" texte="Contacter des vendeurs" onPress={() => setRole("client")} />
+              <Role actif={role === "merchant"} titre="Vendre" texte="Publier mes produits" onPress={() => setRole("merchant")} />
+            </View>
 
             <Champ libelle="Nom complet" value={nom} onChangeText={setNom} placeholder="Prénom et nom" autoComplete="name" maxLength={NOM_MAX} />
             <Champ
@@ -182,6 +190,20 @@ export default function Inscription() {
   );
 }
 
+function Role({ actif, titre, texte, onPress }: { actif: boolean; titre: string; texte: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: actif }}
+      style={[styles.role, actif && styles.roleActif]}
+    >
+      <Text style={[styles.roleTitre, actif && { color: couleurs.accent }]}>{titre}</Text>
+      <Text style={styles.roleTexte}>{texte}</Text>
+    </Pressable>
+  );
+}
+
 function Champ({ libelle, ...props }: { libelle: string } & TextInputProps) {
   return (
     <View style={{ gap: 6, marginTop: 8 }}>
@@ -197,6 +219,11 @@ const styles = StyleSheet.create({
   carte: { backgroundColor: couleurs.surface, borderRadius: 16, padding: 24, gap: 8, borderWidth: 1, borderColor: couleurs.line },
   titre: { fontSize: 26, fontWeight: "800", color: couleurs.ink },
   texte: { fontSize: 15, lineHeight: 22, color: couleurs.inkSoft },
+  roles: { flexDirection: "row", gap: 10 },
+  role: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: couleurs.line, gap: 2 },
+  roleActif: { borderColor: couleurs.accent, backgroundColor: couleurs.accentSoft },
+  roleTitre: { fontSize: 16, fontWeight: "700", color: couleurs.ink },
+  roleTexte: { fontSize: 13, color: couleurs.inkSoft },
   libelle: { fontSize: 14, fontWeight: "600", color: couleurs.ink },
   champ: {
     borderWidth: 1,

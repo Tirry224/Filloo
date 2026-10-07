@@ -1,7 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Tabs } from "expo-router";
-import { View } from "react-native";
-import { EtatVide } from "../../../composants/EtatVide";
+import { Redirect, Tabs } from "expo-router";
 import { useCommercant } from "../../../lib/contexte-commercant";
 import { couleurs } from "../../../theme";
 
@@ -9,17 +7,8 @@ import { couleurs } from "../../../theme";
 export default function OngletsCommercant() {
   const { compte } = useCommercant();
 
-  if (!compte.boutique) {
-    return (
-      <View style={{ flex: 1, backgroundColor: couleurs.paper, justifyContent: "center" }}>
-        <EtatVide
-          icone="storefront-outline"
-          titre="Créez d'abord votre boutique"
-          texte="Votre compte commerçant n'a pas encore de boutique. La création arrive bientôt dans l'app ; en attendant, faites-la sur le site."
-        />
-      </View>
-    );
-  }
+  // Compte commerçant sans boutique : l'inscription n'est pas finie.
+  if (!compte.boutique) return <Redirect href="/vendeur/creer-boutique" />;
 
   return (
     <Tabs

@@ -1,8 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { creerCompteCommercantLie } from "../../lib/edition-boutique";
 import { useSession } from "../../lib/session";
 import { supabase } from "../../lib/supabase";
 import { retenirEspace } from "../../lib/vendeur";
@@ -30,6 +31,17 @@ export default function Compte() {
         else setProfils(data);
       });
   }, [session]);
+
+  async function ouvrirBoutique() {
+    if (!session) return;
+    const refus = await creerCompteCommercantLie(session.user.id);
+    if (refus) {
+      Alert.alert("Impossible d'ouvrir la boutique", refus);
+      return;
+    }
+    await retenirEspace("merchant");
+    router.replace("/vendeur");
+  }
 
   if (!session) {
     return (
@@ -73,6 +85,15 @@ export default function Compte() {
         >
           <Ionicons name="storefront-outline" size={20} color={couleurs.ink} />
           <Text style={styles.entreeTexte}>Passer à l'espace commerçant</Text>
+          <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
+        </Pressable>
+      ) : profils ? (
+        <Pressable style={styles.entree} onPress={ouvrirBoutique}>
+          <Ionicons name="storefront-outline" size={20} color={couleurs.ink} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.entreeTexte}>Ouvrir ma boutique</Text>
+            <Text style={styles.discret}>Même connexion, un second compte pour vendre.</Text>
+          </View>
           <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
         </Pressable>
       ) : null}

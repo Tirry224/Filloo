@@ -48,6 +48,11 @@ export default function MaBoutique() {
           <Ligne icone="logo-whatsapp" texte={boutique.whatsapp ? formatTelephone(boutique.whatsapp) : "Pas de numéro WhatsApp"} />
         </View>
 
+        <Pressable style={styles.entree} onPress={() => router.push("/vendeur/modifier-boutique")}>
+          <Ionicons name="create-outline" size={20} color={couleurs.ink} />
+          <Text style={styles.entreeTexte}>Modifier ma boutique</Text>
+          <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
+        </Pressable>
         <Pressable style={styles.entree} onPress={() => router.push(`/boutique/${boutique.id}`)}>
           <Ionicons name="eye-outline" size={20} color={couleurs.ink} />
           <Text style={styles.entreeTexte}>Voir ma boutique comme un client</Text>
