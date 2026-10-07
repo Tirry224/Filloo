@@ -6,6 +6,7 @@ import { cache } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { estProprietaire } from "@/lib/proprietaire";
 
 export type SessionProfile = {
   id: string;
@@ -38,6 +39,14 @@ export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): 
 export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): Promise<SessionProfile[]> => {
   const user = await getSessionUser(supabase);
   if (!user) return [];
+
+  /* Le compte du porteur du projet ne voit que `/suivi` (règle du
+     2026-10-07). Le middleware ne suffit pas : après une connexion,
+     l'action serveur rend la page d'arrivée DANS sa propre réponse, sans
+     nouvelle requête, donc sans passer par lui. Toute page, layout ou
+     action qui demande « quels comptes porte cette connexion ? » passe
+     ici — c'est donc ici que la règle tient sur tous les chemins. */
+  if (estProprietaire(user)) redirect("/suivi");
   const { data, error } = await supabase
     .from("profiles")
     .select("id, role, full_name, phone, city_id, is_suspended, is_deleted")
