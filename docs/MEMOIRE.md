@@ -226,10 +226,10 @@ suit reste ici parce que ça touche le site ou la base.
   oublié par le CODE de l'email ; conditions et confidentialité recopiées
   dans l'app ; suppression du compte par `POST /api/app/supprimer-compte`
   (jeton + mot de passe, même effacement que le site, logique partagée
-  dans `src/lib/suppression-compte.ts`). **Bloquant** : les modèles
-  d'email Supabase doivent porter `{{ .Token }}` (README, « Le code dans
-  les emails ») — réglage du tableau de bord, à faire par le porteur du
-  projet. La route de suppression n'existe que sur `dev` tant que `dev`
+  dans `src/lib/suppression-compte.ts`). Les modèles d'email
+  Supabase portent `{{ .Token }}` (README, « Le code dans les emails ») :
+  posés par le porteur du projet, qui déclare le 2026-10-07 que le code
+  reçu par email fonctionne dans l'app. La route de suppression n'existe que sur `dev` tant que `dev`
   n'est pas sur `main`.
 - **Pas encore dans l'app** : la liste « Personnes bloquées » (on
   débloque depuis le fil), et la publication sur les stores. Tout le reste du site y est depuis le 2026-10-07.
@@ -754,10 +754,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-266 commits, du plus récent au plus ancien.
+267 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `15bb1ad` App mobile : supprimer son compte sans passer par le site
 - `182a2af` App mobile : sortie du dépôt, elle vit dans tirry224/filloo-mobile
 - `2d5c2e2` App mobile : notifications du téléphone
 - `c4eb28d` Notifications : téléphones de l'app, et plus d'email de notification
