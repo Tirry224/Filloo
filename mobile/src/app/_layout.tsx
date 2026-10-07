@@ -12,6 +12,7 @@ export default function Racine() {
         <Stack.Screen name="produit/[id]" />
         <Stack.Screen name="boutique/[id]" />
         <Stack.Screen name="messages/[id]" />
+        <Stack.Screen name="vendeur" />
         <Stack.Screen name="connexion" options={{ presentation: "modal" }} />
         <Stack.Screen name="inscription" options={{ presentation: "modal" }} />
       </Stack>

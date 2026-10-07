@@ -1,9 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
+import { useAiguillage } from "../../lib/aiguillage";
 import { couleurs } from "../../theme";
 
 /** La barre d'onglets du client. */
 export default function Onglets() {
+  useAiguillage();
   return (
     <Tabs
       screenOptions={{

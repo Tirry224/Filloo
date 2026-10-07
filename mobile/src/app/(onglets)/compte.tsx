@@ -1,9 +1,11 @@
-import { Link } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Link, router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "../../lib/session";
 import { supabase } from "../../lib/supabase";
+import { retenirEspace } from "../../lib/vendeur";
 import { couleurs } from "../../theme";
 
 type Profil = { id: string; role: "client" | "merchant"; full_name: string };
@@ -61,6 +63,20 @@ export default function Compte() {
         </View>
       ))}
 
+      {profils?.some((p) => p.role === "merchant") ? (
+        <Pressable
+          style={styles.entree}
+          onPress={async () => {
+            await retenirEspace("merchant");
+            router.replace("/vendeur");
+          }}
+        >
+          <Ionicons name="storefront-outline" size={20} color={couleurs.ink} />
+          <Text style={styles.entreeTexte}>Passer à l'espace commerçant</Text>
+          <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
+        </Pressable>
+      ) : null}
+
       <Pressable onPress={() => supabase.auth.signOut()} style={[styles.bouton, styles.secondaire]}>
         <Text style={styles.secondaireTexte}>Se déconnecter</Text>
       </Pressable>
@@ -79,6 +95,17 @@ const styles = StyleSheet.create({
   bouton: { backgroundColor: couleurs.accent, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8 },
   boutonTexte: { color: couleurs.onAccent, fontSize: 16, fontWeight: "700" },
   secondaire: { backgroundColor: couleurs.surface, borderWidth: 1, borderColor: couleurs.line, marginTop: "auto" },
+  entree: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    backgroundColor: couleurs.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: couleurs.line,
+  },
+  entreeTexte: { flex: 1, fontSize: 16, fontWeight: "600", color: couleurs.ink },
   secondaireSeul: { backgroundColor: couleurs.surface, borderWidth: 1, borderColor: couleurs.line, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
   secondaireTexte: { color: couleurs.ink, fontSize: 16, fontWeight: "600" },
 });

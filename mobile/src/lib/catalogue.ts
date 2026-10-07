@@ -31,6 +31,8 @@ export type Produit = {
   categorie: string;
   boutique: Boutique;
   photos: string[];
+  /** Clients qui ont ouvert un fil à son sujet (0002, 3.3). */
+  contacts: number;
 };
 
 export const VILLE_PAR_DEFAUT = "Conakry";
@@ -100,6 +102,7 @@ export async function chercherProduits(opts: {
     /* Les types déclarent `image_path` non nul, mais la jointure est un
        LEFT JOIN : un produit sans photo renvoie NULL. */
     photos: r.image_path ? [photoProduit(r.image_path)] : [],
+    contacts: r.contact_count,
   }));
 }
 
@@ -111,6 +114,7 @@ type LigneProduit = {
   is_negotiable: boolean;
   status: Statut;
   is_featured: boolean;
+  contact_count: number;
   categories: { name: string } | null;
   merchants: {
     id: string;
@@ -132,7 +136,7 @@ export async function lireProduit(id: string): Promise<Produit | null> {
     supabase
       .from("products")
       .select(
-        "id, title, description, price_gnf, is_negotiable, status, is_featured, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name))",
+        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name))",
       )
       .eq("id", id)
       .maybeSingle<LigneProduit>(),
@@ -161,6 +165,7 @@ export async function lireProduit(id: string): Promise<Produit | null> {
       photoUrl: m.photo_path ? photoBoutique(m.photo_path) : null,
     },
     photos: (images ?? []).map((i) => photoProduit(i.storage_path)),
+    contacts: ligne.contact_count,
   };
 }
 
@@ -218,7 +223,7 @@ export async function lireBoutique(id: string): Promise<FicheBoutique | null> {
 export async function lireProduitsBoutique(boutique: Boutique): Promise<Produit[]> {
   const { data, error } = await supabase
     .from("products")
-    .select("id, title, price_gnf, is_negotiable, status, is_featured, categories(name), product_images(storage_path, position)")
+    .select("id, title, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), product_images(storage_path, position)")
     .eq("merchant_id", boutique.id)
     .order("created_at", { ascending: false })
     .returns<
@@ -229,6 +234,7 @@ export async function lireProduitsBoutique(boutique: Boutique): Promise<Produit[
         is_negotiable: boolean;
         status: Statut;
         is_featured: boolean;
+        contact_count: number;
         categories: { name: string } | null;
         product_images: { storage_path: string; position: number }[];
       }[]
@@ -247,6 +253,7 @@ export async function lireProduitsBoutique(boutique: Boutique): Promise<Produit[
       categorie: r.categories?.name ?? "",
       boutique,
       photos: couverture ? [photoProduit(couverture.storage_path)] : [],
+      contacts: r.contact_count,
     };
   });
 }
