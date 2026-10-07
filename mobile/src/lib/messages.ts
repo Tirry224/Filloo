@@ -2,7 +2,7 @@ import type { Statut } from "./catalogue";
 import { supabase } from "./supabase";
 
 /**
- * La messagerie, CÔTÉ CLIENT seulement pour l'instant : mêmes requêtes que
+ * La messagerie, côté client et côté commerçant : mêmes requêtes que
  * `src/lib/data/messages.ts` et `src/lib/actions/messages.ts` du site. Le
  * RLS décide de tout — qui lit quel fil, qui peut y écrire — exactement
  * comme pour le site : l'app n'a aucun droit de plus.
@@ -100,18 +100,46 @@ export type ResumeFil = {
   nonLus: number;
 };
 
+type FilBrut = { id: string; interlocuteur: string; photoUrl?: string };
+
 /** Mes fils de client, du plus récent au plus ancien, avec leur dernier message et leurs non-lus. */
 export async function listerMesFils(clientId: string): Promise<ResumeFil[]> {
-  const { data: fils, error } = await supabase
+  const { data, error } = await supabase
     .from("conversations")
     .select("id, merchants(shop_name, photo_path)")
     .eq("client_id", clientId)
     .order("last_message_at", { ascending: false })
     .returns<{ id: string; merchants: { shop_name: string; photo_path: string | null } | null }[]>();
   if (error) throw error;
-  if (fils.length === 0) return [];
+  return resumer(
+    data.map((f) => ({
+      id: f.id,
+      interlocuteur: f.merchants?.shop_name ?? "",
+      photoUrl: f.merchants?.photo_path ? photoBoutique(f.merchants.photo_path) : undefined,
+    })),
+    clientId,
+  );
+}
 
-  const { data: messages, error: erreurMessages } = await supabase
+/** Les fils de ma boutique : en face, le nom du client (`getMyThreadsAsMerchant` du site). */
+export async function listerFilsBoutique(boutiqueId: string, profilCommercantId: string): Promise<ResumeFil[]> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id, profiles!conversations_client_id_fkey(full_name)")
+    .eq("merchant_id", boutiqueId)
+    .order("last_message_at", { ascending: false })
+    .returns<{ id: string; profiles: { full_name: string } | null }[]>();
+  if (error) throw error;
+  return resumer(
+    data.map((f) => ({ id: f.id, interlocuteur: f.profiles?.full_name ?? "" })),
+    profilCommercantId,
+  );
+}
+
+/** Le dernier message, le dernier produit cité et les non-lus de chaque fil, en une requête. */
+async function resumer(fils: FilBrut[], monId: string): Promise<ResumeFil[]> {
+  if (fils.length === 0) return [];
+  const { data: messages, error } = await supabase
     .from("messages")
     .select("conversation_id, sender_id, body, read_at, created_at, products(title, product_images(storage_path, position))")
     .in(
@@ -129,13 +157,13 @@ export async function listerMesFils(clientId: string): Promise<ResumeFil[]> {
         products: { title: string; product_images: Image[] } | null;
       }[]
     >();
-  if (erreurMessages) throw erreurMessages;
+  if (error) throw error;
 
   /* Les messages arrivent du plus récent au plus ancien : le premier vu
      d'un fil est son dernier message ; le produit est le dernier cité. */
   const resumes = new Map<string, Omit<ResumeFil, "id" | "interlocuteur" | "photoUrl">>();
   for (const m of messages) {
-    const nonLu = m.read_at === null && m.sender_id !== clientId ? 1 : 0;
+    const nonLu = m.read_at === null && m.sender_id !== monId ? 1 : 0;
     const r = resumes.get(m.conversation_id);
     if (!r) {
       resumes.set(m.conversation_id, {
@@ -154,16 +182,7 @@ export async function listerMesFils(clientId: string): Promise<ResumeFil[]> {
     }
   }
 
-  return fils.map((f) => ({
-    id: f.id,
-    interlocuteur: f.merchants?.shop_name ?? "",
-    photoUrl: f.merchants?.photo_path ? photoBoutique(f.merchants.photo_path) : undefined,
-    dernierMessage: "",
-    dernierQuand: "",
-    produit: "",
-    nonLus: 0,
-    ...resumes.get(f.id),
-  }));
+  return fils.map((f) => ({ dernierMessage: "", dernierQuand: "", produit: "", nonLus: 0, ...f, ...resumes.get(f.id) }));
 }
 
 export type ContexteFil = {
@@ -171,46 +190,59 @@ export type ContexteFil = {
   interlocuteur: string;
   photoUrl?: string;
   boutiqueId: string;
+  /** Mon profil DANS ce fil : client ou commerçant, selon le côté. */
   monId: string;
+  jeSuisCommercant: boolean;
   bloquePar: string | null;
   /** `false` si l'un des deux comptes est suspendu ou supprimé : lecture seule (0017, 0022). */
   ouvert: boolean;
 };
 
 /**
- * Le fil vu du côté client. `null` si ce n'est pas un fil dont je suis le
- * CLIENT : le RLS le cache s'il n'est pas à moi, et le côté commerçant
- * viendra avec l'espace commerçant.
+ * Le fil vu de MON côté, comme `getThreadContext` du site. `cote` dit
+ * depuis quel espace on l'ouvre : un fil où je ne suis pas de ce côté-là
+ * répond `null`, comme un fil qui n'est pas à moi (le RLS le cache).
  */
-export async function lireContexteFil(filId: string, clientId: string): Promise<ContexteFil | null> {
+export async function lireContexteFil(
+  filId: string,
+  cote: { espace: "client"; clientId: string } | { espace: "merchant"; profilCommercantId: string },
+): Promise<ContexteFil | null> {
   /* `conversation_is_open` est la fonction même qui décide, dans la policy
      d'envoi, si un message passera : la redemander ici évite de promettre
      un champ de saisie qu'on refuserait ensuite. */
   const [{ data, error }, { data: ouvert, error: erreurOuvert }] = await Promise.all([
     supabase
       .from("conversations")
-      .select("id, client_id, blocked_by, merchants(id, shop_name, photo_path)")
+      .select(
+        "id, client_id, blocked_by, profiles!conversations_client_id_fkey(full_name), merchants(id, shop_name, profile_id, photo_path)",
+      )
       .eq("id", filId)
       .maybeSingle<{
         id: string;
         client_id: string;
         blocked_by: string | null;
-        merchants: { id: string; shop_name: string; photo_path: string | null } | null;
+        profiles: { full_name: string } | null;
+        merchants: { id: string; shop_name: string; profile_id: string; photo_path: string | null } | null;
       }>(),
     supabase.rpc("conversation_is_open", { cid: filId }),
   ]);
   if (error) throw error;
   if (erreurOuvert) throw erreurOuvert;
-  if (!data?.merchants || data.client_id !== clientId) return null;
-  return {
-    id: data.id,
-    interlocuteur: data.merchants.shop_name,
-    photoUrl: data.merchants.photo_path ? photoBoutique(data.merchants.photo_path) : undefined,
-    boutiqueId: data.merchants.id,
-    monId: clientId,
-    bloquePar: data.blocked_by,
-    ouvert: ouvert === true,
-  };
+  if (!data?.merchants) return null;
+  const commun = { id: data.id, boutiqueId: data.merchants.id, bloquePar: data.blocked_by, ouvert: ouvert === true };
+
+  if (cote.espace === "client") {
+    if (data.client_id !== cote.clientId) return null;
+    return {
+      ...commun,
+      interlocuteur: data.merchants.shop_name,
+      photoUrl: data.merchants.photo_path ? photoBoutique(data.merchants.photo_path) : undefined,
+      monId: cote.clientId,
+      jeSuisCommercant: false,
+    };
+  }
+  if (data.merchants.profile_id !== cote.profilCommercantId) return null;
+  return { ...commun, interlocuteur: data.profiles?.full_name ?? "", monId: cote.profilCommercantId, jeSuisCommercant: true };
 }
 
 export type ProduitCite = { id: string; titre: string; prixGnf: number; statut: Statut; photoUrl?: string };

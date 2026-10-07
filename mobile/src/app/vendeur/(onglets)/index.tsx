@@ -5,6 +5,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Produit } from "../../../lib/catalogue";
 import { useCommercant } from "../../../lib/contexte-commercant";
+import { listerFilsBoutique } from "../../../lib/messages";
 import { lireMesProduits } from "../../../lib/vendeur";
 import { couleurs } from "../../../theme";
 
@@ -13,15 +14,19 @@ export default function AccueilCommercant() {
   const { compte } = useCommercant();
   const boutique = compte.boutique!;
   const [produits, setProduits] = useState<Produit[] | null>(null);
+  const [nonLus, setNonLus] = useState<number | null>(null);
   const [rafraichit, setRafraichit] = useState(false);
 
   const charger = useCallback(async () => {
     try {
-      setProduits(await lireMesProduits(boutique));
+      const [p, fils] = await Promise.all([lireMesProduits(boutique), listerFilsBoutique(boutique.id, compte.profilId)]);
+      setProduits(p);
+      setNonLus(fils.reduce((total, f) => total + f.nonLus, 0));
     } catch {
       setProduits(null);
+      setNonLus(null);
     }
-  }, [boutique]);
+  }, [boutique, compte.profilId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,12 +65,17 @@ export default function AccueilCommercant() {
           <Pressable style={styles.tuile} onPress={() => router.push("/vendeur/produits")}>
             <Ionicons name="cube-outline" size={18} color={couleurs.inkSoft} />
             <Text style={styles.chiffre}>{enLigne ?? "–"}</Text>
-            <Text style={styles.legende}>produit{enLigne === 1 ? "" : "s"} en ligne</Text>
+            <Text style={styles.legende}>en ligne</Text>
+          </Pressable>
+          <Pressable style={[styles.tuile, styles.tuileAccent]} onPress={() => router.push("/vendeur/messages")}>
+            <Ionicons name="chatbubble-outline" size={18} color={couleurs.accent} />
+            <Text style={[styles.chiffre, { color: couleurs.accent }]}>{nonLus ?? "–"}</Text>
+            <Text style={[styles.legende, { color: couleurs.accent }]}>non lu{nonLus === 1 ? "" : "s"}</Text>
           </Pressable>
           <View style={styles.tuile}>
             <Ionicons name="people-outline" size={18} color={couleurs.inkSoft} />
             <Text style={styles.chiffre}>{interesses ?? "–"}</Text>
-            <Text style={styles.legende}>client{interesses === 1 ? "" : "s"} intéressé{interesses === 1 ? "" : "s"}</Text>
+            <Text style={styles.legende}>intéressé{interesses === 1 ? "" : "s"}</Text>
           </View>
         </View>
 
@@ -104,6 +114,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: couleurs.line,
   },
+  tuileAccent: { borderColor: couleurs.accent, backgroundColor: couleurs.accentSoft },
   chiffre: { fontSize: 26, fontWeight: "800", color: couleurs.ink },
   legende: { fontSize: 12, color: couleurs.inkSoft },
   rappel: {
