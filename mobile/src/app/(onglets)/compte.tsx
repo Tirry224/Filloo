@@ -39,6 +39,11 @@ export default function Compte() {
             <Text style={styles.boutonTexte}>Se connecter</Text>
           </Pressable>
         </Link>
+        <Link href="/inscription" asChild>
+          <Pressable style={styles.secondaireSeul}>
+            <Text style={styles.secondaireTexte}>Créer un compte</Text>
+          </Pressable>
+        </Link>
       </SafeAreaView>
     );
   }
@@ -74,5 +79,6 @@ const styles = StyleSheet.create({
   bouton: { backgroundColor: couleurs.accent, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8 },
   boutonTexte: { color: couleurs.onAccent, fontSize: 16, fontWeight: "700" },
   secondaire: { backgroundColor: couleurs.surface, borderWidth: 1, borderColor: couleurs.line, marginTop: "auto" },
+  secondaireSeul: { backgroundColor: couleurs.surface, borderWidth: 1, borderColor: couleurs.line, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
   secondaireTexte: { color: couleurs.ink, fontSize: 16, fontWeight: "600" },
 });

@@ -5,8 +5,9 @@ Supabase que le site, aucun code partagé avec lui.
 
 ## Lancer l'app sur ton téléphone
 
-1. Copier `.env.example` en `.env` et y mettre les deux valeurs publiques
-   du site (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+1. Copier `.env.example` en `.env` et le remplir avec les valeurs publiques
+   du site (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `NEXT_PUBLIC_SITE_URL`).
 2. `npm install`, puis `npm start`.
 3. Scanner le QR code avec l'app **Expo Go** (App Store ou Play Store).
 
@@ -26,6 +27,10 @@ un vrai compte.
 - Fait : recherche (mot, ville, catégorie, tri, recherches récentes, nombre
   de résultats ailleurs) et page boutique.
 - Provisoire : l'onglet « Compte » montre seulement les comptes de la connexion.
-- Manque : messagerie, signalement, inscription,
+- Fait : inscription d'un client, « Contacter le vendeur », liste des
+  conversations et fil en temps réel (citation du produit, fil bloqué ou gelé).
+- Attention : un message envoyé depuis l'app ne déclenche ni email ni push
+  (voir « App mobile » dans `docs/MEMOIRE.md`).
+- Manque : bloquer et signaler, mot de passe oublié,
   espace commerçant, notifications, et les mesures d'usage (`analytics_events`
   s'écrit côté serveur : l'app ne compte encore rien).

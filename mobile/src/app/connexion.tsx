@@ -74,6 +74,9 @@ export default function Connexion() {
           >
             {envoi ? <ActivityIndicator color={couleurs.onAccent} /> : <Text style={styles.texteBouton}>Se connecter</Text>}
           </Pressable>
+          <Pressable onPress={() => router.replace("/inscription")} style={styles.secondaire}>
+            <Text style={styles.secondaireTexte}>Créer un compte</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -99,4 +102,6 @@ const styles = StyleSheet.create({
   erreur: { fontSize: 14, color: couleurs.danger, marginTop: 8 },
   bouton: { backgroundColor: couleurs.accent, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 16 },
   texteBouton: { color: couleurs.onAccent, fontSize: 16, fontWeight: "700" },
+  secondaire: { borderWidth: 1, borderColor: couleurs.line, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  secondaireTexte: { color: couleurs.ink, fontSize: 16, fontWeight: "600" },
 });

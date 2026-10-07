@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Linking,
   Pressable,
@@ -17,13 +18,15 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Etiquette } from "../../composants/Etiquette";
 import { lireProduit, type Produit } from "../../lib/catalogue";
 import { formatGnf, lienWhatsApp } from "../../lib/format";
+import { ouvrirFil } from "../../lib/messages";
+import { useComptes } from "../../lib/profil";
 import { couleurs } from "../../theme";
 
 /**
  * La fiche produit. Ce qui manque encore par rapport au site, faute des
- * parcours correspondants : « Contacter le vendeur » (messagerie),
- * « Signaler », et le compteur `whatsapp_ouvert`
- * (écrit côté serveur, que l'app n'a pas encore).
+ * parcours correspondants : « Signaler », et les compteurs
+ * `contact_ouvert` et `whatsapp_ouvert` (écrits côté serveur, que l'app
+ * n'a pas encore).
  */
 export default function FicheProduit() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,6 +35,8 @@ export default function FicheProduit() {
   const [photo, setPhoto] = useState(0);
   const { width } = useWindowDimensions();
   const marges = useSafeAreaInsets();
+  const comptes = useComptes();
+  const [ouverture, setOuverture] = useState(false);
 
   useEffect(() => {
     lireProduit(id)
@@ -70,6 +75,45 @@ export default function FicheProduit() {
 
   const vendu = produit.statut === "sold";
   const whatsapp = lienWhatsApp(produit.boutique.whatsapp);
+
+  /** Même parcours que `/produit/[id]/contacter` du site. */
+  async function contacter() {
+    if (!produit) return;
+    if (!comptes.session) {
+      Alert.alert(
+        "Créez un compte pour écrire",
+        "Le vendeur a besoin de savoir qui le contacte. La création du compte prend moins d'une minute.",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "J'ai déjà un compte", onPress: () => router.push("/connexion") },
+          { text: "Créer mon compte", onPress: () => router.push("/inscription") },
+        ],
+      );
+      return;
+    }
+    if (!comptes.client) {
+      Alert.alert(
+        "Il vous faut un compte client",
+        "Votre connexion n'a qu'un compte commerçant. Ajoutez un compte client depuis « Mon compte » sur le site, sans changer d'adresse.",
+      );
+      return;
+    }
+    if (comptes.client.suspendu) {
+      Alert.alert("Compte suspendu", "Votre compte ne permet plus d'écrire. Vos conversations restent consultables.");
+      return;
+    }
+    setOuverture(true);
+    try {
+      const resultat = await ouvrirFil(comptes.client.id, produit.boutique.id);
+      if (resultat.type === "pret") router.push(`/messages/${resultat.filId}?produit=${produit.id}`);
+      // Le quota de 20 boutiques par jour est une règle, pas une panne : on le dit tel quel.
+      else Alert.alert("Vous avez contacté beaucoup de vendeurs aujourd'hui", resultat.raison);
+    } catch {
+      Alert.alert("Impossible d'ouvrir la conversation", "Vérifiez votre connexion internet, puis réessayez.");
+    } finally {
+      setOuverture(false);
+    }
+  }
 
   return (
     <View style={styles.page}>
@@ -155,14 +199,37 @@ export default function FicheProduit() {
           <View style={[styles.bouton, styles.boutonSecondaire]}>
             <Text style={styles.boutonSecondaireTexte}>Ce produit n'est plus disponible</Text>
           </View>
-        ) : whatsapp ? (
-          <Pressable style={styles.bouton} onPress={() => Linking.openURL(whatsapp)}>
-            <Ionicons name="logo-whatsapp" size={20} color={couleurs.onAccent} />
-            <Text style={styles.boutonTexte}>Contacter sur WhatsApp</Text>
-          </Pressable>
-        ) : (
+        ) : comptes.boutiqueId === produit.boutique.id ? (
+          /* On ne se contacte pas soi-même : la base le refuse (0016), et
+             le compteur « populaires » monterait tout seul. */
           <View style={[styles.bouton, styles.boutonSecondaire]}>
-            <Text style={styles.boutonSecondaireTexte}>Messagerie bientôt disponible dans l'app</Text>
+            <Text style={styles.boutonSecondaireTexte}>C'est votre produit</Text>
+          </View>
+        ) : (
+          <View style={styles.boutons}>
+            <Pressable
+              style={[styles.bouton, { flex: 1 }, ouverture && { opacity: 0.8 }]}
+              onPress={contacter}
+              disabled={ouverture || !comptes.pret}
+            >
+              {ouverture ? (
+                <ActivityIndicator color={couleurs.onAccent} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble-outline" size={20} color={couleurs.onAccent} />
+                  <Text style={styles.boutonTexte}>Contacter le vendeur</Text>
+                </>
+              )}
+            </Pressable>
+            {whatsapp ? (
+              <Pressable
+                style={[styles.bouton, styles.boutonSecondaire, styles.carre]}
+                onPress={() => Linking.openURL(whatsapp)}
+                accessibilityLabel={`Contacter ${produit.boutique.nom} sur WhatsApp`}
+              >
+                <Ionicons name="logo-whatsapp" size={22} color={couleurs.success} />
+              </Pressable>
+            ) : null}
           </View>
         )}
       </View>
@@ -221,6 +288,8 @@ const styles = StyleSheet.create({
   initialeTexte: { fontSize: 18, fontWeight: "700", color: couleurs.accent },
   boutiqueNom: { fontSize: 16, fontWeight: "600", color: couleurs.ink },
   discret: { fontSize: 12, color: couleurs.inkSoft },
+  boutons: { flexDirection: "row", gap: 10 },
+  carre: { width: 52, paddingVertical: 0 },
   pied: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: couleurs.line, backgroundColor: couleurs.surface },
   bouton: {
     flexDirection: "row",

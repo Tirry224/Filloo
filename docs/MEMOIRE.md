@@ -193,6 +193,20 @@ connectée, ce qui n'est pas le réflexe de quelqu'un qui veut « aussi
 vendre ». Si celui qui a conçu le produit se trompe, l'utilisateur se
 trompera.
 
+### App mobile (`mobile/`) : ce qu'elle ne fait pas encore
+
+- **Un message envoyé depuis l'app ne prévient PERSONNE.** Le site
+  envoie l'email et le push depuis son serveur (`notifyNewMessage`,
+  après `sendMessageAction`) ; l'app écrit directement en base et n'a pas
+  de serveur. Le commerçant ne voit le message qu'en ouvrant Filloo. À
+  régler côté base (déclencheur + Edge Function), ce qui demande une
+  migration, donc l'accord du porteur du projet.
+- **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
+  clé `service_role`. Visites, recherches et contacts venus de l'app
+  n'apparaissent pas dans `/suivi`.
+- **Côté client seulement** : pas encore d'espace commerçant, de
+  bloquer/signaler, de mot de passe oublié, ni d'ajout d'un second compte.
+
 ### Dettes techniques connues, aucune bloquante
 
 - **`npm run tests` ne trouve aucun fichier sous Windows** : les
@@ -707,10 +721,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-253 commits, du plus récent au plus ancien.
+254 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `30bf0a8` App mobile : recherche et page boutique
 - `c8c8189` App mobile : catalogue sans compte et fiche produit
 - `a6ca44b` App mobile : squelette Expo dans mobile/, connexion à Supabase
 - `157c1a7` Suivi : retrait du diagnostic temporaire

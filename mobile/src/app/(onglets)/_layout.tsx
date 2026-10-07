@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
 import { couleurs } from "../../theme";
 
-/** La barre d'onglets du client. Messages viendra avec son parcours. */
+/** La barre d'onglets du client. */
 export default function Onglets() {
   return (
     <Tabs
@@ -25,6 +25,13 @@ export default function Onglets() {
         options={{
           title: "Recherche",
           tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: "Messages",
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
