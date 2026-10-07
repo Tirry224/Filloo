@@ -28,6 +28,7 @@ export type NomEvenement =
   | "boutique_vue"
   | "contact_ouvert"
   | "contact_abouti"
+  | "whatsapp_ouvert"
   | "message_envoye"
   | "inscription"
   | "boutique_creee"

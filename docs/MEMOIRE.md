@@ -700,10 +700,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-244 commits, du plus récent au plus ancien.
+245 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `5cf7fcb` Suivi : un écran qui montre ce qui se passe dans Filloo
 - `04e0449` Placeholders : textes génériques au lieu d'exemples nominatifs
 
 ### 2026-10-02

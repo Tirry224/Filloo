@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { PriceTag } from "@/components/product/PriceTag";
@@ -160,15 +160,18 @@ export default async function ProductPage({
               Contacter le vendeur
             </Button>
             {waHref ? (
-              <Button
-                variant="secondary"
-                fullWidth={false}
-                href={waHref}
+              <a
+                href={`/produit/${product.id}/whatsapp`}
+                rel="nofollow"
                 aria-label={`Contacter ${product.merchant.shopName} sur WhatsApp`}
-                className="w-control shrink-0 text-success"
+                className={buttonClasses({
+                  variant: "secondary",
+                  fullWidth: false,
+                  className: "w-control shrink-0 text-success",
+                })}
               >
                 WA
-              </Button>
+              </a>
             ) : null}
           </>
         )}

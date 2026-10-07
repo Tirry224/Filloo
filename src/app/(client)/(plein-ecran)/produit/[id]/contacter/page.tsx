@@ -82,7 +82,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
         </Button>
         {waHref ? (
           <a
-            href={waHref}
+            href={`/produit/${product.id}/whatsapp`}
+            rel="nofollow"
             className="text-center text-xs text-ink-soft underline underline-offset-2"
           >
             Ou appelez directement le vendeur sur WhatsApp.
@@ -113,7 +114,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       </Button>
       {waHref ? (
         <a
-          href={waHref}
+          href={`/produit/${product.id}/whatsapp`}
+            rel="nofollow"
           className="text-center text-xs text-ink-soft underline underline-offset-2"
         >
           Ou appelez directement le vendeur sur WhatsApp.

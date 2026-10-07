@@ -30,6 +30,24 @@ type ButtonProps = CommonProps &
   ({ href: string } & Omit<React.ComponentProps<typeof Link>, "href" | "className">
    | ({ href?: undefined } & Omit<React.ComponentProps<"button">, "className">));
 
+/** L'apparence d'un bouton, pour un `<a>` qui ne doit PAS être un
+ * `<Link>` (lien compté, voir `produit/[id]/whatsapp/route.ts`). */
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  fullWidth = true,
+  className,
+}: Pick<CommonProps, "variant" | "size" | "fullWidth" | "className"> = {}) {
+  return cn(
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold",
+    "transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    VARIANTS[variant],
+    SIZES[size],
+    fullWidth && "w-full",
+    className,
+  );
+}
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -39,14 +57,7 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const classes = cn(
-    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold",
-    "transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-    VARIANTS[variant],
-    SIZES[size],
-    fullWidth && "w-full",
-    className,
-  );
+  const classes = buttonClasses({ variant, size, fullWidth, className });
 
   const content = (
     <>
