@@ -7,9 +7,8 @@ import { supabase } from "./supabase";
  * RLS décide de tout — qui lit quel fil, qui peut y écrire — exactement
  * comme pour le site : l'app n'a aucun droit de plus.
  *
- * Ce que le site fait en plus, depuis son serveur, et que l'app ne fait
- * PAS encore : prévenir le destinataire (email, push) et compter les
- * mesures (`analytics_events`).
+ * Le destinataire est prévenu par le site (`prevenirDestinataire`). Ce
+ * que l'app ne fait PAS : compter les mesures (`analytics_events`).
  */
 
 const urlStockage = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -295,13 +294,20 @@ export async function envoyerMessage(opts: {
   if ([...texte].length > MESSAGE_MAX) {
     return `Message trop long : ${MESSAGE_MAX} caractères maximum. Coupez-le en deux.`;
   }
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: opts.filId,
-    sender_id: opts.monId,
-    body: texte,
-    product_id: opts.produitId,
-  });
-  if (!error) return null;
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: opts.filId,
+      sender_id: opts.monId,
+      body: texte,
+      product_id: opts.produitId,
+    })
+    .select("id")
+    .single();
+  if (!error) {
+    prevenirDestinataire(data.id);
+    return null;
+  }
   // Bloqué, compte suspendu, boutique suspendue : un seul sens pour l'expéditeur.
   if (error.code === "42501") return "Ce fil n'accepte plus de nouveaux messages. Vos échanges restent consultables.";
   // `raise exception` des triggers, rédigés en français (premier message sans produit, etc.).
@@ -309,6 +315,29 @@ export async function envoyerMessage(opts: {
   if (error.message.includes("Network request failed")) return "Pas de connexion internet. Votre message n'est pas parti.";
   console.error("[messages]", error.code, error.message);
   return "Une erreur est survenue. Réessayez dans un instant.";
+}
+
+/**
+ * Le site prévient le destinataire (push, email) depuis son serveur ;
+ * l'app n'en a pas, elle demande donc au site de le faire
+ * (`/api/app/message-envoye`). Sans attendre la réponse et sans jamais
+ * échouer : le message est parti, c'est ce qui compte pour l'expéditeur.
+ */
+function prevenirDestinataire(messageId: string) {
+  const site = process.env.EXPO_PUBLIC_SITE_URL;
+  if (!site) return;
+  supabase.auth
+    .getSession()
+    .then(({ data }) => {
+      const jeton = data.session?.access_token;
+      if (!jeton) return;
+      return fetch(`${site}/api/app/message-envoye`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${jeton}` },
+        body: JSON.stringify({ messageId }),
+      });
+    })
+    .catch((e) => console.error("[messages] notification non demandée :", e));
 }
 
 /** Marque comme lus les messages REÇUS de ce fil (jamais les miens : policy de 0002). */

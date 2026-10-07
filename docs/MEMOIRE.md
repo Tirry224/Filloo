@@ -195,18 +195,30 @@ trompera.
 
 ### App mobile (`mobile/`) : ce qu'elle ne fait pas encore
 
-- **Un message envoyé depuis l'app ne prévient PERSONNE.** Le site
-  envoie l'email et le push depuis son serveur (`notifyNewMessage`,
-  après `sendMessageAction`) ; l'app écrit directement en base et n'a pas
-  de serveur. Le commerçant ne voit le message qu'en ouvrant Filloo. À
-  régler côté base (déclencheur + Edge Function), ce qui demande une
-  migration, donc l'accord du porteur du projet.
+- **Les messages envoyés depuis l'app préviennent le destinataire par
+  le SITE** (2026-10-07) : après chaque envoi, l'app appelle
+  `POST /api/app/message-envoye` avec son jeton Supabase, et la route
+  relance le même `notifyNewMessage` que le site (push web et email).
+  Choisi plutôt qu'un déclencheur et une Edge Function : ni migration,
+  ni second exemplaire du code d'email. Conséquence : l'app dépend de
+  `EXPO_PUBLIC_SITE_URL`, qui doit désigner un déploiement portant cette
+  route — la préversion de `dev` tant qu'elle n'est pas sur `main`.
+  **À constater** : une notification réellement reçue après un message
+  parti de l'app. Le push NATIF (notification du téléphone quand l'app
+  est fermée) reste à faire : il demande de stocker des jetons Expo,
+  donc une migration.
 - **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
   clé `service_role`. Visites, recherches et contacts venus de l'app
-  n'apparaissent pas dans `/suivi`.
-- **Pas encore dans l'app** : bloquer et signaler, mot de passe oublié,
-  modifier ses informations ou supprimer son compte, push natives. Les
-  deux espaces (client et commerçant) y sont depuis le 2026-10-07.
+  n'apparaissent pas dans `/suivi`. Une route ouverte comme celle des
+  messages permettrait à n'importe qui de fabriquer des chiffres : la
+  solution reste à décider.
+- **Supprimer son compte** renvoie vers la page du site (clé
+  `service_role` exigée). Apple demande que la suppression soit
+  accessible depuis l'app : un lien direct est en principe accepté, à
+  vérifier au moment de la soumission.
+- **Pas encore dans l'app** : push natives, la liste « Personnes
+  bloquées » (on débloque depuis le fil), et la publication sur les
+  stores. Tout le reste du site y est depuis le 2026-10-07.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -722,10 +734,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-260 commits, du plus récent au plus ancien.
+261 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `e64aad2` App mobile : icônes, écran de démarrage et configuration de compilation
 - `db74a74` App mobile : mot de passe oublié, mes informations, changer de mot de passe
 - `fca5c39` App mobile : bloquer, débloquer et signaler
 - `e27ae6e` App mobile : inscription commerçant et boutique

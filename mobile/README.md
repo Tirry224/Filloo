@@ -51,8 +51,12 @@ Identifiant de l'app sur les deux stores : `com.filloo.app` (dans
   (publier, vendu, masquer, supprimer), création et modification d'un
   produit avec photos, messagerie, modification de la boutique (mot de
   passe redemandé), bascule entre les deux espaces.
-- Attention : un message envoyé depuis l'app ne déclenche ni email ni push,
-  et l'app ne compte aucune mesure (voir « App mobile » dans `docs/MEMOIRE.md`).
-- Manque : bloquer et signaler, mot de passe oublié, modifier ses
-  informations ou supprimer son compte, notifications push natives,
-  icônes et publication sur les stores.
+- Fait (les deux) : bloquer, débloquer, signaler ; mot de passe oublié,
+  mes informations, changer de mot de passe ; suppression du compte par
+  le site.
+- Le destinataire d'un message est prévenu (push web, email) par le site :
+  `EXPO_PUBLIC_SITE_URL` doit désigner un déploiement qui porte
+  `/api/app/message-envoye`.
+- Manque : notifications natives du téléphone, mesures d'usage, liste
+  « Personnes bloquées », publication sur les stores (voir « App mobile »
+  dans `docs/MEMOIRE.md`).
