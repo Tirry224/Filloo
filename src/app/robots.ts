@@ -28,6 +28,9 @@ export default function robots(): MetadataRoute.Robots {
 
         "/api/",
 
+        "/suivi",
+        "/produit/*/whatsapp",
+
         "/ecrans",
         "/styleguide",
       ],

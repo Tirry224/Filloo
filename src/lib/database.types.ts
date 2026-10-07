@@ -532,6 +532,7 @@ export type Database = {
         Returns: string[]
       }
       purger_mesures: { Args: never; Returns: number }
+      suivi_chiffres: { Args: { depuis: string }; Returns: Json }
       search_products: {
         Args: {
           p_category_id?: number

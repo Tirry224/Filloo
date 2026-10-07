@@ -189,6 +189,21 @@ La notification sur téléphone, elle, part à chaque message, avec son et
 vibration ; application ouverte, `MessageAlerts` joue le son et affiche un
 bandeau.
 
+### Écran de suivi (`/suivi`)
+
+Les chiffres d'usage (visites, contacts, inscriptions, recherches, ce qui
+attend une action) se lisent sur `/suivi`, réservé au porteur du projet.
+
+```
+OWNER_EMAIL=<l'adresse du compte Filloo du porteur du projet>
+```
+
+- `OWNER_EMAIL` — seule une connexion avec cette adresse, CONFIRMÉE, voit
+  la page ; tout autre visiteur reçoit « page introuvable ». **Sans elle,
+  personne n'entre**, propriétaire compris.
+- Les chiffres viennent de `suivi_chiffres` (`0034`), appelable par
+  `service_role` seulement.
+
 ### Décisions d'administration (Vercel Cron)
 
 Trois décisions se prennent dans le tableau de bord Supabase et ne

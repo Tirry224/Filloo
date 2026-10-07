@@ -700,7 +700,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-243 commits, du plus récent au plus ancien.
+244 commits, du plus récent au plus ancien.
+
+### 2026-10-07
+
+- `04e0449` Placeholders : textes génériques au lieu d'exemples nominatifs
 
 ### 2026-10-02
 
