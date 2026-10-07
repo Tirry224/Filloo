@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCommercant } from "../../../lib/contexte-commercant";
 import { formatTelephone } from "../../../lib/format";
-import { supabase } from "../../../lib/supabase";
+import { deconnecter } from "../../../lib/notifications";
 import { retenirEspace } from "../../../lib/vendeur";
 import { couleurs } from "../../../theme";
 
@@ -19,8 +19,8 @@ export default function MaBoutique() {
     router.replace("/");
   }
 
-  async function deconnecter() {
-    await supabase.auth.signOut();
+  async function seDeconnecter() {
+    await deconnecter();
     router.replace("/");
   }
 
@@ -68,7 +68,7 @@ export default function MaBoutique() {
           <Text style={styles.entreeTexte}>Passer à l'espace client</Text>
           <Ionicons name="chevron-forward" size={18} color={couleurs.inkSoft} />
         </Pressable>
-        <Pressable style={styles.entree} onPress={deconnecter}>
+        <Pressable style={styles.entree} onPress={seDeconnecter}>
           <Ionicons name="log-out-outline" size={20} color={couleurs.danger} />
           <Text style={[styles.entreeTexte, { color: couleurs.danger }]}>Se déconnecter</Text>
         </Pressable>

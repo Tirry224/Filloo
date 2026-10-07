@@ -54,9 +54,10 @@ Identifiant de l'app sur les deux stores : `com.filloo.app` (dans
 - Fait (les deux) : bloquer, débloquer, signaler ; mot de passe oublié,
   mes informations, changer de mot de passe ; suppression du compte par
   le site.
-- Le destinataire d'un message est prévenu (push web, email) par le site :
-  `EXPO_PUBLIC_SITE_URL` doit désigner un déploiement qui porte
-  `/api/app/message-envoye`.
-- Manque : notifications natives du téléphone, mesures d'usage, liste
-  « Personnes bloquées », publication sur les stores (voir « App mobile »
-  dans `docs/MEMOIRE.md`).
+- Fait : notifications du téléphone (nouveau message, nouvelle demande),
+  qui ouvrent la conversation au toucher. Elles demandent une version
+  compilée de l'app (`eas build`, après `eas init`) : Expo Go ne les reçoit
+  pas sur Android. Le site les envoie : `EXPO_PUBLIC_SITE_URL` doit
+  désigner un déploiement qui porte `/api/app/message-envoye`.
+- Manque : mesures d'usage, liste « Personnes bloquées », publication sur
+  les stores (voir « App mobile » dans `docs/MEMOIRE.md`).

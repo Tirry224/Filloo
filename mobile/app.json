@@ -45,7 +45,14 @@
           "backgroundColor": "#fcf8f3"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#b64c1b"
+        }
+      ]
     ],
     "scheme": "filloo"
   }

@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useNotifications } from "../lib/notifications";
 import { FournisseurSession } from "../lib/session";
 import { couleurs } from "../theme";
 
@@ -7,6 +8,7 @@ export default function Racine() {
   return (
     <FournisseurSession>
       <StatusBar style="dark" />
+      <Notifications />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: couleurs.paper } }}>
         <Stack.Screen name="(onglets)" />
         <Stack.Screen name="produit/[id]" />
@@ -21,4 +23,10 @@ export default function Racine() {
       </Stack>
     </FournisseurSession>
   );
+}
+
+/** Sans rendu : inscrit le téléphone et ouvre la conversation d'une notification touchée. */
+function Notifications() {
+  useNotifications();
+  return null;
 }

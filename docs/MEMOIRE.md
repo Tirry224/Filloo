@@ -195,18 +195,21 @@ trompera.
 
 ### App mobile (`mobile/`) : ce qu'elle ne fait pas encore
 
-- **Les messages envoyés depuis l'app préviennent le destinataire par
-  le SITE** (2026-10-07) : après chaque envoi, l'app appelle
-  `POST /api/app/message-envoye` avec son jeton Supabase, et la route
-  relance le même `notifyNewMessage` que le site (push web et email).
-  Choisi plutôt qu'un déclencheur et une Edge Function : ni migration,
-  ni second exemplaire du code d'email. Conséquence : l'app dépend de
-  `EXPO_PUBLIC_SITE_URL`, qui doit désigner un déploiement portant cette
-  route — la préversion de `dev` tant qu'elle n'est pas sur `main`.
-  **À constater** : une notification réellement reçue après un message
-  parti de l'app. Le push NATIF (notification du téléphone quand l'app
-  est fermée) reste à faire : il demande de stocker des jetons Expo,
-  donc une migration.
+- **Notifications « comme une vraie application », plus d'email de
+  notification** (décision du 2026-10-07). Nouveaux messages, nouvelles
+  demandes et suspensions partent par notification seulement : téléphones
+  de l'app (Expo, table `expo_push_tokens`, migration `0035` appliquée le
+  même jour) et navigateurs abonnés (Web Push, `0023`). L'email ne sert
+  plus qu'au compte (confirmation, mot de passe oublié), par Supabase.
+  Un utilisateur du site sans notifications activées n'est prévenu de
+  rien : assumé par le porteur du projet.
+  L'app déclenche l'envoi par `POST /api/app/message-envoye` (le site
+  relance `notifyNewMessage`) : `EXPO_PUBLIC_SITE_URL` doit désigner un
+  déploiement qui porte cette route — la préversion de `dev` tant
+  qu'elle n'est pas sur `main`.
+  **À constater** : une notification reçue sur un téléphone. Il faut une
+  version compilée (`eas build`, après `eas init`) : Expo Go ne reçoit
+  pas les notifications sur Android.
 - **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
   clé `service_role`. Visites, recherches et contacts venus de l'app
   n'apparaissent pas dans `/suivi`. Une route ouverte comme celle des
@@ -216,9 +219,8 @@ trompera.
   `service_role` exigée). Apple demande que la suppression soit
   accessible depuis l'app : un lien direct est en principe accepté, à
   vérifier au moment de la soumission.
-- **Pas encore dans l'app** : push natives, la liste « Personnes
-  bloquées » (on débloque depuis le fil), et la publication sur les
-  stores. Tout le reste du site y est depuis le 2026-10-07.
+- **Pas encore dans l'app** : la liste « Personnes bloquées » (on
+  débloque depuis le fil), et la publication sur les stores. Tout le reste du site y est depuis le 2026-10-07.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -734,10 +736,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-263 commits, du plus récent au plus ancien.
+264 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `c4eb28d` Notifications : téléphones de l'app, et plus d'email de notification
 - `07d1440` Migration 0035 : les téléphones de l'app mobile (appliquée)
 - `56ccdb3` Notifier le destinataire d'un message envoyé depuis l'app
 - `e64aad2` App mobile : icônes, écran de démarrage et configuration de compilation

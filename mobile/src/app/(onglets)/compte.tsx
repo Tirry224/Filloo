@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { creerCompteCommercantLie } from "../../lib/edition-boutique";
+import { deconnecter } from "../../lib/notifications";
 import { useSession } from "../../lib/session";
 import { supabase } from "../../lib/supabase";
 import { retenirEspace } from "../../lib/vendeur";
@@ -104,7 +105,7 @@ export default function Compte() {
         </Pressable>
       ) : null}
 
-      <Pressable onPress={() => supabase.auth.signOut()} style={[styles.bouton, styles.secondaire]}>
+      <Pressable onPress={deconnecter} style={[styles.bouton, styles.secondaire]}>
         <Text style={styles.secondaireTexte}>Se déconnecter</Text>
       </Pressable>
     </SafeAreaView>
