@@ -78,10 +78,11 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   valait l'adresse de SUPABASE (tous les liens d'email partaient
   ailleurs), et le « Site URL » de Supabase désignait encore
   `makiti-beryl.vercel.app`.
-- **Les emails partent du serveur d'essai de Supabase** : classés en
-  indésirables et limités à quelques envois par heure. Il faut un SMTP
-  (Resend, Brevo…) sur un domaine à nous, SPF et DKIM compris ;
-  `filloo.vercel.app` ne permet pas de poser ces enregistrements.
+- **Les emails partent du SMTP Gmail du projet** (`filloo.gn@gmail.com`,
+  README « Emails d'authentification »), posé par le porteur du projet
+  et confirmé par lui le 2026-10-07 — plus le serveur d'essai de
+  Supabase. Limite : environ 500 envois par jour, ce qui suffit au test ;
+  un domaine à nous (SPF, DKIM) ne deviendra utile qu'au-delà.
 - **Les push ne partent toujours pas, clés posées ou non.** Constaté
   le 2026-10-02 (connecteur) : un seul abonnement, créé le 25/09,
   `last_used_at` toujours vide après 58 messages envoyés depuis (on ne
@@ -754,10 +755,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-267 commits, du plus récent au plus ancien.
+268 commits, du plus récent au plus ancien.
 
 ### 2026-10-07
 
+- `4892886` Mémoire : le code des emails est posé et fonctionne dans l'app
 - `15bb1ad` App mobile : supprimer son compte sans passer par le site
 - `182a2af` App mobile : sortie du dépôt, elle vit dans tirry224/filloo-mobile
 - `2d5c2e2` App mobile : notifications du téléphone
