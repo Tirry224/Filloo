@@ -17,7 +17,7 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 | 2 | Navigation | Catalogue **libre sans compte**. Compte obligatoire uniquement pour envoyer un message. |
 | 3 | Catégories | Liste **fixe**, gérée par l'administrateur. **Révisé le 2026-09-22 : 9, après suppression d'« Autre » (migration 0025).** La base en portait 10 dont un fourre-tout, que cette décision excluait pourtant depuis l'origine — la contradiction a vécu depuis 0003. Une catégorie fourre-tout est toujours le choix le moins coûteux au moment de publier : elle se remplit, et vide les autres de leur sens. Nommer une dixième catégorie RÉELLE reste possible ; neuf qui veulent dire quelque chose valent mieux qu'une dixième inventée pour tenir un compte. |
 | 4 | Classement du fil | Pas de notation. Tri : *à la une* (manuel) → *populaires* (nb de conversations) → *récents*. |
-| 5 | Notification commerçant | v1 : badge de non-lus + email. Push web reporté en v2. |
+| 5 | Notification commerçant | Badge de non-lus + **notification** : navigateur (Web Push) et téléphone (app mobile). **Plus d'email de notification depuis le 2026-10-07** : l'email ne sert plus qu'au compte (confirmation, mot de passe oublié). Remplace « badge + email, push en v2 ». |
 | 5b | Structure des fils | **Un seul fil par couple (client, boutique).** Chaque message référence le produit dont il parle ; le premier message d'un fil en porte obligatoirement un. |
 | 6 | Modération produits | Publication immédiate, bouton « signaler », masquage possible par l'admin. |
 | 7 | Volume cible | 500 commerçants **à un an**. Densité avant volume au lancement. |
@@ -25,19 +25,21 @@ Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 | 9 | Ville | Filtre **manuel** choisi par le client. Jamais de filtrage automatique. |
 | 10 | Disponibilité | Binaire (disponible / vendu). **Pas de gestion de stock.** |
 | 11 | Validation commerçant | **Aucune, depuis le 2026-10-02 (migration `0033`).** Le lien de confirmation envoyé par email suffit : la boutique est en ligne dès sa création. Ni refus ni attente. Le porteur du projet garde la suspension et la suppression d'un compte, depuis le tableau de bord Supabase. Remplace le critère du 2026-09-17 (appel téléphonique avant validation). |
-| 12 | Commerçant en attente | Voit un message d'attente, peut préparer sa boutique et ses produits en **brouillon**. |
+| 12 | Commerçant en attente | **Sans objet depuis le 2026-10-02** (décision 11, `0033`) : plus d'attente, la boutique est en ligne dès sa création. Les produits peuvent toujours rester en **brouillon**. |
 | 13 | Abus | Bouton « signaler » + suspension de compte + deux quotas : 20 boutiques contactées/jour et 100 messages/jour par compte. |
 | 14 | Recherche | Sur le titre, la description et le nom de la boutique. Insensible aux accents. |
 | 15 | Photos | 1 minimum, 3 maximum. Compression avant envoi. Coûts assumés par le porteur du projet. |
 | 16 | Litige | Suspension du compte vendeur. **Une suspension gèle les fils DANS LES DEUX SENS** (décision du 2026-09-17, migration `0022`) : on ne communique pas avec un compte suspendu, qu'il soit client ou boutique. Les fils restent entièrement LISIBLES — lecture seule, jamais suppression. |
 | 17 | Monétisation | Aucune en v1 (choix assumé). |
-| 18 | Hébergement | Vercel, sous-domaine `.vercel.app`. |
+| 18 | Hébergement | Vercel, sur le domaine **`filloo.net`** depuis le 2026-10-08 (`filloo.vercel.app` y redirige). Emails de compte depuis `send.filloo.net`. |
+| 19 | App mobile | **Une app native iPhone et Android** (décision du 2026-10-07), Expo, dans son propre dépôt `tirry224/filloo-mobile`. Même base Supabase, aucun code partagé ; ce qui exige un secret passe par l'API du site (`/api/app/…`). |
 
 ## 2. Hors périmètre de la v1
 
 Paiement en ligne · panier · livraison · gestion de stock · notation et avis ·
-notifications push · application mobile native · page d'administration ·
-multi-boutiques par commerçant · plusieurs langues.
+page d'administration · multi-boutiques par commerçant · plusieurs langues.
+(Les notifications push et l'application mobile native en sont sorties : voir
+décisions 5 et 19.)
 
 ## 3. Parcours utilisateurs
 

@@ -26,23 +26,27 @@ conclut hors de l'application.
 - [x] Branchement sur la vraie base, en lecture ET en écriture : catalogue
       public, espace vendeur, messagerie, compte et suppression de compte
 - [x] Authentification (inscription, connexion, comptes liés)
-- [x] Déploiement Vercel — `main` est la branche de production
+- [x] Déploiement Vercel — `main` est la branche de production, en ligne
+      sur `https://filloo.net` depuis le 2026-10-08 ; `dev` a sa préversion
+- [x] API de l'app mobile en production (`/api/app/message-envoye`,
+      `/api/app/supprimer-compte`) depuis la fusion de `dev` du 2026-10-09
 - [ ] Parcours complet des écrans dans un navigateur (commencé le 12/09)
-- [x] Notification par email des nouveaux messages (code + Resend branché
-      sur Vercel — reste à constater un envoi réel dans une vraie boîte)
+- [x] Plus d'email de notification (décision du 2026-10-07) : messages et
+      suspensions partent par notification, navigateur (Web Push) et
+      téléphone (app mobile) — aucune encore vue arriver (2026-10-09)
 - [x] Une boutique est en ligne dès sa création, sans validation manuelle
       (`0033`) ; le lien de confirmation de l'email est la seule
-      vérification. Seule la suspension d'un compte est encore annoncée
-      par email (`0021` + Vercel Cron)
-- [x] SMTP Gmail (`filloo.gn@gmail.com`) côté Supabase — posé, et
-      fonctionnel selon le porteur du projet (2026-10-02). Aucun envoi
-      encore vu dans les journaux d'authentification
+      vérification. La suspension d'un compte s'annonce par notification
+      (`0021` + Vercel Cron)
+- [x] Emails de compte envoyés par Resend depuis `noreply@send.filloo.net`
+      (posé le 2026-10-08, SPF, DKIM et DMARC chez Cloudflare) ; ils
+      remplacent le SMTP Gmail. Aucun envoi encore vu dans les journaux
 - [ ] **Le cron du matin n'a jamais vidé la file `notifications`**
       (constaté le 2026-09-21). Elle ne porte plus que les suspensions
       depuis `0033`. Suspect : `CRON_SECRET` absente de Vercel
-- [ ] Confirmation d'email : code en production depuis le 2026-10-02
-      (`fc971cb`), reste à poser les trois réglages Supabase de la
-      section « Confirmation de l'email à l'inscription »
+- [x] Confirmation d'email active (constaté le 2026-10-09 : un compte
+      attend sa confirmation) ; reste à vérifier que les Redirect URLs
+      portent `https://filloo.net/**`
 - [x] Partage et référencement : Open Graph sur les fiches produit et
       boutique, `sitemap.xml`, `robots.txt`
 - [x] Politique de confidentialité (`/confidentialite`) et écran de
@@ -167,7 +171,7 @@ navigateur abonné (Web Push, `0023`). `RESEND_API_KEY` et `EMAIL_FROM` ne
 servent plus et peuvent être retirées de Vercel.
 
 ```
-NEXT_PUBLIC_SITE_URL=https://ton-domaine.gn
+NEXT_PUBLIC_SITE_URL=https://filloo.net
 EXPO_ACCESS_TOKEN=   # facultatif
 ```
 
@@ -280,16 +284,15 @@ avec le SMTP configuré dans **Authentication → Emails → SMTP Settings**.
 C'est de la configuration, pas du code : rien dans ce dépôt ne les
 envoie.
 
-**Le SMTP est celui de Gmail, sur l'adresse du projet
-`filloo.gn@gmail.com`.** Filloo n'a pas de domaine, et Resend n'envoie
-sans domaine vérifié qu'au propriétaire du compte : le SMTP Resend posé
-le 2026-09-17 ne pouvait donc écrire à aucun utilisateur.
+**Le SMTP est celui de Resend, sur le domaine du projet** (depuis le
+2026-10-08) : expéditeur `noreply@send.filloo.net`, domaine `filloo.net`
+vérifié chez Resend, SPF, DKIM et DMARC déclarés chez Cloudflare. Les
+enregistrements DNS de `send` et `_dmarc` ne se touchent pas : sans eux,
+les emails repartent en courrier indésirable.
 
-Les valeurs : hôte `smtp.gmail.com`, port `465`, utilisateur et
-expéditeur `filloo.gn@gmail.com`, nom d'expéditeur `Filloo`, mot de
-passe un **mot de passe d'application** Google (validation en deux
-étapes obligatoire ; le mot de passe du compte est refusé). Limite
-d'environ 500 envois par jour.
+Avant, du 2026-10-07 au 2026-10-08 : le SMTP Gmail de
+`filloo.gn@gmail.com` (environ 500 envois par jour), faute de domaine —
+Resend n'envoie sans domaine vérifié qu'au propriétaire du compte.
 
 ### Confirmation de l'email à l'inscription
 
@@ -301,7 +304,8 @@ Trois réglages du tableau de bord, tous nécessaires :
   `RedirectTo` porte toujours `?origine=inscription` (`lienDeConfirmation`,
   `src/lib/actions/auth.ts`), d'où le `&`.
 - **Authentication → URL Configuration → Redirect URLs** contient
-  `https://filloo.vercel.app/**`. Sinon Supabase remplace `RedirectTo` par
+  `https://filloo.net/**` (et le Site URL vaut `https://filloo.net`)
+  depuis le changement de domaine du 2026-10-08. Sinon Supabase remplace `RedirectTo` par
   le Site URL, sans `?`, et le lien est cassé.
 
 ### Le code dans les emails, pour l'app mobile
