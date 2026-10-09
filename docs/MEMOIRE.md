@@ -78,10 +78,11 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   valait l'adresse de SUPABASE (tous les liens d'email partaient
   ailleurs), et le « Site URL » de Supabase désignait encore
   `makiti-beryl.vercel.app`.
-- **Les emails partent du serveur d'essai de Supabase** : classés en
-  indésirables et limités à quelques envois par heure. Il faut un SMTP
-  (Resend, Brevo…) sur un domaine à nous, SPF et DKIM compris ;
-  `filloo.vercel.app` ne permet pas de poser ces enregistrements.
+- **Les emails partent du SMTP Gmail du projet** (`filloo.gn@gmail.com`,
+  README « Emails d'authentification »), posé par le porteur du projet
+  et confirmé par lui le 2026-10-07 — plus le serveur d'essai de
+  Supabase. Limite : environ 500 envois par jour, ce qui suffit au test ;
+  un domaine à nous (SPF, DKIM) ne deviendra utile qu'au-delà.
 - **Les push ne partent toujours pas, clés posées ou non.** Constaté
   le 2026-10-02 (connecteur) : un seul abonnement, créé le 25/09,
   `last_used_at` toujours vide après 58 messages envoyés depuis (on ne
@@ -192,6 +193,47 @@ l'écran d'inscription ne propose le compte lié qu'à une personne DÉJÀ
 connectée, ce qui n'est pas le réflexe de quelqu'un qui veut « aussi
 vendre ». Si celui qui a conçu le produit se trompe, l'utilisateur se
 trompera.
+
+### App mobile : ce qu'elle ne fait pas encore
+
+L'app vit depuis le 2026-10-07 dans son propre dépôt,
+`tirry224/filloo-mobile` (décision du porteur du projet : ne plus
+mélanger les deux apps dans les mêmes commits). Son code y est ; ce qui
+suit reste ici parce que ça touche le site ou la base.
+
+
+- **Notifications « comme une vraie application », plus d'email de
+  notification** (décision du 2026-10-07). Nouveaux messages, nouvelles
+  demandes et suspensions partent par notification seulement : téléphones
+  de l'app (Expo, table `expo_push_tokens`, migration `0035` appliquée le
+  même jour) et navigateurs abonnés (Web Push, `0023`). L'email ne sert
+  plus qu'au compte (confirmation, mot de passe oublié), par Supabase.
+  Un utilisateur du site sans notifications activées n'est prévenu de
+  rien : assumé par le porteur du projet.
+  L'app déclenche l'envoi par `POST /api/app/message-envoye` (le site
+  relance `notifyNewMessage`) : `EXPO_PUBLIC_SITE_URL` doit désigner un
+  déploiement qui porte cette route — la préversion de `dev` tant
+  qu'elle n'est pas sur `main`.
+  **À constater** : une notification reçue sur un téléphone. Il faut une
+  version compilée (`eas build`, après `eas init`) : Expo Go ne reçoit
+  pas les notifications sur Android.
+- **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
+  clé `service_role`. Visites, recherches et contacts venus de l'app
+  n'apparaissent pas dans `/suivi`. Une route ouverte comme celle des
+  messages permettrait à n'importe qui de fabriquer des chiffres : la
+  solution reste à décider.
+- **Plus rien ne renvoie vers le site** (décision du 2026-10-07 : tout
+  se passe dans l'app). Confirmation d'inscription et mot de passe
+  oublié par le CODE de l'email ; conditions et confidentialité recopiées
+  dans l'app ; suppression du compte par `POST /api/app/supprimer-compte`
+  (jeton + mot de passe, même effacement que le site, logique partagée
+  dans `src/lib/suppression-compte.ts`). Les modèles d'email
+  Supabase portent `{{ .Token }}` (README, « Le code dans les emails ») :
+  posés par le porteur du projet, qui déclare le 2026-10-07 que le code
+  reçu par email fonctionne dans l'app. La route de suppression n'existe que sur `dev` tant que `dev`
+  n'est pas sur `main`.
+- **Pas encore dans l'app** : la liste « Personnes bloquées » (on
+  débloque depuis le fil), et la publication sur les stores. Tout le reste du site y est depuis le 2026-10-07.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -455,13 +497,26 @@ suivante ne doit pas rouvrir.
   effacer attend un avis sur la loi guinéenne L/2016/037, qui n'a pas été
   pris.
 - **Pas de notation**, **aucune monétisation en v1**.
+- **Une app mobile native, iPhone et Android, dans son propre dépôt
+  `tirry224/filloo-mobile`** (décision du porteur du projet du
+  2026-10-07 ; d'abord dans `mobile/`, sortie du dépôt le même jour). Expo (React Native), réécrite et
+  non un site emballé, publiée sur l'App Store et le Play Store. Elle
+  parle à la même base Supabase que le site et ne partage aucun code
+  avec lui : ce qui en est recopié (types, messages d'erreur) le dit en
+  tête de fichier. Le site reste en ligne pendant la réécriture.
+  Ce que l'app attend du site — tables, RLS, `POST
+  /api/app/message-envoye` — ne se change pas sans regarder
+  `filloo-mobile` : les téléphones gardent l'ancienne version de l'app
+  tant que l'utilisateur ne la met pas à jour. Les migrations restent
+  dans CE dépôt, la base n'en ayant qu'un historique.
 - Direction visuelle **« A — Marché »** : fond papier chaud, accent terre
   cuite, bordures plutôt qu'ombres.
 
 ### Règles de travail
 
-- **`main` est la branche unique**, de travail ET de production. La règle
-  complète est dans `CLAUDE.md` — c'est elle qui fait foi.
+- **`dev` pour travailler, `main` pour la production** (règle du
+  2026-10-07). La règle complète est dans `CLAUDE.md` — c'est elle qui
+  fait foi.
 - **Une migration ne se réécrit jamais après avoir été appliquée** : elle
   décrit un pas déjà franchi, pas l'état final.
 - **Toute migration appliquée au tableau de bord est commitée dans la
@@ -704,11 +759,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 ### 2026-10-07
 
-- `6a77f33` Revert "Suivi : diagnostic temporaire du compte propriétaire"
-- `660f27d` Suivi : diagnostic temporaire du compte propriétaire
-- `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion
-- `6e093ea` Suivi : le compte du porteur du projet ne voit que /suivi
-- `2535655` Git : dev pour travailler et tester, main seulement sur demande
+- `aceecc7` Suivi : retrait du diagnostic temporaire
+- `aa0c18a` Suivi : diagnostic temporaire du compte propriétaire
+- `b836b87` Suivi : la règle du propriétaire tient aussi après la connexion
+- `8bf1ea1` Suivi : le compte du porteur du projet ne voit que /suivi
+- `a9231df` Git : dev pour travailler et tester, main seulement sur demande
 - `7960c95` WhatsApp : chaque clic est compté
 - `5cf7fcb` Suivi : un écran qui montre ce qui se passe dans Filloo
 - `04e0449` Placeholders : textes génériques au lieu d'exemples nominatifs

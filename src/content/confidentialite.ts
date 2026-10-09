@@ -3,7 +3,7 @@
  * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "2 octobre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "7 octobre 2026";
 
 export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
@@ -60,6 +60,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
       "Quand vous publiez un produit : son titre, sa description, son prix, sa catégorie et ses photos.",
       "Quand vous écrivez à quelqu’un : le contenu de vos messages et le produit qu’ils citent.",
       "Si vous activez les notifications sur votre téléphone : l’adresse technique de votre appareil fournie par votre navigateur, et les clés qui permettent de lui envoyer un message chiffré. Cette adresse identifie un appareil, pas une personne, et sert uniquement à vous prévenir.",
+      "Si vous utilisez l’application mobile et acceptez ses notifications : l’identifiant de notification de votre téléphone, et son système (iPhone ou Android). Il identifie un téléphone, pas une personne, et sert uniquement à vous prévenir.",
     ],
   },
   {
@@ -82,7 +83,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     blocs: [
       [
         "faire fonctionner le service : votre compte, votre boutique, vos produits, vos conversations ;",
-        "vous prévenir d’un nouveau message ou d’une décision concernant votre boutique, par email et, si vous les avez activées, par notification ;",
+        "vous prévenir d’un nouveau message ou d’une décision concernant votre compte, par notification, si vous les avez activées ;",
         "faire respecter les règles : lutte contre le spam, traitement des signalements, suspension des comptes abusifs ;",
         "comprendre l’usage du service, au moyen de compteurs qui ne contiennent aucun texte que vous avez écrit ni aucune donnée permettant de vous identifier.",
       ],
@@ -102,11 +103,12 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 7,
     titre: "Les prestataires qui hébergent vos données",
     blocs: [
-      "Filloo s’appuie sur trois prestataires, et sur aucun autre :",
+      "Filloo s’appuie sur quatre prestataires, et sur aucun autre :",
       [
         "Supabase, pour la base de données, l’authentification et le stockage des photos. Les données sont hébergées dans l’Union européenne (région de Paris).",
         "Vercel, pour l’hébergement de l’application.",
         "Google (Gmail), pour l’envoi des emails du service.",
+        "Expo, pour acheminer les notifications de l’application mobile jusqu’aux services d’Apple et de Google, qui les affichent sur votre téléphone. Expo reçoit l’identifiant de notification du téléphone, le titre et le texte court de la notification, jamais le contenu de vos messages.",
       ],
       "Ces prestataires traitent les données pour le compte de Filloo et selon ses instructions. Filloo ne partage vos données avec aucun annonceur, aucun courtier en données et aucun réseau social.",
     ],
@@ -115,11 +117,11 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
     numero: 8,
     titre: "Les emails et notifications que vous recevez",
     blocs: [
-      "Filloo vous écrit uniquement pour des raisons liées au service : confirmation d’inscription, réinitialisation de mot de passe, réception d’un nouveau message ou suspension de votre compte.",
+      "Filloo ne vous écrit par email que pour votre compte : confirmation d’inscription et réinitialisation de mot de passe.",
       "Aucun email publicitaire, aucune lettre d’information.",
-      "Si vous avez activé les notifications, chaque nouveau message vous est signalé sur votre téléphone. L’email, lui, n’est envoyé que si vous n’avez pas déjà un message non lu dans la même conversation : deux emails pour la même chose n’apprendraient rien de plus.",
-      "Les notifications affichées sur un écran verrouillé ne contiennent jamais le motif d’une suspension : elles disent qu’une décision vous attend, et l’email dit laquelle. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
-      "Les notifications sur téléphone se désactivent à tout moment depuis « Mon compte », et depuis les réglages de votre appareil.",
+      "Les nouveaux messages, les nouvelles demandes et les décisions concernant votre compte vous sont signalés par notification, sur votre téléphone (application mobile) ou dans votre navigateur, si vous les avez activées. Sans notifications activées, vous les découvrez en ouvrant Filloo.",
+      "Les notifications affichées sur un écran verrouillé ne contiennent jamais le texte d’un message ni le motif d’une suspension : elles disent qu’un message ou une décision vous attend, et Filloo dit lequel une fois ouvert. Ce qui peut être lu par-dessus votre épaule reste volontairement pauvre.",
+      "Les notifications se désactivent à tout moment depuis les réglages de votre téléphone, et, sur le site, depuis « Mon compte ».",
     ],
   },
   {

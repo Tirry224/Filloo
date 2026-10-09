@@ -156,38 +156,26 @@ protège les données, pas le secret de cette clé. En revanche la clé
 `service_role` ignore complètement le RLS et donne un accès total à la base.
 Elle ne doit jamais apparaître dans le code du navigateur, ni dans Git.
 
-### Notifications par email (Resend)
+### Plus d'email de notification (depuis le 2026-10-07)
 
-Trois variables de plus, **toutes les trois nécessaires** — il en manque
-une et aucun email ne part (l'application, elle, continue de marcher) :
+Décision du porteur du projet : l'email ne sert plus qu'au compte
+(confirmation d'adresse, mot de passe oublié), envoyés par Supabase lui-même
+(voir « Emails d'authentification » plus bas). Nouveaux messages, nouvelles
+demandes et suspensions partent par **notification** seulement : sur le
+téléphone qui porte l'app mobile (Expo, migration `0035`) et dans le
+navigateur abonné (Web Push, `0023`). `RESEND_API_KEY` et `EMAIL_FROM` ne
+servent plus et peuvent être retirées de Vercel.
 
 ```
-RESEND_API_KEY=re_...
-EMAIL_FROM="Filloo <notifications@ton-domaine.gn>"
 NEXT_PUBLIC_SITE_URL=https://ton-domaine.gn
+EXPO_ACCESS_TOKEN=   # facultatif
 ```
 
-- `RESEND_API_KEY` — créée sur [resend.com](https://resend.com), côté
-  serveur uniquement (pas de préfixe `NEXT_PUBLIC_`).
-- `EMAIL_FROM` — l'adresse d'expédition. **Son domaine doit être vérifié
-  chez Resend** (enregistrements DNS SPF et DKIM à poser). Sans domaine
-  vérifié, Resend n'accepte d'envoyer qu'à l'adresse du propriétaire du
-  compte : suffisant pour un essai, inutilisable en production.
 - `NEXT_PUBLIC_SITE_URL` — l'adresse publique du site, **sans barre
-  oblique finale**. Elle sert à construire le lien « Répondre » de
-  l'email. Elle est lue ici plutôt que déduite de l'en-tête `Host` de la
-  requête : un email est ouvert ailleurs et plus tard, son lien doit
-  désigner le vrai site.
-
-Ce qui part, et quand : un email au destinataire d'un message, **et
-seulement si ce message est le premier non lu de la conversation**. Deux
-personnes qui s'écrivent dix fois de suite produisent un seul email ;
-le suivant ne repart qu'une fois le fil ouvert. Un rappel de plus
-n'apprendrait rien à quelqu'un qui n'est pas revenu, et c'est ainsi
-qu'on finit en courrier indésirable.
-La notification sur téléphone, elle, part à chaque message, avec son et
-vibration ; application ouverte, `MessageAlerts` joue le son et affiche un
-bandeau.
+  oblique finale** : elle sert aux liens des emails de compte.
+- `EXPO_ACCESS_TOKEN` — facultatif. À poser seulement si la sécurité
+  renforcée des notifications est activée sur le projet Expo : elle exige
+  alors que chaque envoi porte ce jeton.
 
 ### Écran de suivi (`/suivi`)
 
@@ -315,6 +303,16 @@ Trois réglages du tableau de bord, tous nécessaires :
 - **Authentication → URL Configuration → Redirect URLs** contient
   `https://filloo.vercel.app/**`. Sinon Supabase remplace `RedirectTo` par
   le Site URL, sans `?`, et le lien est cassé.
+
+### Le code dans les emails, pour l'app mobile
+
+L'app mobile (`tirry224/filloo-mobile`) n'ouvre pas les liens : elle
+demande le CODE de l'email. Les modèles **Confirm signup** et **Reset
+Password** doivent donc porter, EN PLUS du lien ci-dessus, une ligne
+comme `Ou entrez ce code dans l'application : {{ .Token }}`. Sans elle,
+personne ne peut confirmer son adresse ni retrouver son mot de passe
+depuis l'app. Le lien et le code sont le même jeton : utiliser l'un
+consomme l'autre.
 
 ### Sur Vercel — à faire avant le premier déploiement
 
