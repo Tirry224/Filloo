@@ -755,15 +755,42 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-251 commits, du plus récent au plus ancien.
+275 commits, du plus récent au plus ancien.
+
+### 2026-10-09
+
+- `f852a43` Fusion de dev dans main : l'app mobile a son API en production
 
 ### 2026-10-07
 
+- `2050b90` Mémoire : les emails partent bien du SMTP Gmail, plus du serveur d'essai
+- `4892886` Mémoire : le code des emails est posé et fonctionne dans l'app
+- `15bb1ad` App mobile : supprimer son compte sans passer par le site
+- `182a2af` App mobile : sortie du dépôt, elle vit dans tirry224/filloo-mobile
+- `2d5c2e2` App mobile : notifications du téléphone
+- `c4eb28d` Notifications : téléphones de l'app, et plus d'email de notification
+- `07d1440` Migration 0035 : les téléphones de l'app mobile (appliquée)
+- `56ccdb3` Notifier le destinataire d'un message envoyé depuis l'app
+- `e64aad2` App mobile : icônes, écran de démarrage et configuration de compilation
+- `db74a74` App mobile : mot de passe oublié, mes informations, changer de mot de passe
+- `fca5c39` App mobile : bloquer, débloquer et signaler
+- `e27ae6e` App mobile : inscription commerçant et boutique
+- `1f590cc` App mobile : messagerie côté commerçant
+- `2c83a8a` App mobile : espace commerçant, mes produits et formulaire produit
+- `6802873` App mobile : inscription, « Contacter le vendeur » et messagerie client
+- `30bf0a8` App mobile : recherche et page boutique
+- `c8c8189` App mobile : catalogue sans compte et fiche produit
+- `a6ca44b` App mobile : squelette Expo dans mobile/, connexion à Supabase
 - `aceecc7` Suivi : retrait du diagnostic temporaire
 - `aa0c18a` Suivi : diagnostic temporaire du compte propriétaire
 - `b836b87` Suivi : la règle du propriétaire tient aussi après la connexion
 - `8bf1ea1` Suivi : le compte du porteur du projet ne voit que /suivi
 - `a9231df` Git : dev pour travailler et tester, main seulement sur demande
+- `157c1a7` Suivi : retrait du diagnostic temporaire
+- `660f27d` Suivi : diagnostic temporaire du compte propriétaire
+- `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion
+- `6e093ea` Suivi : le compte du porteur du projet ne voit que /suivi
+- `2535655` Git : dev pour travailler et tester, main seulement sur demande
 - `7960c95` WhatsApp : chaque clic est compté
 - `5cf7fcb` Suivi : un écran qui montre ce qui se passe dans Filloo
 - `04e0449` Placeholders : textes génériques au lieu d'exemples nominatifs
