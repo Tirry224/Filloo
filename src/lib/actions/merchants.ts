@@ -3,57 +3,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { passwordIsValid } from "@/lib/supabase/verify";
-import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
+import { nettoyerTelephone } from "@/lib/telephone";
+import { CHEMIN_PHOTO, ecrireMaBoutique, lireBoutique } from "@/lib/ecritures-protegees";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
-import { erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
 import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
-
-/** `{merchant_id}/{uuid}.webp` — ou `.jpg` là où le navigateur n'encode
- * pas le WebP (Safari, 0031) : les seuls chemins que `ShopPhotoPicker`
- * produit. Que le dossier soit bien CELUI de la boutique, c'est la base
- * qui le garantit (`merchants_photo_path_dans_son_dossier`, 0029). */
-const CHEMIN_PHOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webp|jpg)$/;
-
-/** Les champs d'une boutique, lus ET validés en un geste, pour la
- * création comme pour la modification. Le nom est ce qu'un client lit en
- * premier : trois caractères invisibles ou 5 000 lettres passaient, et
- * une ville forgée (`1.5`, `999`) faisait répondre la base en anglais
- * (2026-09-25). */
-function lireBoutique(formData: FormData):
-  | { shopName: string; cityId: number; addressHint: string; whatsappPhone: string; description: string }
-  | { error: string } {
-  const shopName = texteNettoye(formData.get("shopName"));
-  const cityId = lireIdEntier(formData.get("cityId"));
-  const addressHint = texteNettoye(formData.get("addressHint"));
-  const whatsappPhone = String(formData.get("whatsappPhone") ?? "").trim();
-  const description = texteNettoye(formData.get("description"));
-
-  if (!shopName || !cityId) {
-    return { error: "Le nom de la boutique et la ville sont obligatoires." };
-  }
-  const erreurNomBoutique = erreurNom(shopName, "Nom de la boutique");
-  if (erreurNomBoutique) return { error: erreurNomBoutique };
-  if (longueur(addressHint) > ADRESSE_MAX) return { error: `« Où vous trouver » : ${ADRESSE_MAX} caractères maximum.` };
-  if (longueur(description) > DESCRIPTION_BOUTIQUE_MAX) {
-    return { error: `La description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.` };
-  }
-  const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
-  if (erreurWhatsapp) return { error: erreurWhatsapp };
-
-  return { shopName, cityId, addressHint, whatsappPhone, description };
-}
-
-const ADRESSE_MAX = 200;
-const DESCRIPTION_BOUTIQUE_MAX = 1000;
 
 /** La policy "merchants: je cree ma boutique" (0002) vérifie déjà que
  * `profile_id` appartient au commerçant connecté ; inutile de le
  * revérifier ici, mais on a besoin de l'id pour l'insertion. */
 export async function createMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const lu = lireBoutique(formData);
+  const lu = lireBoutique((champ) => formData.get(champ));
   if ("error" in lu) return lu;
   const { shopName, cityId, addressHint, whatsappPhone, description } = lu;
 
@@ -83,9 +45,8 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 }
 
 export async function updateMerchantAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const lu = lireBoutique(formData);
+  const lu = lireBoutique((champ) => formData.get(champ));
   if ("error" in lu) return lu;
-  const { shopName, cityId, addressHint, whatsappPhone, description } = lu;
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const photoPath = String(formData.get("photoPath") ?? "");
 
@@ -124,26 +85,18 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
   }
 
-  const { data, error } = await supabase
-    .from("merchants")
-    .update({
-      shop_name: shopName,
-      city_id: cityId,
-      address_hint: addressHint || null,
-      whatsapp_phone: nettoyerTelephone(whatsappPhone) || null,
-      description: description || null,
-      photo_path: photoPath || null,
-    })
-    .eq("profile_id", merchantProfile.id)
-    .select("id");
+  /* Écrite par le serveur (0036, 0037) : la session seule ne peut plus
+     toucher à ces colonnes, sans quoi le mot de passe ne protégerait que
+     ce formulaire. */
+  const { data: boutiqueId, error } = await ecrireMaBoutique(user.id, lu, photoPath);
   if (error) return { error: messagePourErreur(error, "boutique") };
-  // Comme pour le profil client : un `update` écarté par le RLS répond un
-  // succès à zéro ligne, qu'on ne laisse pas passer pour un enregistrement.
-  if (!data || data.length === 0) {
+  // Profil suspendu, supprimé, ou pas de boutique : rien n'a été écrit, et
+  // on ne le laisse pas passer pour un enregistrement.
+  if (!boutiqueId) {
     return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
   }
 
-  await effacerAnciennesPhotos(data[0].id, photoPath || null);
+  await effacerAnciennesPhotos(boutiqueId, photoPath || null);
 
   redirect("/vendeur/boutique");
 }

@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, getMyProfiles } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
-import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
-import { erreurNom, lireIdEntier, texteNettoye } from "@/lib/saisie";
+import { lireIdEntier } from "@/lib/saisie";
+import { ecrireMesInformations, lireInformations } from "@/lib/ecritures-protegees";
 import { anonymiserEtBannir } from "@/lib/suppression-compte";
 
 /**
@@ -19,8 +19,7 @@ import { anonymiserEtBannir } from "@/lib/suppression-compte";
  *
  * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par 0010. */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
-  const fullName = texteNettoye(formData.get("fullName"));
-  const phone = String(formData.get("phone") ?? "").trim();
+  const informations = lireInformations((champ) => formData.get(champ));
   /* Présente et vide, ou absente : les confondre efface une donnée. Le
      montage commerçant ne rend pas le menu des villes, donc `cityId`
      n'arrive pas dans son formulaire. `FormData.get` rend `null` pour un
@@ -29,11 +28,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   const villeFournie = cityBrut !== null;
   const cityIdRaw = String(cityBrut ?? "").trim();
   const cityId = cityIdRaw ? lireIdEntier(cityIdRaw) : null;
-  if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
-  const erreurNomComplet = erreurNom(fullName, "Nom complet");
-  if (erreurNomComplet) return { error: erreurNomComplet };
-  const erreurNumero = erreurTelephone(phone, true);
-  if (erreurNumero) return { error: erreurNumero };
+  if ("error" in informations) return informations;
 
   // Mot de passe exigé pour ÉCRIRE : ce numéro est celui par lequel un
   // commerçant rappelle, et le réécrire détournerait ces rappels.
@@ -60,18 +55,13 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
     return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
   }
 
-  // TOUS les profils de la connexion : ce `.eq` dit ce qu'on veut écrire,
-  // il ne fait pas office de serrure — le RLS s'en charge.
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ full_name: fullName, phone: nettoyerTelephone(phone) })
-    .eq("auth_user_id", user.id)
-    .select("id");
+  /* Écrits par le serveur, sur TOUS les profils de la connexion (0036,
+     0037) : la session seule ne peut plus toucher à ces colonnes, sans
+     quoi le mot de passe ne protégerait que ce formulaire. Zéro profil
+     écrit (compte supprimé entre-temps) n'est pas un enregistrement. */
+  const { data: ecrits, error } = await ecrireMesInformations(user.id, informations.fullName, informations.phone);
   if (error) return { error: messagePourErreur(error, "compte") };
-  // Le `using` de la policy filtre des LIGNES : s'il les écarte, la
-  // réponse est un succès à zéro ligne. Sans ce contrôle, un profil
-  // suspendu voit ses modifications acceptées à l'écran et perdues en base.
-  if (!data || data.length === 0) {
+  if (!ecrits) {
     return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
   }
 

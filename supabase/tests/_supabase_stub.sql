@@ -38,7 +38,7 @@ create or replace function storage.foldername(name text) returns text[]
 -- Supabase accorde par défaut les droits sur le schéma public aux rôles
 -- anon / authenticated : on reproduit ce comportement pour que les REVOKE
 -- des migrations aient un sens.
-grant usage on schema public, extensions, storage to anon, authenticated;
+grant usage on schema public, extensions, storage to anon, authenticated, service_role;
 -- Comme chez Supabase : les droits sur la table existent, c'est le RLS
 -- (0004, 0029) qui trie. Sans eux, un test de policy du stockage
 -- tomberait sur le droit manquant et passerait pour un refus du RLS.

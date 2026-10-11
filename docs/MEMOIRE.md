@@ -223,6 +223,15 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   vérifie le signalant, pas la cible. L'app ne le propose plus depuis le
   2026-10-09 ; le site n'a pas été vérifié sur ce point.
   Migration à écrire, sur accord du porteur du projet.
+- **Le mot de passe redemandé protégeait l'écran, pas la base**
+  (2026-10-11) : nom, téléphone et boutique s'écrivaient avec la
+  session, qui suffisait seule. Écrits désormais par le serveur
+  (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
+  l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
+  **`0036` et `0037` ne sont PAS appliquées.** Ordre : `0036`, puis le
+  site en production (il appelle ses fonctions), puis la nouvelle app
+  sur les téléphones, et `0037` en dernier — elle retire l'écriture
+  directe, dont l'ancienne app a besoin.
 - **Aucune mesure d'usage venue de l'app** : `analytics_events` ne
   s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
   n'importe qui de fabriquer des chiffres : la solution reste à décider.
@@ -751,7 +760,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-269 commits, du plus récent au plus ancien.
+270 commits, du plus récent au plus ancien.
+
+### 2026-10-09
+
+- `aefd1da` Documents : état au 2026-10-09, domaine, emails et API de l'app
 
 ### 2026-10-07
 

@@ -1642,35 +1642,42 @@ select pg_temp.check('la mesure de 12 mois reste, celle de 14 mois est partie',
 -- =====================================================================
 -- La photo de boutique (0029)
 -- =====================================================================
-set role authenticated;
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-
-update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
- where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+-- Depuis 0037, la photo s'écrit avec le reste de la boutique, par
+-- `modifier_ma_boutique` (serveur, après le mot de passe) : les autres
+-- champs sont repassés tels quels.
+select shop_name as a_nom, city_id as a_ville from public.merchants
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001' \gset
+set role service_role;
+select public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+  :'a_nom', :a_ville, null, null, null, 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp');
 reset role;
 select pg_temp.check('un commercant pose la photo de sa boutique',
   (select photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
      from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
 
 -- La faille que la contrainte ferme : afficher la photo d'un concurrent.
-set role authenticated;
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
+-- Le serveur aussi y est soumis : la fonction ne contourne pas la table.
+set role service_role;
 do $$
 begin
-  update public.merchants set photo_path = 'bbbbbbbb-0000-0000-0000-000000000002/sa-photo.webp'
-   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  perform public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, null, null, null, 'bbbbbbbb-0000-0000-0000-000000000002/sa-photo.webp');
   raise exception 'ECHEC une boutique affiche la photo d''une autre';
 exception when check_violation then
   raise notice 'OK    la photo d''une autre boutique est refusee';
 end $$;
 do $$
 begin
-  update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/../bbbbbbbb-0000-0000-0000-000000000002/x.webp'
-   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  perform public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, null, null, null, 'aaaaaaaa-0000-0000-0000-000000000001/../bbbbbbbb-0000-0000-0000-000000000002/x.webp');
   raise exception 'ECHEC un chemin en .. passe la contrainte';
 exception when check_violation then
   raise notice 'OK    un chemin en .. est refuse';
 end $$;
+reset role;
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
 
 -- Le stockage : écrire chez soi, jamais chez l'autre.
 insert into storage.objects (bucket_id, name)
@@ -1719,6 +1726,104 @@ select pg_temp.check('la recherche remonte la photo de la boutique',
            where merchant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
              and shop_photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'));
 reset role;
+
+-- =====================================================================
+-- Le mot de passe redemandé est vérifié par le serveur (0036, 0037)
+-- =====================================================================
+-- La faille : le site et l'app vérifiaient le mot de passe, puis
+-- écrivaient avec la session — qui suffisait seule à réécrire le WhatsApp
+-- d'une boutique. Une session ne doit plus pouvoir écrire ces colonnes,
+-- ni appeler les fonctions qui le font.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+declare
+  essai text;
+begin
+  foreach essai in array array[
+    'update public.merchants set whatsapp_phone = ''+224 600 00 00 00'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set address_hint = ''ailleurs'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set shop_name = ''Imposteur'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set city_id = 2 where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set description = ''x'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set photo_path = null where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.profiles set phone = ''620999999'' where auth_user_id = ''11111111-1111-1111-1111-111111111111''',
+    'update public.profiles set full_name = ''Imposteur'' where auth_user_id = ''11111111-1111-1111-1111-111111111111''',
+    'select public.modifier_ma_boutique(''11111111-1111-1111-1111-111111111111'', ''Imposteur'', 1, null, null, null, null)',
+    'select public.modifier_mes_informations(''11111111-1111-1111-1111-111111111111'', ''Imposteur'', ''620999999'')'
+  ] loop
+    begin
+      execute essai;
+      raise exception 'ECHEC une session ecrit sans mot de passe : %', essai;
+    exception when insufficient_privilege then
+      null;
+    end;
+  end loop;
+  raise notice 'OK    une session seule n''ecrit ni boutique, ni nom, ni telephone';
+end $$;
+reset role;
+
+set role anon;
+do $$
+begin
+  perform public.modifier_mes_informations('11111111-1111-1111-1111-111111111111', 'Imposteur', '620999999');
+  raise exception 'ECHEC un visiteur appelle modifier_mes_informations';
+exception when insufficient_privilege then
+  raise notice 'OK    un visiteur n''appelle pas les fonctions du serveur';
+end $$;
+reset role;
+
+-- Ce qui reste permis sans mot de passe : la ville du client (0010).
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+update public.profiles set city_id = 1 where auth_user_id = '33333333-3333-3333-3333-333333333333';
+reset role;
+select pg_temp.check('un client change sa ville sans mot de passe',
+  (select city_id = 1 from public.profiles where id = '33333333-3333-3333-3333-333333333333'));
+
+-- Le serveur, lui, écrit — et seulement chez la bonne personne.
+set role service_role;
+select pg_temp.check('le serveur modifie la boutique de la connexion',
+  public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, 'Marché Madina', '620000001', null, null)
+  = 'aaaaaaaa-0000-0000-0000-000000000001');
+select public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111', 'Chez A', 1, '', '', '', '');
+reset role;
+select pg_temp.check('un champ facultatif vide s''enregistre null',
+  (select address_hint is null and whatsapp_phone is null and description is null and photo_path is null
+     from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
+set role service_role;
+select pg_temp.check('un client sans boutique : rien n''est ecrit',
+  public.modifier_ma_boutique('33333333-3333-3333-3333-333333333333',
+    'Imposteur', 1, null, null, null, null) is null);
+-- C a deux profils liés (client et commerçant) : les deux suivent.
+select pg_temp.check('le serveur modifie nom et telephone de la connexion',
+  public.modifier_mes_informations('33333333-3333-3333-3333-333333333333', 'Client C', '620000033') = 2);
+reset role;
+select pg_temp.check('nom et telephone suivent sur tous les profils de la connexion',
+  (select bool_and(phone = '620000033' and full_name = 'Client C') from public.profiles
+    where auth_user_id = '33333333-3333-3333-3333-333333333333'));
+select pg_temp.check('la boutique B n''a pas bouge',
+  (select shop_name = 'Chez B' from public.merchants where id = 'bbbbbbbb-0000-0000-0000-000000000002'));
+select pg_temp.check('le telephone de D n''a pas bouge',
+  (select phone <> '620000033' from public.profiles where id = '44444444-4444-4444-4444-444444444444'));
+
+-- Un commerçant suspendu ne modifie plus sa boutique, comme avec la policy.
+update public.profiles set is_suspended = true where id = '11111111-1111-1111-1111-111111111111';
+set role service_role;
+select pg_temp.check('commercant suspendu : la boutique ne bouge pas',
+  public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Imposteur', 1, null, null, null, null) is null);
+reset role;
+update public.profiles set is_suspended = false where id = '11111111-1111-1111-1111-111111111111';
+
+-- Un profil supprimé reste anonymisé.
+update public.profiles set is_deleted = true where id = '44444444-4444-4444-4444-444444444444';
+set role service_role;
+select pg_temp.check('un profil supprime n''est pas reecrit',
+  public.modifier_mes_informations('44444444-4444-4444-4444-444444444444', 'Revenant', '620999999') = 0);
+reset role;
+update public.profiles set is_deleted = false where id = '44444444-4444-4444-4444-444444444444';
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
