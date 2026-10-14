@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/Button";
 import { Package } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
+import { FALLBACK_CITY, getDefaultCityName } from "@/lib/data/reference";
 import { landingForSession } from "@/lib/data/session";
-import { searchProducts } from "@/lib/data/products";
+import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
 
@@ -36,12 +36,12 @@ export default async function HomePage({
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
-  const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
+  const [cities, categories] = await Promise.all([villesEnCache(), categoriesEnCache()]);
   const ville = cities.some((c) => c.name === villeParam) ? villeParam! : await getDefaultCityName(supabase, cities);
   const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
 
   const sort = tri === "populaire" ? "popular" : "recent";
-  const inCity = city ? await searchProducts(supabase, { cityId: city.id, sort, limit: 50 }) : [];
+  const inCity = city ? await rechercheEnCache({ cityId: city.id, sort, limit: 50 }) : [];
   const visible = categorie === "Tout" ? inCity : inCity.filter((p) => p.category === categorie);
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 

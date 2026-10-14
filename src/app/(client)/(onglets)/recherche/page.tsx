@@ -11,8 +11,9 @@ import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { createClient } from "@/lib/supabase/server";
-import { FALLBACK_CITY, getCategories, getCities, getDefaultCityName } from "@/lib/data/reference";
-import { countProductsElsewhere, searchProducts } from "@/lib/data/products";
+import { FALLBACK_CITY, getDefaultCityName } from "@/lib/data/reference";
+import { countProductsElsewhere } from "@/lib/data/products";
+import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
@@ -31,7 +32,7 @@ export default async function SearchPage({
   const tri = premier(brut.tri) ?? "recent";
   const supabase = await createClient();
 
-  const [cities, categories] = await Promise.all([getCities(supabase), getCategories(supabase)]);
+  const [cities, categories] = await Promise.all([villesEnCache(), categoriesEnCache()]);
 
   const villeParam = premier(brut.ville);
   const categorieParam = premier(brut.categorie);
@@ -43,7 +44,7 @@ export default async function SearchPage({
   const sort = tri === "populaire" ? "popular" : "recent";
 
   const results = city
-    ? await searchProducts(supabase, { query: q, cityId: city.id, categoryId: category?.id ?? null, sort, limit: 50 })
+    ? await rechercheEnCache({ query: q, cityId: city.id, categoryId: category?.id ?? null, sort, limit: 50 })
     : [];
 
   const ailleurs =
