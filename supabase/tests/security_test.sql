@@ -1825,5 +1825,155 @@ select pg_temp.check('un profil supprime n''est pas reecrit',
 reset role;
 update public.profiles set is_deleted = false where id = '44444444-4444-4444-4444-444444444444';
 
+-- =====================================================================
+-- Chacun n'entend que ses propres messages (0038)
+-- =====================================================================
+-- Fil Client D <-> Boutique A (dddd…0002), débloqué section 17. Les
+-- messages des sections précédentes ont déjà diffusé : on repart d'une
+-- file vide pour compter juste.
+truncate realtime.messages;
+
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');   -- Client D
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (1)');
+reset role;
+
+select pg_temp.check('un message envoye diffuse vers les DEUX participants, et eux seuls',
+  (select array_agg(topic order by topic) from realtime.messages
+    where payload ->> 'body' = 'Diffusion 0038 (1)')
+  = array['user:11111111-1111-1111-1111-111111111111',
+          'user:44444444-4444-4444-4444-444444444444']);
+select pg_temp.check('la diffusion est privee, en broadcast, evenement message',
+  (select bool_and(private and extension = 'broadcast' and event = 'message')
+     from realtime.messages));
+select pg_temp.check('la diffusion porte exactement le contrat attendu par les clients',
+  (select bool_and(
+            payload ->> 'op' = 'INSERT'
+        and payload ->> 'conversation_id' = 'dddddddd-0000-0000-0000-000000000002'
+        and payload ->> 'sender_id' = '44444444-4444-4444-4444-444444444444'
+        and payload ->> 'id' = (select id::text from public.messages where body = 'Diffusion 0038 (1)')
+        and (select array_agg(k order by k) from jsonb_object_keys(payload) k)
+            = array['body','conversation_id','created_at','id','op','product_id','read_at','sender_id'])
+     from realtime.messages));
+
+-- Deux messages de plus, puis la boutique marque le fil lu d'un coup.
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body) values
+  ('dddddddd-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (2)'),
+  ('dddddddd-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (3)');
+reset role;
+select pg_temp.check('un envoi de deux messages diffuse deux fois par participant',
+  (select count(*) from realtime.messages where payload ->> 'body' like 'Diffusion 0038 (_)') = 6);
+
+truncate realtime.messages;
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');   -- Boutique A
+with lus as (
+  update public.messages set read_at = now()
+   where conversation_id = 'dddddddd-0000-0000-0000-000000000002' and read_at is null
+     and sender_id = '44444444-4444-4444-4444-444444444444'
+  returning 1
+)
+select pg_temp.check('le marquage lu touche plusieurs messages', (select count(*) from lus) >= 3);
+reset role;
+select pg_temp.check('un fil marque lu diffuse UN evenement par participant, pas un par message',
+  (select array_agg(topic order by topic) from realtime.messages)
+  = array['user:11111111-1111-1111-1111-111111111111',
+          'user:44444444-4444-4444-4444-444444444444']);
+select pg_temp.check('l''evenement de lecture dit quel fil, et rien du contenu',
+  (select bool_and(payload ->> 'op' = 'UPDATE'
+               and payload ->> 'conversation_id' = 'dddddddd-0000-0000-0000-000000000002'
+               and payload ->> 'read_at' is not null
+               and payload -> 'body' = 'null'::jsonb)
+     from realtime.messages));
+
+-- Un marquage qui ne change rien ne diffuse rien.
+truncate realtime.messages;
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+update public.messages set read_at = now()
+ where conversation_id = 'dddddddd-0000-0000-0000-000000000002' and read_at is null;
+reset role;
+select pg_temp.check('un marquage sans effet ne diffuse rien',
+  (select count(*) from realtime.messages) = 0);
+
+-- Lire : chacun son canal. Quand un client ouvre un canal privé,
+-- Realtime pose `realtime.topic` (le canal demandé) et l'identité, puis
+-- lit `realtime.messages` : pas de ligne visible, pas de canal. La
+-- politique juge donc le canal DEMANDÉ, pas la colonne `topic`.
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (4)');
+
+select pg_temp.login('11111111-1111-1111-1111-111111111111');   -- destinataire
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('le destinataire ouvre son canal et y lit la diffusion',
+  (select count(*) from realtime.messages
+    where topic = realtime.topic() and payload ->> 'body' = 'Diffusion 0038 (4)') = 1);
+select set_config('realtime.topic', 'user:44444444-4444-4444-4444-444444444444', false);
+select pg_temp.check('le destinataire n''ouvre pas le canal de son interlocuteur',
+  (select count(*) from realtime.messages) = 0);
+
+select pg_temp.login('22222222-2222-2222-2222-222222222222');   -- tiers
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('un tiers connecte ne lit pas le canal d''un autre',
+  (select count(*) from realtime.messages) = 0);
+reset role;
+
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('un visiteur ne lit aucune diffusion',
+  (select count(*) from realtime.messages) = 0);
+reset role;
+
+-- Émettre : personne, ni en direct ni par la fonction.
+set role authenticated;
+select pg_temp.login('22222222-2222-2222-2222-222222222222');
+do $$
+begin
+  insert into realtime.messages (topic, extension, payload, event, private)
+  values ('user:11111111-1111-1111-1111-111111111111', 'broadcast',
+          '{"op":"INSERT","body":"faux"}', 'message', true);
+  raise exception 'ECHEC un client ecrit sur le canal d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    un client n''ecrit pas dans realtime.messages';
+end $$;
+-- `realtime.send` reste exécutable par tous chez Supabase, mais elle
+-- s'exécute avec les droits de l'appelant : le RLS la refuse, et elle
+-- avale l'erreur.
+select realtime.send('{"body":"faux"}', 'message', 'user:11111111-1111-1111-1111-111111111111', true);
+reset role;
+select pg_temp.check('un client n''emet rien, meme par realtime.send',
+  not exists (select 1 from realtime.messages where payload ->> 'body' = 'faux'));
+
+select pg_temp.check('personne n''execute la fonction de diffusion',
+  not has_function_privilege('anon', 'public.diffuser_message_aux_participants()', 'execute')
+  and not has_function_privilege('authenticated', 'public.diffuser_message_aux_participants()', 'execute'));
+
+-- Une diffusion en panne n'empêche pas d'écrire. On remplace
+-- `realtime.send` par une version qui lève, le temps d'une transaction
+-- annulée ensuite.
+begin;
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+  returns void language plpgsql as $$ begin raise exception 'Realtime en panne'; end $$;
+set local role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 en panne');
+reset role;
+select pg_temp.check('une diffusion qui echoue n''empeche pas l''envoi du message',
+  exists (select 1 from public.messages where body = 'Diffusion 0038 en panne'));
+rollback;
+select pg_temp.check('realtime.send est bien restauree',
+  pg_get_functiondef('realtime.send(jsonb,text,text,boolean)'::regprocedure) like '%WarnSendingBroadcastMessage%');
+select set_config('realtime.topic', '', false);
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

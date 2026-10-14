@@ -12,7 +12,7 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 | Site — `npm run gardes`, `npm run classes` | OK |
 | Site — `npm run espaces` | **ÉCHEC, 1 cas** (voir « Échecs connus ») |
 | Site — `npm run largeurs` | non lancé : exige un serveur sur `localhost:3000` |
-| Base — `security_test.sql` | **142 contrôles OK**, « TOUS LES TESTS SONT PASSES » |
+| Base — `security_test.sql` | **142 contrôles OK**, « TOUS LES TESTS SONT PASSES » ; **159** avec `0038` (constaté 2026-10-14, branche `claude/traffic-capacity-app-site-grj36p`) |
 | Site — `npm run e2e` | **impossible en session** : pas de démon Docker |
 | App — `npm run typecheck` | OK |
 | App — `npm run lint` | 0 erreur, 11 avertissements `set-state-in-effect` (connus) |
@@ -35,6 +35,11 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   for f in supabase/migrations/*.sql; do $P -v ON_ERROR_STOP=1 -d filloo_test -f "$f" || break; done
   $P -v ON_ERROR_STOP=1 -d filloo_test -f supabase/tests/security_test.sql
   ```
+  Si un serveur de test tourne déjà, l'arrêter d'abord
+  (`su postgres -s /bin/sh -c "$B/pg_ctl -D $D/data stop -m fast"`),
+  sinon le `rm -rf` efface les données sous un serveur vivant.
+  Le stub porte un schéma `realtime` minimal (`send`, `topic`,
+  `messages`) recopié de la production depuis `0038`.
   Toujours sur une base NEUVE : relancer `security_test.sql` une
   seconde fois sur la même base échoue (« la mesure de 12 mois
   reste… »), à cause des lignes laissées par la première passe — ce

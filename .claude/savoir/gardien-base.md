@@ -14,16 +14,30 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   sauvegarde téléchargeable, pause après 7 jours d'inactivité.
 - **Migrations appliquées : jusqu'à `0035`** — constaté le 2026-10-14
   (`list_migrations`). **`0036` et `0037` sont commitées sur `dev` mais
-  PAS appliquées.** Les noms d'avant `0015` en production ne portent pas
+  PAS appliquées ; `0038` (diffusion par canal privé) est écrite, non
+  appliquée.** Les noms d'avant `0015` en production ne portent pas
   tous leur numéro (`realtime_on_messages`, etc.) : comparer avec
   `npm run migrations`, pas à l'œil.
 - **Volume au 2026-10-14** : 5 comptes, 6 messages, 14 Mo, 3 objets de
   stockage (133 Ko). Toute mesure de performance faite sur cette base ne
   prouve rien à l'échelle.
 - **Realtime : seule la table `messages` est publiée** (constaté
-  2026-10-14). Le site écoute tous les `INSERT`, l'app tous les
-  événements sans filtre (`Filloo-mobile/src/lib/non-lus.ts`) : coût RLS
-  proportionnel au nombre d'abonnés connectés.
+  2026-10-14). `0038` ajoute une diffusion par canal privé `user:<uid>`
+  mais GARDE `messages` publiée : les apps de test installées écoutent
+  encore `postgres_changes`. La retirer = migration à part, plus tard.
+- **Le schéma `realtime` en production** (constaté 2026-10-14,
+  `pg_get_functiondef`, `pg_class`) : `realtime.send(payload, event,
+  topic, private default true)` est `security invoker`, fait un
+  `SET LOCAL realtime.topic` et **avale toute erreur en `WARNING`** ;
+  `realtime.topic()` lit `current_setting('realtime.topic', true)`.
+  `realtime.messages` est partitionnée par jour, appartient à
+  `supabase_realtime_admin`, RLS actif, `anon`/`authenticated` y ont
+  `select, insert, update` (c'est le RLS qui trie) et `execute` sur
+  `send`. `postgres` a `BYPASSRLS` : un trigger `security definer` y
+  écrit sans politique `insert`.
+- **`postgres` peut créer des politiques sur `realtime.messages`,
+  `storage.*`, `auth.*` sans en être propriétaire** : réglage
+  `supautils.policy_grants` (constaté 2026-10-14).
 
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
@@ -48,6 +62,20 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   volume.
 
 ## Pièges appris
+
+- **Une politique de `realtime.messages` juge le CANAL DEMANDÉ
+  (`realtime.topic()`), pas la colonne `topic` de la ligne** (constaté
+  2026-10-14, test local de `0038`) : Realtime pose `realtime.topic` puis
+  lit la table à l'ouverture du canal. Un test doit donc poser
+  `realtime.topic` et vérifier « 0 ligne visible » pour un refus.
+- **Tables de transition (`referencing new table`) interdites** sur un
+  trigger à plusieurs événements ou à liste de colonnes (`update of`) :
+  un trigger par événement, et filtrer `read_at is distinct from` en
+  joignant `anciens` (constaté, `0038`).
+- **Tester la résistance à une panne de `realtime.send`** : la remplacer
+  par une version qui lève dans un `begin … rollback` (voir
+  `security_test.sql`, section 0038), le vrai `send` avalant déjà ses
+  erreurs.
 
 - Voir `docs/MEMOIRE.md` → « Pièges rencontrés — Sécurité et SQL » : ne
   pas les recopier ici, les relire.
