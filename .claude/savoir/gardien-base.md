@@ -14,8 +14,10 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   sauvegarde téléchargeable, pause après 7 jours d'inactivité.
 - **Migrations appliquées : jusqu'à `0035`** — constaté le 2026-10-14
   (`list_migrations`). **`0036` et `0037` sont commitées sur `dev` mais
-  PAS appliquées ; `0038` (diffusion par canal privé) est écrite, non
-  appliquée.** Les noms d'avant `0015` en production ne portent pas
+  PAS appliquées ; `0038` (diffusion par canal privé), `0039` (policies
+  en InitPlan, index) et `0040` (limites du bucket `product-images`)
+  sont écrites sur `claude/traffic-capacity-app-site-grj36p`, non
+  appliquées.** `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
   tous leur numéro (`realtime_on_messages`, etc.) : comparer avec
   `npm run migrations`, pas à l'œil.
 - **Volume au 2026-10-14** : 5 comptes, 6 messages, 14 Mo, 3 objets de
@@ -53,13 +55,16 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   voulu (écriture `service_role` seulement) — *supposé, à confirmer
   dans les migrations 0021 et 0024*.
 - **Bucket `product-images` : aucune limite de taille ni de type**
-  (constaté par requête sur `storage.buckets`), alors que `shop-photos`
-  est limité à 1 Mo, WebP et JPEG. Un fichier énorme ou non-image peut y
-  être déposé.
-- **Performance** : clés étrangères sans index sur
-  `notifications.profile_id` et `profiles.city_id` ; politiques SELECT
-  multiples sur `products`, `product_images`, `profiles`. Sans effet à ce
-  volume.
+  (constaté), corrigé par `0040` (1 Mo, WebP + JPEG, comme
+  `shop-photos`). Au 2026-10-14 : 1 objet, WebP, 6,9 Ko (constaté,
+  `storage.objects.metadata`). Clients (constaté, code) : le site envoie
+  WebP ou JPEG (`compresserPhoto`, `maxSizeMB: 0.5`), l'app toujours
+  `image/jpeg` 1 280 px qualité 0,7 depuis sa 1re version.
+- **Performance (get_advisors 2026-10-14)** : 2 FK sans index, 15
+  `multiple_permissive_policies` (products, product_images, profiles ×
+  5 rôles), 2 `unused_index`. **Aucune `auth_rls_initplan`.** `0039`
+  fait disparaître les 2 FK et les 10 de products/product_images ; les
+  5 de `profiles` restent (choix de lisibilité de `0006`, gardé).
 
 ## Pièges appris
 
@@ -77,6 +82,30 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   `security_test.sql`, section 0038), le vrai `send` avalant déjà ses
   erreurs.
 
+- **L'alerte `auth_rls_initplan` ne voit que `auth.uid()` écrit en
+  clair** : `my_profile_id()` / `my_merchant_id()` (`security definer`,
+  jamais dépliées) étaient appelées à CHAQUE ligne sans alerte, et le
+  commentaire de `0006` disait le contraire. Constaté par `EXPLAIN` local
+  (`0039`) : avant, `Filter` avec 3 appels par ligne ; après,
+  `InitPlan 1`. N'envelopper que les appels sans colonne de la ligne.
+- **Réécrire une policy : `alter policy`** (nom, rôles, commande,
+  permissivité intacts). `supautils.policy_grants` couvre
+  `storage.objects`, `storage.buckets`, `realtime.messages` pour
+  `postgres` (constaté) ; qu'il couvre `ALTER POLICY` et pas seulement
+  `CREATE` est *supposé* — si non, l'application de `0039` échoue en
+  bloc.
+- **Une policy `for all` est aussi une policy de lecture** : elle double
+  la policy SELECT (alerte `multiple_permissive_policies`). La découper
+  en insert/update/delete n'est sûr que si sa clause `using` est incluse
+  dans la policy SELECT restante (vrai pour products/product_images).
+- **Limites de bucket : non testables en local** — c'est le service
+  Storage qui refuse (413/415), le stub n'a que la table. On teste le
+  réglage dans `storage.buckets`.
+- **Tests locaux : pas de `rm -rf` dans un `su -c`** (refusé par le
+  garde-fou de suppression). Initialiser un dossier de données NEUF à
+  chaque passe (`/var/lib/postgresql/ft-<nom>`, port distinct). Suite au
+  2026-10-14 avec 0039–0040 : **183 contrôles OK**.
+
 - Voir `docs/MEMOIRE.md` → « Pièges rencontrés — Sécurité et SQL » : ne
   pas les recopier ici, les relire.
 
@@ -84,6 +113,9 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
 
 - Aucune migration ne s'applique sans son accord explicite (CLAUDE.md du
   site).
+- `0006` : les deux policies de lecture de `profiles` restent séparées
+  par lisibilité (« on optimise quand une mesure le justifie ») —
+  constaté dans le fichier ; non rouvert en `0039`.
 
 ## Questions ouvertes
 

@@ -12,7 +12,7 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 | Site — `npm run gardes`, `npm run classes` | OK |
 | Site — `npm run espaces` | **ÉCHEC, 1 cas** (voir « Échecs connus ») |
 | Site — `npm run largeurs` | non lancé : exige un serveur sur `localhost:3000` |
-| Base — `security_test.sql` | **142 contrôles OK**, « TOUS LES TESTS SONT PASSES » ; **159** avec `0038` (constaté 2026-10-14, branche `claude/traffic-capacity-app-site-grj36p`) |
+| Base — `security_test.sql` | **183 contrôles OK** avec `0038`–`0040`, « TOUS LES TESTS SONT PASSES » (constaté 2026-10-14, branche `claude/traffic-capacity-app-site-grj36p`) ; 142 sur `dev` sans elles |
 | Site — `npm run e2e` | **impossible en session** : pas de démon Docker |
 | App — `npm run typecheck` | OK |
 | App — `npm run lint` | 0 erreur, 11 avertissements `set-state-in-effect` (connus) |
@@ -26,18 +26,18 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   tourner en root et le dossier scratchpad devient illisible pour
   l'utilisateur `postgres` en cours de route. Ce qui marche :
   ```bash
-  B=/usr/lib/postgresql/16/bin; D=/var/lib/postgresql/filloo-test
+  B=/usr/lib/postgresql/16/bin; D=/var/lib/postgresql/filloo-test-$(date +%s)
   mkdir -p /var/lib/postgresql && chown postgres /var/lib/postgresql
-  su postgres -s /bin/sh -c "rm -rf $D; mkdir -p $D && $B/initdb -D $D/data -A trust >/dev/null && $B/pg_ctl -D $D/data -o \"-k $D -p 54329 -c listen_addresses=''\" -l $D/log start"
+  su postgres -s /bin/sh -c "mkdir -p $D && $B/initdb -D $D/data -A trust >/dev/null && $B/pg_ctl -D $D/data -o \"-k $D -p 54329 -c listen_addresses=''\" -l $D/log start"
   P="psql -h $D -p 54329 -U postgres -q -X"
   $P -c "create database filloo_test" postgres
   $P -v ON_ERROR_STOP=1 -d filloo_test -f supabase/tests/_supabase_stub.sql
   for f in supabase/migrations/*.sql; do $P -v ON_ERROR_STOP=1 -d filloo_test -f "$f" || break; done
   $P -v ON_ERROR_STOP=1 -d filloo_test -f supabase/tests/security_test.sql
   ```
-  Si un serveur de test tourne déjà, l'arrêter d'abord
-  (`su postgres -s /bin/sh -c "$B/pg_ctl -D $D/data stop -m fast"`),
-  sinon le `rm -rf` efface les données sous un serveur vivant.
+  Un dossier NEUF à chaque passe (pas de `rm -rf` : un garde-fou de
+  suppression le refuse) ; arrêter l'ancien serveur avant, le port est
+  le même (`su postgres -s /bin/sh -c "$B/pg_ctl -D <ancien>/data stop -m fast"`).
   Le stub porte un schéma `realtime` minimal (`send`, `topic`,
   `messages`) recopié de la production depuis `0038`.
   Toujours sur une base NEUVE : relancer `security_test.sql` une
@@ -56,9 +56,6 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   renvoie vers `/vendeur/boutique` depuis une route client. Vrai
   mélange d'espaces ou faux positif du script : **à trancher** par le
   porteur du projet.
-- **`supabase/tests/README.md` annonce 153 vérifications**, la suite en
-  affiche 142 (constaté) : le README est à corriger, ou des contrôles ont
-  disparu — à vérifier avec `git log -p supabase/tests/security_test.sql`.
 
 ## Jamais testé automatiquement, nulle part
 

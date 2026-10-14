@@ -17,7 +17,8 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 153 vérifications affichent `OK`. La première qui échoue interrompt tout
+Les 183 vérifications (compte du 2026-10-14, migrations 0038 à 0040
+comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les

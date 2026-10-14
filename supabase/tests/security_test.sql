@@ -1975,5 +1975,178 @@ select pg_temp.check('realtime.send est bien restauree',
   pg_get_functiondef('realtime.send(jsonb,text,text,boolean)'::regprocedure) like '%WarnSendingBroadcastMessage%');
 select set_config('realtime.topic', '', false);
 
+-- =====================================================================
+-- Les règles d'accès demandent « qui es-tu ? » une fois par requête (0039)
+-- =====================================================================
+-- 0039 réécrit les policies sans en changer le sens : toute la suite
+-- ci-dessus, qui tourne APRÈS elle, est la preuve principale. Ce bloc
+-- ajoute la forme (plus aucun appel par ligne) et les refus que la
+-- suite ne couvrait pas encore sur les policies découpées.
+
+-- La forme : `my_profile_id` / `my_merchant_id` n'apparaissent plus que
+-- dans un `( SELECT … AS …)`, c'est-à-dire un InitPlan.
+select pg_temp.check('aucune policy n''appelle my_merchant_id a chaque ligne',
+  not exists (select 1 from pg_policies
+               where coalesce(qual, '') || ' ' || coalesce(with_check, '')
+                     ~ 'my_merchant_id\(\)(?! AS my_merchant_id)'));
+select pg_temp.check('aucune policy n''appelle my_profile_id a chaque ligne',
+  not exists (select 1 from pg_policies
+               where coalesce(qual, '') || ' ' || coalesce(with_check, '')
+                     ~ 'my_profile_id\(''[a-z]+''::user_role\)(?! AS my_profile_id|\) AS is_active_profile)'));
+
+-- Plus de doublon de lecture : une seule policy sert le SELECT.
+select pg_temp.check('products : une seule policy de lecture',
+  (select count(*) from pg_policies
+    where schemaname = 'public' and tablename = 'products' and cmd in ('SELECT', 'ALL')) = 1);
+select pg_temp.check('product_images : une seule policy de lecture',
+  (select count(*) from pg_policies
+    where schemaname = 'public' and tablename = 'product_images' and cmd in ('SELECT', 'ALL')) = 1);
+
+-- Le gain lui-même : le plan évalue « ma boutique » une fois (InitPlan).
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+declare plan text := '';
+        ligne text;
+begin
+  for ligne in execute 'explain (costs off) select * from public.products' loop
+    plan := plan || ligne || E'\n';
+  end loop;
+  perform pg_temp.check('le catalogue evalue ma boutique une fois par requete',
+    plan like '%InitPlan%');
+end $$;
+
+-- Ce que « je gere » laissait lire passe toujours par « catalogue public » :
+-- A voit son brouillon, B et un visiteur non.
+insert into public.products (id, merchant_id, category_id, title, price_gnf)
+values ('cccccccc-0000-0000-0000-000000000039', 'aaaaaaaa-0000-0000-0000-000000000001',
+        1, 'Brouillon 0039', 1000);
+insert into public.product_images (product_id, storage_path, position)
+values ('cccccccc-0000-0000-0000-000000000039',
+        'aaaaaaaa-0000-0000-0000-000000000001/cccccccc-0000-0000-0000-000000000039/0.webp', 0);
+select pg_temp.check('le commercant voit son brouillon et sa photo',
+  exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039')
+  and exists (select 1 from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039'));
+reset role;
+
+set role authenticated;
+select pg_temp.login('22222222-2222-2222-2222-222222222222');
+select pg_temp.check('un autre commercant ne voit ni le brouillon ni sa photo',
+  not exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039')
+  and not exists (select 1 from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039'));
+
+-- B n'écrit rien chez A : ni produit, ni photo, ni suppression.
+do $$
+begin
+  insert into public.products (merchant_id, category_id, title, price_gnf)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 1, 'Intrus', 1);
+  raise exception 'ECHEC un commercant cree un produit dans la boutique d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    produit refuse dans la boutique d''un autre';
+end $$;
+do $$
+begin
+  insert into public.product_images (product_id, storage_path, position)
+  values ('cccccccc-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002/x.webp', 3);
+  raise exception 'ECHEC un commercant ajoute une photo au produit d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    photo refusee sur le produit d''un autre';
+end $$;
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('suppression du produit d''autrui bloquee', (select count(*) from suppr) = 0);
+with suppr as (
+  delete from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('suppression des photos d''autrui bloquee', (select count(*) from suppr) = 0);
+with modif as (
+  update public.product_images set position = 4
+   where product_id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('modification des photos d''autrui bloquee', (select count(*) from modif) = 0);
+
+-- Le stockage des photos produits : mon dossier, pas celui de A.
+do $$
+begin
+  insert into storage.objects (bucket_id, name)
+  values ('product-images', 'aaaaaaaa-0000-0000-0000-000000000001/pirate.webp');
+  raise exception 'ECHEC un commercant envoie une photo produit dans le dossier d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    photo produit refusee dans le dossier d''un autre';
+end $$;
+insert into storage.objects (bucket_id, name)
+values ('product-images', 'bbbbbbbb-0000-0000-0000-000000000002/0039.webp');
+reset role;
+-- Les refus ci-dessus portent sur des lignes qui existent bien.
+select pg_temp.check('le produit de A et ses photos ont survecu a B',
+  exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000002')
+  and exists (select 1 from public.product_images
+               where product_id = 'cccccccc-0000-0000-0000-000000000002' and position <> 4));
+select pg_temp.check('B envoie une photo produit dans son propre dossier',
+  exists (select 1 from storage.objects
+           where bucket_id = 'product-images' and name = 'bbbbbbbb-0000-0000-0000-000000000002/0039.webp'));
+
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('un visiteur ne voit pas le brouillon',
+  not exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039'));
+reset role;
+
+-- Un commerçant suspendu n'écrit plus dans ses propres produits : la
+-- partie « compte actif » des policies découpées.
+update public.profiles set is_suspended = true where id = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+begin
+  insert into public.products (merchant_id, category_id, title, price_gnf)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 1, 'Pendant la suspension', 1);
+  raise exception 'ECHEC un commercant suspendu cree un produit';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant suspendu ne cree pas de produit';
+end $$;
+with suppr as (
+  delete from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('un commercant suspendu ne retire pas ses photos', (select count(*) from suppr) = 0);
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('un commercant suspendu ne retire pas ses produits', (select count(*) from suppr) = 0);
+reset role;
+update public.profiles set is_suspended = false where id = '11111111-1111-1111-1111-111111111111';
+
+-- Rétabli, il retire son brouillon : la policy de suppression laisse
+-- passer le propriétaire.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('le commercant retire son propre brouillon', (select count(*) from suppr) = 1);
+reset role;
+
+-- Index des clés étrangères.
+select pg_temp.check('notifications.profile_id et profiles.city_id sont indexes',
+  exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'notifications_profile_idx')
+  and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'profiles_city_idx'));
+
+
+-- =====================================================================
+-- Le dossier des photos produits n'accepte que des images raisonnables (0040)
+-- =====================================================================
+-- La taille et le type sont refusés par le service Storage, à l'envoi :
+-- Postgres ne fait que porter le réglage, et le stub local n'a pas de
+-- service Storage. On vérifie donc le réglage, pas le refus.
+select pg_temp.check('product-images : 1 Mo au plus',
+  (select file_size_limit from storage.buckets where id = 'product-images') = 1048576);
+select pg_temp.check('product-images : WebP et JPEG seulement',
+  (select allowed_mime_types from storage.buckets where id = 'product-images')
+    = array['image/webp', 'image/jpeg']);
+select pg_temp.check('shop-photos inchange',
+  (select file_size_limit = 1048576 and allowed_mime_types = array['image/webp', 'image/jpeg']
+     from storage.buckets where id = 'shop-photos'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
