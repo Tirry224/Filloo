@@ -760,10 +760,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-274 commits, du plus récent au plus ancien.
+275 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `38270c5` Catalogue : l'accueil et la recherche lisent un cache au lieu de la base
 - `afd7ae4` Photos : en cache un an au lieu d'une heure
 - `769221c` Agent testeur : le site, la base et l'app ont un testeur qui n'oublie rien
 - `e76c014` Agents : la base, la compatibilité de l'app et la production ont chacun leur gardien

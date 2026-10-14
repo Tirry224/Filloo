@@ -79,8 +79,8 @@ function bip(audio: AudioContext) {
 
 /**
  * Son, bandeau et rafraîchissement du badge à chaque message reçu, sur tous
- * les écrans. Le temps réel applique la policy "messages: lecture par les
- * participants" : seuls les messages de MES fils arrivent.
+ * les écrans. Le canal privé de `0038` ne porte que les messages de MES
+ * fils.
  *
  * Un navigateur ne joue aucun son avant un premier geste sur la page.
  */
@@ -125,21 +125,19 @@ export function MessageAlerts() {
     };
     document.addEventListener("visibilitychange", onVisible);
 
-    import("@/lib/supabase/client").then(async ({ createRealtimeClient }) => {
-      const supabase = await createRealtimeClient();
-      const { data: session } = await supabase.auth.getSession();
-      const userId = session.session?.user.id;
-      if (arrete || !userId) return;
+    Promise.all([import("@/lib/supabase/client"), import("@/lib/supabase/mes-messages")]).then(
+      async ([{ createClient }, { ecouterMesMessages }]) => {
+        const supabase = createClient();
+        const { data: session } = await supabase.auth.getSession();
+        const userId = session.session?.user.id;
+        if (arrete || !userId) return;
 
-      const { data: profils } = await supabase.from("profiles").select("id").eq("auth_user_id", userId);
-      const mesProfils = new Set((profils ?? []).map((p) => p.id));
-      if (arrete) return;
+        const { data: profils } = await supabase.from("profiles").select("id").eq("auth_user_id", userId);
+        const mesProfils = new Set((profils ?? []).map((p) => p.id));
+        if (arrete) return;
 
-      const canal = supabase
-        .channel("messages:alertes")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, async (payload) => {
-          const message = payload.new as { conversation_id: string; sender_id: string; body: string };
-          if (mesProfils.has(message.sender_id)) return;
+        nettoyer = ecouterMesMessages(async (message) => {
+          if (message.op !== "INSERT" || !message.sender_id || mesProfils.has(message.sender_id)) return;
 
           jouerSon();
           const dansCeFil = (["client", "merchant"] as const).some(
@@ -160,13 +158,12 @@ export function MessageAlerts() {
           const jeSuisVendeur = fil?.client_id === message.sender_id;
           setAlerte({
             titre: (jeSuisVendeur ? fil?.profiles?.full_name : fil?.merchants?.shop_name) || "Nouveau message",
-            extrait: message.body,
+            extrait: message.body ?? "",
             href: `${messagesBase(jeSuisVendeur ? "merchant" : "client")}/${message.conversation_id}`,
           });
-        })
-        .subscribe();
-      nettoyer = () => supabase.removeChannel(canal);
-    });
+        });
+      },
+    );
 
     return () => {
       arrete = true;
