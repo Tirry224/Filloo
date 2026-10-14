@@ -760,10 +760,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-276 commits, du plus récent au plus ancien.
+277 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `f301e19` Base : chacun n'entend que ses propres messages (0038, non appliquée)
 - `d1211f0` Temps réel : chacun écoute son canal privé, plus la table messages entière
 - `38270c5` Catalogue : l'accueil et la recherche lisent un cache au lieu de la base
 - `afd7ae4` Photos : en cache un an au lieu d'une heure

@@ -30,9 +30,15 @@ l'app, cette liste vieillit.
 - **RPC** : `search_products`, `conversation_is_open`,
   `enregistrer_telephone`.
 - **Buckets** : `product-images`, `shop-photos`.
-- **Realtime sur `messages`** : `INSERT` filtré par `conversation_id`
-  (`composants/EcranFil.tsx`) et tous événements sans filtre
-  (`lib/non-lus.ts`).
+- **Realtime sur `messages`** (`main` et `dev` de l'app au 2026-10-14,
+  `a852a51`/`14ea03a`, constaté) : `postgres_changes` `INSERT` filtré par
+  `conversation_id` (`composants/EcranFil.tsx`) et `*` sans filtre
+  (`lib/non-lus.ts`). **Retirer `messages` de `supabase_realtime` casse
+  le direct et la pastille de ces versions.**
+- **Canal privé `user:<auth.uid()>`** (branche `claude/traffic-capacity-app-site-grj36p`
+  de l'app, `b13a3cf`, pas encore dans `dev`) : broadcast `message`
+  diffusé par la base (`0038`), lu dans `src/lib/mes-messages.ts` ;
+  champs lus : `op`, `conversation_id`, `sender_id` (+ `body` côté site).
 - **Tables lues ou écrites en direct** : `profiles`, `merchants`,
   `products`, `product_images`, `conversations`, `messages`, `reports`,
   `expo_push_tokens`, `cities`, `categories`. Écritures directes
@@ -51,6 +57,16 @@ l'app, cette liste vieillit.
   `git grep` le 2026-10-14. Appliquer `0037` casse donc « Mes
   informations » et « Modifier ma boutique » sur les téléphones de test
   tant qu'ils n'ont pas reçu une version construite depuis `dev`.
+
+- **`0038` (canal privé, commit site `f301e19`, non appliquée au
+  2026-10-14)** : relue COMPATIBLE seule (garde la publication, erreurs
+  de diffusion attrapées). Les clients site `d1211f0` et app `b13a3cf`
+  EXIGENT `0038` : sans elle, plus de direct. Ordre sûr : appliquer
+  `0038`, puis amener les clients. Le retrait de `messages` de la
+  publication attend qu'aucune app installée n'écoute `postgres_changes`.
+- realtime-js : site 2.116.0, app 2.117.3 ; `config.private` envoyé au
+  join, broadcast livré tel quel `{ type, event, payload, meta? }`
+  (constaté dans `dist/main/RealtimeChannel.js`, 2026-10-14).
 
 ## Décisions du porteur du projet
 
