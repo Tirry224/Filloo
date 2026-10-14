@@ -144,13 +144,11 @@ $$;
 
 revoke execute on function public.diffuser_message_aux_participants() from public, anon, authenticated;
 
-drop trigger if exists messages_diffuser_envoi on public.messages;
 create trigger messages_diffuser_envoi
   after insert on public.messages
   referencing new table as nouveaux
   for each statement execute function public.diffuser_message_aux_participants();
 
-drop trigger if exists messages_diffuser_lecture on public.messages;
 create trigger messages_diffuser_lecture
   after update on public.messages
   referencing old table as anciens new table as nouveaux
@@ -159,8 +157,7 @@ create trigger messages_diffuser_lecture
 
 -- Écouter : seulement son propre canal, seulement en broadcast.
 -- `(select ...)` : évalué une fois par requête, pas une fois par ligne.
-drop policy if exists "realtime: chacun n'écoute que son canal" on realtime.messages;
-create policy "realtime: chacun n'écoute que son canal"
+create policy "realtime: chacun ecoute seulement son canal"
   on realtime.messages
   for select
   to authenticated
