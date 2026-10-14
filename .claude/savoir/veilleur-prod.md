@@ -13,9 +13,17 @@ donnée personnelle ici.
   `list_projects` au premier bilan et à noter ici.
 - **Site** : `https://filloo.net` (production, branche `main`) ; la
   préversion de `dev` utilise la MÊME base.
-- **Sentry** : erreurs du serveur du site seulement, actif quand
-  `SENTRY_DSN` est posée sur Vercel (au 2026-10-14 : pas encore). Pas
-  d'erreurs du navigateur, par choix de poids.
+- **Vercel, identifiants** : projet `prj_eAGRfpFJ0li6POY2tqq000aGOU6F`,
+  équipe `team_SrOwsLKR3AcKEkWzQzFsuO6c` (scope « tiirry ») ; le
+  connecteur a répondu 403 puis a marché le 2026-10-14.
+- **Sentry** : erreurs du serveur du site seulement. `SENTRY_DSN` posée
+  le 2026-10-14 pour Production SEULEMENT, et `main` n'a pas encore le
+  code : actif nulle part ce jour-là. Pas d'erreurs du navigateur, par
+  choix de poids.
+- **Variables absentes ou partielles (2026-10-14, constaté)** : pas de
+  `VAPID_PRIVATE_KEY` ni d'`EXPO_ACCESS_TOKEN` (ce dernier facultatif) ;
+  `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `OWNER_EMAIL` en
+  Production seulement.
 - **Cron** : `/api/quotidien`, 07:00 UTC (`vercel.json`) ; a besoin de
   `CRON_SECRET` et de la clé `service_role`.
 

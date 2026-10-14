@@ -94,6 +94,14 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   téléphone a accepté les notifications. Pour le navigateur, lire les
   lignes `[notification]` et `[push]` des journaux Vercel après un
   message ; historique du diagnostic ci-dessous.
+- **`VAPID_PRIVATE_KEY` N'EXISTE PAS sur Vercel** (constaté le 2026-10-14,
+  liste des variables du projet) : aucune notification navigateur ne
+  peut partir, nulle part. Le porteur du projet doit la poser
+  (Production et Preview), moitié privée de la paire dont la clé
+  publique est déjà en place. Même jour : `SENTRY_DSN`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` et `OWNER_EMAIL` ne sont
+  posées que pour Production — sur la préversion, Sentry, la
+  suppression de compte et les envois de notification ne marchent pas.
 - **`VAPID_PRIVATE_KEY` n'était probablement PAS lue en production le
   2026-09-25.** Constaté le 2026-09-25 : deux appareils abonnés (un
   `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
@@ -809,10 +817,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-286 commits, du plus récent au plus ancien.
+287 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `fb691a6` Essai Sentry : route d'erreur volontaire, préversion seulement (temporaire)
 - `a226d52` Suivi des erreurs du serveur : Sentry, inactif sans SENTRY_DSN
 - `e2ea853` Savoirs : 0038 et 0040 appliquées, 0039 en attente
 - `98fd6bb` Savoir gardien-base : état réel des migrations après le 2026-10-14
