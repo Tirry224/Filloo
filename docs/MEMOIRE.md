@@ -259,8 +259,21 @@ connectées sans réécrire l'app. Détail dans les savoirs des agents
   (villes et catégories une heure). Un visiteur sans compte n'y lit plus
   la base ; restent les mesures de visite, une écriture par page vue.
 - **Photos en cache un an** à l'envoi (site et app).
+- **`0039` toujours absente le 2026-10-14 au soir** : les politiques
+  `je gere mes produits` et `je gere les photos de mes produits`, qu'elle
+  remplace, existent encore (`pg_policies`, constaté).
+- **Suivi des erreurs du SERVEUR prêt, inactif** (`src/instrumentation.ts`,
+  `@sentry/nextjs` 10.76) : rien ne part tant que `SENTRY_DSN` n'est pas
+  posée sur Vercel. Prouvé contre un faux Sentry local : l'erreur arrive.
+- **`sendDefaultPii: false` laisse partir le cookie de session et
+  `Authorization`** (constaté, SDK 10.76) : `src/lib/erreurs-anonymes.ts`
+  ne garde que 4 en-têtes, retire la chaîne de requête et les
+  breadcrumbs (appels Supabase, `console.*`), testé. Le texte de
+  l'erreur, lui, part tel quel.
+- **Sentry côté navigateur : +72 Ko gzip** (socle 165 → 237 Ko, budget
+  200), mesuré le 2026-10-14 — pas les 30 Ko estimés. Non installé.
 - **Reste à décider** : offres Pro (Supabase, Vercel — Hobby interdit
-  l'usage commercial), suivi des erreurs, captcha à l'inscription.
+  l'usage commercial), Sentry dans l'app, captcha à l'inscription.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -796,10 +809,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-284 commits, du plus récent au plus ancien.
+285 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `e2ea853` Savoirs : 0038 et 0040 appliquées, 0039 en attente
 - `98fd6bb` Savoir gardien-base : état réel des migrations après le 2026-10-14
 - `2ed568a` Mémoire : la montée en charge du 2026-10-14, et deux pièges
 - `f5e46dd` Catalogue : fiche produit et page boutique lues depuis le cache

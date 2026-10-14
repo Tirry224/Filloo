@@ -8,7 +8,7 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 | Suite | Résultat |
 |---|---|
 | Site — `npm run typecheck` | OK |
-| Site — `npm run tests` (Node 22) | 53/53 |
+| Site — `npm run tests` (Node 22) | 56/56 (2026-10-14, avec `erreurs-anonymes`, session principale) |
 | Site — `npm run gardes`, `npm run classes` | OK |
 | Site — `npm run espaces` | **ÉCHEC, 1 cas** (voir « Échecs connus ») |
 | Site — `npm run largeurs` | non lancé : exige un serveur sur `localhost:3000` |
@@ -46,6 +46,18 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   n'est pas un défaut.
 - **Écart de version** : local Postgres 16, production 17 (constaté). Un
   comportement propre à 17 ne se verra pas ici.
+- **Prouver que rien de personnel ne part chez Sentry** (constaté
+  2026-10-14, session principale, `@sentry/nextjs` 10.76) : faux serveur
+  HTTP local sur `127.0.0.1:9999` qui écrit chaque corps reçu (enveloppe),
+  `npm run build` puis `SENTRY_DSN=http://cle@127.0.0.1:9999/1 npm start`,
+  une route temporaire qui lève (à supprimer après), une requête avec
+  cookie, `Authorization`, `X-Forwarded-For` et `?token_hash=…`, puis
+  chercher ces valeurs dans le corps reçu. Le test unitaire
+  `tests/erreurs-anonymes.test.ts` ne voit que les champs qu'on lui
+  donne : il faut aussi y glisser des `breadcrumbs` (fetch Supabase avec
+  `data["http.query"]`, console) — `sendDefaultPii:false` ne filtre que
+  les clés de la liste du SDK (`token`, `auth`, `cookie`…), pas
+  `id=eq.<uuid>` ni un téléphone.
 - **Chromium** : `/opt/pw-browsers/chromium` (`CHROME=` pour
   `npm run largeurs`, `CHROMIUM=` pour `e2e`).
 
@@ -56,6 +68,13 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   renvoie vers `/vendeur/boutique` depuis une route client. Vrai
   mélange d'espaces ou faux positif du script : **à trancher** par le
   porteur du projet.
+
+## Défauts récurrents
+
+- **Filtre Sentry** (`src/lib/erreurs-anonymes.ts`) : le 2026-10-14,
+  les `breadcrumbs` passaient (appels Supabase avec leur requête,
+  `console.*`) ; corrigé le même jour, testé. Leçon : tout nouveau champ
+  du SDK se vérifie sur le faux serveur, pas seulement au test unitaire.
 
 ## Jamais testé automatiquement, nulle part
 

@@ -13,6 +13,9 @@ donnée personnelle ici.
   `list_projects` au premier bilan et à noter ici.
 - **Site** : `https://filloo.net` (production, branche `main`) ; la
   préversion de `dev` utilise la MÊME base.
+- **Sentry** : erreurs du serveur du site seulement, actif quand
+  `SENTRY_DSN` est posée sur Vercel (au 2026-10-14 : pas encore). Pas
+  d'erreurs du navigateur, par choix de poids.
 - **Cron** : `/api/quotidien`, 07:00 UTC (`vercel.json`) ; a besoin de
   `CRON_SECRET` et de la clé `service_role`.
 
