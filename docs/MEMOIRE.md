@@ -809,10 +809,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-285 commits, du plus récent au plus ancien.
+286 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `a226d52` Suivi des erreurs du serveur : Sentry, inactif sans SENTRY_DSN
 - `e2ea853` Savoirs : 0038 et 0040 appliquées, 0039 en attente
 - `98fd6bb` Savoir gardien-base : état réel des migrations après le 2026-10-14
 - `2ed568a` Mémoire : la montée en charge du 2026-10-14, et deux pièges
