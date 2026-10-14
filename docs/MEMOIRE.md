@@ -236,6 +236,32 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
   n'importe qui de fabriquer des chiffres : la solution reste à décider.
 
+### Montée en charge (2026-10-14)
+
+Objectif du porteur du projet : tenir des milliers de personnes
+connectées sans réécrire l'app. Détail dans les savoirs des agents
+(`.claude/savoir/`).
+
+- **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14**, code
+  du site et de l'app sur `dev`. Chaque compte écoute `user:<auth.uid()>`
+  au lieu de la table `messages` entière. *À constater* : un message
+  arrivé sans recharger, deux comptes, sur la préversion.
+- **`messages` reste publiée en `postgres_changes`** pour les apps de
+  test installées. La retirer (migration à part) quand plus aucune ne
+  l'écoute : c'est alors que le coût en carré disparaît.
+- **`0040` APPLIQUÉE** : `product-images` limité à 1 Mo, WebP et JPEG.
+- **`0039` NON appliquée** (règles d'accès évaluées une fois par
+  requête, deux index) : elle supprime deux politiques, et le connecteur
+  bloque sur toute suppression (voir « Méthode »). À coller dans le SQL
+  Editor par le porteur du projet.
+- **Cache côté serveur** : accueil, recherche, fiche produit et page
+  boutique lisent le catalogue public par le client anonyme, une minute
+  (villes et catégories une heure). Un visiteur sans compte n'y lit plus
+  la base ; restent les mesures de visite, une écriture par page vue.
+- **Photos en cache un an** à l'envoi (site et app).
+- **Reste à décider** : offres Pro (Supabase, Vercel — Hobby interdit
+  l'usage commercial), suivi des erreurs, captcha à l'inscription.
+
 ### Dettes techniques connues, aucune bloquante
 
 - **`npm run tests` ne trouve aucun fichier sous Windows** : les
@@ -694,6 +720,16 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 
 ### Méthode
 
+- **Le connecteur Supabase attend une confirmation avant toute
+  suppression (`drop … if exists` compris), et elle n'arrive jamais en
+  session** : l'appel expire au bout de 60 s sans rien appliquer
+  (constaté le 2026-10-14, `0038`). Une migration qui doit supprimer
+  passe par le SQL Editor ; un `drop` inutile se retire. Toujours relire
+  l'état de la base après un délai dépassé avant de relancer.
+- **Une session s'ouvre parfois sur une copie de `main`**, plus vieille
+  que `dev` : la mémoire qu'on y lit est périmée. Repartir de `dev`
+  avant de lire quoi que ce soit (le 2026-10-14, la mémoire de `main`
+  parlait encore du SMTP Gmail remplacé par Resend le 2026-10-08).
 - **Un parcours réel à deux navigateurs trouve ce qu'aucun test ne
   voit.** Le 2026-09-23, un script Playwright (réseau « 3G Conakry » et
   « Slow 3G », CPU ralenti x4, trois comptes de test en production, puis
@@ -760,10 +796,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-281 commits, du plus récent au plus ancien.
+282 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `f5e46dd` Catalogue : fiche produit et page boutique lues depuis le cache
 - `e9ee4e9` 0038 appliquée : telle qu'en production, sans drop ni apostrophe accentuée
 - `4f8e8ee` Savoir relecteur-compat : 0039 et 0040 relues compatibles, photos envoyées
 - `6524004` Base : règles d'accès évaluées une fois par requête, photos limitées (0039, 0040, non appliquées)

@@ -68,6 +68,15 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
 
 ## Pièges appris
 
+- **Le connecteur Supabase (`apply_migration` comme `execute_sql`) attend
+  une confirmation interactive avant toute suppression — `drop … if
+  exists` compris — et elle n'arrive jamais en session** : délai dépassé
+  à 60 s, RIEN d'appliqué (constaté 2026-10-14, quatre essais sur `0038`).
+  Écrire les migrations sans `drop` inutile ; celles qui doivent
+  supprimer passent par le SQL Editor du porteur du projet. Après un
+  délai dépassé, relire l'état (`schema_migrations`, objets) avant tout
+  nouvel essai.
+
 - **Une politique de `realtime.messages` juge le CANAL DEMANDÉ
   (`realtime.topic()`), pas la colonne `topic` de la ligne** (constaté
   2026-10-14, test local de `0038`) : Realtime pose `realtime.topic` puis
