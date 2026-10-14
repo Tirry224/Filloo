@@ -760,10 +760,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-272 commits, du plus récent au plus ancien.
+273 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `769221c` Agent testeur : le site, la base et l'app ont un testeur qui n'oublie rien
 - `e76c014` Agents : la base, la compatibilité de l'app et la production ont chacun leur gardien
 
 ### 2026-10-11

@@ -1,6 +1,14 @@
 import imageCompression from "browser-image-compression";
 
 /**
+ * Durée de cache d'une photo envoyée, en secondes : un an. Un chemin ne
+ * sert qu'une fois (identifiant aléatoire, jamais réécrit), donc une
+ * photo en cache n'est jamais périmée. Le défaut de Supabase (une heure)
+ * faisait retélécharger chaque photo par chaque téléphone, à chaque heure.
+ */
+export const CACHE_PHOTO = "31536000";
+
+/**
  * Compresse une photo dans le navigateur avant l'envoi, en WebP quand le
  * navigateur sait l'encoder, en JPEG sinon.
  *
