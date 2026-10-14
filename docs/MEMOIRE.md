@@ -796,10 +796,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-282 commits, du plus récent au plus ancien.
+283 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `2ed568a` Mémoire : la montée en charge du 2026-10-14, et deux pièges
 - `f5e46dd` Catalogue : fiche produit et page boutique lues depuis le cache
 - `e9ee4e9` 0038 appliquée : telle qu'en production, sans drop ni apostrophe accentuée
 - `4f8e8ee` Savoir relecteur-compat : 0039 et 0040 relues compatibles, photos envoyées

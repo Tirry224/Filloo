@@ -12,12 +12,11 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   *supposées* (de mémoire, à vérifier sur supabase.com/pricing) : 500 Mo
   de base, 1 Go de stockage, 5 Go de trafic sortant par mois, pas de
   sauvegarde téléchargeable, pause après 7 jours d'inactivité.
-- **Migrations appliquées : jusqu'à `0035`** — constaté le 2026-10-14
-  (`list_migrations`). **`0036` et `0037` sont commitées sur `dev` mais
-  PAS appliquées ; `0038` (diffusion par canal privé), `0039` (policies
-  en InitPlan, index) et `0040` (limites du bucket `product-images`)
-  sont écrites sur `claude/traffic-capacity-app-site-grj36p`, non
-  appliquées.** `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
+- **Migrations appliquées : `0001`–`0035`, puis `0040` et `0038`**
+  (appliquées le 2026-10-14 par le connecteur, dans cet ordre, accord du
+  porteur du projet). **Non appliquées** : `0036` et `0037` (attendent
+  que les téléphones aient un build de `dev`), `0039` (deux `drop
+  policy` : SQL Editor). `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
   tous leur numéro (`realtime_on_messages`, etc.) : comparer avec
   `npm run migrations`, pas à l'œil.
 - **Volume au 2026-10-14** : 5 comptes, 6 messages, 14 Mo, 3 objets de
