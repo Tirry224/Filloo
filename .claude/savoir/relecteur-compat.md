@@ -68,6 +68,31 @@ l'app, cette liste vieillit.
   join, broadcast livré tel quel `{ type, event, payload, meta? }`
   (constaté dans `dist/main/RealtimeChannel.js`, 2026-10-14).
 
+- **`0039` et `0040` (commit site `6524004`, non appliquées au
+  2026-10-14)** : relues COMPATIBLES. `0039` : chaque `alter policy`
+  comparé à sa dernière définition (0002, 0004, 0016, 0029, 0032) —
+  seule l'enveloppe `(select …)` change ; « je gère » `for all` de
+  `products`/`product_images` découpée en insert/update/delete, la
+  lecture des BROUILLONS passe par la branche `merchant_id =
+  my_merchant_id()` de « catalogue public » / « visibles avec le
+  produit », plus large que l'ancienne (pas d'`is_active_profile`).
+  `0040` : `product-images` 1 Mo, WebP/JPEG (constaté dans le SQL).
+
+## Photos envoyées (constaté 2026-10-14)
+
+- **App** (`main` `a852a51`, `dev` `14ea03a`, `src/lib/edition-produit.ts`
+  `envoyerPhoto`) : toujours `contentType: "image/jpeg"`, JPEG qualité
+  0,7, 1 280 px au plus grand côté — mais le redimensionnement dépend de
+  `asset.width/height` d'`expo-image-picker` : s'ils valaient 0, la
+  photo partirait en pleine taille (supposé rare) et `0040` la
+  refuserait (vignette « erreur » dans le formulaire produit).
+- **Site** (`origin/main` `f1235e0`, `compresserPhoto`) : WebP, sinon
+  JPEG ; `maxSizeMB: 0.5`, 1 280 px ; browser-image-compression 2.0.2
+  rend toujours le fichier recompressé (au plus 10 passes), jamais
+  l'original.
+- `shop-photos` : app en `image/jpeg` (`edition-boutique.ts`), déjà
+  limité à 1 Mo WebP/JPEG (0029, 0031).
+
 ## Décisions du porteur du projet
 
 - L'app vit dans son propre dépôt depuis le 2026-10-07 ; toute
