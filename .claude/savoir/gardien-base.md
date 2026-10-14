@@ -12,9 +12,9 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   *supposées* (de mémoire, à vérifier sur supabase.com/pricing) : 500 Mo
   de base, 1 Go de stockage, 5 Go de trafic sortant par mois, pas de
   sauvegarde téléchargeable, pause après 7 jours d'inactivité.
-- **Migrations appliquées : `0001`–`0035`, puis `0040` et `0038`**
+- **Migrations appliquées : `0001`–`0035`, puis `0040`, `0038` et `0036`**
   (appliquées le 2026-10-14 par le connecteur, dans cet ordre, accord du
-  porteur du projet). **Non appliquées** : `0036` et `0037` (attendent
+  porteur du projet). **Non appliquées** : `0037` (attend
   que les téléphones aient un build de `dev`), `0039` (deux `drop
   policy` : SQL Editor). `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
   tous leur numéro (`realtime_on_messages`, etc.) : comparer avec

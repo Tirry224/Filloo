@@ -31,8 +31,8 @@ donnée personnelle ici.
 
 - **2026-10-14** : 5 comptes, 6 messages, base 14 Mo, 3 objets de
   stockage (133 Ko), 15 connexions Postgres sur 60. Migrations
-  appliquées jusqu'à `0035`, puis `0040` et `0038` le 2026-10-14 ;
-  `0036`, `0037`, `0039` en attente (constaté, `list_migrations`).
+  appliquées jusqu'à `0035`, puis `0040`, `0038` et `0036` le 2026-10-14 ;
+  `0037`, `0039` en attente (constaté, `list_migrations`).
 
 ## Problèmes connus (ne pas re-signaler comme nouveaux)
 

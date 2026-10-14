@@ -236,7 +236,8 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   session, qui suffisait seule. Écrits désormais par le serveur
   (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
   l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
-  **`0036` et `0037` ne sont PAS appliquées.** Ordre : `0036`, puis le
+  **`0036` APPLIQUÉE le 2026-10-14 (fonctions réservées à `service_role`,
+  constaté) ; `0037` NON appliquée.** Ordre : `0036`, puis le
   site en production (il appelle ses fonctions), puis la nouvelle app
   sur les téléphones, et `0037` en dernier — elle retire l'écriture
   directe, dont l'ancienne app a besoin.
