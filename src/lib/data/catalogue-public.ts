@@ -1,7 +1,9 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCategories, getCities } from "@/lib/data/reference";
-import { searchProducts } from "@/lib/data/products";
+import { getProduct, searchProducts } from "@/lib/data/products";
+import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
+import type { Merchant } from "@/lib/types";
 
 /**
  * Les lectures du catalogue que TOUT LE MONDE voit pareil, gardées en
@@ -34,5 +36,25 @@ export const categoriesEnCache = unstable_cache(() => getCategories(createPublic
 export const rechercheEnCache = unstable_cache(
   (opts: Parameters<typeof searchProducts>[1]) => searchProducts(createPublicClient(), opts),
   ["recherche"],
+  { revalidate: 60 },
+);
+
+/**
+ * Fiche produit, boutique et catalogue d'une boutique : mêmes règles, une
+ * minute. Ce que SEUL le propriétaire voit (un brouillon, ses produits
+ * masqués) n'est pas dans ce cache anonyme : la page retombe alors sur la
+ * session, voir `produitVisible` et la page boutique.
+ */
+export const produitEnCache = unstable_cache((id: string) => getProduct(createPublicClient(), id), ["produit"], {
+  revalidate: 60,
+});
+
+export const boutiqueEnCache = unstable_cache((id: string) => getMerchant(createPublicClient(), id), ["boutique"], {
+  revalidate: 60,
+});
+
+export const produitsBoutiqueEnCache = unstable_cache(
+  (boutique: Merchant) => getMerchantProducts(createPublicClient(), boutique),
+  ["produits-boutique"],
   { revalidate: 60 },
 );

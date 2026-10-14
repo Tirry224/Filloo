@@ -10,6 +10,7 @@ import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
+import { produitEnCache } from "@/lib/data/catalogue-public";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatGnf } from "@/lib/format";
 import Link from "next/link";
@@ -17,9 +18,17 @@ import { compter } from "@/lib/analytics";
 import { lienWhatsApp } from "@/lib/telephone";
 
 /**
- * `getProduct` est appelé ici ET dans la page ; le `cache()` de
- * `createClient` plus la déduplication de requêtes de Next évitent le
- * double aller-retour.
+ * Le produit tel que le public le voit, depuis le cache partagé ; sinon
+ * tel que CETTE session le voit — le brouillon de son propriétaire, ou un
+ * produit publié depuis moins d'une minute.
+ */
+async function produitVisible(id: string) {
+  return (await produitEnCache(id)) ?? getProduct(await createClient(), id);
+}
+
+/**
+ * `produitVisible` est appelé ici ET dans la page ; le cache partagé
+ * et la déduplication de requêtes de Next évitent le double aller-retour.
  *
  * Un produit hors catalogue (brouillon, masqué, boutique non approuvée)
  * n'arrive jamais ici : le RLS l'écarte, `getProduct` rend `null`, et la
@@ -33,8 +42,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const product = await getProduct(supabase, id);
+  const product = await produitVisible(id);
 
   if (!product) {
     return { title: "Produit introuvable", robots: { index: false, follow: false } };
@@ -72,9 +80,9 @@ export default async function ProductPage({
      s'afficher avant que le routeur ait fini de résoudre l'URL. */
   const { id } = await params;
   const { info } = await searchParams;
-  const supabase = await createClient();
-  const product = await getProduct(supabase, id);
+  const product = await produitVisible(id);
   if (!product) notFound();
+  const supabase = await createClient();
 
   /* `lienWhatsApp` pose l'indicatif « 224 », que la base ne stocke pas.
      Sans lui, l'adresse était `wa.me/622334455` — bien formée, mais ne

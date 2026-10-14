@@ -760,10 +760,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-280 commits, du plus récent au plus ancien.
+281 commits, du plus récent au plus ancien.
 
 ### 2026-10-14
 
+- `e9ee4e9` 0038 appliquée : telle qu'en production, sans drop ni apostrophe accentuée
 - `4f8e8ee` Savoir relecteur-compat : 0039 et 0040 relues compatibles, photos envoyées
 - `6524004` Base : règles d'accès évaluées une fois par requête, photos limitées (0039, 0040, non appliquées)
 - `8891d06` Temps réel : un changement de compte rapide n'écoute plus l'ancien canal
