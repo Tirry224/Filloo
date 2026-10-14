@@ -81,6 +81,10 @@ savoir dans `.claude/savoir/`.
   ou de `src/app/api/app/*`, il dit si l'app déjà installée survit.
 - **`veilleur-prod`** : bilan de santé de la production, en lecture
   seule.
+- **`testeur`** : avant chaque push, lance les bonnes vérifications sur
+  le site, la base et l'app, écrit les tests qui manquent, et liste ce
+  qui ne se teste que sur un vrai téléphone. Jamais contre la
+  production.
 
 Règles :
 

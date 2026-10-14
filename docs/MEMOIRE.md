@@ -760,7 +760,15 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-270 commits, du plus récent au plus ancien.
+272 commits, du plus récent au plus ancien.
+
+### 2026-10-14
+
+- `e76c014` Agents : la base, la compatibilité de l'app et la production ont chacun leur gardien
+
+### 2026-10-11
+
+- `daf0eab` Mot de passe redemandé : vérifié par le serveur, plus seulement par l'écran
 
 ### 2026-10-09
 
