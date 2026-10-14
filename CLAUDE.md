@@ -69,6 +69,28 @@ compte, un vrai message.
   `dev` revient, mais NOMMÉE ici et seule autorisée, pour ne pas refaire
   la dispersion de septembre.
 
+# Les agents spécialisés
+
+Décision du porteur du projet le 2026-10-14 : chaque domaine a un agent
+qui s'en charge, dans `.claude/agents/`, et qui apprend par un fichier de
+savoir dans `.claude/savoir/`.
+
+- **`gardien-base`** : tout travail sur `supabase/` (migrations, RLS,
+  fonctions, buckets, tests de sécurité). Il écrit, il n'applique jamais.
+- **`relecteur-compat`** : avant de pousser tout changement de la base
+  ou de `src/app/api/app/*`, il dit si l'app déjà installée survit.
+- **`veilleur-prod`** : bilan de santé de la production, en lecture
+  seule.
+
+Règles :
+
+- **Le travail d'un domaine passe par son agent** ; la session
+  principale garde la coordination, les commits et le compte rendu.
+- **Le savoir d'un agent se commite avec le travail qui l'a produit**,
+  dans le même commit ou celui d'à côté — jamais perdu dans une session.
+- **Un savoir ment s'il n'est pas corrigé** : quand une session constate
+  qu'une entrée est fausse, elle la corrige, comme pour `docs/MEMOIRE.md`.
+
 # Comment me répondre
 
 Règle donnée par le porteur du projet le 2026-09-13, et qui ne se
