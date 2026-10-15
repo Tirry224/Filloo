@@ -7,7 +7,7 @@
  * Tourne sans base ni navigateur : la règle vérifiée est une fonction des
  * profils que porte la connexion, isolée dans
  * `src/lib/data/espace-decision.ts`, et ce fichier l'exerce sur TOUTES les
- * combinaisons. Complément de `npm run parcours`, qui vérifie l'affichage
+ * combinaisons. Complément de `npm run e2e`, qui vérifie l'affichage
  * des écrans, pas la table de vérité des refus.
  */
 

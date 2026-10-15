@@ -264,7 +264,7 @@ formulaires écrits coûterait deux fois plus cher.
 
 ```
 npm run build && npm run poids     # le poids
-npm start & npm run parcours       # les parcours (second passage sans JS : informatif)
+npm run e2e                        # les parcours (e2e/README.md)
 ```
 
 À faire avant chaque mise en ligne. Sur le terrain, la vraie mesure reste

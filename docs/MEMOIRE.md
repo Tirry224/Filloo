@@ -326,9 +326,6 @@ connectées sans réécrire l'app. Détail dans les savoirs des agents
   lent, c'est une requête externe de plus avant chaque photo et un écran
   figé pendant la compression. À trancher : servir ce script depuis Filloo,
   ou `useWebWorker: false`.
-- **`scripts/parcours.mjs` est remplacé par `e2e/`** mais pas encore
-  supprimé : il vise des données de démonstration effacées et ne tourne
-  plus.
 - **Le dépôt et la production ne portent pas les mêmes commentaires
   SQL.** Le mécanisme d'application les retire ; la logique est
   identique. À traiter en corrigeant le mécanisme, **jamais en réécrivant
@@ -512,7 +509,6 @@ npm run classes                # classes Tailwind fantômes
 npm run espaces                # étanchéité des deux espaces
 npm run gardes                 # gardes de route
 npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
-npm run parcours               # mesure d'un parcours
 npm run tests                  # couche applicative (node --test, sans dépendance)
 npm run e2e                    # parcours dans Chromium ; pile locale : e2e/README.md
 npm run memoire                # régénère l'historique de ce fichier
@@ -834,10 +830,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-304 commits, du plus récent au plus ancien.
+305 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `6adf6b5` Navigation : une page visitée reste 30 s dans le navigateur
 - `91cf22f` Messages : la bulle apparaît dès l'appui sur Envoyer, en « Envoi… »
 - `39c011c` Serveur à Paris, à côté de la base : chaque requête ne traverse plus l'Atlantique
 - `6d463fc` Mémoire : la paire VAPID est posée dans Vercel, et la clé publique de Vercel gagne sur .env

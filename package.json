@@ -8,7 +8,6 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "poids": "node scripts/poids.mjs",
-    "parcours": "node scripts/parcours.mjs",
     "classes": "node scripts/verifier-classes.mjs",
     "largeurs": "node scripts/verifier-largeurs.mjs",
     "espaces": "node scripts/verifier-espaces.mjs",
