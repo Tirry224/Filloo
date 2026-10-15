@@ -40,12 +40,13 @@ réécrit pas, même pour un commentaire. Pour relire ce qu'elles citaient :
 fichier, et `git show <empreinte>:docs/REPRISE.md` en affiche une, à la
 date de la migration.
 
-**État en une phrase (2026-10-09) :** le site est en ligne sur
-`https://filloo.net` et porte depuis le 2026-10-09 l'API de l'app mobile
-(fusion de `dev` dans `main`) ; l'app est complète et part en test sur
-de vrais téléphones. Ce qui sépare Filloo d'un vrai commerçant n'est plus
-du code : aucune notification (navigateur ou téléphone) n'a encore été vue
-arriver, et les parcours restent à faire sur un téléphone.
+**État en une phrase (2026-10-15) :** le site est en ligne sur
+`https://filloo.net`, ses parcours essentiels ont été vus marcher sur de
+vrais téléphones (inscription commerçant, photo, messagerie,
+notifications navigateur et app, application fermée), et le porteur du
+projet commence à chercher les premiers commerçants. Avant le premier
+vrai commerçant restent trois gestes hors code : passer Vercel en Pro,
+mettre la base sous sauvegarde, prouver « mot de passe oublié ».
 
 **Ce qu'une session peut vérifier, et ce qu'elle ne peut pas.** Tout ce
 qui porte sur le dépôt se relit dans le code. Tout ce qui porte sur la
@@ -61,137 +62,68 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
 
 ### Bloquant pour ouvrir à un vrai commerçant
 
-- **Le modèle d'email « Reset Password » de Supabase doit passer au
-  `token_hash`.** Le 2026-10-02, le porteur du projet a reçu et utilisé
-  un email de réinitialisation : les envois marchent, mais le test qui
-  prouve le réglage est d'ouvrir le lien dans un AUTRE navigateur que
-  celui qui l'a demandé. Le même jour à 18:38 UTC, deux `POST
-  /auth/v1/verify` ont répondu 403 (lien expiré ou déjà consommé). Sans ce réglage, le lien de réinitialisation échoue dès
-  qu'il est ouvert ailleurs que dans le navigateur qui l'a demandé (app
-  installée contre Safari) ou après une seconde demande — constaté le
-  2026-09-25. Le code accepte les deux voies (`/auth/confirm`) ; le
-  tableau de bord doit porter, dans Authentication → Emails → Reset
-  Password, le lien
-  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`. Même
-  jour, deux autres réglages corrigés à la main : `NEXT_PUBLIC_SITE_URL`
-  valait l'adresse de SUPABASE (tous les liens d'email partaient
-  ailleurs), et le « Site URL » de Supabase désignait encore
-  `makiti-beryl.vercel.app`.
-- **Les emails de compte partent de Resend, depuis
-  `noreply@send.filloo.net`** (domaine `filloo.net` posé le 2026-10-08,
-  SPF, DKIM et DMARC chez Cloudflare) : ils remplacent le SMTP Gmail
-  (`filloo.gn@gmail.com`) du 2026-10-07. Réglage posé par le porteur du
-  projet ; aucun envoi encore vu dans les journaux d'authentification
-  depuis une session. *À constater* : un email reçu, hors courrier
-  indésirable.
-- **Aucune notification n'a encore été distribuée, navigateur ou
-  téléphone.** Constaté le 2026-10-09 (connecteur) : un abonnement Web
-  Push et un téléphone de l'app (iOS, inscrit le 2026-10-09), tous deux
-  avec `last_used_at` vide. Pour le téléphone, la cause trouvée le même
-  jour : la route `/api/app/message-envoye` n'était que sur `dev`, le
-  site en production répondait 404 ; elle est en ligne depuis la fusion
-  du 2026-10-09. *À constater* : un message envoyé à un compte dont le
-  téléphone a accepté les notifications. Pour le navigateur, lire les
-  lignes `[notification]` et `[push]` des journaux Vercel après un
-  message ; historique du diagnostic ci-dessous.
-- **`VAPID_PRIVATE_KEY` N'EXISTE PAS sur Vercel** (constaté le 2026-10-14,
-  liste des variables du projet) : aucune notification navigateur ne
-  peut partir, nulle part. La paire du 2026-09-24 est PERDUE : le
-  2026-10-15, une nouvelle paire a remplacé la clé publique de `.env`
-  (`BM2_eCfI…`), et le porteur du projet a posé la paire entière dans
-  Vercel (Production et Preview) puis redéployé. **Piège** :
-  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` existe AUSSI dans Vercel, et c'est elle
-  qui gagne sur `.env` au build — changer la clé, c'est changer les deux.
-  Les abonnements navigateur existants se recréent seuls (`memeCle`).
-  *À constater* : une notification reçue. Même jour : `SENTRY_DSN`,
-  `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` et `OWNER_EMAIL` ne sont
-  posées que pour Production — sur la préversion, Sentry, la
-  suppression de compte et les envois de notification ne marchent pas.
-- **`VAPID_PRIVATE_KEY` n'était probablement PAS lue en production le
-  2026-09-25.** Constaté le 2026-09-25 : deux appareils abonnés (un
-  `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
-  installé et autorisé), `last_used_at` vide sur les deux, et sur 30
-  messages envoyés en 24 h, AUCUNE requête de `notifyNewMessage` dans les
-  journaux Supabase. La fonction sort donc avant sa première lecture : la
-  seule sortie possible à ce point est « ni push ni email configuré ». La
-  clé publique, elle, est dans le build (l'abonnement a réussi). Vérifier
-  que `VAPID_PRIVATE_KEY` est cochée pour **Production**, qu'elle est la
-  moitié de la paire publique de `.env`, puis redéployer. Ensuite la clé
-  `service_role` ci-dessous bloquera l'étape suivante : les deux sont à
-  corriger ensemble. Ce que « marche en arrière-plan sur Android » veut
-  dire : Chrome garde la page vivante quelques minutes, c'est le son de
-  l'app, pas un push. iOS suspend la page dès qu'elle quitte l'écran.
-- **`SUPABASE_SERVICE_ROLE_KEY` : réglée.** Le 2026-10-02, aucun 401
-  dans les journaux Supabase des dernières 24 h. Le diagnostic d'origine
-  reste ci-dessous pour mémoire.
-- **`SUPABASE_SERVICE_ROLE_KEY` de Vercel était REFUSÉE par Supabase.**
-  Constaté le 2026-09-25 dans les journaux Supabase (connecteur) : toutes
-  les requêtes `service_role` des dernières 24 h répondent **401** — la
-  lecture des profils de `deleteAccountAction` (d'où « supprimer mon
-  compte » sans effet) et 47 écritures `analytics_events`. La variable
-  EXISTE (sinon `createAdminClient` lèverait avant toute requête) mais sa
-  valeur ne correspond pas au projet `bfmsruzyrgbndbueikcb` : autre projet,
-  clé tronquée ou guillemets collés. Les clés « legacy » du projet sont
-  actives. Recopier la clé `service_role` depuis Supabase → Settings →
-  API Keys, puis redéployer. Même client pour `push.ts`, le cron et
-  `notifications-decisions.ts` : probablement une part des pannes push et
-  emails ci-dessous. *À constater après correction.*
-- **Aucun push n'a jamais été distribué.** Le 2026-09-23,
-  `push_subscriptions.last_used_at` était vide sur les quatre abonnements,
-  alors que des messages étaient arrivés après leur création. Premier
-  suspect : `VAPID_PRIVATE_KEY` absente de Vercel, ou d'une autre paire que
-  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Les abandons de `notifyNewMessage` sont
-  désormais journalisés (`[notification]`, `[push]`) : les journaux Vercel
-  diront lequel. *À constater.*
-- **La file `notifications` n'a jamais été vidée par le cron.** Le
-  2026-09-21, une ligne créée le 17 n'était toujours pas envoyée. Elle ne
-  porte plus que les suspensions depuis `0033`.
-- **`CRON_SECRET` sur Vercel.** Sans elle, le cron du matin
-  (`/api/quotidien` depuis le 2026-09-25, qui enchaîne notifications et
-  ménage des photos orphelines) refuse tout : aucune suspension
-  n'est annoncée et aucune photo abandonnée n'est
-  effacée. Le ménage a AUSSI besoin de la clé `service_role` ci-dessus.
-  Déclarée posée par le porteur du projet le 2026-10-02 ; la file
-  `notifications` n'a aucune ligne en attente ce jour-là. *À constater.* La purge des
-  mesures, elle, tourne dans la base (pg_cron) et n'en dépend pas.
-- **`NEXT_PUBLIC_SITE_URL` sur Vercel.** Depuis le 2026-09-22,
-  `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
-  quand elle manque, donc son absence ne devrait plus éteindre les emails
-  — mais c'est le filet, pas l'adresse voulue. *À constater.*
-- **La confirmation d'email est active.** Constaté le 2026-10-09 : un
-  compte créé le 2026-10-07 attend encore sa confirmation, ce qui
-  n'arrive pas quand la case est décochée. Depuis `0033`, ce lien (ou son
-  code, dans l'app) est la SEULE vérification d'un commerçant avant sa
-  mise en ligne. Reste à vérifier dans Authentication → URL Configuration
-  que les Redirect URLs portent `https://filloo.net/**` depuis le
-  changement de domaine (README, « Confirmation de l'email à
-  l'inscription ») : sinon le lien de l'email est cassé.
+- **Vercel est en offre Hobby, qui interdit l'usage commercial.** Une
+  marketplace avec de vrais commerçants y entre : risque de suspension du
+  site sans préavis. Passer en Pro (porteur du projet, réglages de
+  facturation Vercel).
+- **La base n'a aucune sauvegarde restaurable** (offre gratuite de
+  Supabase). Une erreur ou une migration ratée effacerait boutiques,
+  produits et messages pour de bon. Passer en Pro (7 jours de
+  sauvegardes), ou au minimum une sauvegarde manuelle chaque semaine.
+- **« Mot de passe oublié » n'est pas prouvé.** Le modèle d'email
+  « Reset Password » de Supabase doit porter
+  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`
+  (Authentication → Emails) : sans lui, le lien échoue dès qu'il est
+  ouvert ailleurs que dans le navigateur qui l'a demandé (app Mail contre
+  site installé). Le code accepte les deux voies (`/auth/confirm`).
+  *À constater* : demander le lien sur un téléphone, l'ouvrir depuis
+  l'app Mail.
 
-### À faire sur un vrai téléphone, par toi
+### Constaté le 2026-10-15
 
-Les sessions ne joignent ni `*.supabase.co` ni `*.vercel.app` et ne
-peuvent pas lancer de pile Supabase locale : elles ne voient **jamais un
-écran portant de vraies données**. Ces trois parcours n'ont jamais été
-vus fonctionner par personne :
+Ce qui était « à constater » et ne l'est plus — les diagnostics qui y
+menaient (clé VAPID, clé `service_role` refusée, route de l'app en 404)
+sont dans l'historique Git de ce fichier.
 
-- la **messagerie entre deux comptes réels** ;
-- l'**envoi d'une photo depuis un téléphone** ;
-- la **photo de profil d'une boutique** (0029, 2026-09-25) : choisir,
-  enregistrer, la voir sur la page publique, la fiche produit, les
-  résultats de recherche et la messagerie côté client ;
-- l'**inscription d'un commerçant par le lien de confirmation**, jusqu'à
-  sa boutique en ligne.
+- **Parcours vus marcher sur téléphone par le porteur du projet** :
+  inscription d'un commerçant par le lien de confirmation jusqu'à sa
+  boutique en ligne, envoi d'une photo, messagerie entre deux comptes.
+- **Les notifications arrivent, application fermée** : navigateur
+  (Android et iPhone, site installé sur l'écran d'accueil) et app
+  mobile. Base : `last_used_at` rempli sur `push_subscriptions` et
+  `expo_push_tokens` le 2026-10-15. **Un abonnement se fait depuis
+  « Compte » ou « Boutique »** : la permission du navigateur seule ne
+  suffit pas, et le porteur du projet lui-même s'y est trompé.
+- **Clé VAPID** : la paire du 2026-09-24 était perdue ; nouvelle paire
+  le 2026-10-15, posée dans Vercel. **Piège** :
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` existe AUSSI dans Vercel et gagne sur
+  `.env` au build — changer la clé, c'est changer les deux, puis
+  redéployer. La clé privée n'est que dans Vercel et chez le porteur du
+  projet.
+- **Variables Vercel** (liste lue le 2026-10-15) : `VAPID_PRIVATE_KEY`,
+  `SENTRY_DSN`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`,
+  `OWNER_EMAIL` et `NEXT_PUBLIC_SITE_URL` sont posées pour Production ET
+  Preview.
+- **Emails de compte** : Resend, depuis `noreply@send.filloo.net` ; un
+  email de confirmation reçu et suivi le 2026-10-15.
+- **Ménage du matin** (`/api/quotidien`) : aucune photo orpheline et
+  aucune notification en attente en base le 2026-10-15.
 
-**Constaté par le porteur du projet le 2026-10-15** : l'inscription d'un
-commerçant jusqu'à sa boutique en ligne et l'envoi d'une photo depuis un
-téléphone marchent ; la messagerie entre deux comptes et les
-notifications (Android et iPhone, application fermée) aussi.
+### À constater sur un téléphone
 
-**Noter les défauts au fil de
-l'eau plutôt que les corriger un par un** : corriger en cours de parcours
-fait perdre le fil du parcours.
+- **La photo de profil d'une boutique** (0029) : la voir sur la page
+  publique, la fiche produit, les résultats et la messagerie côté client.
+- **Le son d'un message reçu sur iPhone** (interrupteur silencieux
+  respecté, c'est voulu).
+- **Le badge de non-lus s'éteint à l'ouverture d'un fil.**
 
 ### Gestes de ménage, non bloquants
+
+- **Fait le 2026-10-15** (audit par agents, site et app) : retirés
+  `/styleguide`, `/ecrans`, `src/lib/mock.ts` (les motifs de signalement
+  vivent dans `src/lib/motifs-signalement.ts`), `supabase/seed_demo.sql`,
+  `scripts/parcours.mjs` et `formatPhone`. Aucun fichier, asset ni
+  dépendance inutile ailleurs, site comme app.
 
 - **Regarder le projet Supabase « Fillo »** du 2026-08-25, qui tourne
   encore à côté de `Filloo` sans qu'on sache s'il sert.
@@ -242,11 +174,10 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   session, qui suffisait seule. Écrits désormais par le serveur
   (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
   l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
-  **`0036` APPLIQUÉE le 2026-10-14 (fonctions réservées à `service_role`,
-  constaté) ; `0037` NON appliquée.** Ordre : `0036`, puis le
-  site en production (il appelle ses fonctions), puis la nouvelle app
-  sur les téléphones, et `0037` en dernier — elle retire l'écriture
-  directe, dont l'ancienne app a besoin.
+  **`0036` APPLIQUÉE le 2026-10-14, site en production le même soir ;
+  `0037` NON appliquée.** Reste, dans l'ordre : la nouvelle app sur les
+  téléphones (build EAS), puis `0037` en dernier — elle retire
+  l'écriture directe, dont l'ancienne app a besoin.
 - **Aucune mesure d'usage venue de l'app** : `analytics_events` ne
   s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
   n'importe qui de fabriquer des chiffres : la solution reste à décider.
@@ -260,7 +191,7 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
 - **Reste à faire par le porteur du projet** : déclarer `filloo.net`
   dans Google Search Console et y soumettre `/sitemap.xml`.
 
-### Montée en charge (2026-10-14)
+### Montée en charge et vitesse (2026-10-14 et 2026-10-15)
 
 Objectif du porteur du projet : tenir des milliers de personnes
 connectées sans réécrire l'app. Détail dans les savoirs des agents
@@ -270,45 +201,51 @@ connectées sans réécrire l'app. Détail dans les savoirs des agents
   (`vercel.json`, `regions`). Avant, elles tournaient à Washington
   (`iad1`, défaut de Vercel) alors que la base est à Paris
   (`eu-west-3`) : chaque requête à la base traversait l'Atlantique, et
-  l'envoi d'un message, qui en enchaîne une dizaine, prenait plusieurs
-  secondes. Ne pas changer de région sans déplacer la base avec.
-
-- **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14**, code
-  du site et de l'app sur `dev`. Chaque compte écoute `user:<auth.uid()>`
-  au lieu de la table `messages` entière. *À constater* : un message
-  arrivé sans recharger, deux comptes, sur la préversion.
+  l'envoi d'un message, qui en enchaîne une dizaine, prenait environ
+  5 secondes. Ne pas changer de région sans déplacer la base avec.
+- **Le message envoyé s'affiche tout de suite** en « Envoi… »
+  (`EnvoiEnCours.tsx`), remplacé par la vraie bulle au retour de
+  l'action.
+- **Une page visitée reste 30 s dans le navigateur**
+  (`experimental.staleTimes.dynamic`, `next.config.ts`) : revenir sur un
+  onglet ne redemande plus rien au serveur. Les actions qui écrivent
+  (`revalidatePath`) et le temps réel (`router.refresh()`) vident ce
+  cache.
+- **Le client Supabase du navigateur (environ 65 Ko) et le compresseur
+  de photo (environ 20 Ko) se chargent à la demande** : au choix d'une
+  photo dans les formulaires, après l'affichage du fil dans une
+  discussion. Mesuré au build du 2026-10-15 : ils ne font plus partie
+  du chargement de ces pages.
+- **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14.** Chaque
+  compte écoute `user:<auth.uid()>` au lieu de la table `messages`
+  entière ; message reçu sans recharger constaté le 2026-10-15.
 - **`messages` reste publiée en `postgres_changes`** pour les apps de
   test installées. La retirer (migration à part) quand plus aucune ne
   l'écoute : c'est alors que le coût en carré disparaît.
+- **`0039` APPLIQUÉE le 2026-10-15** (règles d'accès évaluées une fois
+  par requête, deux index) par le porteur du projet dans le SQL Editor :
+  elle supprime deux politiques, ce que le connecteur refuse (voir
+  « Méthode »). Absente de `list_migrations`, constatée par
+  `pg_policies`. Copier une migration par « Copy raw file » : une copie
+  partielle avait donné « LINE 1 » sur la ligne 151.
 - **`0040` APPLIQUÉE** : `product-images` limité à 1 Mo, WebP et JPEG.
-- **`0039` APPLIQUÉE le 2026-10-15** par le porteur du projet dans le
-  SQL Editor (absente de `list_migrations`, constatée par `pg_policies`).
-  Première tentative : la copie n'avait pris que la fin du fichier
-  (erreur « LINE 1 » sur la ligne 151) ; copier par « Copy raw file ».
-  Avant : (règles d'accès évaluées une fois par
-  requête, deux index) : elle supprime deux politiques, et le connecteur
-  bloque sur toute suppression (voir « Méthode »). À coller dans le SQL
-  Editor par le porteur du projet.
 - **Cache côté serveur** : accueil, recherche, fiche produit et page
   boutique lisent le catalogue public par le client anonyme, une minute
   (villes et catégories une heure). Un visiteur sans compte n'y lit plus
   la base ; restent les mesures de visite, une écriture par page vue.
 - **Photos en cache un an** à l'envoi (site et app).
-- **`0039` toujours absente le 2026-10-14 au soir** : les politiques
-  `je gere mes produits` et `je gere les photos de mes produits`, qu'elle
-  remplace, existent encore (`pg_policies`, constaté).
-- **Suivi des erreurs du SERVEUR prêt, inactif** (`src/instrumentation.ts`,
-  `@sentry/nextjs` 10.76) : rien ne part tant que `SENTRY_DSN` n'est pas
-  posée sur Vercel. Prouvé contre un faux Sentry local : l'erreur arrive.
+- **Suivi des erreurs du SERVEUR actif** (`src/instrumentation.ts`,
+  `@sentry/nextjs` 10.76) : `SENTRY_DSN` posée sur Vercel (Production et
+  Preview).
 - **`sendDefaultPii: false` laisse partir le cookie de session et
   `Authorization`** (constaté, SDK 10.76) : `src/lib/erreurs-anonymes.ts`
   ne garde que 4 en-têtes, retire la chaîne de requête et les
   breadcrumbs (appels Supabase, `console.*`), testé. Le texte de
   l'erreur, lui, part tel quel.
 - **Sentry côté navigateur : +72 Ko gzip** (socle 165 → 237 Ko, budget
-  200), mesuré le 2026-10-14 — pas les 30 Ko estimés. Non installé.
-- **Reste à décider** : offres Pro (Supabase, Vercel — Hobby interdit
-  l'usage commercial), Sentry dans l'app, captcha à l'inscription.
+  200), mesuré le 2026-10-14. Non installé.
+- **Reste à décider** : Sentry dans l'app, captcha à l'inscription. (Les
+  offres Pro sont passées dans « Bloquant ».)
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -428,9 +365,8 @@ ne se recopient pas.
   appel que le bannissement, l'adresse de `auth.users` devient
   `supprime-<id>@filloo.invalid` et les métadonnées d'inscription (nom,
   téléphone) sont effacées. La ligne reste, les messages la référencent.
-  Passe par la clé `service_role` : *à constater* une fois celle-ci
-  corrigée sur Vercel (voir « Bloquant pour ouvrir à un vrai
-  commerçant »).
+  Passe par la clé `service_role`, réglée sur Vercel depuis le
+  2026-10-02.
 
 ### Front-end — Next.js 16, React 19, TypeScript, Tailwind 4
 
@@ -839,10 +775,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-315 commits, du plus récent au plus ancien.
+316 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `4b30e96` Mémoire : parcours commerçant, photo, messagerie et notifications constatés sur téléphone
 - `68b8dcc` SEO : le sitemap n'annonce plus les produits vendus
 - `1e0e3f6` SEO : données structurées Product (prix en GNF, disponibilité) sur chaque fiche
 - `90bc332` SEO : un titre par page avec la marque, recherches et accueil filtré non indexés
