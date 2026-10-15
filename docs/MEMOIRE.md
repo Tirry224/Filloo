@@ -399,9 +399,9 @@ ne se recopient pas.
   migrations. Le nombre se relit dans la sortie du script, jamais dans un
   document.
 - **Base vide, et c'est l'état voulu** : le jeu de démonstration a été
-  supprimé pour tester avec de vraies données. `supabase/seed_demo.sql`
-  reste pour le rejouer — ses lignes de photos ne désignent aucun fichier
-  réel.
+  supprimé pour tester avec de vraies données ; son fichier
+  `supabase/seed_demo.sql` a été supprimé le 2026-10-15, sur décision du
+  porteur du projet.
 
 - **Photo de profil des boutiques** (0029, 2026-09-25) : colonne
   `merchants.photo_path`, bucket **`shop-photos` séparé** — dans
@@ -830,10 +830,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-306 commits, du plus récent au plus ancien.
+307 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `9f7e94d` Ménage : données de démonstration et formatPhone inutilisés retirés
 - `19bb58d` Ménage : scripts/parcours.mjs retiré, remplacé par e2e/ et ne tournait plus
 - `6adf6b5` Navigation : une page visitée reste 30 s dans le navigateur
 - `91cf22f` Messages : la bulle apparaît dès l'appui sur Envoyer, en « Envoi… »

@@ -120,9 +120,8 @@ sert plus que la galerie `/styleguide` et la liste des motifs de
 signalement.
 
 **La base est vide** : le jeu de démonstration a été supprimé le
-2026-09-12 pour tester avec de vraies données. Pour le remettre,
-rejouer `supabase/seed_demo.sql` (deux boutiques, six produits) ; la
-commande pour l'enlever à nouveau est à la fin du fichier.
+2026-09-12 pour tester avec de vraies données, et son fichier
+(`supabase/seed_demo.sql`) supprimé le 2026-10-15.
 
 Une boutique créée depuis l'application arrive en `pending` : la
 validation est **manuelle**, depuis Supabase, et il n'y a pas de page

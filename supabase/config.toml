@@ -14,8 +14,7 @@ project_id = "filloo"
 major_version = 17
 
 [db.seed]
-# `seed_demo.sql` suppose des comptes qui n'existent pas en local ; les
-# tests créent eux-mêmes leurs données.
+# Pas de jeu de données : les tests créent eux-mêmes leurs données.
 enabled = false
 
 [studio]
