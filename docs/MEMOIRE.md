@@ -825,10 +825,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-312 commits, du plus récent au plus ancien.
+313 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `90bc332` SEO : un titre par page avec la marque, recherches et accueil filtré non indexés
 - `32a76cd` SEO : image de partage pour filloo.net, budget HTML à 13 Ko
 - `9bbb1cc` Discussions : l'écoute temps réel se charge après l'affichage du fil
 - `8c13a73` Formulaires photo : le compresseur et le client Supabase se chargent au choix d'une photo

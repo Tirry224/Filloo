@@ -57,6 +57,7 @@ export async function generateMetadata({
   return {
     title: titre,
     description,
+    alternates: { canonical: `/produit/${id}` },
     openGraph: {
       type: "website",
       title: titre,
@@ -99,8 +100,28 @@ export default async function ProductPage({
 
   compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
+  /* Les données structurées que Google lit pour afficher le prix et la
+     disponibilité dans ses résultats (schema.org `Product`). Le `<`
+     échappé empêche un titre de commerçant de fermer la balise. */
+  const donneesStructurees = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description ?? undefined,
+    image: product.imageUrls.length > 0 ? product.imageUrls : undefined,
+    category: product.category,
+    offers: {
+      "@type": "Offer",
+      price: product.priceGnf,
+      priceCurrency: "GNF",
+      availability: sold ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: product.merchant.shopName },
+    },
+  }).replace(/</g, "\\u003c");
+
   return (
     <Screen>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: donneesStructurees }} />
       <ScreenBody>
         {info ? <Notice tone="success">{info}</Notice> : null}
         <div className="relative">
