@@ -14,9 +14,10 @@ est dans `git log`. Chaque entrée : date, source, constaté ou supposé.
   sauvegarde téléchargeable, pause après 7 jours d'inactivité.
 - **Migrations appliquées : `0001`–`0035`, puis `0040`, `0038` et `0036`**
   (appliquées le 2026-10-14 par le connecteur, dans cet ordre, accord du
-  porteur du projet). **Non appliquées** : `0037` (attend
-  que les téléphones aient un build de `dev`), `0039` (deux `drop
-  policy` : SQL Editor). `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
+  porteur du projet), **puis `0039`** (le 2026-10-15, par le porteur du
+  projet dans le SQL Editor : absente de `list_migrations`, constatée
+  par `pg_policies` et `pg_indexes`). **Non appliquée** : `0037` (attend
+  que les téléphones aient un build de `dev`, et le site en production). `0039` et `0040` ne dépendent pas de 0036–0038. Les noms d'avant `0015` en production ne portent pas
   tous leur numéro (`realtime_on_messages`, etc.) : comparer avec
   `npm run migrations`, pas à l'œil.
 - **Volume au 2026-10-14** : 5 comptes, 6 messages, 14 Mo, 3 objets de

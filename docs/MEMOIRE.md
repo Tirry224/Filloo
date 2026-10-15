@@ -259,7 +259,11 @@ connectées sans réécrire l'app. Détail dans les savoirs des agents
   test installées. La retirer (migration à part) quand plus aucune ne
   l'écoute : c'est alors que le coût en carré disparaît.
 - **`0040` APPLIQUÉE** : `product-images` limité à 1 Mo, WebP et JPEG.
-- **`0039` NON appliquée** (règles d'accès évaluées une fois par
+- **`0039` APPLIQUÉE le 2026-10-15** par le porteur du projet dans le
+  SQL Editor (absente de `list_migrations`, constatée par `pg_policies`).
+  Première tentative : la copie n'avait pris que la fin du fichier
+  (erreur « LINE 1 » sur la ligne 151) ; copier par « Copy raw file ».
+  Avant : (règles d'accès évaluées une fois par
   requête, deux index) : elle supprime deux politiques, et le connecteur
   bloque sur toute suppression (voir « Méthode »). À coller dans le SQL
   Editor par le porteur du projet.

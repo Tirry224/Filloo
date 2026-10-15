@@ -68,7 +68,7 @@ l'app, cette liste vieillit.
   join, broadcast livré tel quel `{ type, event, payload, meta? }`
   (constaté dans `dist/main/RealtimeChannel.js`, 2026-10-14).
 
-- **`0039` et `0040` (commit site `6524004` ; `0040` APPLIQUÉE le 2026-10-14, `0039` non ; avant :
+- **`0039` et `0040` (commit site `6524004` ; `0040` APPLIQUÉE le 2026-10-14, `0039` le 2026-10-15 ; avant :
   2026-10-14)** : relues COMPATIBLES. `0039` : chaque `alter policy`
   comparé à sa dernière définition (0002, 0004, 0016, 0029, 0032) —
   seule l'enveloppe `(select …)` change ; « je gère » `for all` de
