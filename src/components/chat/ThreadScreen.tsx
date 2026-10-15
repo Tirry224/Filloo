@@ -10,6 +10,7 @@ import { ProductRef } from "@/components/chat/ProductRef";
 import { Composer } from "@/components/chat/Composer";
 import { RealtimeThread } from "@/components/chat/RealtimeThread";
 import { ScrollToLatest } from "@/components/chat/ScrollToLatest";
+import { EnvoiEnCoursProvider, MessageEnCours } from "@/components/chat/EnvoiEnCours";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext, getMessages } from "@/lib/data/messages";
 import { getProduct } from "@/lib/data/products";
@@ -68,6 +69,7 @@ export async function ThreadScreen({
 
   return (
     <Screen largeur="rangees">
+      <EnvoiEnCoursProvider>
       <RealtimeThread conversationId={id} myParticipantId={context.myParticipantId} />
       <ScrollToLatest lastMessageId={lastMessage?.id ?? null} lastIsMine={lastMessage?.mine ?? false} />
       <TopBar
@@ -98,6 +100,7 @@ export async function ThreadScreen({
               <MessageBubble message={message} />
             </div>
           ))}
+          <MessageEnCours />
         </div>
       </ScreenBody>
 
@@ -149,6 +152,7 @@ export async function ThreadScreen({
           <Composer conversationId={id} basePath={base} citingProductId={citing?.id} disabled={mustCiteFirst} />
         )}
       </ScreenFooter>
+      </EnvoiEnCoursProvider>
     </Screen>
   );
 }

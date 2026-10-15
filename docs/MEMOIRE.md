@@ -834,10 +834,21 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-291 commits, du plus récent au plus ancien.
+303 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `39c011c` Serveur à Paris, à côté de la base : chaque requête ne traverse plus l'Atlantique
+- `6d463fc` Mémoire : la paire VAPID est posée dans Vercel, et la clé publique de Vercel gagne sur .env
+- `40f2e46` Notifications navigateur : nouvelle paire VAPID, l'ancienne clé privée est perdue
+
+### 2026-10-14
+
+- `7289841` Merge pull request #6 from Tirry224/dev
+
+### 2026-10-15
+
+- `3082c2e` Fusion de main dans dev : préparer la mise en production
 - `86fb520` Essai Sentry : retrait de la route d'erreur volontaire avant la production
 - `37e421e` 0039 appliquée par le SQL Editor, constatée dans la base
 
@@ -869,6 +880,8 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 ### 2026-10-09
 
 - `aefd1da` Documents : état au 2026-10-09, domaine, emails et API de l'app
+- `f1235e0` Mémoire : historique régénéré après la fusion de dev dans main
+- `f852a43` Fusion de dev dans main : l'app mobile a son API en production
 
 ### 2026-10-07
 
@@ -890,6 +903,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 - `30bf0a8` App mobile : recherche et page boutique
 - `c8c8189` App mobile : catalogue sans compte et fiche produit
 - `a6ca44b` App mobile : squelette Expo dans mobile/, connexion à Supabase
+- `aceecc7` Suivi : retrait du diagnostic temporaire
+- `aa0c18a` Suivi : diagnostic temporaire du compte propriétaire
+- `b836b87` Suivi : la règle du propriétaire tient aussi après la connexion
+- `8bf1ea1` Suivi : le compte du porteur du projet ne voit que /suivi
+- `a9231df` Git : dev pour travailler et tester, main seulement sur demande
 - `157c1a7` Suivi : retrait du diagnostic temporaire
 - `660f27d` Suivi : diagnostic temporaire du compte propriétaire
 - `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion

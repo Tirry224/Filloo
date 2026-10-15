@@ -5,6 +5,7 @@ import { Plus, SendHorizontal } from "lucide-react";
 import Link from "next/link";
 import { sendMessageAction } from "@/lib/actions/messages";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { useAnnoncerEnvoi } from "@/components/chat/EnvoiEnCours";
 
 /** La borne de `messages.body` (0001) : au-delà, la base refuse. */
 const LONGUEUR_MAX_MESSAGE = 2000;
@@ -26,13 +27,22 @@ export function Composer({
      caractères tapés disparaissaient avec l'erreur (2026-09-25). */
   const brouillon = useRef("");
   const champ = useRef<HTMLInputElement>(null);
+  const annoncer = useAnnoncerEnvoi();
   const { state, formAction, onSubmit, pending } = useFormulaire(sendMessageAction, {
     avantEnvoi: () => {
       if (!champ.current) return;
       brouillon.current = champ.current.value;
       champ.current.value = "";
+      annoncer(brouillon.current.trim() || null);
     },
   });
+
+  /* La bulle « Envoi… » s'efface quand l'action rend la main : en cas de
+     succès, la page rendue à nouveau porte déjà la vraie bulle ; en cas
+     d'erreur, le texte revient dans le champ. */
+  useEffect(() => {
+    if (!pending) annoncer(null);
+  }, [pending, annoncer]);
 
   useEffect(() => {
     if (state?.error && champ.current && !champ.current.value) champ.current.value = brouillon.current;
