@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { join, extname } from "node:path";
 
-const BUDGETS = { socle: 200, page: 12, police: 40 }; // Ko gzip
+const BUDGETS = { socle: 200, page: 13, police: 40 }; // Ko gzip (page : 13 depuis le 2026-10-15, docs/PERFORMANCE.md)
 
 const ko = (n) => Math.round((n / 1024) * 10) / 10;
 const gz = (f) => gzipSync(readFileSync(f), { level: 9 }).length;

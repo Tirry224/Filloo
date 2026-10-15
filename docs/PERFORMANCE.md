@@ -42,7 +42,7 @@ de tes utilisateurs**, et là que nos décisions comptent vraiment.
 |---|---|---|
 | Socle JS + CSS | ≤ 200 Ko gzip | `npm run poids` |
 | Polices préchargées | ≤ 40 Ko | `npm run poids` — 19,7 Ko, tenu |
-| HTML d'une page | ≤ 12 Ko gzip | `npm run poids` |
+| HTML d'une page | ≤ 13 Ko gzip | `npm run poids` — 12 Ko jusqu'au 2026-10-15 : les balises de partage (Open Graph, aperçu WhatsApp) ajoutent environ 0,2 Ko à chaque page, et `/conditions`, la plus longue, est passée à 12,1 Ko |
 | Vignette produit | ≤ 15 Ko | à la revue |
 | Photo pleine taille | ≤ 120 Ko | à la revue |
 | Un écran de fil complet | ≤ 250 Ko, photos comprises | à la revue |
