@@ -834,10 +834,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-303 commits, du plus récent au plus ancien.
+304 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `91cf22f` Messages : la bulle apparaît dès l'appui sur Envoyer, en « Envoi… »
 - `39c011c` Serveur à Paris, à côté de la base : chaque requête ne traverse plus l'Atlantique
 - `6d463fc` Mémoire : la paire VAPID est posée dans Vercel, et la clé publique de Vercel gagne sur .env
 - `40f2e46` Notifications navigateur : nouvelle paire VAPID, l'ancienne clé privée est perdue

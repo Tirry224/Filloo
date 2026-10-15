@@ -53,6 +53,16 @@ const nextConfig: NextConfig = {
         ]
       : [],
   },
+
+  experimental: {
+    /* Une page déjà visitée reste dans le navigateur 30 s : revenir sur
+       l'accueil ou sur « Compte » ne redemande plus rien au serveur
+       (défaut de Next : 0 s, chaque changement d'onglet attendait le
+       serveur — constaté le 2026-10-15). Sans risque pour les messages :
+       une action qui écrit (`revalidatePath`) et `router.refresh()` des
+       écoutes temps réel vident ce cache. */
+    staleTimes: { dynamic: 30 },
+  },
 };
 
 export default nextConfig;
