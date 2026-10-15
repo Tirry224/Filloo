@@ -96,9 +96,11 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   message ; historique du diagnostic ci-dessous.
 - **`VAPID_PRIVATE_KEY` N'EXISTE PAS sur Vercel** (constaté le 2026-10-14,
   liste des variables du projet) : aucune notification navigateur ne
-  peut partir, nulle part. Le porteur du projet doit la poser
-  (Production et Preview), moitié privée de la paire dont la clé
-  publique est déjà en place. Même jour : `SENTRY_DSN`,
+  peut partir, nulle part. La paire du 2026-09-24 est PERDUE : le
+  2026-10-15, une nouvelle paire a remplacé la clé publique de `.env`
+  (`BM2_eCfI…`). Le porteur du projet doit poser sa moitié privée dans
+  Vercel (Production et Preview) puis redéployer ; les abonnements
+  navigateur existants se recréent seuls (`memeCle`). Même jour : `SENTRY_DSN`,
   `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` et `OWNER_EMAIL` ne sont
   posées que pour Production — sur la préversion, Sentry, la
   suppression de compte et les envois de notification ne marchent pas.
