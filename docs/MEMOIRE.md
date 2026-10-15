@@ -256,6 +256,13 @@ Objectif du porteur du projet : tenir des milliers de personnes
 connectées sans réécrire l'app. Détail dans les savoirs des agents
 (`.claude/savoir/`).
 
+- **Les fonctions Vercel tournent à Paris (`cdg1`) depuis le 2026-10-15**
+  (`vercel.json`, `regions`). Avant, elles tournaient à Washington
+  (`iad1`, défaut de Vercel) alors que la base est à Paris
+  (`eu-west-3`) : chaque requête à la base traversait l'Atlantique, et
+  l'envoi d'un message, qui en enchaîne une dizaine, prenait plusieurs
+  secondes. Ne pas changer de région sans déplacer la base avec.
+
 - **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14**, code
   du site et de l'app sur `dev`. Chaque compte écoute `user:<auth.uid()>`
   au lieu de la table `messages` entière. *À constater* : un message
