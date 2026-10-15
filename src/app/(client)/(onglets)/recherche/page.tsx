@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ArrowUpDown, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/FilterChip";
@@ -17,6 +18,24 @@ import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/c
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
+
+/**
+ * Une page par recherche (`?q=riz`, `?ville=…`) ferait des milliers de
+ * pages presque vides aux yeux de Google : seule `/recherche` nue
+ * s'indexe ; les autres se suivent sans s'indexer.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const filtree = Object.keys(await searchParams).length > 0;
+  return {
+    title: "Rechercher un produit",
+    alternates: { canonical: "/recherche" },
+    robots: filtree ? { index: false, follow: true } : undefined,
+  };
+}
 
 export default async function SearchPage({
   searchParams,

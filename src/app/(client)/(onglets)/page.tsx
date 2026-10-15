@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { Chip, ChipRow } from "@/components/ui/Chip";
@@ -20,6 +21,19 @@ import { landingForSession } from "@/lib/data/session";
 import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
+
+/** L'accueil filtré (`?ville=…`) n'est qu'une variante de l'accueil. */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const filtree = Object.keys(await searchParams).length > 0;
+  return {
+    alternates: { canonical: "/" },
+    robots: filtree ? { index: false, follow: true } : undefined,
+  };
+}
 
 export default async function HomePage({
   searchParams,

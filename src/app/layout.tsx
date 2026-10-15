@@ -25,7 +25,13 @@ export const metadata: Metadata = {
      `null` quand aucune adresse n'est configurée : Next se contente alors
      des balises relatives, comme avant — on ne devine pas un domaine. */
   metadataBase: adresse ? new URL(adresse) : null,
-  title: "Filloo — Trouvez des produits et des commerçants près de chez vous",
+  /* Le modèle ajoute la marque au titre de chaque page (« Riz 50 kg —
+     480 000 GNF · Filloo ») ; `default` sert à l'accueil et aux pages
+     sans titre propre. */
+  title: {
+    default: "Filloo — Trouvez des produits et des commerçants près de chez vous",
+    template: "%s · Filloo",
+  },
   description:
     "Filloo aide à trouver des produits et les commerçants qui les vendent, en Guinée. Parcourez le catalogue librement et contactez le vendeur pour conclure la vente.",
   /* `apple-touch-icon` est le SEUL format qu'iOS lit pour l'écran
