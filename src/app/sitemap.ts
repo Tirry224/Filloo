@@ -18,7 +18,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createPublicClient();
 
   const [{ data: produits }, { data: boutiques }] = await Promise.all([
-    supabase.from("products").select("id, updated_at").order("updated_at", { ascending: false }).limit(5000),
+    /* `active` seulement : un produit vendu se lit encore, mais sa page
+       demande à ne pas être indexée — l'annoncer ici se contredirait. */
+    supabase
+      .from("products")
+      .select("id, updated_at")
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(5000),
     /* `created_at` et non `updated_at` : la table `merchants` n'a pas de
        colonne de dernière modification (0001). */
     supabase.from("merchants").select("id, created_at").order("created_at", { ascending: false }).limit(5000),

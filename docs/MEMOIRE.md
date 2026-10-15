@@ -246,6 +246,15 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
   n'importe qui de fabriquer des chiffres : la solution reste à décider.
 
+### SEO (2026-10-15)
+
+- **En place** : titre par page (`%s · Filloo`), image de partage de
+  l'accueil (`src/app/opengraph-image.tsx`), données `Product` sur
+  chaque fiche, adresses canoniques, recherches filtrées non indexées,
+  sitemap sans produits vendus.
+- **Reste à faire par le porteur du projet** : déclarer `filloo.net`
+  dans Google Search Console et y soumettre `/sitemap.xml`.
+
 ### Montée en charge (2026-10-14)
 
 Objectif du porteur du projet : tenir des milliers de personnes
@@ -825,10 +834,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-313 commits, du plus récent au plus ancien.
+314 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `1e0e3f6` SEO : données structurées Product (prix en GNF, disponibilité) sur chaque fiche
 - `90bc332` SEO : un titre par page avec la marque, recherches et accueil filtré non indexés
 - `32a76cd` SEO : image de partage pour filloo.net, budget HTML à 13 Ko
 - `9bbb1cc` Discussions : l'écoute temps réel se charge après l'affichage du fil
