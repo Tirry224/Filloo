@@ -1642,35 +1642,42 @@ select pg_temp.check('la mesure de 12 mois reste, celle de 14 mois est partie',
 -- =====================================================================
 -- La photo de boutique (0029)
 -- =====================================================================
-set role authenticated;
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
-
-update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
- where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+-- Depuis 0037, la photo s'écrit avec le reste de la boutique, par
+-- `modifier_ma_boutique` (serveur, après le mot de passe) : les autres
+-- champs sont repassés tels quels.
+select shop_name as a_nom, city_id as a_ville from public.merchants
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001' \gset
+set role service_role;
+select public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+  :'a_nom', :a_ville, null, null, null, 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp');
 reset role;
 select pg_temp.check('un commercant pose la photo de sa boutique',
   (select photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'
      from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
 
 -- La faille que la contrainte ferme : afficher la photo d'un concurrent.
-set role authenticated;
-select pg_temp.login('11111111-1111-1111-1111-111111111111');
+-- Le serveur aussi y est soumis : la fonction ne contourne pas la table.
+set role service_role;
 do $$
 begin
-  update public.merchants set photo_path = 'bbbbbbbb-0000-0000-0000-000000000002/sa-photo.webp'
-   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  perform public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, null, null, null, 'bbbbbbbb-0000-0000-0000-000000000002/sa-photo.webp');
   raise exception 'ECHEC une boutique affiche la photo d''une autre';
 exception when check_violation then
   raise notice 'OK    la photo d''une autre boutique est refusee';
 end $$;
 do $$
 begin
-  update public.merchants set photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/../bbbbbbbb-0000-0000-0000-000000000002/x.webp'
-   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  perform public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, null, null, null, 'aaaaaaaa-0000-0000-0000-000000000001/../bbbbbbbb-0000-0000-0000-000000000002/x.webp');
   raise exception 'ECHEC un chemin en .. passe la contrainte';
 exception when check_violation then
   raise notice 'OK    un chemin en .. est refuse';
 end $$;
+reset role;
+
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
 
 -- Le stockage : écrire chez soi, jamais chez l'autre.
 insert into storage.objects (bucket_id, name)
@@ -1719,6 +1726,427 @@ select pg_temp.check('la recherche remonte la photo de la boutique',
            where merchant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
              and shop_photo_path = 'aaaaaaaa-0000-0000-0000-000000000001/moi.webp'));
 reset role;
+
+-- =====================================================================
+-- Le mot de passe redemandé est vérifié par le serveur (0036, 0037)
+-- =====================================================================
+-- La faille : le site et l'app vérifiaient le mot de passe, puis
+-- écrivaient avec la session — qui suffisait seule à réécrire le WhatsApp
+-- d'une boutique. Une session ne doit plus pouvoir écrire ces colonnes,
+-- ni appeler les fonctions qui le font.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+declare
+  essai text;
+begin
+  foreach essai in array array[
+    'update public.merchants set whatsapp_phone = ''+224 600 00 00 00'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set address_hint = ''ailleurs'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set shop_name = ''Imposteur'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set city_id = 2 where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set description = ''x'' where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.merchants set photo_path = null where id = ''aaaaaaaa-0000-0000-0000-000000000001''',
+    'update public.profiles set phone = ''620999999'' where auth_user_id = ''11111111-1111-1111-1111-111111111111''',
+    'update public.profiles set full_name = ''Imposteur'' where auth_user_id = ''11111111-1111-1111-1111-111111111111''',
+    'select public.modifier_ma_boutique(''11111111-1111-1111-1111-111111111111'', ''Imposteur'', 1, null, null, null, null)',
+    'select public.modifier_mes_informations(''11111111-1111-1111-1111-111111111111'', ''Imposteur'', ''620999999'')'
+  ] loop
+    begin
+      execute essai;
+      raise exception 'ECHEC une session ecrit sans mot de passe : %', essai;
+    exception when insufficient_privilege then
+      null;
+    end;
+  end loop;
+  raise notice 'OK    une session seule n''ecrit ni boutique, ni nom, ni telephone';
+end $$;
+reset role;
+
+set role anon;
+do $$
+begin
+  perform public.modifier_mes_informations('11111111-1111-1111-1111-111111111111', 'Imposteur', '620999999');
+  raise exception 'ECHEC un visiteur appelle modifier_mes_informations';
+exception when insufficient_privilege then
+  raise notice 'OK    un visiteur n''appelle pas les fonctions du serveur';
+end $$;
+reset role;
+
+-- Ce qui reste permis sans mot de passe : la ville du client (0010).
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+update public.profiles set city_id = 1 where auth_user_id = '33333333-3333-3333-3333-333333333333';
+reset role;
+select pg_temp.check('un client change sa ville sans mot de passe',
+  (select city_id = 1 from public.profiles where id = '33333333-3333-3333-3333-333333333333'));
+
+-- Le serveur, lui, écrit — et seulement chez la bonne personne.
+set role service_role;
+select pg_temp.check('le serveur modifie la boutique de la connexion',
+  public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Chez A', 1, 'Marché Madina', '620000001', null, null)
+  = 'aaaaaaaa-0000-0000-0000-000000000001');
+select public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111', 'Chez A', 1, '', '', '', '');
+reset role;
+select pg_temp.check('un champ facultatif vide s''enregistre null',
+  (select address_hint is null and whatsapp_phone is null and description is null and photo_path is null
+     from public.merchants where id = 'aaaaaaaa-0000-0000-0000-000000000001'));
+set role service_role;
+select pg_temp.check('un client sans boutique : rien n''est ecrit',
+  public.modifier_ma_boutique('33333333-3333-3333-3333-333333333333',
+    'Imposteur', 1, null, null, null, null) is null);
+-- C a deux profils liés (client et commerçant) : les deux suivent.
+select pg_temp.check('le serveur modifie nom et telephone de la connexion',
+  public.modifier_mes_informations('33333333-3333-3333-3333-333333333333', 'Client C', '620000033') = 2);
+reset role;
+select pg_temp.check('nom et telephone suivent sur tous les profils de la connexion',
+  (select bool_and(phone = '620000033' and full_name = 'Client C') from public.profiles
+    where auth_user_id = '33333333-3333-3333-3333-333333333333'));
+select pg_temp.check('la boutique B n''a pas bouge',
+  (select shop_name = 'Chez B' from public.merchants where id = 'bbbbbbbb-0000-0000-0000-000000000002'));
+select pg_temp.check('le telephone de D n''a pas bouge',
+  (select phone <> '620000033' from public.profiles where id = '44444444-4444-4444-4444-444444444444'));
+
+-- Un commerçant suspendu ne modifie plus sa boutique, comme avec la policy.
+update public.profiles set is_suspended = true where id = '11111111-1111-1111-1111-111111111111';
+set role service_role;
+select pg_temp.check('commercant suspendu : la boutique ne bouge pas',
+  public.modifier_ma_boutique('11111111-1111-1111-1111-111111111111',
+    'Imposteur', 1, null, null, null, null) is null);
+reset role;
+update public.profiles set is_suspended = false where id = '11111111-1111-1111-1111-111111111111';
+
+-- Un profil supprimé reste anonymisé.
+update public.profiles set is_deleted = true where id = '44444444-4444-4444-4444-444444444444';
+set role service_role;
+select pg_temp.check('un profil supprime n''est pas reecrit',
+  public.modifier_mes_informations('44444444-4444-4444-4444-444444444444', 'Revenant', '620999999') = 0);
+reset role;
+update public.profiles set is_deleted = false where id = '44444444-4444-4444-4444-444444444444';
+
+-- =====================================================================
+-- Chacun n'entend que ses propres messages (0038)
+-- =====================================================================
+-- Fil Client D <-> Boutique A (dddd…0002), débloqué section 17. Les
+-- messages des sections précédentes ont déjà diffusé : on repart d'une
+-- file vide pour compter juste.
+truncate realtime.messages;
+
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');   -- Client D
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (1)');
+reset role;
+
+select pg_temp.check('un message envoye diffuse vers les DEUX participants, et eux seuls',
+  (select array_agg(topic order by topic) from realtime.messages
+    where payload ->> 'body' = 'Diffusion 0038 (1)')
+  = array['user:11111111-1111-1111-1111-111111111111',
+          'user:44444444-4444-4444-4444-444444444444']);
+select pg_temp.check('la diffusion est privee, en broadcast, evenement message',
+  (select bool_and(private and extension = 'broadcast' and event = 'message')
+     from realtime.messages));
+select pg_temp.check('la diffusion porte exactement le contrat attendu par les clients',
+  (select bool_and(
+            payload ->> 'op' = 'INSERT'
+        and payload ->> 'conversation_id' = 'dddddddd-0000-0000-0000-000000000002'
+        and payload ->> 'sender_id' = '44444444-4444-4444-4444-444444444444'
+        and payload ->> 'id' = (select id::text from public.messages where body = 'Diffusion 0038 (1)')
+        and (select array_agg(k order by k) from jsonb_object_keys(payload) k)
+            = array['body','conversation_id','created_at','id','op','product_id','read_at','sender_id'])
+     from realtime.messages));
+
+-- Deux messages de plus, puis la boutique marque le fil lu d'un coup.
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body) values
+  ('dddddddd-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (2)'),
+  ('dddddddd-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (3)');
+reset role;
+select pg_temp.check('un envoi de deux messages diffuse deux fois par participant',
+  (select count(*) from realtime.messages where payload ->> 'body' like 'Diffusion 0038 (_)') = 6);
+
+truncate realtime.messages;
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');   -- Boutique A
+with lus as (
+  update public.messages set read_at = now()
+   where conversation_id = 'dddddddd-0000-0000-0000-000000000002' and read_at is null
+     and sender_id = '44444444-4444-4444-4444-444444444444'
+  returning 1
+)
+select pg_temp.check('le marquage lu touche plusieurs messages', (select count(*) from lus) >= 3);
+reset role;
+select pg_temp.check('un fil marque lu diffuse UN evenement par participant, pas un par message',
+  (select array_agg(topic order by topic) from realtime.messages)
+  = array['user:11111111-1111-1111-1111-111111111111',
+          'user:44444444-4444-4444-4444-444444444444']);
+select pg_temp.check('l''evenement de lecture dit quel fil, et rien du contenu',
+  (select bool_and(payload ->> 'op' = 'UPDATE'
+               and payload ->> 'conversation_id' = 'dddddddd-0000-0000-0000-000000000002'
+               and payload ->> 'read_at' is not null
+               and payload -> 'body' = 'null'::jsonb)
+     from realtime.messages));
+
+-- Un marquage qui ne change rien ne diffuse rien.
+truncate realtime.messages;
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+update public.messages set read_at = now()
+ where conversation_id = 'dddddddd-0000-0000-0000-000000000002' and read_at is null;
+reset role;
+select pg_temp.check('un marquage sans effet ne diffuse rien',
+  (select count(*) from realtime.messages) = 0);
+
+-- Lire : chacun son canal. Quand un client ouvre un canal privé,
+-- Realtime pose `realtime.topic` (le canal demandé) et l'identité, puis
+-- lit `realtime.messages` : pas de ligne visible, pas de canal. La
+-- politique juge donc le canal DEMANDÉ, pas la colonne `topic`.
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 (4)');
+
+select pg_temp.login('11111111-1111-1111-1111-111111111111');   -- destinataire
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('le destinataire ouvre son canal et y lit la diffusion',
+  (select count(*) from realtime.messages
+    where topic = realtime.topic() and payload ->> 'body' = 'Diffusion 0038 (4)') = 1);
+select set_config('realtime.topic', 'user:44444444-4444-4444-4444-444444444444', false);
+select pg_temp.check('le destinataire n''ouvre pas le canal de son interlocuteur',
+  (select count(*) from realtime.messages) = 0);
+
+select pg_temp.login('22222222-2222-2222-2222-222222222222');   -- tiers
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('un tiers connecte ne lit pas le canal d''un autre',
+  (select count(*) from realtime.messages) = 0);
+reset role;
+
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select pg_temp.check('un visiteur ne lit aucune diffusion',
+  (select count(*) from realtime.messages) = 0);
+reset role;
+
+-- Émettre : personne, ni en direct ni par la fonction.
+set role authenticated;
+select pg_temp.login('22222222-2222-2222-2222-222222222222');
+do $$
+begin
+  insert into realtime.messages (topic, extension, payload, event, private)
+  values ('user:11111111-1111-1111-1111-111111111111', 'broadcast',
+          '{"op":"INSERT","body":"faux"}', 'message', true);
+  raise exception 'ECHEC un client ecrit sur le canal d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    un client n''ecrit pas dans realtime.messages';
+end $$;
+-- `realtime.send` reste exécutable par tous chez Supabase, mais elle
+-- s'exécute avec les droits de l'appelant : le RLS la refuse, et elle
+-- avale l'erreur.
+select realtime.send('{"body":"faux"}', 'message', 'user:11111111-1111-1111-1111-111111111111', true);
+reset role;
+select pg_temp.check('un client n''emet rien, meme par realtime.send',
+  not exists (select 1 from realtime.messages where payload ->> 'body' = 'faux'));
+
+select pg_temp.check('personne n''execute la fonction de diffusion',
+  not has_function_privilege('anon', 'public.diffuser_message_aux_participants()', 'execute')
+  and not has_function_privilege('authenticated', 'public.diffuser_message_aux_participants()', 'execute'));
+
+-- Une diffusion en panne n'empêche pas d'écrire. On remplace
+-- `realtime.send` par une version qui lève, le temps d'une transaction
+-- annulée ensuite.
+begin;
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+  returns void language plpgsql as $$ begin raise exception 'Realtime en panne'; end $$;
+set local role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+insert into public.messages (conversation_id, sender_id, body)
+values ('dddddddd-0000-0000-0000-000000000002',
+        '44444444-4444-4444-4444-444444444444', 'Diffusion 0038 en panne');
+reset role;
+select pg_temp.check('une diffusion qui echoue n''empeche pas l''envoi du message',
+  exists (select 1 from public.messages where body = 'Diffusion 0038 en panne'));
+rollback;
+select pg_temp.check('realtime.send est bien restauree',
+  pg_get_functiondef('realtime.send(jsonb,text,text,boolean)'::regprocedure) like '%WarnSendingBroadcastMessage%');
+select set_config('realtime.topic', '', false);
+
+-- =====================================================================
+-- Les règles d'accès demandent « qui es-tu ? » une fois par requête (0039)
+-- =====================================================================
+-- 0039 réécrit les policies sans en changer le sens : toute la suite
+-- ci-dessus, qui tourne APRÈS elle, est la preuve principale. Ce bloc
+-- ajoute la forme (plus aucun appel par ligne) et les refus que la
+-- suite ne couvrait pas encore sur les policies découpées.
+
+-- La forme : `my_profile_id` / `my_merchant_id` n'apparaissent plus que
+-- dans un `( SELECT … AS …)`, c'est-à-dire un InitPlan.
+select pg_temp.check('aucune policy n''appelle my_merchant_id a chaque ligne',
+  not exists (select 1 from pg_policies
+               where coalesce(qual, '') || ' ' || coalesce(with_check, '')
+                     ~ 'my_merchant_id\(\)(?! AS my_merchant_id)'));
+select pg_temp.check('aucune policy n''appelle my_profile_id a chaque ligne',
+  not exists (select 1 from pg_policies
+               where coalesce(qual, '') || ' ' || coalesce(with_check, '')
+                     ~ 'my_profile_id\(''[a-z]+''::user_role\)(?! AS my_profile_id|\) AS is_active_profile)'));
+
+-- Plus de doublon de lecture : une seule policy sert le SELECT.
+select pg_temp.check('products : une seule policy de lecture',
+  (select count(*) from pg_policies
+    where schemaname = 'public' and tablename = 'products' and cmd in ('SELECT', 'ALL')) = 1);
+select pg_temp.check('product_images : une seule policy de lecture',
+  (select count(*) from pg_policies
+    where schemaname = 'public' and tablename = 'product_images' and cmd in ('SELECT', 'ALL')) = 1);
+
+-- Le gain lui-même : le plan évalue « ma boutique » une fois (InitPlan).
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+declare plan text := '';
+        ligne text;
+begin
+  for ligne in execute 'explain (costs off) select * from public.products' loop
+    plan := plan || ligne || E'\n';
+  end loop;
+  perform pg_temp.check('le catalogue evalue ma boutique une fois par requete',
+    plan like '%InitPlan%');
+end $$;
+
+-- Ce que « je gere » laissait lire passe toujours par « catalogue public » :
+-- A voit son brouillon, B et un visiteur non.
+insert into public.products (id, merchant_id, category_id, title, price_gnf)
+values ('cccccccc-0000-0000-0000-000000000039', 'aaaaaaaa-0000-0000-0000-000000000001',
+        1, 'Brouillon 0039', 1000);
+insert into public.product_images (product_id, storage_path, position)
+values ('cccccccc-0000-0000-0000-000000000039',
+        'aaaaaaaa-0000-0000-0000-000000000001/cccccccc-0000-0000-0000-000000000039/0.webp', 0);
+select pg_temp.check('le commercant voit son brouillon et sa photo',
+  exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039')
+  and exists (select 1 from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039'));
+reset role;
+
+set role authenticated;
+select pg_temp.login('22222222-2222-2222-2222-222222222222');
+select pg_temp.check('un autre commercant ne voit ni le brouillon ni sa photo',
+  not exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039')
+  and not exists (select 1 from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039'));
+
+-- B n'écrit rien chez A : ni produit, ni photo, ni suppression.
+do $$
+begin
+  insert into public.products (merchant_id, category_id, title, price_gnf)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 1, 'Intrus', 1);
+  raise exception 'ECHEC un commercant cree un produit dans la boutique d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    produit refuse dans la boutique d''un autre';
+end $$;
+do $$
+begin
+  insert into public.product_images (product_id, storage_path, position)
+  values ('cccccccc-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000002/x.webp', 3);
+  raise exception 'ECHEC un commercant ajoute une photo au produit d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    photo refusee sur le produit d''un autre';
+end $$;
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('suppression du produit d''autrui bloquee', (select count(*) from suppr) = 0);
+with suppr as (
+  delete from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('suppression des photos d''autrui bloquee', (select count(*) from suppr) = 0);
+with modif as (
+  update public.product_images set position = 4
+   where product_id = 'cccccccc-0000-0000-0000-000000000002' returning 1
+)
+select pg_temp.check('modification des photos d''autrui bloquee', (select count(*) from modif) = 0);
+
+-- Le stockage des photos produits : mon dossier, pas celui de A.
+do $$
+begin
+  insert into storage.objects (bucket_id, name)
+  values ('product-images', 'aaaaaaaa-0000-0000-0000-000000000001/pirate.webp');
+  raise exception 'ECHEC un commercant envoie une photo produit dans le dossier d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    photo produit refusee dans le dossier d''un autre';
+end $$;
+insert into storage.objects (bucket_id, name)
+values ('product-images', 'bbbbbbbb-0000-0000-0000-000000000002/0039.webp');
+reset role;
+-- Les refus ci-dessus portent sur des lignes qui existent bien.
+select pg_temp.check('le produit de A et ses photos ont survecu a B',
+  exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000002')
+  and exists (select 1 from public.product_images
+               where product_id = 'cccccccc-0000-0000-0000-000000000002' and position <> 4));
+select pg_temp.check('B envoie une photo produit dans son propre dossier',
+  exists (select 1 from storage.objects
+           where bucket_id = 'product-images' and name = 'bbbbbbbb-0000-0000-0000-000000000002/0039.webp'));
+
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('un visiteur ne voit pas le brouillon',
+  not exists (select 1 from public.products where id = 'cccccccc-0000-0000-0000-000000000039'));
+reset role;
+
+-- Un commerçant suspendu n'écrit plus dans ses propres produits : la
+-- partie « compte actif » des policies découpées.
+update public.profiles set is_suspended = true where id = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+do $$
+begin
+  insert into public.products (merchant_id, category_id, title, price_gnf)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 1, 'Pendant la suspension', 1);
+  raise exception 'ECHEC un commercant suspendu cree un produit';
+exception when insufficient_privilege then
+  raise notice 'OK    un commercant suspendu ne cree pas de produit';
+end $$;
+with suppr as (
+  delete from public.product_images where product_id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('un commercant suspendu ne retire pas ses photos', (select count(*) from suppr) = 0);
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('un commercant suspendu ne retire pas ses produits', (select count(*) from suppr) = 0);
+reset role;
+update public.profiles set is_suspended = false where id = '11111111-1111-1111-1111-111111111111';
+
+-- Rétabli, il retire son brouillon : la policy de suppression laisse
+-- passer le propriétaire.
+set role authenticated;
+select pg_temp.login('11111111-1111-1111-1111-111111111111');
+with suppr as (
+  delete from public.products where id = 'cccccccc-0000-0000-0000-000000000039' returning 1
+)
+select pg_temp.check('le commercant retire son propre brouillon', (select count(*) from suppr) = 1);
+reset role;
+
+-- Index des clés étrangères.
+select pg_temp.check('notifications.profile_id et profiles.city_id sont indexes',
+  exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'notifications_profile_idx')
+  and exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'profiles_city_idx'));
+
+
+-- =====================================================================
+-- Le dossier des photos produits n'accepte que des images raisonnables (0040)
+-- =====================================================================
+-- La taille et le type sont refusés par le service Storage, à l'envoi :
+-- Postgres ne fait que porter le réglage, et le stub local n'a pas de
+-- service Storage. On vérifie donc le réglage, pas le refus.
+select pg_temp.check('product-images : 1 Mo au plus',
+  (select file_size_limit from storage.buckets where id = 'product-images') = 1048576);
+select pg_temp.check('product-images : WebP et JPEG seulement',
+  (select allowed_mime_types from storage.buckets where id = 'product-images')
+    = array['image/webp', 'image/jpeg']);
+select pg_temp.check('shop-photos inchange',
+  (select file_size_limit = 1048576 and allowed_mime_types = array['image/webp', 'image/jpeg']
+     from storage.buckets where id = 'shop-photos'));
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

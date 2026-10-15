@@ -40,13 +40,12 @@ réécrit pas, même pour un commentaire. Pour relire ce qu'elles citaient :
 fichier, et `git show <empreinte>:docs/REPRISE.md` en affiche une, à la
 date de la migration.
 
-**État en une phrase (2026-10-02) :** l'application est complète et en
-ligne, conditions d'utilisation comprises ; ce qui la sépare d'un vrai
-commerçant n'est plus du code mais la panne des push (jamais un seul
-distribué), la preuve que le lien de réinitialisation marche hors du
-navigateur qui l'a demandé, et les parcours à faire sur un téléphone. Le
-porteur du projet déclare le 2026-10-02 toutes les clés posées sur Vercel
-et l'email de réinitialisation reçu et fonctionnel.
+**État en une phrase (2026-10-09) :** le site est en ligne sur
+`https://filloo.net` et porte depuis le 2026-10-09 l'API de l'app mobile
+(fusion de `dev` dans `main`) ; l'app est complète et part en test sur
+de vrais téléphones. Ce qui sépare Filloo d'un vrai commerçant n'est plus
+du code : aucune notification (navigateur ou téléphone) n'a encore été vue
+arriver, et les parcours restent à faire sur un téléphone.
 
 **Ce qu'une session peut vérifier, et ce qu'elle ne peut pas.** Tout ce
 qui porte sur le dépôt se relit dans le code. Tout ce qui porte sur la
@@ -78,18 +77,31 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   valait l'adresse de SUPABASE (tous les liens d'email partaient
   ailleurs), et le « Site URL » de Supabase désignait encore
   `makiti-beryl.vercel.app`.
-- **Les emails partent du SMTP Gmail du projet** (`filloo.gn@gmail.com`,
-  README « Emails d'authentification »), posé par le porteur du projet
-  et confirmé par lui le 2026-10-07 — plus le serveur d'essai de
-  Supabase. Limite : environ 500 envois par jour, ce qui suffit au test ;
-  un domaine à nous (SPF, DKIM) ne deviendra utile qu'au-delà.
-- **Les push ne partent toujours pas, clés posées ou non.** Constaté
-  le 2026-10-02 (connecteur) : un seul abonnement, créé le 25/09,
-  `last_used_at` toujours vide après 58 messages envoyés depuis (on ne
-  sait pas combien lui étaient destinés). Le porteur du projet déclare
-  `VAPID_PRIVATE_KEY` posée : reste à lire les lignes `[notification]` et
-  `[push]` des journaux Vercel après un message envoyé à ce compte depuis
-  un autre. Historique du diagnostic ci-dessous.
+- **Les emails de compte partent de Resend, depuis
+  `noreply@send.filloo.net`** (domaine `filloo.net` posé le 2026-10-08,
+  SPF, DKIM et DMARC chez Cloudflare) : ils remplacent le SMTP Gmail
+  (`filloo.gn@gmail.com`) du 2026-10-07. Réglage posé par le porteur du
+  projet ; aucun envoi encore vu dans les journaux d'authentification
+  depuis une session. *À constater* : un email reçu, hors courrier
+  indésirable.
+- **Aucune notification n'a encore été distribuée, navigateur ou
+  téléphone.** Constaté le 2026-10-09 (connecteur) : un abonnement Web
+  Push et un téléphone de l'app (iOS, inscrit le 2026-10-09), tous deux
+  avec `last_used_at` vide. Pour le téléphone, la cause trouvée le même
+  jour : la route `/api/app/message-envoye` n'était que sur `dev`, le
+  site en production répondait 404 ; elle est en ligne depuis la fusion
+  du 2026-10-09. *À constater* : un message envoyé à un compte dont le
+  téléphone a accepté les notifications. Pour le navigateur, lire les
+  lignes `[notification]` et `[push]` des journaux Vercel après un
+  message ; historique du diagnostic ci-dessous.
+- **`VAPID_PRIVATE_KEY` N'EXISTE PAS sur Vercel** (constaté le 2026-10-14,
+  liste des variables du projet) : aucune notification navigateur ne
+  peut partir, nulle part. Le porteur du projet doit la poser
+  (Production et Preview), moitié privée de la paire dont la clé
+  publique est déjà en place. Même jour : `SENTRY_DSN`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` et `OWNER_EMAIL` ne sont
+  posées que pour Production — sur la préversion, Sentry, la
+  suppression de compte et les envois de notification ne marchent pas.
 - **`VAPID_PRIVATE_KEY` n'était probablement PAS lue en production le
   2026-09-25.** Constaté le 2026-09-25 : deux appareils abonnés (un
   `fcm.googleapis.com`, un `web.push.apple.com` — l'iPhone est donc bien
@@ -141,16 +153,14 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   `src/lib/site-url.ts` se rabat sur `VERCEL_PROJECT_PRODUCTION_URL`
   quand elle manque, donc son absence ne devrait plus éteindre les emails
   — mais c'est le filet, pas l'adresse voulue. *À constater.*
-- **Activer la confirmation d'email côté Supabase : trois réglages,
-  listés dans le README (« Confirmation de l'email à l'inscription »).**
-  Le code est prêt depuis le 2026-10-02 : le lien ramène vers l'intention
-  de départ ou l'espace du compte, un lien expiré mène à `/connexion`, et
-  « Renvoyer l'email » est proposé après l'inscription et à la connexion.
-  Le SMTP Gmail fonctionne selon le porteur du projet ; les 3 comptes
-  existants sont déjà confirmés, l'activation ne bloque personne. Depuis
-  `0033`, ce lien est la SEULE vérification d'un commerçant avant sa
-  mise en ligne : tant que la case est décochée, une boutique passe en
-  ligne sans aucune vérification.
+- **La confirmation d'email est active.** Constaté le 2026-10-09 : un
+  compte créé le 2026-10-07 attend encore sa confirmation, ce qui
+  n'arrive pas quand la case est décochée. Depuis `0033`, ce lien (ou son
+  code, dans l'app) est la SEULE vérification d'un commerçant avant sa
+  mise en ligne. Reste à vérifier dans Authentication → URL Configuration
+  que les Redirect URLs portent `https://filloo.net/**` depuis le
+  changement de domaine (README, « Confirmation de l'email à
+  l'inscription ») : sinon le lien de l'email est cassé.
 
 ### À faire sur un vrai téléphone, par toi
 
@@ -194,46 +204,89 @@ connectée, ce qui n'est pas le réflexe de quelqu'un qui veut « aussi
 vendre ». Si celui qui a conçu le produit se trompe, l'utilisateur se
 trompera.
 
-### App mobile : ce qu'elle ne fait pas encore
+### App mobile : ce qui touche le site et la base
 
 L'app vit depuis le 2026-10-07 dans son propre dépôt,
-`tirry224/filloo-mobile` (décision du porteur du projet : ne plus
-mélanger les deux apps dans les mêmes commits). Son code y est ; ce qui
-suit reste ici parce que ça touche le site ou la base.
+`tirry224/filloo-mobile`. **Son avancement se suit dans SON README**,
+pas ici ; ne restent ici que les points qui touchent le site ou la base.
 
-
+- **L'API de l'app est en production depuis le 2026-10-09** (fusion de
+  `dev` dans `main`, sur demande du porteur du projet) :
+  `POST /api/app/message-envoye` (le site relance `notifyNewMessage`) et
+  `POST /api/app/supprimer-compte` (jeton + mot de passe, même effacement
+  que le site, `src/lib/suppression-compte.ts`). L'app les appelle sur
+  `EXPO_PUBLIC_SITE_URL`, soit `https://filloo.net`. Toute modification
+  de ces routes doit rester compatible avec l'app déjà installée.
 - **Notifications « comme une vraie application », plus d'email de
   notification** (décision du 2026-10-07). Nouveaux messages, nouvelles
   demandes et suspensions partent par notification seulement : téléphones
-  de l'app (Expo, table `expo_push_tokens`, migration `0035` appliquée le
-  même jour) et navigateurs abonnés (Web Push, `0023`). L'email ne sert
-  plus qu'au compte (confirmation, mot de passe oublié), par Supabase.
-  Un utilisateur du site sans notifications activées n'est prévenu de
-  rien : assumé par le porteur du projet.
-  L'app déclenche l'envoi par `POST /api/app/message-envoye` (le site
-  relance `notifyNewMessage`) : `EXPO_PUBLIC_SITE_URL` doit désigner un
-  déploiement qui porte cette route — la préversion de `dev` tant
-  qu'elle n'est pas sur `main`.
-  **À constater** : une notification reçue sur un téléphone. Il faut une
-  version compilée (`eas build`, après `eas init`) : Expo Go ne reçoit
-  pas les notifications sur Android.
-- **Aucune mesure d'usage** : `analytics_events` ne s'écrit qu'avec la
-  clé `service_role`. Visites, recherches et contacts venus de l'app
-  n'apparaissent pas dans `/suivi`. Une route ouverte comme celle des
-  messages permettrait à n'importe qui de fabriquer des chiffres : la
-  solution reste à décider.
-- **Plus rien ne renvoie vers le site** (décision du 2026-10-07 : tout
-  se passe dans l'app). Confirmation d'inscription et mot de passe
-  oublié par le CODE de l'email ; conditions et confidentialité recopiées
-  dans l'app ; suppression du compte par `POST /api/app/supprimer-compte`
-  (jeton + mot de passe, même effacement que le site, logique partagée
-  dans `src/lib/suppression-compte.ts`). Les modèles d'email
-  Supabase portent `{{ .Token }}` (README, « Le code dans les emails ») :
-  posés par le porteur du projet, qui déclare le 2026-10-07 que le code
-  reçu par email fonctionne dans l'app. La route de suppression n'existe que sur `dev` tant que `dev`
-  n'est pas sur `main`.
-- **Pas encore dans l'app** : la liste « Personnes bloquées » (on
-  débloque depuis le fil), et la publication sur les stores. Tout le reste du site y est depuis le 2026-10-07.
+  de l'app (Expo, `expo_push_tokens`, `0035`) et navigateurs abonnés (Web
+  Push, `0023`). Un utilisateur du site sans notifications activées n'est
+  prévenu de rien : assumé par le porteur du projet.
+- **Confirmation d'inscription et mot de passe oublié par CODE dans
+  l'app** : les modèles d'email Supabase portent `{{ .Token }}` (README,
+  « Le code dans les emails »), fonctionnel selon le porteur du projet
+  (2026-10-07).
+- **On peut se signaler soi-même** : la policy « reports: je signale »
+  vérifie le signalant, pas la cible. L'app ne le propose plus depuis le
+  2026-10-09 ; le site n'a pas été vérifié sur ce point.
+  Migration à écrire, sur accord du porteur du projet.
+- **Le mot de passe redemandé protégeait l'écran, pas la base**
+  (2026-10-11) : nom, téléphone et boutique s'écrivaient avec la
+  session, qui suffisait seule. Écrits désormais par le serveur
+  (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
+  l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
+  **`0036` APPLIQUÉE le 2026-10-14 (fonctions réservées à `service_role`,
+  constaté) ; `0037` NON appliquée.** Ordre : `0036`, puis le
+  site en production (il appelle ses fonctions), puis la nouvelle app
+  sur les téléphones, et `0037` en dernier — elle retire l'écriture
+  directe, dont l'ancienne app a besoin.
+- **Aucune mesure d'usage venue de l'app** : `analytics_events` ne
+  s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
+  n'importe qui de fabriquer des chiffres : la solution reste à décider.
+
+### Montée en charge (2026-10-14)
+
+Objectif du porteur du projet : tenir des milliers de personnes
+connectées sans réécrire l'app. Détail dans les savoirs des agents
+(`.claude/savoir/`).
+
+- **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14**, code
+  du site et de l'app sur `dev`. Chaque compte écoute `user:<auth.uid()>`
+  au lieu de la table `messages` entière. *À constater* : un message
+  arrivé sans recharger, deux comptes, sur la préversion.
+- **`messages` reste publiée en `postgres_changes`** pour les apps de
+  test installées. La retirer (migration à part) quand plus aucune ne
+  l'écoute : c'est alors que le coût en carré disparaît.
+- **`0040` APPLIQUÉE** : `product-images` limité à 1 Mo, WebP et JPEG.
+- **`0039` APPLIQUÉE le 2026-10-15** par le porteur du projet dans le
+  SQL Editor (absente de `list_migrations`, constatée par `pg_policies`).
+  Première tentative : la copie n'avait pris que la fin du fichier
+  (erreur « LINE 1 » sur la ligne 151) ; copier par « Copy raw file ».
+  Avant : (règles d'accès évaluées une fois par
+  requête, deux index) : elle supprime deux politiques, et le connecteur
+  bloque sur toute suppression (voir « Méthode »). À coller dans le SQL
+  Editor par le porteur du projet.
+- **Cache côté serveur** : accueil, recherche, fiche produit et page
+  boutique lisent le catalogue public par le client anonyme, une minute
+  (villes et catégories une heure). Un visiteur sans compte n'y lit plus
+  la base ; restent les mesures de visite, une écriture par page vue.
+- **Photos en cache un an** à l'envoi (site et app).
+- **`0039` toujours absente le 2026-10-14 au soir** : les politiques
+  `je gere mes produits` et `je gere les photos de mes produits`, qu'elle
+  remplace, existent encore (`pg_policies`, constaté).
+- **Suivi des erreurs du SERVEUR prêt, inactif** (`src/instrumentation.ts`,
+  `@sentry/nextjs` 10.76) : rien ne part tant que `SENTRY_DSN` n'est pas
+  posée sur Vercel. Prouvé contre un faux Sentry local : l'erreur arrive.
+- **`sendDefaultPii: false` laisse partir le cookie de session et
+  `Authorization`** (constaté, SDK 10.76) : `src/lib/erreurs-anonymes.ts`
+  ne garde que 4 en-têtes, retire la chaîne de requête et les
+  breadcrumbs (appels Supabase, `console.*`), testé. Le texte de
+  l'erreur, lui, part tel quel.
+- **Sentry côté navigateur : +72 Ko gzip** (socle 165 → 237 Ko, budget
+  200), mesuré le 2026-10-14 — pas les 30 Ko estimés. Non installé.
+- **Reste à décider** : offres Pro (Supabase, Vercel — Hobby interdit
+  l'usage commercial), Sentry dans l'app, captcha à l'inscription.
 
 ### Dettes techniques connues, aucune bloquante
 
@@ -405,16 +458,17 @@ ne se recopient pas.
   refuse `anon` et `authenticated` des deux côtés (RLS sans policy ET
   privilèges révoqués), vérifié en `set role anon`.
 - **Notifications push** de bout en bout (`public/sw.js`,
-  `src/lib/push.ts`, `0023`). **Une suspension ne
-  s'annonce PAS en clair sur un écran verrouillé** : le push dit qu'une
-  décision attend, l'email dit laquelle. Le service worker **ne met rien
-  en cache**.
+  `src/lib/push.ts`, `0023`), et vers les téléphones de l'app mobile
+  depuis le 2026-10-07 (Expo, `0035`). **Une suspension ne s'annonce PAS
+  en clair sur un écran verrouillé** : la notification dit qu'une
+  décision attend, sans dire laquelle (plus d'email depuis le
+  2026-10-07). Le service worker **ne met rien en cache**.
 - **Temps réel et alertes** : `RealtimeThread` affiche un message reçu
   pendant qu'on lit le fil ; `MessageAlerts` (layout racine, chargé
   seulement avec une session) joue un son synthétisé, affiche un bandeau et
   rafraîchit badge et tableau de bord à chaque message reçu, sur tous les
   écrans. Le push part à chaque message (vibration ; muet si l'application
-  est au premier plan), l'email seulement au premier non lu du fil. Un
+  est au premier plan) ; plus aucun email de notification. Un
   navigateur ne joue aucun son avant un premier geste sur la page. **Sur
   iPhone, ce son se tait si l'interrupteur silencieux est mis** (Web Audio
   le respecte, c'est voulu) et il n'y a jamais de vibration (Safari n'a
@@ -433,8 +487,11 @@ toujours tout (voir `docs/PERFORMANCE.md`).
 
 ### Déploiement et commandes
 
-Vercel, `main` en production : **ce qu'on pousse sur `main` part en
-ligne**, d'où les vérifications avant push (voir `CLAUDE.md`).
+Vercel, `main` en production sur `https://filloo.net` (depuis le
+2026-10-08 ; `www.filloo.net` et `filloo.vercel.app` y redirigent) :
+**ce qu'on pousse sur `main` part en ligne**, d'où les vérifications
+avant push (voir `CLAUDE.md`). `dev` a sa préversion Vercel, sur la même
+base.
 
 ```bash
 npm install && npm run dev     # nécessite .env.local — voir README
@@ -689,6 +746,16 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
 
 ### Méthode
 
+- **Le connecteur Supabase attend une confirmation avant toute
+  suppression (`drop … if exists` compris), et elle n'arrive jamais en
+  session** : l'appel expire au bout de 60 s sans rien appliquer
+  (constaté le 2026-10-14, `0038`). Une migration qui doit supprimer
+  passe par le SQL Editor ; un `drop` inutile se retire. Toujours relire
+  l'état de la base après un délai dépassé avant de relancer.
+- **Une session s'ouvre parfois sur une copie de `main`**, plus vieille
+  que `dev` : la mémoire qu'on y lit est périmée. Repartir de `dev`
+  avant de lire quoi que ce soit (le 2026-10-14, la mémoire de `main`
+  parlait encore du SMTP Gmail remplacé par Resend le 2026-10-08).
 - **Un parcours réel à deux navigateurs trouve ce qu'aucun test ne
   voit.** Le 2026-09-23, un script Playwright (réseau « 3G Conakry » et
   « Slow 3G », CPU ralenti x4, trois comptes de test en production, puis
@@ -755,11 +822,41 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-275 commits, du plus récent au plus ancien.
+291 commits, du plus récent au plus ancien.
+
+### 2026-10-15
+
+- `86fb520` Essai Sentry : retrait de la route d'erreur volontaire avant la production
+- `37e421e` 0039 appliquée par le SQL Editor, constatée dans la base
+
+### 2026-10-14
+
+- `7d45fa1` 0036 appliquée : fonctions d'écriture protégée, 0037 et 0039 en attente
+- `5a635ee` Mémoire : VAPID_PRIVATE_KEY absente de Vercel, variables de la préversion
+- `fb691a6` Essai Sentry : route d'erreur volontaire, préversion seulement (temporaire)
+- `a226d52` Suivi des erreurs du serveur : Sentry, inactif sans SENTRY_DSN
+- `e2ea853` Savoirs : 0038 et 0040 appliquées, 0039 en attente
+- `98fd6bb` Savoir gardien-base : état réel des migrations après le 2026-10-14
+- `2ed568a` Mémoire : la montée en charge du 2026-10-14, et deux pièges
+- `f5e46dd` Catalogue : fiche produit et page boutique lues depuis le cache
+- `e9ee4e9` 0038 appliquée : telle qu'en production, sans drop ni apostrophe accentuée
+- `4f8e8ee` Savoir relecteur-compat : 0039 et 0040 relues compatibles, photos envoyées
+- `6524004` Base : règles d'accès évaluées une fois par requête, photos limitées (0039, 0040, non appliquées)
+- `8891d06` Temps réel : un changement de compte rapide n'écoute plus l'ancien canal
+- `f301e19` Base : chacun n'entend que ses propres messages (0038, non appliquée)
+- `d1211f0` Temps réel : chacun écoute son canal privé, plus la table messages entière
+- `38270c5` Catalogue : l'accueil et la recherche lisent un cache au lieu de la base
+- `afd7ae4` Photos : en cache un an au lieu d'une heure
+- `769221c` Agent testeur : le site, la base et l'app ont un testeur qui n'oublie rien
+- `e76c014` Agents : la base, la compatibilité de l'app et la production ont chacun leur gardien
+
+### 2026-10-11
+
+- `daf0eab` Mot de passe redemandé : vérifié par le serveur, plus seulement par l'écran
 
 ### 2026-10-09
 
-- `f852a43` Fusion de dev dans main : l'app mobile a son API en production
+- `aefd1da` Documents : état au 2026-10-09, domaine, emails et API de l'app
 
 ### 2026-10-07
 
@@ -781,11 +878,6 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 - `30bf0a8` App mobile : recherche et page boutique
 - `c8c8189` App mobile : catalogue sans compte et fiche produit
 - `a6ca44b` App mobile : squelette Expo dans mobile/, connexion à Supabase
-- `aceecc7` Suivi : retrait du diagnostic temporaire
-- `aa0c18a` Suivi : diagnostic temporaire du compte propriétaire
-- `b836b87` Suivi : la règle du propriétaire tient aussi après la connexion
-- `8bf1ea1` Suivi : le compte du porteur du projet ne voit que /suivi
-- `a9231df` Git : dev pour travailler et tester, main seulement sur demande
 - `157c1a7` Suivi : retrait du diagnostic temporaire
 - `660f27d` Suivi : diagnostic temporaire du compte propriétaire
 - `5e81ed9` Suivi : la règle du propriétaire tient aussi après la connexion

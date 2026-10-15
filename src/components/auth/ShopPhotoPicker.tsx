@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { compresserPhoto } from "@/lib/compression";
+import { CACHE_PHOTO, compresserPhoto } from "@/lib/compression";
 import { createClient } from "@/lib/supabase/client";
 import { SHOP_PHOTOS_BUCKET, shopPhotoUrl } from "@/lib/storage";
 
@@ -46,7 +46,7 @@ export function ShopPhotoPicker({
       const newPath = `${merchantId}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await createClient()
         .storage.from(SHOP_PHOTOS_BUCKET)
-        .upload(newPath, fichier, { contentType: fichier.type });
+        .upload(newPath, fichier, { contentType: fichier.type, cacheControl: CACHE_PHOTO });
       if (uploadError) throw uploadError;
       setPath(newPath);
     } catch (e) {

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { compresserPhoto } from "@/lib/compression";
+import { CACHE_PHOTO, compresserPhoto } from "@/lib/compression";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTOS_MAX, productImageUrl } from "@/lib/storage";
 
@@ -63,7 +63,7 @@ export function PhotoPicker({
           const supabase = createClient();
           const { error } = await supabase.storage
             .from("product-images")
-            .upload(path, fichier, { contentType: fichier.type });
+            .upload(path, fichier, { contentType: fichier.type, cacheControl: CACHE_PHOTO });
           if (error) throw error;
           setSlots((s) => s.map((x) => (x.id === slot.id ? { ...x, path, uploading: false } : x)));
         } catch (e) {

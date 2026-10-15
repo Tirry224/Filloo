@@ -552,6 +552,22 @@ export type Database = {
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }
+      modifier_ma_boutique: {
+        Args: {
+          p_adresse: string
+          p_auth_user_id: string
+          p_description: string
+          p_nom: string
+          p_photo_path: string
+          p_ville_id: number
+          p_whatsapp: string
+        }
+        Returns: string
+      }
+      modifier_mes_informations: {
+        Args: { p_auth_user_id: string; p_nom: string; p_telephone: string }
+        Returns: number
+      }
       my_merchant_id: { Args: never; Returns: string }
       my_profile_id: {
         Args: { want_role: Database["public"]["Enums"]["user_role"] }

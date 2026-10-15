@@ -9,8 +9,18 @@ import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { createClient } from "@/lib/supabase/server";
-import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
+import { getMerchant, getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
+import { boutiqueEnCache, produitsBoutiqueEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
+
+/**
+ * La boutique telle que le public la voit, depuis le cache partagé ;
+ * sinon telle que CETTE session la voit (une boutique qui vient d'ouvrir,
+ * ou celle d'un interlocuteur que le RLS laisse lire).
+ */
+async function boutiqueVisible(id: string) {
+  return (await boutiqueEnCache(id)) ?? getMerchant(await createClient(), id);
+}
 
 export async function generateMetadata({
   params,
@@ -18,8 +28,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const merchant = await getMerchant(supabase, id);
+  const merchant = await boutiqueVisible(id);
 
   if (!merchant) {
     return { title: "Boutique introuvable", robots: { index: false, follow: false } };
@@ -39,11 +48,17 @@ export async function generateMetadata({
 
 export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const merchant = await getMerchant(supabase, id);
+  const merchant = await boutiqueVisible(id);
   if (!merchant) notFound();
 
-  const catalogue = await getMerchantProducts(supabase, merchant);
+  /* Le propriétaire voit aussi ses brouillons et produits masqués : pas
+     depuis le cache public. Un visiteur sans compte ne touche pas la base
+     ici (`getMyMerchant` ne lit rien sans session). */
+  const supabase = await createClient();
+  const proprietaire = (await getMyMerchant(supabase))?.id === merchant.id;
+  const catalogue = proprietaire
+    ? await getMerchantProducts(supabase, merchant)
+    : await produitsBoutiqueEnCache(merchant);
 
   compter("boutique_vue", { merchantId: merchant.id });
 
