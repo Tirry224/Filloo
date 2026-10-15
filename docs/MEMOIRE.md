@@ -822,10 +822,17 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-287 commits, du plus récent au plus ancien.
+291 commits, du plus récent au plus ancien.
+
+### 2026-10-15
+
+- `86fb520` Essai Sentry : retrait de la route d'erreur volontaire avant la production
+- `37e421e` 0039 appliquée par le SQL Editor, constatée dans la base
 
 ### 2026-10-14
 
+- `7d45fa1` 0036 appliquée : fonctions d'écriture protégée, 0037 et 0039 en attente
+- `5a635ee` Mémoire : VAPID_PRIVATE_KEY absente de Vercel, variables de la préversion
 - `fb691a6` Essai Sentry : route d'erreur volontaire, préversion seulement (temporaire)
 - `a226d52` Suivi des erreurs du serveur : Sentry, inactif sans SENTRY_DSN
 - `e2ea853` Savoirs : 0038 et 0040 appliquées, 0039 en attente
