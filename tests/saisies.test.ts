@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { erreurTelephone, estTelephone, lienWhatsApp, nettoyerTelephone } from "../src/lib/telephone.ts";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "../src/lib/password.ts";
-import { formatGnf, formatPhone } from "../src/lib/format.ts";
+import { formatGnf } from "../src/lib/format.ts";
 
 /**
  * Les règles de saisie, vérifiées CÔTÉ SERVEUR — donc les seules qui
@@ -85,13 +85,6 @@ test("un montant se lit sur un téléphone", () => {
   assert.equal(montant, "450 000 GNF");
   // Un prix à zéro est licite : un commerçant peut afficher « à négocier ».
   assert.equal(formatGnf(0), "0 GNF");
-});
-
-test("un numéro s'affiche groupé, et reste tel quel s'il ne fait pas neuf chiffres", () => {
-  assert.equal(formatPhone("620451287"), "620 45 12 87");
-  // Ne jamais découper ce qu'on ne reconnaît pas : un regroupement faux se
-  // recopie faux.
-  assert.equal(formatPhone("12345"), "12345");
 });
 
 test("LE LIEN WHATSAPP PORTE L'INDICATIF, sinon il ne mène nulle part", () => {

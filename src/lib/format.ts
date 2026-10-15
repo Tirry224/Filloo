@@ -15,12 +15,6 @@ export function formatGnf(amount: number): string {
   );
 }
 
-export function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length !== 9) return raw;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
-}
-
 export function formatMessageTime(iso: string): string {
   const date = new Date(iso);
   const now = new Date();

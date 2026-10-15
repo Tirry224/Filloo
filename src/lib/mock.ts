@@ -1,4 +1,4 @@
-import type { Merchant, Message, Product, Thread } from "./types";
+import type { Message, Product, Thread } from "./types";
 
 const aissatou: Product["merchant"] = {
   id: "m-aissatou",
@@ -24,13 +24,6 @@ const fanta: Product["merchant"] = {
   city: "Conakry",
   addressHint: "Marché de Matam",
   whatsappPhone: null,
-  photoUrl: null,
-};
-
-export const merchantAissatou: Merchant = {
-  ...aissatou,
-  description: "Alimentation générale : riz, huile, sucre, lait.",
-  whatsappPhone: "622334455",
   photoUrl: null,
 };
 
@@ -119,20 +112,6 @@ export function findProduct(id: string): Product | undefined {
   return [...products, featuredProduct].find((p) => p.id === id);
 }
 
-/**
- * Les 5 catégories des produits de démonstration — PAS la liste définitive
- * des 9 de la décision 3 de SPEC.md. Les valeurs doivent rester identiques
- * à `Product["category"]`.
- */
-export const categories = [
-  "Tout",
-  "Alimentation & Boissons",
-  "Vêtements & Chaussures",
-  "Électronique & Téléphones",
-  "Beauté & Cosmétiques",
-  "Maison & Meubles",
-];
-
 export const threads: Thread[] = [
   {
     id: "t-mariama",
@@ -180,29 +159,6 @@ export const conversation: Message[] = [
   { id: "msg-5", mine: false, product: huile, body: "Et ce bidon d'huile ?", sentAt: "14:03" },
 ];
 
-export const clientThreads: Thread[] = [
-  {
-    id: "t-mariama",
-    peerName: "Chez Aïssatou",
-    peerKind: "shop",
-    lastProductTitle: "Sac de riz importé 50 kg",
-    lastMessage: "Oui, 30 000 GNF de livraison.",
-    lastAt: "09:25",
-    unreadCount: 1,
-  },
-  {
-    id: "t-ibrahima",
-    peerName: "Tech Kaloum",
-    peerKind: "shop",
-    lastProductTitle: "Téléphone Tecno Spark 10",
-    lastMessage: "Vous pouvez passer cet après-midi",
-    lastAt: "Hier",
-    unreadCount: 0,
-  },
-];
-
-export const myProducts: Product[] = products.filter((p) => p.merchant.id === "m-aissatou");
-
 export const conversationReportReasons = [
   "Insultes ou menaces",
   "Tentative d'arnaque",
@@ -217,14 +173,4 @@ export const reportReasons = [
   "Prix ou description mensongers",
   "Contrefaçon",
   "Autre",
-];
-
-export const cities = [
-  "Toutes les villes",
-  "Conakry",
-  "Coyah",
-  "Kindia",
-  "Boké",
-  "Labé",
-  "Kankan",
 ];

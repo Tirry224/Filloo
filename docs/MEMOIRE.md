@@ -830,10 +830,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-305 commits, du plus récent au plus ancien.
+306 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `19bb58d` Ménage : scripts/parcours.mjs retiré, remplacé par e2e/ et ne tournait plus
 - `6adf6b5` Navigation : une page visitée reste 30 s dans le navigateur
 - `91cf22f` Messages : la bulle apparaît dès l'appui sur Envoyer, en « Envoi… »
 - `39c011c` Serveur à Paris, à côté de la base : chaque requête ne traverse plus l'Atlantique
