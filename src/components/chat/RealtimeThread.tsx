@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ecouterMesMessages } from "@/lib/supabase/mes-messages";
 import { markThreadReadAction } from "@/lib/actions/messages";
 
 /**
@@ -23,9 +22,15 @@ export function RealtimeThread({
     void markThreadReadAction(conversationId);
   }, [conversationId]);
 
-  useEffect(
-    () =>
-      ecouterMesMessages((message) => {
+  /* L'écoute est chargée APRÈS l'affichage du fil, comme dans
+     `MessageAlerts` : le client Supabase (environ 65 Ko) ne retarde plus
+     l'ouverture d'une discussion, et le même morceau sert aux deux. */
+  useEffect(() => {
+    let arrete = false;
+    let nettoyer = () => {};
+    void import("@/lib/supabase/mes-messages").then(({ ecouterMesMessages }) => {
+      if (arrete) return;
+      nettoyer = ecouterMesMessages((message) => {
         if (message.op !== "INSERT" || message.conversation_id !== conversationId) return;
         if (message.sender_id === myParticipantId) return;
         // L'action rend déjà la page à nouveau quand elle a marqué
@@ -33,9 +38,13 @@ export function RealtimeThread({
         void markThreadReadAction(conversationId).then((marque) => {
           if (!marque) router.refresh();
         });
-      }),
-    [conversationId, myParticipantId, router],
-  );
+      });
+    });
+    return () => {
+      arrete = true;
+      nettoyer();
+    };
+  }, [conversationId, myParticipantId, router]);
 
   return null;
 }
