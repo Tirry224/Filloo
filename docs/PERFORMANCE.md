@@ -232,7 +232,7 @@ outils d'analyse tiers · cartes interactives.
 
 1. **Une seule police** (Figtree). −40 Ko. Voir R4.
 2. **12 produits par écran** et un bouton « Voir plus » qui en demande douze
-   de plus, plafonné à 60. Constante `PAR_ECRAN` dans `src/lib/mock.ts`.
+   de plus, plafonné à 60. (`src/lib/mock.ts`, qui portait la constante, est supprimé depuis le 2026-10-15.)
    Douze, c'est déjà six lignes de défilement ; au-delà on fait payer des
    vignettes que personne ne regarde.
 3. **Vignettes de 300 px de large**, pour des cartes qui en font 180. Le

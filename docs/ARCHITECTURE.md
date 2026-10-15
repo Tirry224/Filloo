@@ -503,9 +503,8 @@ Rien n'est migré à ce stade. Quand la convention sera validée :
    saisie du message.
 5. **Les 30 autres**, par groupe, dans l'ordre `(principal)`, `(secondaire)`,
    `(flux)`, `(etat)`.
-6. **`src/lib/mock.ts` disparaît** au fur et à mesure que les `query.ts`
-   appellent Supabase. Chaque section bascule seule : c'est le principal
-   bénéfice de ce découpage pour la suite du projet.
+6. **`src/lib/mock.ts` a disparu** (2026-10-15) : toutes les sections
+   lisent Supabase.
 
 Les étapes 1 à 4 se relisent en une fois. À partir de la 5, c'est de la
 répétition mécanique.

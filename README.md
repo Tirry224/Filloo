@@ -30,23 +30,25 @@ conclut hors de l'application.
       sur `https://filloo.net` depuis le 2026-10-08 ; `dev` a sa préversion
 - [x] API de l'app mobile en production (`/api/app/message-envoye`,
       `/api/app/supprimer-compte`) depuis la fusion de `dev` du 2026-10-09
-- [ ] Parcours complet des écrans dans un navigateur (commencé le 12/09)
+- [x] Parcours essentiels vus marcher sur de vrais téléphones le
+      2026-10-15 : inscription commerçant, photo, messagerie, notifications
 - [x] Plus d'email de notification (décision du 2026-10-07) : messages et
       suspensions partent par notification, navigateur (Web Push) et
-      téléphone (app mobile) — aucune encore vue arriver (2026-10-09)
+      téléphone (app mobile) — reçues, application fermée, le 2026-10-15
 - [x] Une boutique est en ligne dès sa création, sans validation manuelle
       (`0033`) ; le lien de confirmation de l'email est la seule
       vérification. La suspension d'un compte s'annonce par notification
       (`0021` + Vercel Cron)
 - [x] Emails de compte envoyés par Resend depuis `noreply@send.filloo.net`
       (posé le 2026-10-08, SPF, DKIM et DMARC chez Cloudflare) ; ils
-      remplacent le SMTP Gmail. Aucun envoi encore vu dans les journaux
-- [ ] **Le cron du matin n'a jamais vidé la file `notifications`**
-      (constaté le 2026-09-21). Elle ne porte plus que les suspensions
-      depuis `0033`. Suspect : `CRON_SECRET` absente de Vercel
-- [x] Confirmation d'email active (constaté le 2026-10-09 : un compte
-      attend sa confirmation) ; reste à vérifier que les Redirect URLs
-      portent `https://filloo.net/**`
+      remplacent le SMTP Gmail. Email de confirmation reçu le 2026-10-15
+- [x] Cron du matin : `CRON_SECRET` posée ; file `notifications` vide et
+      aucune photo orpheline le 2026-10-15
+- [ ] **Avant le premier vrai commerçant** : Vercel en Pro (Hobby
+      interdit l'usage commercial), sauvegarde de la base (Supabase Pro),
+      « mot de passe oublié » prouvé sur téléphone (`docs/MEMOIRE.md`)
+- [x] Confirmation d'email active, lien vers `https://filloo.net`
+      suivi avec succès le 2026-10-15
 - [x] Partage et référencement : Open Graph sur les fiches produit et
       boutique, `sitemap.xml`, `robots.txt`
 - [x] Politique de confidentialité (`/confidentialite`) et écran de
@@ -220,17 +222,15 @@ CRON_SECRET=<une chaîne longue et aléatoire>
   l'appel depuis Supabase avec `pg_cron` + `pg_net` (disponibles, non
   installés). La route ne change dans aucun des trois cas.
 
-## Notifications push (en cours de construction)
+## Notifications push
 
-Faites de bout en bout le 2026-09-19. Un commerçant active les
-notifications depuis « Ma boutique » → « Notifications », et reçoit une
-alerte sur son écran verrouillé dès qu'un message arrive. L'email
-continue de partir dans tous les cas : il rattrape un iPhone non
-installé, une permission refusée, un téléphone changé.
-
-**Ce qui reste à CONSTATER sur de vrais téléphones** : l'installation
-depuis Android, l'installation depuis un iPhone, et une notification
-réellement reçue écran éteint.
+Un commerçant active les notifications depuis « Ma boutique » (un
+client, depuis « Compte »), et reçoit une alerte sur son écran
+verrouillé dès qu'un message arrive. **Reçues sur Android et sur
+iPhone, application fermée, le 2026-10-15.** Plus aucun email de
+notification depuis le 2026-10-07 : sans notifications activées, on
+n'est prévenu de rien. La permission du navigateur seule ne suffit pas,
+il faut le bouton « Activer sur cet appareil ».
 
 ```
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=<déjà dans .env, publique par nature>
@@ -241,6 +241,9 @@ VAPID_PRIVATE_KEY=<Vercel uniquement, jamais ici>
   façon : c'est elle qu'il envoie au service de push pour créer un
   abonnement. Elle vit donc dans `.env`, versionné.
 - `VAPID_PRIVATE_KEY` — **posée dans Vercel, à ne jamais recopier ici.**
+  Paire renouvelée le 2026-10-15 (l'ancienne clé privée était perdue).
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` est AUSSI posée dans Vercel et gagne sur
+  `.env` : changer de paire, c'est changer les deux, puis redéployer.
   Quiconque l'obtient peut notifier tous les abonnés au nom de Filloo.
 - **La migration `0023` est exécutée** (2026-09-19) : la table
   `push_subscriptions` existe, avec son RLS et ses quatre policies.
