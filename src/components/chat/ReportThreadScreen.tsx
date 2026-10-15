@@ -5,7 +5,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadContext } from "@/lib/data/messages";
 import { reportConversationAction } from "@/lib/actions/messages";
-import { conversationReportReasons } from "@/lib/mock";
+import { conversationReportReasons } from "@/lib/motifs-signalement";
 import { messagesBase, type Espace } from "@/lib/espace";
 import { PRECISIONS_MAX } from "@/lib/saisie";
 

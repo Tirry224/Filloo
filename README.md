@@ -99,25 +99,17 @@ npm install
 npm run dev
 ```
 
-**`/ecrans`** liste les 36 écrans avec un lien vers chacun, et dit ce
-qu'il faut créer en base quand un lien a besoin d'un enregistrement qui
-n'existe pas encore. C'est le point d'entrée pour tout relire.
-
-Page de travail : **accessible en développement seulement**, introuvable
-en production. À supprimer pour de bon quand le parcours complet des
-écrans sera terminé.
-
-Toute autre adresse affiche la page « Cette page n'existe pas ».
-- **`/styleguide`** : tous les composants et tous les tokens sur une page.
+Les pages de travail `/ecrans` et `/styleguide` ont été supprimées le
+2026-10-15. Toute adresse inconnue affiche la page « Cette page n'existe
+pas ».
 
 `.env.local` est nécessaire pour démarrer (voir plus bas) : sans lui,
 l'application s'arrête tout de suite avec un message explicite plutôt que
 de laisser une erreur réseau incompréhensible apparaître plus tard.
 
 **Toute l'application lit et écrit la vraie base** : catalogue public,
-espace vendeur, messagerie, compte et suppression de compte. `mock.ts` ne
-sert plus que la galerie `/styleguide` et la liste des motifs de
-signalement.
+espace vendeur, messagerie, compte et suppression de compte. Seuls les
+motifs de signalement sont une liste fixe (`src/lib/motifs-signalement.ts`).
 
 **La base est vide** : le jeu de démonstration a été supprimé le
 2026-09-12 pour tester avec de vraies données, et son fichier

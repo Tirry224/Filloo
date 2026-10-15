@@ -182,16 +182,12 @@ vus fonctionner par personne :
 - l'**inscription d'un commerçant par le lien de confirmation**, jusqu'à
   sa boutique en ligne.
 
-`/ecrans` (en local uniquement) liste les écrans et allume chaque lien dès
-que l'enregistrement correspondant existe. **Noter les défauts au fil de
+**Noter les défauts au fil de
 l'eau plutôt que les corriger un par un** : corriger en cours de parcours
 fait perdre le fil du parcours.
 
 ### Gestes de ménage, non bloquants
 
-- **Supprimer `/ecrans` et `/styleguide`** une fois le parcours
-  ci-dessus terminé : une page de travail qu'on oublie finit par être
-  trouvée.
 - **Regarder le projet Supabase « Fillo »** du 2026-08-25, qui tourne
   encore à côté de `Filloo` sans qu'on sache s'il sert.
 - **Supprimer les branches `claude/*` restées sur GitHub.** Inventoriées
@@ -340,9 +336,7 @@ connectées sans réécrire l'app. Détail dans les savoirs des agents
   vert. Celui du quota de conversations exige `P0001` ; les deux
   devraient se ressembler.
 - **`middleware` est déprécié en Next 16** :
-  `npx @next/codemod@canary middleware-to-proxy .`. Le faire débloquerait
-  aussi un vrai 404 sur `/ecrans`, aujourd'hui un 200 qui porte la page
-  « n'existe pas ».
+  `npx @next/codemod@canary middleware-to-proxy .`.
 - **`merchants.status` est un vestige** depuis `0033` : la contrainte
   `merchants_always_approved` le fige à `'approved'`, mais les policies RLS
   le lisent encore. Le retirer demande de réécrire ces policies.
@@ -435,8 +429,9 @@ ne se recopient pas.
   de la base, traduite vers `src/lib/types.ts`.
 - `src/lib/actions/` — **écriture** : `auth`, `merchants`, `products`,
   `messages`, `account`, `push`.
-- `src/lib/mock.ts` — **ne sert plus que `/styleguide`** et la liste
-  fixe des motifs de signalement.
+- `src/lib/motifs-signalement.ts` — la liste fixe des motifs de
+  signalement (`mock.ts`, `/styleguide` et `/ecrans` supprimés le
+  2026-10-15).
 
 ### Fonctionnalités entières
 
@@ -830,10 +825,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-307 commits, du plus récent au plus ancien.
+308 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `83041e5` Ménage : le jeu de fausses boutiques (seed_demo.sql) est supprimé
 - `9f7e94d` Ménage : données de démonstration et formatPhone inutilisés retirés
 - `19bb58d` Ménage : scripts/parcours.mjs retiré, remplacé par e2e/ et ne tournait plus
 - `6adf6b5` Navigation : une page visitée reste 30 s dans le navigateur

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { ReportForm } from "@/components/product/ReportForm";
-import { reportReasons } from "@/lib/mock";
+import { reportReasons } from "@/lib/motifs-signalement";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { getMyProfiles } from "@/lib/data/session";

@@ -30,9 +30,6 @@ export default function robots(): MetadataRoute.Robots {
 
         "/suivi",
         "/produit/*/whatsapp",
-
-        "/ecrans",
-        "/styleguide",
       ],
     },
     sitemap: base ? `${base}/sitemap.xml` : undefined,

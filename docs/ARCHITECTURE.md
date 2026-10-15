@@ -51,8 +51,7 @@ d'écran : c'est une brique partagée, et sa place est dans `src/components/`
 
 La ligne la plus importante de ce tableau est celle des **unités** : une unité
 ne parle **jamais** à Supabase. La descente vers la base s'arrête au niveau de
-la section. C'est ce qui garde les unités testables, réutilisables, et
-affichables telles quelles dans `/styleguide`.
+la section. C'est ce qui garde les unités testables et réutilisables.
 
 ---
 

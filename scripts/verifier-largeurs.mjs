@@ -48,8 +48,6 @@ const PUBLICS = [
   "/conditions",
   "/confidentialite",
   "/contact",
-  "/styleguide",
-  "/ecrans",
   "/adresse-qui-nexiste-pas",
 ];
 

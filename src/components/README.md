@@ -25,8 +25,8 @@ difficile à lire qu'une page un peu longue.
 npm run dev
 ```
 
-Puis `/styleguide` : tous les composants sur une seule page, hors de tout
-écran. À consulter avant d'en écrire un nouveau — il existe peut-être déjà.
+Avant d'écrire un composant, chercher dans `src/components/` : il existe
+peut-être déjà.
 
 ## Composants serveur
 

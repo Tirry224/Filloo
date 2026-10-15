@@ -50,8 +50,6 @@ Même histoire : sept tailles de pastilles et de vignettes coexistaient, de 18
 `tap` (44), `control` (52) et `nav` (64), et les deux hauteurs de photo
 `photo-card` (128) et `photo-hero` (288).
 
-Toutes sont visibles côte à côte sur **`/styleguide`**.
-
 ### Et si une valeur manque ?
 
 L'échelle chiffrée de Tailwind (`p-2`, `gap-5`, `mt-7`…) **reste active**.
