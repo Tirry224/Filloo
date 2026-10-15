@@ -98,9 +98,12 @@ journaux, mais pas la configuration Auth). Ces points sont marqués
   liste des variables du projet) : aucune notification navigateur ne
   peut partir, nulle part. La paire du 2026-09-24 est PERDUE : le
   2026-10-15, une nouvelle paire a remplacé la clé publique de `.env`
-  (`BM2_eCfI…`). Le porteur du projet doit poser sa moitié privée dans
-  Vercel (Production et Preview) puis redéployer ; les abonnements
-  navigateur existants se recréent seuls (`memeCle`). Même jour : `SENTRY_DSN`,
+  (`BM2_eCfI…`), et le porteur du projet a posé la paire entière dans
+  Vercel (Production et Preview) puis redéployé. **Piège** :
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` existe AUSSI dans Vercel, et c'est elle
+  qui gagne sur `.env` au build — changer la clé, c'est changer les deux.
+  Les abonnements navigateur existants se recréent seuls (`memeCle`).
+  *À constater* : une notification reçue. Même jour : `SENTRY_DSN`,
   `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` et `OWNER_EMAIL` ne sont
   posées que pour Production — sur la préversion, Sentry, la
   suppression de compte et les envois de notification ne marchent pas.
