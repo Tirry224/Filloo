@@ -825,10 +825,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-308 commits, du plus récent au plus ancien.
+309 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `7c0080f` Ménage : pages de travail /styleguide et /ecrans supprimées, motifs de signalement dans leur propre fichier
 - `83041e5` Ménage : le jeu de fausses boutiques (seed_demo.sql) est supprimé
 - `9f7e94d` Ménage : données de démonstration et formatPhone inutilisés retirés
 - `19bb58d` Ménage : scripts/parcours.mjs retiré, remplacé par e2e/ et ne tournait plus

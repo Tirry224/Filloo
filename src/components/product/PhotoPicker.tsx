@@ -2,8 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { CACHE_PHOTO, compresserPhoto } from "@/lib/compression";
-import { createClient } from "@/lib/supabase/client";
 import { PHOTOS_MAX, productImageUrl } from "@/lib/storage";
 
 type Slot = {
@@ -53,6 +51,14 @@ export function PhotoPicker({
       error: null,
     }));
     setSlots((s) => [...s, ...added]);
+
+    /* Chargés au premier choix de photo, pas avec la page : le client
+       Supabase et le compresseur pèsent ensemble près de 90 Ko, inutiles
+       à qui ne fait que relire son produit. */
+    const [{ CACHE_PHOTO, compresserPhoto }, { createClient }] = await Promise.all([
+      import("@/lib/compression"),
+      import("@/lib/supabase/client"),
+    ]);
 
     await Promise.all(
       files.map(async (file, i) => {

@@ -3,8 +3,6 @@
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { CACHE_PHOTO, compresserPhoto } from "@/lib/compression";
-import { createClient } from "@/lib/supabase/client";
 import { SHOP_PHOTOS_BUCKET, shopPhotoUrl } from "@/lib/storage";
 
 /**
@@ -40,6 +38,11 @@ export function ShopPhotoPicker({
     setUploading(true);
     setPreview(URL.createObjectURL(file));
     try {
+      // Chargés au choix de la photo, pas avec la page (voir PhotoPicker).
+      const [{ CACHE_PHOTO, compresserPhoto }, { createClient }] = await Promise.all([
+        import("@/lib/compression"),
+        import("@/lib/supabase/client"),
+      ]);
       // Un avatar s'affiche à 64 px au plus : 512 px couvrent les écrans
       // denses sans envoyer une photo de 3 Mo depuis un forfait mobile.
       const { fichier, extension } = await compresserPhoto(file, { maxSizeMB: 0.2, maxWidthOrHeight: 512 });
