@@ -775,10 +775,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-324 commits, du plus récent au plus ancien.
+325 commits, du plus récent au plus ancien.
 
 ### 2026-10-18
 
+- `c2092b2` Icônes du site : antennes à leur tracé d'origine, plus fines
 - `617dd00` Icônes du site : antennes redessinées, fines, terminées par un ovale blanc
 - `6ecb78d` Icônes du site : bout des antennes en blanc, en boule
 - `8e99f28` Icônes du site : la fourmi indigo dans un disque indigo clair, sur fond indigo
