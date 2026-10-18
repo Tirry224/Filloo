@@ -775,10 +775,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-317 commits, du plus récent au plus ancien.
+318 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `99d5140` Documentation et savoirs : état du 2026-10-15 (notifications, variables Vercel, cron, ménage)
 - `bfb3876` Mémoire : état du 2026-10-15, diagnostics résolus retirés, bloquants réels avant le premier commerçant
 - `4b30e96` Mémoire : parcours commerçant, photo, messagerie et notifications constatés sur téléphone
 - `68b8dcc` SEO : le sitemap n'annonce plus les produits vendus

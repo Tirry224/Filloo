@@ -24,15 +24,15 @@ export default function Image() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
-          background: "#fdfbf7",
-          color: "#1f1a17",
+          background: "#f1f5fa",
+          color: "#182b49",
         }}
       >
-        <div style={{ fontSize: 150, fontWeight: 800, color: "#b64c1b", letterSpacing: -4 }}>Filloo</div>
+        <div style={{ fontSize: 150, fontWeight: 800, color: "#182b49", letterSpacing: -4 }}>Filloo</div>
         <div style={{ marginTop: 24, fontSize: 56, fontWeight: 600, lineHeight: 1.2 }}>
           Trouvez des produits et des commerçants près de chez vous
         </div>
-        <div style={{ marginTop: 32, fontSize: 36, color: "#6b625b" }}>
+        <div style={{ marginTop: 32, fontSize: 36, color: "#334155" }}>
           Parcourez le catalogue, contactez le vendeur. En Guinée.
         </div>
       </div>

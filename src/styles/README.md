@@ -75,14 +75,14 @@ passer pour la norme.
 **Changer la couleur de l'application** — une seule ligne dans `tokens.css` :
 
 ```css
---color-accent: oklch(0.55 0.15 42);   /* terre cuite */
---color-accent: oklch(0.55 0.15 150);  /* vert */
---color-accent: oklch(0.55 0.15 250);  /* bleu */
+--color-accent: #182b49;   /* indigo, la couleur officielle depuis le 2026-10-18 */
 ```
 
-Le troisième nombre est la teinte, sur un cercle de 0 à 360. Garde les deux
-premiers (clarté et saturation) : c'est ce qui fait que la couleur reste
-lisible en texte blanc dessus, et cohérente avec les couleurs d'état.
+Les couleurs sont en hexadécimal depuis l'adoption de la palette officielle,
+pour qu'on les compare d'un coup d'œil à la charte. Une couleur qui change
+doit être recopiée là où le CSS ne s'applique pas : `themeColor` de
+`layout.tsx`, `manifest.ts`, `opengraph-image.tsx`, les icônes de
+`public/icons`, et `src/theme.ts` de l'app mobile.
 
 **Rendre toute l'interface plus aérée** — change les six valeurs
 d'espacement dans `tokens.css`, pas les composants. Passer `--spacing-snug` de
