@@ -834,10 +834,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-314 commits, du plus récent au plus ancien.
+315 commits, du plus récent au plus ancien.
 
 ### 2026-10-15
 
+- `68b8dcc` SEO : le sitemap n'annonce plus les produits vendus
 - `1e0e3f6` SEO : données structurées Product (prix en GNF, disponibilité) sur chaque fiche
 - `90bc332` SEO : un titre par page avec la marque, recherches et accueil filtré non indexés
 - `32a76cd` SEO : image de partage pour filloo.net, budget HTML à 13 Ko

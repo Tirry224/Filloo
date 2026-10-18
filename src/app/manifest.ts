@@ -14,8 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     /* Recopiées de `src/styles/tokens.css` (`--color-paper`,
        `--color-accent`) : un manifeste ne lit pas le CSS, donc ces deux
        lignes sont à changer avec les tokens. */
-    background_color: "#fcf8f3",
-    theme_color: "#b64c1b",
+    background_color: "#f1f5fa",
+    theme_color: "#182b49",
     /* Chaque taille est déclarée deux fois, `any` puis `maskable` : le
        type de Next refuse la valeur combinée « any maskable ». */
     icons: [

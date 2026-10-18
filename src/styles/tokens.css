@@ -1,38 +1,44 @@
 @theme {
   --color-*: initial;
 
-  --color-white: oklch(1 0 0);
-  --color-black: oklch(0 0 0);
+  /* La palette officielle de Filloo (2026-10-18) : indigo #182B49,
+     blanc, mangue #F4A62A, vert #10B981, corail #EF4444, gris clair
+     #F1F5FA, gris foncé #334155. Les teintes « -soft », « -ink »,
+     « -hover », les bordures et l'emplacement d'image n'y figurent pas :
+     elles en sont dérivées, dans la même famille de couleur. */
 
-  --color-paper: oklch(0.981 0.008 80);   /* fond de l'application, blanc chaud */
-  --color-surface: oklch(1 0 0);          /* cartes, barres, feuilles */
-  --color-placeholder: oklch(0.935 0.013 75); /* emplacement d'image vide */
+  --color-white: #ffffff;
+  --color-black: #000000;
 
-  --color-ink: oklch(0.245 0.018 60);     /* texte principal */
-  --color-ink-soft: oklch(0.545 0.014 60);/* texte secondaire, légendes */
-  --color-on-accent: oklch(1 0 0);        /* texte posé sur un fond accent */
+  --color-paper: #f1f5fa;       /* fond de l'application, gris clair */
+  --color-surface: #ffffff;     /* cartes, barres, feuilles */
+  --color-placeholder: #e2e8f0; /* emplacement d'image vide */
 
-  --color-line: oklch(0.902 0.012 75);        /* bordures et séparateurs */
-  --color-line-strong: oklch(0.82 0.012 75);  /* bordure appuyée */
+  --color-ink: #182b49;         /* texte principal, titres : indigo */
+  --color-ink-soft: #334155;    /* texte secondaire, légendes : gris foncé */
+  --color-on-accent: #ffffff;   /* texte posé sur un fond accent */
 
-  --color-accent: oklch(0.55 0.15 42);
-  --color-accent-hover: oklch(0.45 0.15 42);
-  --color-accent-soft: oklch(0.955 0.028 42);
+  --color-line: #e2e8f0;        /* bordures et séparateurs */
+  --color-line-strong: #cbd5e1; /* bordure appuyée */
 
-  --color-success: oklch(0.55 0.15 150);
-  --color-success-soft: oklch(0.955 0.028 150);
-  --color-success-ink: oklch(0.4 0.06 150);
+  --color-accent: #182b49;      /* indigo : boutons principaux, navigation */
+  --color-accent-hover: #0f1d33;
+  --color-accent-soft: #e8ecf3;
 
-  --color-warn: oklch(0.55 0.15 75);
-  --color-warn-soft: oklch(0.96 0.028 75);
-  --color-warn-ink: oklch(0.42 0.05 75);
+  --color-success: #10b981;
+  --color-success-soft: #e7f8f1;
+  --color-success-ink: #047857;
 
-  --color-danger: oklch(0.5 0.17 27);
-  --color-danger-soft: oklch(0.95 0.03 27);
+  --color-warn: #f4a62a;        /* mangue */
+  --color-warn-soft: #fef4e2;
+  --color-warn-ink: #8a5a0b;
 
-  --color-overlay: oklch(0.245 0.018 60 / 0.45);
+  --color-danger: #ef4444;      /* corail */
+  --color-danger-soft: #fdecec;
 
-  --color-viewer: oklch(0.17 0.008 70);
+  --color-overlay: rgb(24 43 73 / 0.45);
+
+  --color-viewer: #0b1424;
 
   /* Une variable CSS absente ne fait PAS glisser sur la valeur suivante de
      la liste : elle rend la déclaration entière invalide, et `font-family`
@@ -110,6 +116,6 @@
   --breakpoint-wide: 72rem;    /* 1152px */
 
   --shadow-*: initial;
-  --shadow-sheet: 0 -8px 32px oklch(0.245 0.018 60 / 0.14);
-  --shadow-focus: 0 0 0 3px oklch(0.55 0.15 42 / 0.28);
+  --shadow-sheet: 0 -8px 32px rgb(24 43 73 / 0.14);
+  --shadow-focus: 0 0 0 3px rgb(24 43 73 / 0.28);
 }
