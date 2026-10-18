@@ -775,7 +775,12 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-318 commits, du plus récent au plus ancien.
+320 commits, du plus récent au plus ancien.
+
+### 2026-10-18
+
+- `f2fc9d5` Merge branch 'claude/app-official-colors-6zqfnj' into dev
+- `775936d` Couleurs : la palette officielle de Filloo remplace la terre cuite
 
 ### 2026-10-15
 
