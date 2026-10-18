@@ -775,10 +775,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-321 commits, du plus récent au plus ancien.
+322 commits, du plus récent au plus ancien.
 
 ### 2026-10-18
 
+- `8e99f28` Icônes du site : la fourmi indigo dans un disque indigo clair, sur fond indigo
 - `1bd6676` Icônes du site : la fourmi mascotte indigo dans un disque mangue
 - `f2fc9d5` Merge branch 'claude/app-official-colors-6zqfnj' into dev
 - `775936d` Couleurs : la palette officielle de Filloo remplace la terre cuite
