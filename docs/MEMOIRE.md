@@ -175,9 +175,11 @@ pas ici ; ne restent ici que les points qui touchent le site ou la base.
   (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
   l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
   **`0036` APPLIQUÉE le 2026-10-14, site en production le même soir ;
-  `0037` NON appliquée.** Reste, dans l'ordre : la nouvelle app sur les
-  téléphones (build EAS), puis `0037` en dernier — elle retire
-  l'écriture directe, dont l'ancienne app a besoin.
+  `0037` APPLIQUÉE le 2026-10-20** par le connecteur, sur accord du
+  porteur du projet, avant le nouveau build : une app de test d'avant
+  `dev` (2026-10-09) ne peut plus enregistrer « Mes informations » ni sa
+  boutique tant qu'elle n'est pas remplacée. Retour arrière possible :
+  ré-accorder l'`update` colonne par colonne retiré par `0037`.
 - **Aucune mesure d'usage venue de l'app** : `analytics_events` ne
   s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
   n'importe qui de fabriquer des chiffres : la solution reste à décider.
@@ -593,6 +595,12 @@ La section la plus utile du fichier. Chaque ligne a coûté du temps.
   bord ; elle exige le secret `SUPABASE_ACCESS_TOKEN` dans GitHub.
   En session, sans accès à `api.supabase.com`, passer la sortie de
   `list_migrations` du connecteur par `--json`.
+  **Jusqu'au 2026-10-20, l'Action n'avait jamais rien comparé** : le
+  secret `SUPABASE_ACCESS_TOKEN` n'était pas posé (onglet Actions,
+  « Repository secrets »), et elle échouait en une seconde chaque matin.
+  Une migration passée au SQL Editor (`0039`) n'entre pas dans
+  `schema_migrations` : l'y inscrire à la main (version + nom), sans quoi
+  la comparaison la croit manquante.
 
 ### Couche applicative
 

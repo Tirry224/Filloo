@@ -36,6 +36,10 @@ donnée personnelle ici.
   stockage (133 Ko), 15 connexions Postgres sur 60. Migrations
   appliquées jusqu'à `0035`, puis `0040`, `0038` et `0036` le 2026-10-14 ;
   `0039` le 2026-10-15 (SQL Editor, hors `list_migrations`) ; `0037` en attente (constaté, `list_migrations`).
+- **2026-10-20** : `0037` appliquée ; `0039` inscrite dans
+  `schema_migrations`. L'Action `Migrations` rouge chaque matin depuis sa
+  création : secret `SUPABASE_ACCESS_TOKEN` absent, aucune comparaison
+  faite.
 
 ## Problèmes connus (ne pas re-signaler comme nouveaux)
 

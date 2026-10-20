@@ -49,7 +49,7 @@ l'app, cette liste vieillit.
 
 ## Changements en attente à surveiller
 
-- **`0036` et `0037`** (site, commitées ; `0036` APPLIQUÉE le 2026-10-14, `0037` non) :
+- **`0036` et `0037`** (site, commitées ; `0036` APPLIQUÉE le 2026-10-14, `0037` le 2026-10-20) :
   `0037` interdit l'écriture directe sans mot de passe. L'app de `dev`
   passe désormais par `/api/app/mes-informations` et `/api/app/ma-boutique`
   (commit `167f006`) ; **`main` de l'app (les versions de test du
