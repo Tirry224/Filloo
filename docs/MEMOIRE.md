@@ -783,10 +783,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-321 commits, du plus récent au plus ancien.
+322 commits, du plus récent au plus ancien.
 
 ### 2026-10-18
 
+- `4f17748` Retire l'icône fourmi de dev : elle reste en travail sur claude/app-official-colors-6zqfnj
 - `1bd6676` Icônes du site : la fourmi mascotte indigo dans un disque mangue
 - `f2fc9d5` Merge branch 'claude/app-official-colors-6zqfnj' into dev
 - `775936d` Couleurs : la palette officielle de Filloo remplace la terre cuite

@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { Check, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Check, Eye, EyeOff, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { ActionRow } from "@/components/ui/ActionRow";
 import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
-import { markSoldAction, hideProductAction, republishProductAction, deleteProductAction } from "@/lib/actions/products";
+import { markSoldAction, hideProductAction, republishProductAction, relistProductAction, deleteProductAction } from "@/lib/actions/products";
 
 /**
  * CETTE PAGE NE PROTÈGE RIEN : retirer une ligne ne ferme rien,
@@ -29,6 +29,18 @@ export default async function ProductActionsPage({ params }: { params: Promise<{
             label="Publier le produit"
             description="Il entre dans le catalogue et devient visible de tous."
             action={republishProductAction}
+            hiddenFields={{ productId: product.id }}
+          />
+        ) : null}
+
+        {/* `sold → active` reste dans l'ensemble visible : le trigger de
+            0020 le laisse passer sans revérifier photo ni boutique. */}
+        {product.status === "sold" ? (
+          <ActionRow
+            icon={RotateCcw}
+            label="Remettre en vente"
+            description="Le produit redevient disponible, avec ses photos et sa description."
+            action={relistProductAction}
             hiddenFields={{ productId: product.id }}
           />
         ) : null}
