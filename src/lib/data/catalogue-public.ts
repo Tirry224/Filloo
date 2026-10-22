@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getCategories, getCities } from "@/lib/data/reference";
+import { getCategories } from "@/lib/data/reference";
 import { getProduct, searchProducts } from "@/lib/data/products";
 import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import type { Merchant } from "@/lib/types";
@@ -25,10 +25,6 @@ import type { Merchant } from "@/lib/types";
  * d'activer Cache Components pour tout le site : changement trop large
  * pour ce seul besoin, à reprendre le jour où on l'active.
  */
-export const villesEnCache = unstable_cache(() => getCities(createPublicClient()), ["villes"], {
-  revalidate: 3600,
-});
-
 export const categoriesEnCache = unstable_cache(() => getCategories(createPublicClient()), ["categories"], {
   revalidate: 3600,
 });

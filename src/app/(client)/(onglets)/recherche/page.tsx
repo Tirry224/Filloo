@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowUpDown, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { ChipRow } from "@/components/ui/Chip";
@@ -11,16 +11,14 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
+import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
-import { PLAFOND_RESULTATS } from "@/lib/data/products";
 
-const TOUTES = "Toutes les villes";
 
 /**
- * Une page par recherche (`?q=riz`, `?ville=…`) ferait des milliers de
+ * Une page par recherche (`?q=riz`, `?categorie=…`) ferait des milliers de
  * pages presque vides aux yeux de Google : seule `/recherche` nue
  * s'indexe ; les autres se suivent sans s'indexer.
  */
@@ -40,68 +38,52 @@ export async function generateMetadata({
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[]; ville?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
 }) {
   /* Un paramètre répété (`?q=riz&q=huile`) arrive en TABLEAU : il faisait
-     planter `RecentSearches` sur `q.trim`. Une ville ou une catégorie
+     planter `RecentSearches` sur `q.trim`. Une catégorie
      inconnue (`?categorie=abc`) s'affichait comme un filtre actif qui ne
      filtrait rien. Constaté le 2026-09-25. */
   const brut = await searchParams;
   const q = premier(brut.q) ?? "";
   const tri = premier(brut.tri) ?? "recent";
 
-  const [cities, categories] = await Promise.all([villesEnCache(), categoriesEnCache()]);
+  const categories = await categoriesEnCache();
 
-  const villeParam = premier(brut.ville);
   const categorieParam = premier(brut.categorie);
   const categorie = categories.some((c) => c.name === categorieParam) ? categorieParam! : "Tout";
-  /* La ville n'est plus qu'un filtre FACULTATIF (décision du 2026-10-22) :
-     sans choix, la recherche couvre toute la Guinée. Le profil client ne
-     porte plus de ville par défaut. */
-  const city = cities.find((c) => c.name === villeParam);
-  const ville = city?.name ?? TOUTES;
+  /* Plus de filtre de ville (décision du 2026-10-22) : la recherche couvre
+     toute la Guinée, la ville de chaque boutique s'affiche sur sa carte.
+     Un ancien lien `?ville=…` est simplement ignoré. */
   const category = categorie !== "Tout" ? categories.find((c) => c.name === categorie) : undefined;
   const sort = tri === "populaire" ? "popular" : "recent";
 
   const results = await rechercheEnCache({
     query: q,
-    cityId: city?.id,
     categoryId: category?.id ?? null,
     sort,
     limit: 50,
   });
 
-  /* Un écran vide avec une ville choisie : la même recherche dans toute la
-     Guinée dit si c'est le filtre qui bloque. Sans ville, rien à recompter. */
-  const ailleurs =
-    results.length === 0 && city
-      ? await rechercheEnCache({ query: q, categoryId: category?.id ?? null, sort, limit: PLAFOND_RESULTATS })
-      : [];
-  const elsewhereCount = ailleurs.length;
-  const elsewhereCapped = ailleurs.length >= PLAFOND_RESULTATS;
-
   if (q || category) {
     compter("recherche", {
       query: q || null,
       categoryId: category?.id ?? null,
-      cityId: city?.id ?? null,
       resultCount: results.length,
     });
   }
 
-  const activeFilterCount = (city ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
+  const activeFilterCount = categorie !== "Tout" ? 1 : 0;
   const resting = !q && categorie === "Tout";
 
   const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}`;
 
-  const lien = (modifs: { q?: string; ville?: string; categorie?: string; tri?: string }) => {
+  const lien = (modifs: { q?: string; categorie?: string; tri?: string }) => {
     const params = new URLSearchParams({
       q: modifs.q ?? q,
       categorie: modifs.categorie ?? categorie,
       tri: modifs.tri ?? tri,
     });
-    const villeLien = modifs.ville ?? ville;
-    if (villeLien !== TOUTES) params.set("ville", villeLien);
     return `/recherche?${params.toString()}`;
   };
 
@@ -110,7 +92,6 @@ export default async function SearchPage({
       <TopBar
         title={
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
-            {city ? <input type="hidden" name="ville" value={city.name} /> : null}
             <input type="hidden" name="categorie" value={categorie} />
             <input type="hidden" name="tri" value={tri} />
             <button type="submit" aria-label="Lancer la recherche" className="shrink-0 text-ink-soft">
@@ -160,20 +141,6 @@ export default async function SearchPage({
 
             <ChipRow>
               <FilterChip
-                title="Ville"
-                label={ville}
-                selected={Boolean(city)}
-                icon={MapPin}
-                options={[
-                  { label: TOUTES, href: lien({ ville: TOUTES }), selected: !city },
-                  ...cities.map((c) => ({
-                    label: c.name,
-                    href: lien({ ville: c.name }),
-                    selected: c.name === ville,
-                  })),
-                ]}
-              />
-              <FilterChip
                 title="Catégorie"
                 label={categorie === "Tout" ? "Catégorie" : categorie}
                 selected={categorie !== "Tout"}
@@ -202,14 +169,7 @@ export default async function SearchPage({
               <EmptyState
                 icon={Search}
                 title={q ? `Aucun résultat pour « ${q} »` : "Aucun produit ici"}
-                description={
-                  elsewhereCount > 0
-                    ? /* « et plus » quand le compte touche le plafond de
-                         `search_products` : au-delà, le nombre exact n'est
-                         pas connu, et l'annoncer serait inventer. */
-                      `${elsewhereCount}${elsewhereCapped ? " produits ou plus correspondent" : ` produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""}`} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
-                    : "Essayez un mot plus court, ou une autre catégorie."
-                }
+                description="Essayez un mot plus court, ou une autre catégorie."
               >
                 <Button variant="secondary" href={clearFiltersHref}>
                   Effacer les filtres
