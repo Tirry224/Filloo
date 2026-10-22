@@ -9,7 +9,10 @@ import type { CityOption } from "@/lib/data/reference";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
 
-export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
+/** `telephoneCompte` : le numéro saisi à l'étape 1, repris ici pour que le
+ *  commerçant n'ait pas à le retaper. Il reste modifiable : un WhatsApp
+ *  peut être un autre numéro. */
+export function ShopSignupForm({ cities, telephoneCompte }: { cities: CityOption[]; telephoneCompte: string }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(createMerchantAction);
 
   return (
@@ -54,9 +57,9 @@ export function ShopSignupForm({ cities }: { cities: CityOption[] }) {
           <Field
             label="Numéro WhatsApp"
             htmlFor="whatsappPhone"
-            hint="Affiché sur vos produits, en plus de la messagerie. Laissez vide pour utiliser le numéro de votre compte."
+            hint="Repris de votre compte. Changez-le seulement si votre WhatsApp est un autre numéro."
           >
-            <PhoneInput id="whatsappPhone" name="whatsappPhone" placeholder="Numéro WhatsApp" />
+            <PhoneInput id="whatsappPhone" name="whatsappPhone" placeholder="Numéro WhatsApp" defaultValue={telephoneCompte} />
           </Field>
 
           <Field label="Que vendez-vous ?" htmlFor="description">

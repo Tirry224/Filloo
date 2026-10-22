@@ -23,7 +23,7 @@ export default async function ShopSignupPage() {
   return (
     <Screen>
       <TopBar title="Ma boutique" backHref="/inscription" />
-      <ShopSignupForm cities={cities} />
+      <ShopSignupForm cities={cities} telephoneCompte={merchantProfile.phone} />
     </Screen>
   );
 }
