@@ -1,9 +1,8 @@
 "use client";
 
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Input } from "@/components/ui/Field";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { updateProfileAction } from "@/lib/actions/account";
-import type { CityOption } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
@@ -13,18 +12,14 @@ export function ProfileForm({
   espace,
   fullName,
   phone,
-  cityId,
-  cities,
 }: {
   id: string;
   /** IMPOSÉ par la route qui monte cet écran, jamais lu dans l'URL (voir
-   *  `src/lib/espace.ts`). Il décide si la ville de résidence est
-   *  proposée, et dans quel espace l'enregistrement ramène. */
+   *  `src/lib/espace.ts`). Il décide dans quel espace l'enregistrement
+   *  ramène. */
   espace: Espace;
   fullName: string;
   phone: string;
-  cityId: number | null;
-  cities: CityOption[];
 }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(updateProfileAction);
 
@@ -43,18 +38,6 @@ export function ProfileForm({
       <Field label="Téléphone" htmlFor="phone">
         <PhoneInput id="phone" name="phone" autoComplete="tel" defaultValue={phone} />
       </Field>
-      {espace === "client" ? (
-        <Field label="Ville de résidence" htmlFor="cityId">
-          <Select id="cityId" name="cityId" defaultValue={cityId ?? ""}>
-            <option value="">Non renseignée</option>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      ) : null}
       {/* Le mot de passe actuel est exigé pour écrire : il se demande AU
           MOMENT d'enregistrer, dans le panneau de `ConfirmPasswordSave`,
           dont le champ porte `form="profile-form"`. */}

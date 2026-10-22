@@ -783,7 +783,16 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-322 commits, du plus récent au plus ancien.
+325 commits, du plus récent au plus ancien.
+
+### 2026-10-22
+
+- `7ea6317` Merge branch 'claude/zen-ptolemy-w14gzr' into dev
+- `cdf6ec4` Un produit vendu peut être remis en vente sans le supprimer
+
+### 2026-10-20
+
+- `25068af` Base : 0037 appliquée, 0039 inscrite dans l'historique, secret de l'Action manquant
 
 ### 2026-10-18
 

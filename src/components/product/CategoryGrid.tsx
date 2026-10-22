@@ -40,12 +40,12 @@ const classes = {
   label: "leading-tight",
 };
 
-export function CategoryGrid({ categories, ville }: { categories: CategoryOption[]; ville: string }) {
+export function CategoryGrid({ categories }: { categories: CategoryOption[] }) {
   return (
     <div className={classes.grid}>
       {categories.map((c) => {
         const Icon = iconFor(c.name);
-        const href = `/recherche?categorie=${encodeURIComponent(c.name)}&ville=${encodeURIComponent(ville)}`;
+        const href = `/recherche?categorie=${encodeURIComponent(c.name)}`;
         return (
           <Link key={c.id} href={href} className={classes.tile}>
             <Icon size={18} strokeWidth={1.7} aria-hidden className={classes.icon} />

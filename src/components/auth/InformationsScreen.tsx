@@ -6,16 +6,11 @@ import { ProfileForm } from "@/components/auth/ProfileForm";
 import { ConfirmPasswordSave } from "@/components/auth/ConfirmPasswordSave";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfiles, getSessionUser } from "@/lib/data/session";
-import { getCities } from "@/lib/data/reference";
 import type { Espace } from "@/lib/espace";
 
 export async function InformationsScreen({ espace }: { espace: Espace }) {
   const supabase = await createClient();
-  const [profiles, user, cities] = await Promise.all([
-    getMyProfiles(supabase),
-    getSessionUser(supabase),
-    getCities(supabase),
-  ]);
+  const [profiles, user] = await Promise.all([getMyProfiles(supabase), getSessionUser(supabase)]);
 
   const client = profiles.find((p) => p.role === "client");
   const commercant = profiles.find((p) => p.role === "merchant");
@@ -38,8 +33,6 @@ export async function InformationsScreen({ espace }: { espace: Espace }) {
             espace={espace}
             fullName={identite.fullName}
             phone={identite.phone}
-            cityId={client?.cityId ?? null}
-            cities={cities}
           />
 
           <Field

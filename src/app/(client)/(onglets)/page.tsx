@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { MapPin } from "lucide-react";
 import { Chip, ChipRow } from "@/components/ui/Chip";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -16,13 +15,12 @@ import { Button } from "@/components/ui/Button";
 import { Package } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { FALLBACK_CITY, getDefaultCityName } from "@/lib/data/reference";
 import { landingForSession } from "@/lib/data/session";
-import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
+import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
 
-/** L'accueil filtré (`?ville=…`) n'est qu'une variante de l'accueil. */
+/** L'accueil filtré (`?categorie=…`) n'est qu'une variante de l'accueil. */
 export async function generateMetadata({
   searchParams,
 }: {
@@ -38,11 +36,10 @@ export async function generateMetadata({
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ville?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
+  searchParams: Promise<{ categorie?: string | string[]; tri?: string | string[] }>;
 }) {
   // Même lecture prudente que `/recherche` : un paramètre peut être répété.
   const brut = await searchParams;
-  const villeParam = premier(brut.ville);
   const categorie = premier(brut.categorie) ?? "Tout";
   const tri = premier(brut.tri) ?? "recent";
   const supabase = await createClient();
@@ -50,38 +47,37 @@ export default async function HomePage({
   const landing = await landingForSession(supabase);
   if (landing !== "/") redirect(landing);
 
-  const [cities, categories] = await Promise.all([villesEnCache(), categoriesEnCache()]);
-  const ville = cities.some((c) => c.name === villeParam) ? villeParam! : await getDefaultCityName(supabase, cities);
-  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
+  /* Toute la Guinée, sans filtre de ville (décision du 2026-10-22) : un
+     client de Conakry voit aussi ce qui se vend à Koya. Seule la boutique
+     porte une ville, affichée sur chaque carte. Un ancien lien
+     `?ville=…` est simplement ignoré. */
+  const categories = await categoriesEnCache();
 
   const sort = tri === "populaire" ? "popular" : "recent";
-  const inCity = city ? await rechercheEnCache({ cityId: city.id, sort, limit: 50 }) : [];
-  const visible = categorie === "Tout" ? inCity : inCity.filter((p) => p.category === categorie);
+  const tous = await rechercheEnCache({ sort, limit: 50 });
+  const visible = categorie === "Tout" ? tous : tous.filter((p) => p.category === categorie);
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 
   const triHref = (valeur: string) =>
-    `/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
+    `/?categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
 
-  compter("visite", { cityId: city?.id ?? null });
+  compter("visite", {});
 
   return (
     <TabScreen largeur="grille">
-      <TopBar
-        title={<Wordmark size="lg" />}
-        right={<Chip icon={MapPin}>{ville}</Chip>}
-      />
+      <TopBar title={<Wordmark size="lg" />} />
 
       <ScreenBody>
         <Section className="gap-3 pb-1">
           <ChipRow>
-            <Link href={`/?ville=${encodeURIComponent(ville)}&categorie=Tout`}>
+            <Link href="/?categorie=Tout">
               <Chip selected={categorie === "Tout"}>Tout</Chip>
             </Link>
             {categories.map((c) => (
               <Link
                 key={c.id}
-                href={`/?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(c.name)}`}
+                href={`/?categorie=${encodeURIComponent(c.name)}`}
               >
                 <Chip selected={c.name === categorie}>{c.name}</Chip>
               </Link>
@@ -89,27 +85,22 @@ export default async function HomePage({
           </ChipRow>
         </Section>
 
-        {visible.length === 0 && categorie !== "Tout" && inCity.length > 0 ? (
+        {visible.length === 0 && categorie !== "Tout" && tous.length > 0 ? (
           <EmptyState
             icon={Package}
-            title={`Aucun produit « ${categorie} » à ${ville}`}
-            description="Essayez une autre catégorie, ou regardez tout ce qui est en vente dans cette ville."
+            title={`Aucun produit « ${categorie} » pour le moment`}
+            description="Essayez une autre catégorie, ou regardez tout ce qui est en vente."
           >
-            <Button href={`/?ville=${encodeURIComponent(ville)}`}>Voir toutes les catégories</Button>
+            <Button href="/">Voir toutes les catégories</Button>
           </EmptyState>
         ) : visible.length === 0 ? (
           <EmptyState
             icon={Package}
-            title={`Aucun produit à ${ville} pour le moment`}
-            description="Filloo démarre à Conakry. Changez de ville pour voir ce qui est en vente, ou inscrivez-vous comme vendeur pour être le premier ici."
+            title="Aucun produit pour le moment"
+            description="Inscrivez-vous comme vendeur pour être le premier à publier."
           >
-            {ville !== FALLBACK_CITY ? (
-              <Button href={`/?ville=${encodeURIComponent(FALLBACK_CITY)}`}>
-                Voir les produits à {FALLBACK_CITY}
-              </Button>
-            ) : null}
             <Button variant="secondary" href="/inscription">
-              Devenir vendeur à {ville}
+              Devenir vendeur
             </Button>
           </EmptyState>
         ) : (

@@ -11,13 +11,13 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { createClient } from "@/lib/supabase/server";
-import { FALLBACK_CITY, getDefaultCityName } from "@/lib/data/reference";
-import { countProductsElsewhere } from "@/lib/data/products";
 import { categoriesEnCache, rechercheEnCache, villesEnCache } from "@/lib/data/catalogue-public";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
+import { PLAFOND_RESULTATS } from "@/lib/data/products";
+
+const TOUTES = "Toutes les villes";
 
 /**
  * Une page par recherche (`?q=riz`, `?ville=…`) ferait des milliers de
@@ -49,28 +49,36 @@ export default async function SearchPage({
   const brut = await searchParams;
   const q = premier(brut.q) ?? "";
   const tri = premier(brut.tri) ?? "recent";
-  const supabase = await createClient();
 
   const [cities, categories] = await Promise.all([villesEnCache(), categoriesEnCache()]);
 
   const villeParam = premier(brut.ville);
   const categorieParam = premier(brut.categorie);
   const categorie = categories.some((c) => c.name === categorieParam) ? categorieParam! : "Tout";
-  const defaultVille = await getDefaultCityName(supabase, cities);
-  const ville = cities.some((c) => c.name === villeParam) ? villeParam! : defaultVille;
-  const city = cities.find((c) => c.name === ville) ?? cities.find((c) => c.name === FALLBACK_CITY);
+  /* La ville n'est plus qu'un filtre FACULTATIF (décision du 2026-10-22) :
+     sans choix, la recherche couvre toute la Guinée. Le profil client ne
+     porte plus de ville par défaut. */
+  const city = cities.find((c) => c.name === villeParam);
+  const ville = city?.name ?? TOUTES;
   const category = categorie !== "Tout" ? categories.find((c) => c.name === categorie) : undefined;
   const sort = tri === "populaire" ? "popular" : "recent";
 
-  const results = city
-    ? await rechercheEnCache({ query: q, cityId: city.id, categoryId: category?.id ?? null, sort, limit: 50 })
-    : [];
+  const results = await rechercheEnCache({
+    query: q,
+    cityId: city?.id,
+    categoryId: category?.id ?? null,
+    sort,
+    limit: 50,
+  });
 
+  /* Un écran vide avec une ville choisie : la même recherche dans toute la
+     Guinée dit si c'est le filtre qui bloque. Sans ville, rien à recompter. */
   const ailleurs =
-    results.length === 0
-      ? await countProductsElsewhere(supabase, { query: q, categoryId: category?.id ?? null })
-      : { nombre: 0, atteintLePlafond: false };
-  const elsewhereCount = ailleurs.nombre;
+    results.length === 0 && city
+      ? await rechercheEnCache({ query: q, categoryId: category?.id ?? null, sort, limit: PLAFOND_RESULTATS })
+      : [];
+  const elsewhereCount = ailleurs.length;
+  const elsewhereCapped = ailleurs.length >= PLAFOND_RESULTATS;
 
   if (q || category) {
     compter("recherche", {
@@ -81,19 +89,19 @@ export default async function SearchPage({
     });
   }
 
-  const activeFilterCount = (ville !== defaultVille ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
+  const activeFilterCount = (city ? 1 : 0) + (categorie !== "Tout" ? 1 : 0);
   const resting = !q && categorie === "Tout";
 
-  const searchInConakryHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(FALLBACK_CITY)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`;
-  const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}&ville=${encodeURIComponent(defaultVille)}`;
+  const clearFiltersHref = `/recherche?q=${encodeURIComponent(q)}`;
 
-  const lien = (modifs: { ville?: string; categorie?: string; tri?: string }) => {
+  const lien = (modifs: { q?: string; ville?: string; categorie?: string; tri?: string }) => {
     const params = new URLSearchParams({
-      q,
-      ville: modifs.ville ?? ville,
+      q: modifs.q ?? q,
       categorie: modifs.categorie ?? categorie,
       tri: modifs.tri ?? tri,
     });
+    const villeLien = modifs.ville ?? ville;
+    if (villeLien !== TOUTES) params.set("ville", villeLien);
     return `/recherche?${params.toString()}`;
   };
 
@@ -102,7 +110,7 @@ export default async function SearchPage({
       <TopBar
         title={
           <form action="/recherche" method="get" className="flex h-tap flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5">
-            <input type="hidden" name="ville" value={ville} />
+            {city ? <input type="hidden" name="ville" value={city.name} /> : null}
             <input type="hidden" name="categorie" value={categorie} />
             <input type="hidden" name="tri" value={tri} />
             <button type="submit" aria-label="Lancer la recherche" className="shrink-0 text-ink-soft">
@@ -120,7 +128,7 @@ export default async function SearchPage({
             />
             {q ? (
               <Link
-                href={`/recherche?ville=${encodeURIComponent(ville)}&categorie=${encodeURIComponent(categorie)}&tri=${encodeURIComponent(tri)}`}
+                href={lien({ q: "" })}
                 aria-label="Effacer la recherche"
                 className="shrink-0 text-ink-soft"
               >
@@ -136,7 +144,7 @@ export default async function SearchPage({
           <Section className="gap-4">
             <RecentSearches q="" show />
             <SectionLabel>Parcourir</SectionLabel>
-            <CategoryGrid categories={categories} ville={ville} />
+            <CategoryGrid categories={categories} />
           </Section>
         ) : (
           <Section className="gap-3">
@@ -154,13 +162,16 @@ export default async function SearchPage({
               <FilterChip
                 title="Ville"
                 label={ville}
-                selected={ville !== defaultVille}
+                selected={Boolean(city)}
                 icon={MapPin}
-                options={cities.map((c) => ({
-                  label: c.name,
-                  href: lien({ ville: c.name }),
-                  selected: c.name === ville,
-                }))}
+                options={[
+                  { label: TOUTES, href: lien({ ville: TOUTES }), selected: !city },
+                  ...cities.map((c) => ({
+                    label: c.name,
+                    href: lien({ ville: c.name }),
+                    selected: c.name === ville,
+                  })),
+                ]}
               />
               <FilterChip
                 title="Catégorie"
@@ -196,13 +207,10 @@ export default async function SearchPage({
                     ? /* « et plus » quand le compte touche le plafond de
                          `search_products` : au-delà, le nombre exact n'est
                          pas connu, et l'annoncer serait inventer. */
-                      `${elsewhereCount}${ailleurs.atteintLePlafond ? " produits ou plus correspondent" : ` produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""}`} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
-                    : "Essayez un mot plus court, ou changez de ville."
+                      `${elsewhereCount}${elsewhereCapped ? " produits ou plus correspondent" : ` produit${elsewhereCount > 1 ? "s" : ""} correspond${elsewhereCount > 1 ? "ent" : ""}`} ailleurs en Guinée. C'est le filtre de ville qui bloque, pas votre recherche.`
+                    : "Essayez un mot plus court, ou une autre catégorie."
                 }
               >
-                {elsewhereCount === 0 && ville !== FALLBACK_CITY ? (
-                  <Button href={searchInConakryHref}>Chercher à {FALLBACK_CITY}</Button>
-                ) : null}
                 <Button variant="secondary" href={clearFiltersHref}>
                   Effacer les filtres
                 </Button>

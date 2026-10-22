@@ -6,28 +6,21 @@ import { getSessionUser, getMyProfiles } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
-import { lireIdEntier } from "@/lib/saisie";
 import { ecrireMesInformations, lireInformations } from "@/lib/ecritures-protegees";
 import { anonymiserEtBannir } from "@/lib/suppression-compte";
 
 /**
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
  * ces colonnes par rôle (`unique (auth_user_id, role)`), donc n'écrire que
- * sur le profil client corrigerait le numéro à moitié. La ville, elle, NE
- * se propage pas : `profiles.city_id` est la résidence d'un client (0010),
- * celle d'un commerçant est `merchants.city_id`.
+ * sur le profil client corrigerait le numéro à moitié.
+ *
+ * La ville de résidence du client n'est plus demandée (2026-10-22) : le
+ * catalogue n'est plus filtré par ville. `profiles.city_id` reste en base,
+ * l'app déjà installée l'écrit encore ; le site n'y touche plus.
  *
  * Colonnes modifiables : liste blanche de 0002 partie 4, complétée par 0010. */
 export async function updateProfileAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const informations = lireInformations((champ) => formData.get(champ));
-  /* Présente et vide, ou absente : les confondre efface une donnée. Le
-     montage commerçant ne rend pas le menu des villes, donc `cityId`
-     n'arrive pas dans son formulaire. `FormData.get` rend `null` pour un
-     champ absent et `""` pour « Non renseignée ». */
-  const cityBrut = formData.get("cityId");
-  const villeFournie = cityBrut !== null;
-  const cityIdRaw = String(cityBrut ?? "").trim();
-  const cityId = cityIdRaw ? lireIdEntier(cityIdRaw) : null;
   if ("error" in informations) return informations;
 
   // Mot de passe exigé pour ÉCRIRE : ce numéro est celui par lequel un
@@ -36,11 +29,9 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (!currentPassword) {
     return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
   }
-  if (cityIdRaw && !cityId) return { error: "Ville invalide." };
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
-  const clientProfile = profiles.find((p) => p.role === "client");
   if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
 
   /* Vérifié AVANT la première écriture, pendant que rien n'a bougé.
@@ -63,19 +54,6 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (error) return { error: messagePourErreur(error, "compte") };
   if (!ecrits) {
     return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
-  }
-
-  /* Seconde écriture, et seulement si le formulaire a porté la ville ET
-     qu'un profil client existe : la joindre à celle du dessus la
-     recopierait sur le profil commerçant, contredisant sa boutique. */
-  if (villeFournie && clientProfile) {
-    const { error: villeError } = await supabase
-      .from("profiles")
-      .update({ city_id: cityId })
-      .eq("id", clientProfile.id);
-    if (villeError) {
-      return { error: "Nom et téléphone enregistrés, mais pas la ville. Réessayez." };
-    }
   }
 
   // L'espace vient du navigateur : il ne choisit qu'entre deux chemins
