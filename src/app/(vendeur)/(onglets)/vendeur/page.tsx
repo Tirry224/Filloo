@@ -9,6 +9,7 @@ import { Notice } from "@/components/ui/Notice";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
+import { PushBell } from "@/components/push/PushBell";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { countUnreadMessages, getMyThreadsAsMerchant } from "@/lib/data/messages";
@@ -36,7 +37,7 @@ export default async function MerchantHomePage({
 
   return (
     <TabScreen largeur="rangees">
-      <TopBar title={<Wordmark />} />
+      <TopBar title={<Wordmark />} right={<PushBell connecte />} />
 
       <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}

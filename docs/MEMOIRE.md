@@ -783,10 +783,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-326 commits, du plus récent au plus ancien.
+327 commits, du plus récent au plus ancien.
 
 ### 2026-10-22
 
+- `24c9c8b` La recherche n'a plus de filtre de ville
 - `abf3867` Le catalogue n'est plus filtré par la ville du client
 - `7ea6317` Merge branch 'claude/zen-ptolemy-w14gzr' into dev
 - `cdf6ec4` Un produit vendu peut être remis en vente sans le supprimer

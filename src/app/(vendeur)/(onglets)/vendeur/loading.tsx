@@ -5,7 +5,7 @@ import { TopBar } from "@/components/ui/TopBar";
 
 /**
  * Sans ce fichier, Next affiche le `loading.tsx` de la racine — le
- * squelette du fil CLIENT, ville et onglets compris — devant `/vendeur`.
+ * squelette du fil CLIENT, cloche et onglets compris — devant `/vendeur`.
  */
 export default function LoadingSeller() {
   return (

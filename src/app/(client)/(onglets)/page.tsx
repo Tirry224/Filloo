@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/Button";
 import { Package } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { landingForSession } from "@/lib/data/session";
+import { getMyProfiles, landingForSession } from "@/lib/data/session";
+import { PushBell } from "@/components/push/PushBell";
 import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
@@ -45,6 +46,8 @@ export default async function HomePage({
   const supabase = await createClient();
 
   const landing = await landingForSession(supabase);
+  // Lecture en cache (`getMyProfiles`) : déjà faite par `landingForSession`.
+  const connecte = (await getMyProfiles(supabase)).some((p) => !p.isDeleted);
   if (landing !== "/") redirect(landing);
 
   /* Toute la Guinée, sans filtre de ville (décision du 2026-10-22) : un
@@ -66,7 +69,8 @@ export default async function HomePage({
 
   return (
     <TabScreen largeur="grille">
-      <TopBar title={<Wordmark size="lg" />} />
+      {/* La cloche prend la place de l'ancienne puce de ville. */}
+      <TopBar title={<Wordmark size="lg" />} right={<PushBell connecte={connecte} />} />
 
       <ScreenBody>
         <Section className="gap-3 pb-1">
