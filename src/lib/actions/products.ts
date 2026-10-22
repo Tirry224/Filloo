@@ -341,7 +341,11 @@ const STATUS_DONE = {
  * 1. une exception du trigger `products_check_publishable` ;
  * 2. un succès à ZÉRO ligne, quand le RLS l'écarte — d'où `.select("id")`.
  */
-async function setProductStatus(formData: FormData, status: "active" | "sold" | "hidden") {
+async function setProductStatus(
+  formData: FormData,
+  status: "active" | "sold" | "hidden",
+  doneMessage: string = STATUS_DONE[status],
+) {
   const productId = String(formData.get("productId") ?? "");
   if (!estUuid(productId)) backToSeller("Formulaire invalide, rechargez la page.");
 
@@ -356,7 +360,7 @@ async function setProductStatus(formData: FormData, status: "active" | "sold" | 
   if (!data || data.length === 0) {
     backToSeller("Action impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
   }
-  backToSeller(undefined, STATUS_DONE[status]);
+  backToSeller(undefined, doneMessage);
 }
 
 export async function markSoldAction(formData: FormData) {
@@ -371,6 +375,13 @@ export async function hideProductAction(formData: FormData) {
  * boutique n'est plus approuvée. */
 export async function republishProductAction(formData: FormData) {
   await setProductStatus(formData, "active");
+}
+
+/** Vendu → de nouveau en vente : même écriture que la republication, seul
+ * le message change. Le trigger laisse passer `sold → active` sans
+ * revérifier, le produit n'ayant jamais quitté le catalogue public. */
+export async function relistProductAction(formData: FormData) {
+  await setProductStatus(formData, "active", "Produit remis en vente.");
 }
 
 /** Suppression définitive — les conversations qui citent ce produit sont
