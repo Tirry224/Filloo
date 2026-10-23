@@ -6,6 +6,7 @@ import Link from "next/link";
 import { sendMessageAction } from "@/lib/actions/messages";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { useAnnoncerEnvoi } from "@/components/chat/EnvoiEnCours";
+import { demanderPermissionPush } from "@/components/push/usePushAbonnement";
 
 /** La borne de `messages.body` (0001) : au-delà, la base refuse. */
 const LONGUEUR_MAX_MESSAGE = 2000;
@@ -71,9 +72,12 @@ export function Composer({
           required
           disabled={pending || disabled}
         />
+        {/* Envoyer : on attend une réponse, c'est le moment de proposer
+            les notifications (`demanderPermissionPush`). */}
         <button
           type="submit"
           aria-label="Envoyer"
+          onClick={() => demanderPermissionPush("message")}
           disabled={pending || disabled}
           className="flex size-tap shrink-0 items-center justify-center rounded-full bg-accent text-on-accent disabled:opacity-50"
         >

@@ -11,6 +11,7 @@ import { createProductAction, updateProductAction } from "@/lib/actions/products
 import type { CategoryOption } from "@/lib/data/reference";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { demanderPermissionPush } from "@/components/push/usePushAbonnement";
 
 type ProductFormProps = {
   merchantId: string;
@@ -115,7 +116,15 @@ export function ProductForm(props: ProductFormProps) {
           </Button>
         ) : (
           <>
-            <Button type="submit" name="intent" value="publish" disabled={pending}>
+            {/* Publier : un client va écrire, c'est le moment de proposer
+                les notifications (`demanderPermissionPush`). */}
+            <Button
+              type="submit"
+              name="intent"
+              value="publish"
+              disabled={pending}
+              onClick={() => demanderPermissionPush("publication")}
+            >
               {pending ? "Publication…" : "Publier le produit"}
             </Button>
             <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>

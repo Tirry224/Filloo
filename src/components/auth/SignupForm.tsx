@@ -12,7 +12,6 @@ import { cn } from "@/lib/cn";
 import { signUpAction, createLinkedProfileAction } from "@/lib/actions/auth";
 import Link from "next/link";
 import { useFormulaire } from "@/lib/use-formulaire";
-import { demanderPermissionPush } from "@/components/push/usePushAbonnement";
 import { NOM_MAX } from "@/lib/saisie";
 
 function RoleCard({
@@ -85,17 +84,7 @@ export function SignupForm({
   }
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        /* Le tap sur « Créer mon compte » est le geste qui autorise la
-           demande : acceptée ici, la cloche s'abonne seule à l'arrivée
-           (`usePushAbonnement`, `auto`). */
-        demanderPermissionPush();
-        onSubmit(e);
-      }}
-      className="flex flex-col gap-4"
-    >
+    <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       <input type="hidden" name="role" value={role} />
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
@@ -192,11 +181,6 @@ export function SignupForm({
       <Button type="submit" disabled={pending}>
         {pending ? "Création…" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
       </Button>
-
-      <p className="text-center text-sm leading-normal text-ink-soft">
-        Votre navigateur vous demandera d&apos;autoriser les notifications : acceptez pour être
-        prévenu dès qu&apos;on vous répond.
-      </p>
 
       {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce
           bouton. */}

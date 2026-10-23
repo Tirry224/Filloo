@@ -4,14 +4,16 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { deletePushSubscriptionAction, savePushSubscriptionAction } from "@/lib/actions/push";
 
 /**
- * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE : un tap sur la cloche, ou
- * sur « Créer mon compte » (`demanderPermissionPush`). Une demande au
- * chargement reçoit un « non » réflexe, et Chrome ne repose jamais la
+ * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE, et au moment où elle a
+ * un sens (décision du 2026-10-23) : un tap sur la cloche, la
+ * publication d'un produit, l'envoi d'un message
+ * (`demanderPermissionPush`). Une demande au chargement ou à
+ * l'inscription reçoit un « non » réflexe, et Chrome ne repose jamais la
  * question.
  *
  * L'ABONNEMENT, lui, peut partir seul (`auto`) : une fois la permission
- * accordée, s'abonner n'affiche rien. C'est ce qui rend les notifications
- * actives dès l'arrivée du nouveau compte (décision du 2026-10-23).
+ * accordée, s'abonner n'affiche rien. La cloche rattrape ainsi un
+ * appareil autorisé mais pas encore abonné.
  */
 
 /** Posée quand la personne coupe la cloche : sans elle, `auto`
@@ -37,14 +39,65 @@ function ecrireCoupe(coupe: boolean) {
 }
 
 /**
- * À appeler DANS le gestionnaire d'un tap : c'est le geste qui autorise
- * la demande. Jamais attendue — l'inscription ne doit pas patienter
- * derrière la fenêtre du navigateur.
+ * Abonne cet appareil et l'enregistre, permission déjà accordée. Rend le
+ * message d'échec, ou `null`. Hors du hook : l'abonnement doit pouvoir
+ * finir quand l'écran qui l'a lancé est déjà quitté (`demanderPermissionPush`).
  */
-export function demanderPermissionPush() {
+async function abonnerCetAppareil(): Promise<string | null> {
+  const cle = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!cle) return "Notifications non configurées sur ce site.";
+
+  const enregistrement = await enregistrementPret();
+  if (!enregistrement) return SERVICE_WORKER_ABSENT;
+
+  // `userVisibleOnly: true` est obligatoire sur Chrome, qui refuse les
+  // push silencieux. Contrainte partagée : rien ici ne se cache.
+  let abonnement: PushSubscription;
+  try {
+    const ancien = await enregistrement.pushManager.getSubscription();
+    if (ancien && !memeCle(ancien, cle)) await ancien.unsubscribe();
+    abonnement = await enregistrement.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: cle,
+    });
+  } catch {
+    // `subscribe` rejette pour des raisons indistinguables ici (clé
+    // refusée, service injoignable, quota) : mieux vaut le dire.
+    return "Abonnement impossible sur cet appareil. Réessayez plus tard.";
+  }
+
+  const resultat = await savePushSubscriptionAction(
+    abonnement.toJSON() as { endpoint: string; keys?: { p256dh?: string; auth?: string } },
+    navigator.userAgent,
+  );
+  return resultat.error ?? null;
+}
+
+/** Les moments où la question a un sens pour la personne : publier un
+ *  produit (un client va écrire), envoyer un message (on va répondre). */
+export type OccasionPush = "publication" | "message";
+
+const cleOccasion = (occasion: OccasionPush) => `filloo-notifications-demandees-${occasion}`;
+
+/**
+ * À appeler DANS le gestionnaire d'un tap : c'est le geste qui autorise
+ * la demande. UNE FOIS par occasion et par appareil : un navigateur qui
+ * voit la question fermée plusieurs fois la bloque pour de bon. Jamais
+ * attendue — l'envoi du formulaire ne patiente pas derrière la fenêtre ;
+ * acceptée, l'abonnement finit en silence, même après la redirection.
+ */
+export function demanderPermissionPush(occasion: OccasionPush) {
   if (!("Notification" in window) || Notification.permission !== "default") return;
-  ecrireCoupe(false);
-  void Notification.requestPermission().catch(() => {});
+  try {
+    if (localStorage.getItem(cleOccasion(occasion))) return;
+    localStorage.setItem(cleOccasion(occasion), "1");
+  } catch {
+    // Sans stockage, on demande quand même : la fenêtre n'apparaîtra
+    // de toute façon plus une fois la question tranchée.
+  }
+  void Notification.requestPermission()
+    .then((accord) => (accord === "granted" ? abonnerCetAppareil() : null))
+    .catch(() => {});
 }
 
 /**
@@ -163,42 +216,10 @@ export function usePushAbonnement({ auto = false }: { auto?: boolean } = {}): Pu
     }
     ecrireCoupe(false);
 
-    const cle = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!cle) {
-      signaler("Notifications non configurées sur ce site.");
-      return;
-    }
-
-    const enregistrement = await enregistrementPret();
-    if (!enregistrement) {
-      signaler(SERVICE_WORKER_ABSENT);
-      return;
-    }
-
-    // `userVisibleOnly: true` est obligatoire sur Chrome, qui refuse les
-    // push silencieux. Contrainte partagée : rien ici ne se cache.
-    let abonnement: PushSubscription;
-    try {
-      const ancien = await enregistrement.pushManager.getSubscription();
-      if (ancien && !memeCle(ancien, cle)) await ancien.unsubscribe();
-      abonnement = await enregistrement.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: cle,
-      });
-    } catch {
-      // `subscribe` rejette pour des raisons indistinguables ici (clé
-      // refusée, service injoignable, quota) : mieux vaut le dire.
-      signaler("Abonnement impossible sur cet appareil. Réessayez plus tard.");
-      return;
-    }
-
     demarrer(async () => {
-      const resultat = await savePushSubscriptionAction(
-        abonnement.toJSON() as { endpoint: string; keys?: { p256dh?: string; auth?: string } },
-        navigator.userAgent,
-      );
-      if (resultat.error) {
-        signaler(resultat.error);
+      const echec = await abonnerCetAppareil();
+      if (echec) {
+        signaler(echec);
         return;
       }
       setAbonne(true);
