@@ -2148,5 +2148,115 @@ select pg_temp.check('shop-photos inchange',
   (select file_size_limit = 1048576 and allowed_mime_types = array['image/webp', 'image/jpeg']
      from storage.buckets where id = 'shop-photos'));
 
+-- =====================================================================
+-- Un compte supprimé peut être recréé sur la même connexion (0041)
+-- =====================================================================
+-- G : un compte client puis une boutique sur la même connexion. Il
+-- supprime son compte client (le serveur l'anonymise, en service_role),
+-- puis en recrée un. H : même chose, mais son compte client avait été
+-- suspendu avant d'être supprimé.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0410000-0000-0000-0000-000000000001', 'g0041@test.gn', '{"role":"client","full_name":"Client G","phone":"620004101"}'),
+  ('a0410000-0000-0000-0000-000000000002', 'h0041@test.gn', '{"role":"client","full_name":"Client H","phone":"620004102"}');
+update public.profiles set id = 'a0410000-0000-0000-0000-0000000000c1'
+ where auth_user_id = 'a0410000-0000-0000-0000-000000000001';
+update public.profiles set id = 'a0410000-0000-0000-0000-0000000000c2'
+ where auth_user_id = 'a0410000-0000-0000-0000-000000000002';
+
+set role authenticated;
+select pg_temp.login('a0410000-0000-0000-0000-000000000001');
+insert into public.profiles (id, auth_user_id, role, full_name, phone)
+values ('a0410000-0000-0000-0000-0000000000a1', 'a0410000-0000-0000-0000-000000000001',
+        'merchant', 'Client G', '620004101');
+reset role;
+
+-- La suppression du seul compte client, comme `supprimerProfil`.
+update public.profiles
+   set full_name = 'Compte supprimé', phone = '000000000', is_deleted = true, deleted_at = now()
+ where id = 'a0410000-0000-0000-0000-0000000000c1';
+
+set role authenticated;
+select pg_temp.login('a0410000-0000-0000-0000-000000000001');
+select pg_temp.check('0041 : un compte supprime n''est plus « mon profil client »',
+  public.my_profile_id('client') is null);
+
+do $$
+begin
+  insert into public.profiles (id, auth_user_id, role, full_name, phone)
+  values ('a0410000-0000-0000-0000-0000000000c3', 'a0410000-0000-0000-0000-000000000001',
+          'client', 'Client G', '620004101');
+  raise notice 'OK    0041 : un compte client supprime se recree sur la meme connexion';
+exception when unique_violation then
+  raise exception 'ECHEC 0041 : le compte client supprime bloque la recreation';
+end $$;
+
+select pg_temp.check('0041 : my_profile_id(''client'') renvoie le NOUVEAU profil',
+  public.my_profile_id('client') = 'a0410000-0000-0000-0000-0000000000c3');
+
+do $$
+begin
+  insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0410000-0000-0000-0000-000000000001', 'client', 'Client G bis', '620004101');
+  raise exception 'ECHEC 0041 : deux profils client ACTIFS sur la meme connexion';
+exception when unique_violation then
+  raise notice 'OK    0041 : deux profils client actifs restent impossibles';
+end $$;
+
+-- Une ligne insérée déjà « supprimée » échapperait à l'index partiel :
+-- sans ce refus, une session empilerait des profils sans limite.
+do $$
+begin
+  insert into public.profiles (auth_user_id, role, full_name, phone, is_deleted)
+  values ('a0410000-0000-0000-0000-000000000001', 'client', 'Fantome', '620004101', true);
+  raise exception 'ECHEC 0041 : un profil insere deja supprime echappe a l''unicite';
+exception when insufficient_privilege then
+  raise notice 'OK    0041 : impossible d''inserer un profil deja supprime';
+end $$;
+
+select pg_temp.check('0041 : le profil commercant n''est pas touche',
+  public.my_profile_id('merchant') = 'a0410000-0000-0000-0000-0000000000a1'
+  and (select not is_deleted and full_name = 'Client G'
+         from public.profiles where id = 'a0410000-0000-0000-0000-0000000000a1'));
+reset role;
+
+select pg_temp.check('0041 : l''ancien profil supprime reste, anonymise',
+  (select count(*) from public.profiles
+    where auth_user_id = 'a0410000-0000-0000-0000-000000000001'
+      and role = 'client' and is_deleted and full_name = 'Compte supprimé') = 1);
+select pg_temp.check('0041 : la contrainte (connexion, role) est un index partiel sur les profils actifs',
+  not exists (select 1 from pg_constraint where conname = 'profiles_auth_user_id_role_key')
+  and exists (select 1 from pg_indexes where schemaname = 'public'
+                 and indexname = 'profiles_un_profil_actif_par_role'
+                 and indexdef like '%UNIQUE%WHERE (is_deleted = false)%'));
+
+-- H : suspendu, puis supprimé. La suppression n'efface pas la sanction.
+update public.profiles set is_suspended = true, suspended_at = now()
+ where id = 'a0410000-0000-0000-0000-0000000000c2';
+set role authenticated;
+select pg_temp.login('a0410000-0000-0000-0000-000000000002');
+insert into public.profiles (auth_user_id, role, full_name, phone)
+values ('a0410000-0000-0000-0000-000000000002', 'merchant', 'Client H', '620004102');
+select pg_temp.check('0041 : un compte suspendu garde le droit de creer l''AUTRE role',
+  public.my_profile_id('merchant') is not null);
+reset role;
+update public.profiles set is_deleted = true, deleted_at = now()
+ where id = 'a0410000-0000-0000-0000-0000000000c2';
+set role authenticated;
+select pg_temp.login('a0410000-0000-0000-0000-000000000002');
+do $$
+begin
+  insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0410000-0000-0000-0000-000000000002', 'client', 'Client H', '620004102');
+  raise exception 'ECHEC 0041 : supprimer un compte suspendu puis le recreer leve la suspension';
+exception when insufficient_privilege then
+  raise notice 'OK    0041 : un compte suspendu puis supprime ne se recree pas';
+end $$;
+reset role;
+
+select pg_temp.check('0041 : my_role_is_suspended fermee a anon, ouverte a authenticated',
+  not has_function_privilege('anon', 'public.my_role_is_suspended(public.user_role)', 'execute')
+  and has_function_privilege('authenticated', 'public.my_role_is_suspended(public.user_role)', 'execute'));
+
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
