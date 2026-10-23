@@ -33,7 +33,7 @@ export function LoginForm({ next }: { next?: string }) {
         {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
 
         <Button type="submit" disabled={pending}>
-          {pending ? "Connexion…" : "Se connecter"}
+          {pending ? "Connexion en cours" : "Se connecter"}
         </Button>
         <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
           Créer un compte

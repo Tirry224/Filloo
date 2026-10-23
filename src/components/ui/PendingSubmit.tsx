@@ -13,7 +13,7 @@ export function PendingSubmit({ className, children }: { className?: string; chi
       className={cn(className, "disabled:cursor-wait disabled:opacity-50")}
     >
       {children}
-      {pending ? <span className="ml-auto self-center text-xs text-ink-soft">En cours…</span> : null}
+      {pending ? <span className="ml-auto self-center text-xs text-ink-soft">En cours</span> : null}
     </button>
   );
 }

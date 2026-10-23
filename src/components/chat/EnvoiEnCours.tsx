@@ -8,7 +8,7 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
  *
  * Sans lui, rien ne bougeait entre l'appui sur « Envoyer » et le retour de
  * l'action : le champ se vidait et le fil restait figé plusieurs secondes
- * (constaté le 2026-10-15). La bulle apparaît tout de suite, en « Envoi… »,
+ * (constaté le 2026-10-15). La bulle apparaît tout de suite, en « Envoi en cours »,
  * puis la vraie bulle du serveur la remplace au même endroit.
  *
  * Un seul texte à la fois : `useFormulaire` n'accepte qu'un envoi à la fois.
@@ -39,7 +39,7 @@ export function MessageEnCours() {
   if (!texte) return null;
   return (
     <div className="flex flex-col opacity-70" aria-live="polite">
-      <MessageBubble message={{ id: "envoi-en-cours", mine: true, product: null, body: texte, sentAt: "Envoi…" }} />
+      <MessageBubble message={{ id: "envoi-en-cours", mine: true, product: null, body: texte, sentAt: "Envoi en cours" }} />
     </div>
   );
 }

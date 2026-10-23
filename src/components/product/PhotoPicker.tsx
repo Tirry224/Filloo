@@ -112,7 +112,7 @@ export function PhotoPicker({
             />
             {slot.uploading ? (
               <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink/40 text-2xs font-medium text-paper">
-                Envoi…
+                Envoi en cours
               </div>
             ) : null}
             {slot.error ? (

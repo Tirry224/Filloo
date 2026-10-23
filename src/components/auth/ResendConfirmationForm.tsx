@@ -28,7 +28,7 @@ export function ResendConfirmationForm({ email }: { email?: string }) {
       )}
 
       <Button type="submit" variant="secondary" disabled={pending}>
-        {pending ? "Envoi…" : "Renvoyer l'email de confirmation"}
+        {pending ? "Envoi en cours" : "Renvoyer l'email de confirmation"}
       </Button>
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}

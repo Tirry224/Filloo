@@ -101,7 +101,7 @@ export function ProductForm(props: ProductFormProps) {
               maxLength={2000}
               rows={4}
               defaultValue={initial?.description}
-              placeholder="Décrivez le produit : état, quantité, retrait…"
+              placeholder="Décrivez le produit : état, quantité, lieu de retrait"
             />
           </Field>
 
@@ -112,7 +112,7 @@ export function ProductForm(props: ProductFormProps) {
       <ScreenFooter className="flex flex-col gap-2.5">
         {!isDraft ? (
           <Button type="submit" disabled={pending}>
-            {pending ? "Enregistrement…" : "Enregistrer"}
+            {pending ? "Enregistrement en cours" : "Enregistrer"}
           </Button>
         ) : (
           <>
@@ -125,7 +125,7 @@ export function ProductForm(props: ProductFormProps) {
               disabled={pending}
               onClick={() => demanderPermissionPush("publication")}
             >
-              {pending ? "Publication…" : "Publier le produit"}
+              {pending ? "Publication en cours" : "Publier le produit"}
             </Button>
             <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
               {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}

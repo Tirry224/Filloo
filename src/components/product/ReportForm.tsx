@@ -30,10 +30,10 @@ export function ReportForm({ productId, reasons }: { productId: string; reasons:
           </label>
         ))}
       </div>
-      <Textarea name="details" maxLength={PRECISIONS_MAX} rows={3} placeholder="Précisez si besoin (facultatif)…" aria-label="Précisions" />
+      <Textarea name="details" maxLength={PRECISIONS_MAX} rows={3} placeholder="Précisez si besoin (facultatif)" aria-label="Précisions" />
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
       <Button type="submit" disabled={pending}>
-        {pending ? "Envoi…" : "Envoyer le signalement"}
+        {pending ? "Envoi en cours" : "Envoyer le signalement"}
       </Button>
     </form>
   );

@@ -55,7 +55,7 @@ export function ChangePasswordForm() {
           id="newPasswordConfirmation"
           name="newPasswordConfirmation"
           autoComplete="new-password"
-          placeholder="Le même mot de passe"
+          placeholder="Confirmer le mot de passe"
         />
       </Field>
 
@@ -67,7 +67,7 @@ export function ChangePasswordForm() {
       ) : null}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Enregistrement…" : "OK"}
+        {pending ? "Enregistrement en cours" : "OK"}
       </Button>
     </form>
   );

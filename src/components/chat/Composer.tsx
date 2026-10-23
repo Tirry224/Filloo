@@ -38,7 +38,7 @@ export function Composer({
     },
   });
 
-  /* La bulle « Envoi… » s'efface quand l'action rend la main : en cas de
+  /* La bulle « Envoi en cours » s'efface quand l'action rend la main : en cas de
      succès, la page rendue à nouveau porte déjà la vraie bulle ; en cas
      d'erreur, le texte revient dans le champ. */
   useEffect(() => {
@@ -67,7 +67,7 @@ export function Composer({
           name="body"
           maxLength={LONGUEUR_MAX_MESSAGE}
           className="h-tap flex-1 rounded-full border border-line bg-surface px-4 text-base disabled:opacity-50"
-          placeholder={disabled ? "Choisissez un produit pour démarrer" : "Écrire un message…"}
+          placeholder={disabled ? "Choisissez un produit pour démarrer" : "Écrire un message"}
           aria-label="Votre message"
           required
           disabled={pending || disabled}

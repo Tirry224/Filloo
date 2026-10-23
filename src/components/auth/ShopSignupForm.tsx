@@ -63,7 +63,7 @@ export function ShopSignupForm({ cities, telephoneCompte }: { cities: CityOption
           </Field>
 
           <Field label="Que vendez-vous ?" htmlFor="description">
-            <Textarea id="description" name="description" maxLength={1000} rows={3} placeholder="Ce que vend votre boutique…" />
+            <Textarea id="description" name="description" maxLength={1000} rows={3} placeholder="Ce que vend votre boutique" />
           </Field>
 
           {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
@@ -71,7 +71,7 @@ export function ShopSignupForm({ cities, telephoneCompte }: { cities: CityOption
       </ScreenBody>
 
       <ScreenFooter>
-        <Button type="submit" disabled={pending}>{pending ? "Création…" : "Ouvrir ma boutique"}</Button>
+        <Button type="submit" disabled={pending}>{pending ? "Création en cours" : "Ouvrir ma boutique"}</Button>
       </ScreenFooter>
     </form>
   );

@@ -17,7 +17,7 @@ export function ForgotPasswordForm({ next }: { next?: string }) {
       </Field>
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Envoi…" : "Envoyer le lien"}
+        {pending ? "Envoi en cours" : "Envoyer le lien"}
       </Button>
 
       {/* Le message ne dit jamais si le compte existe : sinon n'importe

@@ -399,10 +399,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-334 commits, du plus récent au plus ancien.
+335 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `5a25296` Mot de passe affichable, et textes de formulaire corrigés
 - `a23389c` Supprimer un compte lié ne supprime plus l'autre
 - `4dbfb1c` Documentation réécrite : à jour, et deux fois plus courte
 - `f615fc9` Cloche : retire une classe d'ombre qui n'existe pas

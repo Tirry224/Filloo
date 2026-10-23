@@ -58,7 +58,7 @@ export async function ReportThreadScreen({
           name="details"
           maxLength={PRECISIONS_MAX}
           rows={3}
-          placeholder="Précisez si besoin (facultatif)…"
+          placeholder="Précisez si besoin (facultatif)"
           aria-label="Précisions"
         />
         <Button type="submit">Envoyer le signalement</Button>

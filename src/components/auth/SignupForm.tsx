@@ -182,7 +182,7 @@ export function SignupForm({
               id="passwordConfirmation"
               name="passwordConfirmation"
               autoComplete="new-password"
-              placeholder="Le même mot de passe"
+              placeholder="Confirmer le mot de passe"
             />
           </Field>
         </>
@@ -191,7 +191,7 @@ export function SignupForm({
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Création…" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
+        {pending ? "Création en cours" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
       </Button>
 
       {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce

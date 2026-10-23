@@ -82,7 +82,7 @@ export function ShopPhotoPicker({
         )}
         {uploading ? (
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-ink/40 text-2xs font-medium text-paper">
-            Envoi…
+            Envoi en cours
           </div>
         ) : null}
       </div>

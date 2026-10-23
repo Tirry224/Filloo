@@ -22,14 +22,14 @@ export function UpdatePasswordForm({ next }: { next?: string }) {
           id="passwordConfirmation"
           name="passwordConfirmation"
           autoComplete="new-password"
-          placeholder="Le même mot de passe"
+          placeholder="Confirmer le mot de passe"
         />
       </Field>
 
       {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Enregistrement…" : "Enregistrer le mot de passe"}
+        {pending ? "Enregistrement en cours" : "Enregistrer le mot de passe"}
       </Button>
     </form>
   );
