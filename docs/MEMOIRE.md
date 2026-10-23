@@ -416,10 +416,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-339 commits, du plus récent au plus ancien.
+340 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `c1171f1` Recréer un compte supprimé : côté site (attend la migration 0041)
 - `a142edb` Mot de passe : 8 caractères, comme Supabase désormais
 - `5f78dc8` Messages d'erreur courts, et un chiffre exigé dans le mot de passe
 - `7ed2202` Mot de passe : les messages d'échec disent enfin la vraie cause
