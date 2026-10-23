@@ -17,8 +17,8 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 183 vérifications (compte du 2026-10-14, migrations 0038 à 0040
-comprises) affichent `OK`. La première qui échoue interrompt tout
+Les 194 vérifications (compte du 2026-10-23, migration 0041
+comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les
@@ -26,8 +26,9 @@ migrations en en omettant une, et regarde la suite s'arrêter : sans `0019`,
 elle tombe sur « une boutique creee approuvee a sa case cochee » ; sans
 `0020`, sur « pending + draft → sold refusé (LA FAILLE) » ; sans `0021`, sur
 « cocher la case remplit la file de notifications » ; sans `0022`, sur
-« client suspendu : le fil est ferme a l'ecriture ». Ces quatre-là ont été
-vérifiés en omettant réellement la migration, pas supposés.
+« client suspendu : le fil est ferme a l'ecriture » ; sans `0041`, sur
+« un compte supprime n'est plus « mon profil client » » puis « le compte
+client supprime bloque la recreation ». Ces cinq-là ont été vérifiés en omettant réellement la migration, pas supposés.
 
 ## Ce que ces tests protègent
 

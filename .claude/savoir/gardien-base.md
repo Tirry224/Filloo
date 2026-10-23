@@ -32,6 +32,15 @@ source, constaté ou supposé.
 - **`postgres` peut créer des politiques sur `realtime.messages`,
   `storage.*`, `auth.*`** sans en être propriétaire
   (`supautils.policy_grants`, constaté 2026-10-14).
+- **`profiles` : unicité (connexion, rôle)** = contrainte
+  `profiles_auth_user_id_role_key` en production (constaté 2026-10-23,
+  `pg_constraint` ; seul dépendant : son index). `0041` (écrite, NON
+  appliquée au 2026-10-23) la remplace par l'index partiel
+  `profiles_un_profil_actif_par_role … where is_deleted = false`.
+- **`anon` et `authenticated` ont `INSERT` sur toute la table
+  `profiles`** (constaté 2026-10-23, `role_table_grants`) : seule la
+  policy d'insertion borne ce qu'une session y écrit, colonnes
+  `is_deleted`/`is_suspended` comprises.
 - **Vestiges** : `merchants.status` figé à `'approved'` (`0033`) mais lu
   par le RLS ; `profiles.city_id` plus lu par le site depuis le
   2026-10-22, encore écrit par l'app. Ne retirer ni l'un ni l'autre sans
@@ -72,11 +81,20 @@ source, constaté ou supposé.
 - **Réécrire une policy : `alter policy`.** Une policy `for all` est
   aussi une policy de lecture ; la découper n'est sûr que si sa clause
   `using` est incluse dans la policy SELECT restante.
+- **Une unicité qui ignore les lignes supprimées laisse fuir deux
+  choses** (2026-10-23, `0041`) : une ligne insérée DÉJÀ supprimée
+  (aucune borne), et une sanction (`is_suspended`) effacée par
+  « supprimer puis recréer ». Chacune se ferme dans la policy
+  d'insertion ; et toute fonction « le profil de tel rôle »
+  (`my_profile_id`) doit filtrer `is_deleted = false`.
+- **Une policy ne lit pas sa propre table** (récursion de RLS) : passer
+  par une fonction `security definer` bornée à `auth.uid()`
+  (`my_role_is_suspended`, `0041`).
 - **Limites de bucket non testables en local** (c'est le service Storage
   qui refuse) : tester le réglage dans `storage.buckets`.
 - **Tests locaux** : un dossier de données NEUF à chaque passe, pas de
   `rm -rf` dans un `su -c` (recette dans `.claude/savoir/testeur.md`).
-  183 contrôles OK le 2026-10-14.
+  194 contrôles OK le 2026-10-23 (avec `0041`), 183 sans.
 - Les pièges SQL généraux sont dans `docs/MEMOIRE.md`, « Pièges
   rencontrés — Sécurité et SQL » : les relire, pas les recopier.
 
@@ -88,9 +106,14 @@ source, constaté ou supposé.
   par lisibilité.
 - Au premier seuil de 50 % d'une limite gratuite, passage en Supabase
   Pro (2026-10-23).
+- Un seul des deux comptes liés se supprime, et un compte supprimé peut
+  être recréé sur la même connexion (2026-10-23, `0041`).
 
 ## Questions ouvertes
 
+- **`0041` garde la suspension après suppression** (un client suspendu
+  qui supprime son compte ne le recrée pas) : choix du gardien, à faire
+  confirmer par le porteur du projet.
 - Fermer `EXECUTE` à `anon` sur les fonctions que ni le site ni l'app
   n'appellent ? Inventaire à faire.
 - La policy « reports: je signale » laisse se signaler soi-même :

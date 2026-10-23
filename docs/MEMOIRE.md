@@ -416,10 +416,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-341 commits, du plus récent au plus ancien.
+342 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `73a4bfd` 0041 (brouillon) : tests de sécurité en cours d'écriture — NON APPLIQUÉE
 - `40c4c8c` 0041 (brouillon) : recréer un profil supprimé — EN COURS, NON APPLIQUÉE
 - `c1171f1` Recréer un compte supprimé : côté site (attend la migration 0041)
 - `a142edb` Mot de passe : 8 caractères, comme Supabase désormais
