@@ -48,7 +48,7 @@ export default async function SuiviPage({ searchParams }: { searchParams: Promis
     [c.boutiques.en_attente, "boutique(s) en attente de validation"],
     [c.messagerie.sans_reponse, "conversation(s) où le vendeur n'a jamais répondu (plus de 24 h)"],
     [c.messagerie.non_lus_24h, "message(s) non lu(s) depuis plus de 24 h"],
-    [connexions.nonConfirmees, "inscription(s) jamais confirmée(s) par e-mail"],
+    [connexions.nonConfirmees, "inscription(s) jamais confirmée(s) par email"],
     [c.boutiques.sans_produit, "boutique(s) ouverte(s) sans aucun produit publié"],
     [c.notifications.en_echec, "notification(s) en échec d'envoi"],
   ];
@@ -146,7 +146,7 @@ export default async function SuiviPage({ searchParams }: { searchParams: Promis
             <Ligne libelle="Comptes au total" valeur={connexions.total} />
             <Ligne libelle="Profils clients" valeur={c.profils.clients} />
             <Ligne libelle="Profils vendeurs" valeur={c.profils.commercants} />
-            <Ligne libelle="E-mails jamais confirmés" valeur={connexions.nonConfirmees} />
+            <Ligne libelle="Emails jamais confirmés" valeur={connexions.nonConfirmees} />
             <Ligne libelle="Profils suspendus" valeur={c.profils.suspendus} />
             <Ligne libelle="Comptes supprimés" valeur={c.profils.supprimes} />
           </Card>

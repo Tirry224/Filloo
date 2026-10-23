@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { changeMyPasswordAction } from "@/lib/actions/auth";
 import { useFormulaire } from "@/lib/use-formulaire";
 
@@ -28,20 +29,18 @@ export function ChangePasswordForm() {
   return (
     <form ref={formulaire} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       <Field label="Mot de passe actuel" htmlFor="currentPassword">
-        <Input
+        <PasswordInput
           id="currentPassword"
           name="currentPassword"
-          type="password"
           autoComplete="current-password"
           placeholder="Mot de passe actuel"
         />
       </Field>
 
       <Field label="Nouveau mot de passe" htmlFor="newPassword">
-        <Input
+        <PasswordInput
           id="newPassword"
           name="newPassword"
-          type="password"
           autoComplete="new-password"
           placeholder="8 caractères minimum"
         />
@@ -50,12 +49,11 @@ export function ChangePasswordForm() {
       <Field
         label="Confirmer le nouveau mot de passe"
         htmlFor="newPasswordConfirmation"
-        hint="Retapez-le : c'est le seul champ qu'on ne peut pas relire."
+        hint="Retapez-le, pour éviter une faute de frappe."
       >
-        <Input
+        <PasswordInput
           id="newPasswordConfirmation"
           name="newPasswordConfirmation"
-          type="password"
           autoComplete="new-password"
           placeholder="Le même mot de passe"
         />

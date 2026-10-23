@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Notice } from "@/components/ui/Notice";
 import { Sheet } from "@/components/ui/Sheet";
 import { deleteClientAccountAction, deleteMerchantAccountAction } from "@/lib/actions/account";
@@ -42,10 +43,9 @@ export async function DeleteAccountScreen({ espace, erreur }: { espace: Espace; 
       <Notice>{erreur}</Notice>
       <form action={action} className="space-y-4">
         <Field label="Mot de passe" htmlFor="currentPassword" hint="Il confirme que c'est bien vous.">
-          <Input
+          <PasswordInput
             id="currentPassword"
             name="currentPassword"
-            type="password"
             autoComplete="current-password"
             placeholder="Votre mot de passe"
             required

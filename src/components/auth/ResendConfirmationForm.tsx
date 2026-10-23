@@ -22,7 +22,7 @@ export function ResendConfirmationForm({ email }: { email?: string }) {
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder="Adresse e-mail"
+            placeholder="Adresse email"
           />
         </Field>
       )}

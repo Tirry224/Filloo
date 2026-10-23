@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 /**
  * L'attribut `form` relie le champ au formulaire sans en être le parent.
@@ -29,11 +30,10 @@ export function ConfirmPasswordSave({
             htmlFor={`${formId}-currentPassword`}
             hint={hint ?? "Il confirme que c'est bien vous. Il n'est pas modifié ici."}
           >
-            <Input
+            <PasswordInput
               id={`${formId}-currentPassword`}
               name="currentPassword"
               form={formId}
-              type="password"
               autoComplete="current-password"
               placeholder="Votre mot de passe"
             />

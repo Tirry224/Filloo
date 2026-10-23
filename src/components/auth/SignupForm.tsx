@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/cn";
@@ -139,7 +140,19 @@ export function SignupForm({
             <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Prénom et nom" defaultValue={defaultFullName} />
           </Field>
 
-          <Field label="Téléphone" htmlFor="phone" hint="Utilisé uniquement pour vous contacter.">
+          {/* Le numéro d'un commerçant devient le WhatsApp PUBLIC de sa boutique
+              (prérempli à l'étape 2) : lui dire « seulement pour vous
+              contacter » serait faux. Celui d'un client n'est montré à
+              personne. */}
+          <Field
+            label="Téléphone"
+            htmlFor="phone"
+            hint={
+              role === "merchant"
+                ? "Il sera proposé comme numéro WhatsApp de votre boutique, visible des clients. Vous pourrez le changer."
+                : "Il n'est montré à personne."
+            }
+          >
             <PhoneInput
               id="phone"
               name="phone"
@@ -154,21 +167,20 @@ export function SignupForm({
       {mode === "new" ? (
         <>
           <Field label="Email" htmlFor="email">
-            <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse e-mail" />
+            <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse email" />
           </Field>
 
           <Field label="Mot de passe" htmlFor="password">
-            <Input id="password" name="password" type="password" autoComplete="new-password" placeholder="8 caractères minimum" />
+            <PasswordInput id="password" name="password" autoComplete="new-password" placeholder="8 caractères minimum" />
           </Field>
 
           {/* La comparaison qui COMPTE est celle de `signUpAction`, côté
               serveur : les formulaires de Filloo doivent fonctionner sans
               JavaScript, et une requête forgée ne passe par aucun champ. */}
-          <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le : c'est le seul champ qu'on ne peut pas relire.">
-            <Input
+          <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le, pour éviter une faute de frappe.">
+            <PasswordInput
               id="passwordConfirmation"
               name="passwordConfirmation"
-              type="password"
               autoComplete="new-password"
               placeholder="Le même mot de passe"
             />
