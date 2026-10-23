@@ -34,8 +34,9 @@ source, constaté ou supposé.
   (`supautils.policy_grants`, constaté 2026-10-14).
 - **`profiles` : unicité (connexion, rôle)** = contrainte
   `profiles_auth_user_id_role_key` en production (constaté 2026-10-23,
-  `pg_constraint` ; seul dépendant : son index). `0041` (écrite, NON
-  appliquée au 2026-10-23) la remplace par l'index partiel
+  `pg_constraint` ; seul dépendant : son index). `0041` (APPLIQUÉE le
+  2026-10-23, vérifié : contrainte absente, index présent, policy et
+  `my_profile_id` à jour) la remplace par l'index partiel
   `profiles_un_profil_actif_par_role … where is_deleted = false`.
 - **`anon` et `authenticated` ont `INSERT` sur toute la table
   `profiles`** (constaté 2026-10-23, `role_table_grants`) : seule la

@@ -26,7 +26,7 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 - **En ligne sur `https://filloo.net`** (`main`, Vercel, fonctions à
   Paris), préversion sur `dev` avec **la même base**.
-- **Base** : 40 migrations, toutes appliquées en production (constaté
+- **Base** : 41 migrations, toutes appliquées en production (constaté
   le 2026-10-23). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
@@ -101,9 +101,10 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Messages d'erreur réécrits courts le 2026-10-23**, sauf ceux des
   triggers de la base (`raise exception`, code P0001), affichés tels quels
   : les changer demande une migration.
-- **Recréer un compte supprimé** : impossible avec la même adresse. Le
-  permettre demande une migration (unicité seulement sur les profils non
-  supprimés), sur accord.
+- **L'app après `0041`** : une lecture de `profiles` par rôle sans filtre
+  `is_deleted = false` (ou en `.single()`) recevra deux lignes après une
+  recréation. À vérifier dans `filloo-mobile` avant de mettre en
+  production la recréation côté site.
 - **On peut se signaler soi-même** : la policy « reports: je signale »
   vérifie le signalant, pas la cible. Migration à écrire, sur accord.
 - **Préchargement des liens** : `docs/PERFORMANCE.md` annonçait
@@ -171,7 +172,7 @@ propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
 
 ### Base
 
-- **40 migrations**, `supabase/migrations/`. Tests de sécurité :
+- **41 migrations**, `supabase/migrations/`. Tests de sécurité :
   `supabase/tests/security_test.sql`, rejouables en local (183 contrôles
   au vert le 2026-10-14 ; le nombre se relit dans la sortie, pas ici).
 - **Buckets** `product-images` et `shop-photos` : 1 Mo, WebP ou JPEG.
@@ -204,8 +205,11 @@ propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
   espace (`/compte/…/supprimer`, `/vendeur/informations/supprimer`),
   `supprimerProfil` dans `src/lib/suppression-compte.ts`. La connexion
   n'est fermée, et l'email libéré, qu'avec le dernier compte. Le site
-  ignore les profils supprimés (`getMyProfiles`) ; un compte supprimé ne
-  se recrée pas (`profiles` unique par connexion et par rôle).
+  ignore les profils supprimés (`getMyProfiles`). **Un compte supprimé se
+  recrée** (`0041`, APPLIQUÉE le 2026-10-23 par le connecteur, accord du
+  porteur du projet) : unicité seulement sur les profils actifs,
+  `my_profile_id` ignore les supprimés, et un compte SUSPENDU puis supprimé
+  ne se recrée pas (`my_role_is_suspended`).
 - **Cache** : catalogue public lu une minute par le client anonyme ;
   une page visitée reste 30 s dans le navigateur ; photos servies par
   `next/image`.
@@ -416,10 +420,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-342 commits, du plus récent au plus ancien.
+343 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `8111c24` 0041 : savoir de gardien-base et README des tests (194 contrôles)
 - `73a4bfd` 0041 (brouillon) : tests de sécurité en cours d'écriture — NON APPLIQUÉE
 - `40c4c8c` 0041 (brouillon) : recréer un profil supprimé — EN COURS, NON APPLIQUÉE
 - `c1171f1` Recréer un compte supprimé : côté site (attend la migration 0041)

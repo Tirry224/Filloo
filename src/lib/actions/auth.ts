@@ -115,12 +115,12 @@ export async function createLinkedProfileAction(
       phone: existant.phone,
     });
   if (error) {
-    if (error.code === "23505") {
-      return {
-        error: (await getMyDeletedRoles(supabase)).includes(role)
-          ? "Ce compte ne peut pas encore être recréé. Réessayez plus tard."
-          : "Vous avez déjà ce type de compte.",
-      };
+    if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
+    /* Depuis `0041`, un compte supprimé se recrée — sauf s'il était
+       SUSPENDU : supprimer puis recréer effacerait la sanction. La policy
+       le refuse (RLS, 42501). */
+    if (error.code === "42501" && (await getMyDeletedRoles(supabase)).includes(role)) {
+      return { error: "Ce compte était suspendu : il ne peut pas être recréé. Écrivez-nous depuis la page Contact." };
     }
     return { error: messagePourErreur(error, "compte") };
   }
