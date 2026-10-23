@@ -44,7 +44,7 @@ const classes = {
   bouton: "-m-2 flex size-tap items-center justify-center rounded-full text-ink-soft",
   actif: "text-accent",
   bulle:
-    "absolute top-full right-0 z-20 mt-2 w-64 rounded-lg border border-line bg-surface p-3 text-sm shadow-lg",
+    "absolute top-full right-0 z-20 mt-2 w-64 rounded-lg border border-line bg-surface p-3 text-sm",
 };
 
 function ClocheConnectee() {

@@ -783,10 +783,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-330 commits, du plus récent au plus ancien.
+331 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `d332da1` Notifications proposées au bon moment, plus à l'inscription
 - `e35c15f` Notifications : actives dès l'inscription, la cloche seul réglage
 
 ### 2026-10-22
