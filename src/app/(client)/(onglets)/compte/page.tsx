@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
-import { Ban, BellRing,FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, Trash2, User } from "lucide-react";
+import { Ban, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
-import { PushInvite } from "@/components/push/PushInvite";
-import { PushToggle } from "@/components/push/PushToggle";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
@@ -53,20 +51,11 @@ export default async function AccountPage() {
             </MenuList>
           )}
 
-          {merchant ? null : (
-            <PushInvite raison="Un vendeur peut répondre à votre question quelques heures plus tard. C'est le seul canal qui vous prévient sans ouvrir l'application." />
-          )}
-
           <MenuList>
             {merchant ? null : (
-              <>
-                <MenuPanel icon={BellRing} label="Notifications" title="Notifications sur cet appareil">
-                  <PushToggle />
-                </MenuPanel>
-                <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
-                  <ChangePasswordForm />
-                </MenuPanel>
-              </>
+              <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
+                <ChangePasswordForm />
+              </MenuPanel>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />

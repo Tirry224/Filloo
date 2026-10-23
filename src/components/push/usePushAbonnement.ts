@@ -1,17 +1,51 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import {
-  deletePushSubscriptionAction,
-  savePushSubscriptionAction,
-  sendTestPushAction,
-} from "@/lib/actions/push";
+import { deletePushSubscriptionAction, savePushSubscriptionAction } from "@/lib/actions/push";
 
 /**
- * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE : rien ne s'exécute au
- * chargement, `activer()` ne part que d'un tap. Une demande sans prévenir
- * reçoit un « non » réflexe, et Chrome ne repose jamais la question.
+ * LA PERMISSION NE SE DEMANDE QUE SUR UN GESTE : un tap sur la cloche, ou
+ * sur « Créer mon compte » (`demanderPermissionPush`). Une demande au
+ * chargement reçoit un « non » réflexe, et Chrome ne repose jamais la
+ * question.
+ *
+ * L'ABONNEMENT, lui, peut partir seul (`auto`) : une fois la permission
+ * accordée, s'abonner n'affiche rien. C'est ce qui rend les notifications
+ * actives dès l'arrivée du nouveau compte (décision du 2026-10-23).
  */
+
+/** Posée quand la personne coupe la cloche : sans elle, `auto`
+ *  réabonnerait l'appareil au chargement suivant, la permission du
+ *  navigateur restant accordée. */
+const CLE_COUPE = "filloo-notifications-coupees";
+
+function lireCoupe(): boolean {
+  try {
+    return localStorage.getItem(CLE_COUPE) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function ecrireCoupe(coupe: boolean) {
+  try {
+    if (coupe) localStorage.setItem(CLE_COUPE, "1");
+    else localStorage.removeItem(CLE_COUPE);
+  } catch {
+    // Navigation privée : le choix ne survivra pas, rien de plus.
+  }
+}
+
+/**
+ * À appeler DANS le gestionnaire d'un tap : c'est le geste qui autorise
+ * la demande. Jamais attendue — l'inscription ne doit pas patienter
+ * derrière la fenêtre du navigateur.
+ */
+export function demanderPermissionPush() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+  ecrireCoupe(false);
+  void Notification.requestPermission().catch(() => {});
+}
 
 /**
  * Au-delà, on considère que le service worker ne s'enregistrera pas.
@@ -55,15 +89,16 @@ export type PushAbonnement = {
   enCours: boolean;
   erreur: string | null;
   message: string | null;
-  activer: () => Promise<void>;
+  activer: (options?: { silencieux?: boolean }) => Promise<void>;
   desactiver: () => Promise<void>;
-  tester: () => void;
 };
 
-export function usePushAbonnement(): PushAbonnement {
+export function usePushAbonnement({ auto = false }: { auto?: boolean } = {}): PushAbonnement {
   const [supporte, setSupporte] = useState<boolean | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [abonne, setAbonne] = useState(false);
+  /** Fin de la vérification initiale : avant, `abonne` vaut `false` par défaut, pas par constat. */
+  const [verifie, setVerifie] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
@@ -103,32 +138,40 @@ export function usePushAbonnement(): PushAbonnement {
       })
       .catch(() => {
         if (vivant) setAbonne(false);
+      })
+      .finally(() => {
+        if (vivant) setVerifie(true);
       });
     return () => {
       vivant = false;
     };
   }, []);
 
-  const activer = useCallback(async () => {
+  const activer = useCallback(async ({ silencieux = false }: { silencieux?: boolean } = {}) => {
     setErreur(null);
     setMessage(null);
+    /* L'abonnement automatique ne parle pas : une erreur affichée au
+       chargement, sans que personne n'ait rien demandé, inquiéterait. */
+    const signaler = silencieux ? () => {} : setErreur;
 
+    // Déjà accordée, `requestPermission` répond aussitôt, sans fenêtre.
     const accord = await Notification.requestPermission();
     setPermission(accord);
     if (accord !== "granted") {
-      setErreur("Notifications refusées. Vous pouvez les réactiver dans les réglages du site.");
+      signaler("Notifications refusées. Vous pouvez les réactiver dans les réglages du site.");
       return;
     }
+    ecrireCoupe(false);
 
     const cle = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!cle) {
-      setErreur("Notifications non configurées sur ce site.");
+      signaler("Notifications non configurées sur ce site.");
       return;
     }
 
     const enregistrement = await enregistrementPret();
     if (!enregistrement) {
-      setErreur(SERVICE_WORKER_ABSENT);
+      signaler(SERVICE_WORKER_ABSENT);
       return;
     }
 
@@ -145,7 +188,7 @@ export function usePushAbonnement(): PushAbonnement {
     } catch {
       // `subscribe` rejette pour des raisons indistinguables ici (clé
       // refusée, service injoignable, quota) : mieux vaut le dire.
-      setErreur("Abonnement impossible sur cet appareil. Réessayez plus tard.");
+      signaler("Abonnement impossible sur cet appareil. Réessayez plus tard.");
       return;
     }
 
@@ -155,11 +198,11 @@ export function usePushAbonnement(): PushAbonnement {
         navigator.userAgent,
       );
       if (resultat.error) {
-        setErreur(resultat.error);
+        signaler(resultat.error);
         return;
       }
       setAbonne(true);
-      setMessage("Notifications activées sur cet appareil.");
+      if (!silencieux) setMessage("Notifications activées sur cet appareil.");
     });
   }, []);
 
@@ -179,6 +222,7 @@ export function usePushAbonnement(): PushAbonnement {
       return;
     }
 
+    ecrireCoupe(true);
     const endpoint = abonnement.endpoint;
     /* D'abord côté navigateur : l'ordre inverse laisserait, sur une
        coupure, un téléphone qui reçoit encore sans aucune ligne en base,
@@ -193,15 +237,13 @@ export function usePushAbonnement(): PushAbonnement {
     });
   }, []);
 
-  const tester = useCallback(() => {
-    setErreur(null);
-    setMessage(null);
-    demarrer(async () => {
-      const resultat = await sendTestPushAction();
-      if (resultat.error) setErreur(resultat.error);
-      else setMessage("Notification envoyée. Elle doit arriver dans quelques secondes.");
-    });
-  }, []);
+  /* Abonnement automatique : seulement si la permission est DÉJÀ
+     accordée (à l'inscription, ou sur un autre écran), que l'appareil
+     n'est pas abonné, et que la personne n'a pas coupé la cloche. */
+  useEffect(() => {
+    if (!auto || !verifie || abonne || permission !== "granted" || lireCoupe()) return;
+    void activer({ silencieux: true });
+  }, [auto, verifie, abonne, permission, activer]);
 
-  return { supporte, permission, abonne, enCours, erreur, message, activer, desactiver, tester };
+  return { supporte, permission, abonne, enCours, erreur, message, activer, desactiver };
 }

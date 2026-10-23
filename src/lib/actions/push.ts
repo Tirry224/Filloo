@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
-import { envoyerPush } from "@/lib/push";
 import type { ActionState } from "@/lib/actions/auth";
 import { messagePourErreur } from "@/lib/erreurs";
 
@@ -65,28 +64,6 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
   // laisserait croire que c'est ce filtre qui protège.
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   if (error) return { error: messagePourErreur(error, "push") };
-
-  return { sent: true };
-}
-
-export async function sendTestPushAction(): Promise<ActionState> {
-  const supabase = await createClient();
-  const user = await getSessionUser(supabase);
-  if (!user) return { error: "Vous devez être connecté." };
-
-  const { count, error } = await supabase
-    .from("push_subscriptions")
-    .select("id", { count: "exact", head: true });
-  if (error) return { error: messagePourErreur(error, "push") };
-  if (!count) return { error: "Aucun appareil abonné. Activez d'abord les notifications." };
-
-  const { raison } = await envoyerPush(user.id, {
-    titre: "Filloo",
-    corps: "Test réussi : les notifications fonctionnent sur cet appareil.",
-    url: "/compte",
-    tag: "filloo-test",
-  });
-  if (raison) return { error: raison };
 
   return { sent: true };
 }

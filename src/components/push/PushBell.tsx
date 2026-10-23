@@ -9,8 +9,9 @@ import { cn } from "@/lib/cn";
 /**
  * Cloche de l'en-tête : un tap active les notifications sur cet appareil,
  * un second les coupe — sans passer par « Mon compte » (décision du
- * 2026-10-22). Même mécanique que `PushToggle`, donc mêmes trois cas :
- * non supporté, bloqué par le navigateur, abonné ou non. Les deux
+ * 2026-10-22) ; c'est le seul réglage des notifications du site depuis
+ * le 2026-10-23. Trois cas : non supporté, bloqué par le navigateur,
+ * abonné ou non. Les deux
  * premiers ne peuvent rien basculer : le tap ouvre alors une bulle qui
  * dit quoi faire, sinon la cloche paraîtrait cassée.
  */
@@ -47,7 +48,7 @@ const classes = {
 };
 
 function ClocheConnectee() {
-  const { supporte, permission, abonne, enCours, erreur, message, activer, desactiver } = usePushAbonnement();
+  const { supporte, permission, abonne, enCours, erreur, message, activer, desactiver } = usePushAbonnement({ auto: true });
   const [bulle, setBulle] = useState<string | null>(null);
 
   // Le résultat d'un geste (activé, désactivé, échec) passe par la bulle.

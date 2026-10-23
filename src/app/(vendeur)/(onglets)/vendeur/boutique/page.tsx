@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Ban, BellRing, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
+import { Ban, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
-import { PushInvite } from "@/components/push/PushInvite";
-import { PushToggle } from "@/components/push/PushToggle";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
@@ -113,14 +111,9 @@ export default async function EditShopPage() {
             </MenuList>
           )}
 
-          <PushInvite raison="Un client qui n'obtient pas de réponse écrit à la boutique suivante. C'est le seul canal qui vous prévient sur un écran verrouillé, application fermée." />
-
           <MenuList>
             <MenuItem icon={User} label="Mes informations" href="/vendeur/informations" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/vendeur/bloques" />
-            <MenuPanel icon={BellRing} label="Notifications" title="Notifications sur cet appareil">
-              <PushToggle />
-            </MenuPanel>
             <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
               <ChangePasswordForm />
             </MenuPanel>
