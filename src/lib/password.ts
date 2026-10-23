@@ -5,11 +5,11 @@
  */
 
 /** Longueur minimale, à un seul endroit, et ÉGALE au réglage de Supabase
- *  (Authentication → Sign In / Providers → Email). Constaté à 10 dans les
- *  journaux d'authentification le 2026-10-22, alors qu'elle valait 8 ici :
- *  un mot de passe de 8 ou 9 caractères passait le site puis se faisait
- *  refuser par Supabase. Changer l'un, c'est changer l'autre. */
-export const LONGUEUR_MIN_MOT_DE_PASSE = 10;
+ *  (Authentication → Sign In / Providers → Email). Le 2026-10-22, Supabase
+ *  exigeait 10 et le site 8 : un mot de passe de 8 ou 9 caractères passait
+ *  le site puis se faisait refuser. Le porteur du projet a remis Supabase
+ *  à 8 le 2026-10-23. Changer l'un, c'est changer l'autre. */
+export const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
 export function erreurNouveauMotDePasse(motDePasse: string, confirmation: string): string | null {
   if (motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {

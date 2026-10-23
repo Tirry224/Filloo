@@ -19,7 +19,7 @@ test("la longueur exigée se lit dans la réponse de Supabase, pas dans le site"
 });
 
 test("le site exige la même longueur que Supabase", () => {
-  assert.equal(LONGUEUR_MIN_MOT_DE_PASSE, 10);
+  assert.equal(LONGUEUR_MIN_MOT_DE_PASSE, 8);
 });
 
 test("« attendez N secondes » dit combien de temps attendre", () => {
@@ -49,5 +49,5 @@ test("le mot de passe exige un chiffre, pas seulement des lettres", async () => 
   const { erreurNouveauMotDePasse } = await import("../src/lib/password.ts");
   assert.equal(erreurNouveauMotDePasse("seulementdeslettres", "seulementdeslettres"), "Ajoutez au moins un chiffre au mot de passe.");
   assert.equal(erreurNouveauMotDePasse("lettres2026", "lettres2026"), null);
-  assert.match(erreurNouveauMotDePasse("court1", "court1") ?? "", /10 caractères minimum, dont un chiffre/);
+  assert.match(erreurNouveauMotDePasse("court1", "court1") ?? "", /8 caractères minimum, dont un chiffre/);
 });
