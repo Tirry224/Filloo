@@ -1,79 +1,70 @@
-# Inventaire des écrans — 36
+# Inventaire des écrans
 
-Liste exhaustive. Elle sert de plan de construction : chaque ligne est un
-écran à coder, et chaque case cochée est du travail réellement terminé.
+Un écran par ligne, avec sa route. Relevé sur le code le 2026-10-23 :
+quand un écran naît ou disparaît, cette liste change dans le même commit.
 
-## Client — 11
+**Le numéro (#) est celui de l'inventaire d'origine, cité dans les
+commentaires du code** (« écran 18 ») : il ne se réattribue jamais. Les
+écrans 2 et 6 (ville sans produit, élargir la zone) ont disparu avec le
+filtre de ville, 20 et 21 (boutique en attente, refusée) avec la
+validation des boutiques (`0033`).
 
-| # | Écran | Note |
-|---|-------|------|
-| 1 | Fil d'accueil | À la une, populaires, récents |
-| 2 | Fil — ville sans produit | État vide, propose de changer de ville |
-| 3 | Fil — chargement | Squelette, jamais d'écran blanc |
-| 4 | Fil — hors ligne | Le BANDEAU existe depuis le 2026-09-19 (`src/components/ui/OfflineBanner.tsx`, posé dans le layout racine) ; les produits déjà consultés attendent le service worker (`docs/PERFORMANCE.md`, règle R6). L'écran n'est donc qu'à moitié fait, et son texte ne promet rien de plus que ce qui existe. |
-| 5 | Recherche & filtres | Ville, catégorie, tri. Depuis le 2026-09-19 les trois se choisissent dans un panneau qui s'ouvre PAR-DESSUS les résultats (`src/components/ui/FilterChip.tsx`, en `<details>`, sans JavaScript) : les deux pages `/recherche/filtres` et `/recherche/ville` ont été supprimées, parce qu'une page entière cachait ce qu'on essayait de filtrer. |
-| 6 | Recherche — aucun résultat | Propose d'élargir la zone |
-| 7 | Fiche produit | Photos, prix, négociable, boutique |
-| 8 | Fiche produit — vendu | Grisée, prix barré, produits similaires |
-| 9 | Galerie photo | Plein écran, 3 photos maximum |
-| 10 | Signaler un produit | Motifs + commentaire |
-| 11 | Boutique publique | Infos + catalogue du commerçant |
+Les routes `(client)` et `(vendeur)` sont des groupes de `src/app/`
+(`docs/ARCHITECTURE.md`).
 
-## Compte & accès — 8
+## Client et visiteur
 
-| # | Écran | Note |
-|---|-------|------|
-| 12 | Inscription — choix du rôle | Choix non définitif : bascule possible plus tard vers l'autre compte lié |
-| 13 | Inscription — ma boutique | Étape 2, commerçants uniquement |
-| 14 | Connexion | |
-| 15 | Mot de passe oublié | |
-| 16 | Compte requis | Déclenché par « Contacter le vendeur » |
-| 17 | Mon compte | Carte de bascule vers le compte commerçant lié, jamais un item de menu comme les autres. Porte aussi les panneaux « Notifications » et « Modifier mon mot de passe », mais SEULEMENT si la connexion n'a pas de compte commerçant — sinon ils vivent sur l'écran 26. |
-| 18 | Mes informations | Modification, suppression du compte. Depuis le 2026-09-19, enregistrer exige le mot de passe actuel, et le CHANGEMENT de mot de passe n'est plus sur cet écran : il vit dans un panneau de l'écran 17 (ou 26 si la connexion a un compte commerçant). Un composant, DEUX routes depuis le 2026-09-19 — `/compte/informations` et `/vendeur/informations` — comme l'écran 34 : le nom et le téléphone appartiennent à la CONNEXION, donc un commerçant sans compte client doit pouvoir les corriger. La ville de résidence n'apparaît que sur le montage client ; celle du commerçant est la ville de sa boutique (écran 26). |
-| 19 | Compte suspendu | Motif + recours |
+| # | Écran | Route | Note |
+|---|---|---|---|
+| 1 | Fil d'accueil | `/` | Toute la Guinée, chips de catégorie, à la une, récents / populaires. La cloche de notifications en haut à droite. |
+| 5 | Recherche | `/recherche` | Mot, catégorie, tri (panneaux `<details>`). Au repos : recherches récentes et grille des catégories. Aucun filtre de ville. |
+| 7, 8 | Fiche produit | `/produit/[id]` | Photos, prix, négociable, boutique. Un produit vendu reste visible, grisé. |
+| 9 | Galerie | `/produit/[id]/photos` | Plein écran, jusqu'à 5 photos. |
+| 16 | Contacter | `/produit/[id]/contacter` | Exige un compte ; l'inscription ramène ici (`?next=`). |
+| — | WhatsApp | `/produit/[id]/whatsapp` | Route de redirection vers WhatsApp, comptée. |
+| 10 | Signaler un produit | `/produit/[id]/signaler` | Motifs + commentaire. |
+| 11 | Boutique publique | `/boutique/[id]` | Infos, repère, ville, catalogue. |
+| 28, 29 | Messages | `/messages` | Fils par boutique. |
+| 30 | Fil de discussion | `/messages/[id]` | Produits cités, temps réel. |
+| 31 | Citer un produit | `/messages/[id]/citer` | Ce qui rend viable « un fil par boutique ». |
+| 32 | Actions du fil | `/messages/[id]/actions` | Bloquer, débloquer, signaler. |
+| 32b | Signaler une conversation | `/messages/[id]/signaler` | Motifs propres aux personnes. |
+| 17 | Mon compte | `/compte` | Bascule vers le compte commerçant lié, mot de passe, liens légaux, déconnexion. |
+| 18 | Mes informations | `/compte/informations` | Nom et téléphone, mot de passe exigé pour enregistrer. Plus de ville. |
+| 18 | Supprimer mon compte | `/compte/informations/supprimer` | Anonymisation, jamais un vrai effacement. |
+| — | Personnes bloquées | `/compte/bloques` | Débloquer. |
+| 19 | Compte suspendu | `/compte/suspendu` | Lecture seule, recours. |
+| 34 | Conditions, confidentialité, contact | `/conditions`, `/confidentialite`, `/contact` | |
 
-## Commerçant — 9
+## Commerçant
 
-| # | Écran | Note |
-|---|-------|------|
-| 20 | Boutique en attente | Prépare ses brouillons pendant ce temps |
-| 21 | Boutique refusée | Motif + correction possible |
-| 22 | Mes produits | La liste seule, sur `/vendeur/produits` : séparée de l'accueil le 2026-09-16, parce que mêler un tableau de bord et une liste obligeait à faire défiler le premier pour atteindre la seconde. |
-| 22b | Accueil commerçant | Le tableau de bord de l'espace, sur `/vendeur` : les deux chiffres (publiés, messages non lus) et les raccourcis. |
-| 23 | Mes produits — vide | Premier produit |
-| 24 | Ajouter / modifier un produit | 1 à 3 photos, prix, négociable |
-| 25 | Actions produit | Vendu, modifier, masquer, supprimer |
-| 26 | Ma boutique | Écran de CONSULTATION : on y lit ses informations et on y trouve le compte (bascule vers le client lié, déconnexion), le panneau « Notifications » et celui du mot de passe. |
-| 26b | Modifier ma boutique | Écran plein écran, atteint par un geste explicite. Revalidation si le nom ou la ville change, et le mot de passe actuel est redemandé — l'adresse et le numéro WhatsApp sont ce qu'un client lit AVANT de se déplacer. Le CHANGEMENT de mot de passe n'est plus ici : il vit dans un panneau de l'écran 26 depuis le 2026-09-19. |
+| # | Écran | Route | Note |
+|---|---|---|---|
+| 22b | Accueil commerçant | `/vendeur` | Chiffres, dernières conversations, raccourcis ; la cloche en haut à droite. |
+| 22, 23 | Mes produits | `/vendeur/produits` | Liste, état vide pour le premier produit. |
+| 24 | Nouveau produit | `/vendeur/produits/nouveau` | 1 à 5 photos, prix, négociable ; « Publier » propose les notifications. |
+| 24 | Modifier un produit | `/vendeur/produits/[id]/modifier` | |
+| 25 | Actions produit | `/vendeur/produits/[id]/actions` | Publier, vendu, **remettre en vente**, modifier, masquer / republier, supprimer. |
+| 27 | Messages | `/vendeur/messages` et `/vendeur/messages/[id]` (+ `citer`, `actions`, `signaler`) | Le même fil que côté client, monté dans l'espace commerçant. |
+| 26 | Ma boutique | `/vendeur/boutique` | Consultation, bascule vers le compte client, mot de passe, déconnexion. |
+| 26b | Modifier ma boutique | `/vendeur/boutique/modifier` | Mot de passe exigé : adresse et WhatsApp sont ce qu'un client lit avant de se déplacer. |
+| 18, 34 | Mes informations, bloqués, légal | `/vendeur/informations`, `/vendeur/bloques`, `/vendeur/conditions`, `/vendeur/confidentialite`, `/vendeur/contact` | Mêmes composants que côté client, autre retour. |
 
-## Messagerie — 6
+## Compte et accès
 
-| # | Écran | Note |
-|---|-------|------|
-| 27 | Messages — commerçant | Fils par client |
-| 28 | Messages — client | Fils par boutique |
-| 29 | Messages — vide | |
-| 30 | Fil de discussion | Produits cités, produit vendu grisé |
-| 31 | Citer un produit | Rend viable « un fil par client » |
-| 32 | Actions conversation | Signaler, bloquer |
-| 32b | Signaler une conversation | Motifs propres aux personnes, pas ceux des produits. Maquetté dès le début (`design/SignalerConversation.dc.html`), codé ensuite. |
+| # | Écran | Route | Note |
+|---|---|---|---|
+| 12 | Inscription | `/inscription` | Choix du rôle, ou second compte lié si l'on est connecté. |
+| 13 | Inscription — boutique | `/inscription/boutique` | Étape 2 des commerçants ; WhatsApp prérempli. |
+| 14 | Connexion | `/connexion` | |
+| 15 | Mot de passe oublié | `/mot-de-passe-oublie`, `/reinitialiser-mot-de-passe` | |
+| — | Confirmation d'email | `/auth/confirm` | Route, sans écran propre. |
 
-## Transverse — 2
+## Transverse
 
-| # | Écran | Note |
-|---|-------|------|
-| 34 | Conditions d'utilisation | Ajouté le 2026-09-17, quand le texte a enfin existé. Un composant, DEUX routes — `/conditions` (publique, comme le catalogue) et `/vendeur/conditions` (dans l'espace commerçant) — parce que le texte est le même des deux côtés mais que le lien de retour ne l'est pas. |
-| 33 | Page introuvable (404) | Ajouté après coup : l'inventaire des 32 écrans supposait que l'utilisateur ne se trompe jamais d'adresse. Un lien partagé sur WhatsApp qui traîne, un produit retiré, une faute de frappe — ça arrive, et Next affiche sinon sa propre page en anglais sans aucun moyen de repartir. |
-
-## Ce que cet inventaire a révélé
-
-Trois besoins qui n'existaient nulle part dans la spécification. Les trois
-sont maintenant résolus (voir `docs/MEMOIRE.md`, « Décisions prises ») :
-
-1. ~~**Blocage entre personnes**~~ — écran 32. Résolu :
-   `conversations.blocked_by`.
-2. ~~**Motif de refus d'une boutique**~~ — écran 21. Résolu :
-   `merchants.rejection_reason`.
-3. ~~**Suppression de compte**~~ — écran 18. Résolu : anonymisation
-   (`profiles.is_deleted`/`deleted_at`), jamais un effacement réel — les
-   conversations de l'autre partie restent lisibles.
+| # | Écran | Route | Note |
+|---|---|---|---|
+| 33 | Page introuvable | `not-found.tsx` | Un lien WhatsApp périmé doit pouvoir repartir. |
+| — | Erreur | `error.tsx` | Toute erreur non rattrapée ; ne prétend jamais que c'est le réseau (les formulaires disent eux-mêmes une coupure). |
+| — | Suivi | `/suivi` | Porteur du projet seul (`OWNER_EMAIL`) ; 404 pour tous les autres. |
+| 3, 4 | Hors ligne | — | Un bandeau seulement (`OfflineBanner`) ; aucune page n'est gardée hors ligne. |

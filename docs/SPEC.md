@@ -1,85 +1,73 @@
 # Filloo — Spécification de la v1
 
 Marketplace de mise en relation : des commerçants publient leurs produits,
-des clients les parcourent et contactent le commerçant par messagerie interne.
-**Aucun paiement, aucun panier, aucune livraison** : la transaction se fait hors
-de l'application.
+des clients les parcourent et écrivent au commerçant par une messagerie
+interne. **Aucun paiement, aucun panier, aucune livraison** : la vente se
+fait hors de l'application.
 
 Marché : Guinée · Devise : franc guinéen (GNF) · Langue : français.
 
+Ce document fait foi. Une décision qui change s'y réécrit, avec sa date ;
+l'ancienne version se relit par `git log -p -- docs/SPEC.md`.
+
 ---
 
-## 1. Décisions validées
+## 1. Décisions
 
 | # | Sujet | Décision |
 |---|-------|----------|
-| 1 | Authentification | Email + mot de passe. Téléphone obligatoire mais **non vérifié** (pas de SMS, pas de coût). **Confirmation d'email OBLIGATOIRE** (décision du 2026-09-17) : l'email est à la fois identifiant de connexion et canal de notification, donc sans confirmation quelqu'un peut s'inscrire avec l'adresse d'un tiers, qui recevra ses messages. La friction est assumée. **Ne s'active qu'une fois le SMTP de production posé côté Supabase** — activée avant, elle rend l'inscription impossible pour tout le monde. |
-| 2 | Navigation | Catalogue **libre sans compte**. Compte obligatoire uniquement pour envoyer un message. |
-| 3 | Catégories | Liste **fixe**, gérée par l'administrateur. **Révisé le 2026-09-22 : 9, après suppression d'« Autre » (migration 0025).** La base en portait 10 dont un fourre-tout, que cette décision excluait pourtant depuis l'origine — la contradiction a vécu depuis 0003. Une catégorie fourre-tout est toujours le choix le moins coûteux au moment de publier : elle se remplit, et vide les autres de leur sens. Nommer une dixième catégorie RÉELLE reste possible ; neuf qui veulent dire quelque chose valent mieux qu'une dixième inventée pour tenir un compte. |
-| 4 | Classement du fil | Pas de notation. Tri : *à la une* (manuel) → *populaires* (nb de conversations) → *récents*. |
-| 5 | Notification commerçant | Badge de non-lus + **notification** : navigateur (Web Push) et téléphone (app mobile). **Plus d'email de notification depuis le 2026-10-07** : l'email ne sert plus qu'au compte (confirmation, mot de passe oublié). Remplace « badge + email, push en v2 ». |
-| 5b | Structure des fils | **Un seul fil par couple (client, boutique).** Chaque message référence le produit dont il parle ; le premier message d'un fil en porte obligatoirement un. |
-| 6 | Modération produits | Publication immédiate, bouton « signaler », masquage possible par l'admin. |
-| 7 | Volume cible | 500 commerçants **à un an**. Densité avant volume au lancement. |
-| 8 | Rôles | **Comptes liés** : une personne peut avoir un compte client **et** un compte commerçant derrière **une seule connexion** (email + mot de passe), avec bascule rapide depuis l'app, sans se reconnecter. **Jamais les deux mélangés sur un même écran** : à tout instant on est soit client, soit commerçant. Chaque profil a son propre historique et sa propre modération — suspendre le compte client ne gèle pas la boutique. Le second compte se crée depuis l'application, sans repasser par l'inscription. Révise l'ancienne règle « un compte = un seul rôle, modifiable à la main par l'admin ». |
-| 9 | Ville | **Seule la boutique a une ville** (depuis le 2026-10-22). Le client n'en renseigne plus, et ni l'accueil ni la recherche ne filtrent par ville : tout le catalogue de Guinée, la ville de la boutique affichée sur chaque carte. `profiles.city_id` reste en base pour l'app déjà installée, le site ne le lit plus. Remplace « filtre manuel choisi par le client ». |
-| 10 | Disponibilité | Binaire (disponible / vendu). **Pas de gestion de stock.** |
-| 11 | Validation commerçant | **Aucune, depuis le 2026-10-02 (migration `0033`).** Le lien de confirmation envoyé par email suffit : la boutique est en ligne dès sa création. Ni refus ni attente. Le porteur du projet garde la suspension et la suppression d'un compte, depuis le tableau de bord Supabase. Remplace le critère du 2026-09-17 (appel téléphonique avant validation). |
-| 12 | Commerçant en attente | **Sans objet depuis le 2026-10-02** (décision 11, `0033`) : plus d'attente, la boutique est en ligne dès sa création. Les produits peuvent toujours rester en **brouillon**. |
-| 13 | Abus | Bouton « signaler » + suspension de compte + deux quotas : 20 boutiques contactées/jour et 100 messages/jour par compte. |
-| 14 | Recherche | Sur le titre, la description et le nom de la boutique. Insensible aux accents. |
-| 15 | Photos | 1 minimum, 3 maximum. Compression avant envoi. Coûts assumés par le porteur du projet. |
-| 16 | Litige | Suspension du compte vendeur. **Une suspension gèle les fils DANS LES DEUX SENS** (décision du 2026-09-17, migration `0022`) : on ne communique pas avec un compte suspendu, qu'il soit client ou boutique. Les fils restent entièrement LISIBLES — lecture seule, jamais suppression. |
-| 17 | Monétisation | Aucune en v1 (choix assumé). |
-| 18 | Hébergement | Vercel, sur le domaine **`filloo.net`** depuis le 2026-10-08 (`filloo.vercel.app` y redirige). Emails de compte depuis `send.filloo.net`. |
-| 19 | App mobile | **Une app native iPhone et Android** (décision du 2026-10-07), Expo, dans son propre dépôt `tirry224/filloo-mobile`. Même base Supabase, aucun code partagé ; ce qui exige un secret passe par l'API du site (`/api/app/…`). |
+| 1 | Authentification | Email + mot de passe, **email confirmé obligatoire** (2026-09-17) : sans confirmation, n'importe qui s'inscrit avec l'adresse d'un tiers. Téléphone obligatoire, **non vérifié** (pas de SMS). |
+| 2 | Navigation | Catalogue **libre sans compte** ; compte exigé seulement pour écrire. |
+| 3 | Catégories | **Neuf**, fixes, sur un niveau, sans fourre-tout « Autre » (`0025`, 2026-09-22) : une catégorie fourre-tout se remplit et vide les autres de leur sens. |
+| 4 | Classement | Pas de notation. *À la une* (manuel) → *populaires* (nombre de conversations) → *récents*. |
+| 5 | Notifications | Badge de non-lus + notification sur le navigateur (Web Push) et le téléphone (app). **Plus d'email de notification** depuis le 2026-10-07 : l'email ne sert qu'au compte. **Proposées au moment utile** (2026-10-23) : à la publication d'un produit et au premier message, jamais à l'inscription. **Le seul réglage est la cloche de l'en-tête.** |
+| 5b | Fils | **Un fil par couple (client, boutique)** ; chaque message cite le produit dont il parle, le premier obligatoirement. |
+| 6 | Modération | Publication immédiate, bouton « signaler », masquage par l'administrateur. |
+| 7 | Volume cible | 500 commerçants **à un an**. Densité avant volume. |
+| 8 | Rôles | **Comptes liés** : un compte client et un compte commerçant derrière une seule connexion, bascule sans se reconnecter, **jamais mélangés sur un même écran**. Chaque profil a sa propre modération. |
+| 9 | Ville | **Seule la boutique a une ville** (2026-10-22). Aucun filtre de ville : accueil et recherche couvrent toute la Guinée, la ville de la boutique s'affiche sur chaque carte. `profiles.city_id` reste en base pour l'app installée. |
+| 10 | Disponibilité | Disponible ou vendu, **pas de stock**. Un produit vendu se remet en vente d'un geste (2026-10-22). |
+| 11 | Validation commerçant | **Aucune** depuis le 2026-10-02 (`0033`) : la boutique est en ligne dès sa création, ni attente ni refus. Retraits possibles : suspension et suppression du compte. |
+| 12 | Brouillons | Un produit peut rester en brouillon avant publication. |
+| 13 | Abus | Signalement, suspension, et deux quotas : 20 boutiques contactées et 100 messages par jour et par compte. |
+| 14 | Recherche | Titre, description et nom de la boutique, insensible aux accents. |
+| 15 | Photos | **1 minimum, 5 maximum** par produit. Compressées sur le téléphone avant l'envoi (1 280 px, 0,5 Mo au plus) ; le stockage refuse plus d'1 Mo et tout format autre que WebP ou JPEG. |
+| 16 | Suspension | **Gèle les fils dans les deux sens** (`0022`) ; les fils restent lisibles, jamais supprimés. |
+| 17 | Monétisation | Aucune en v1. |
+| 18 | Hébergement | Vercel sur **`filloo.net`**, base Supabase à Paris, emails de compte depuis `send.filloo.net`. |
+| 19 | App mobile | **App native iPhone et Android** (Expo, 2026-10-07) dans le dépôt `tirry224/filloo-mobile`. Même base, aucun code partagé ; ce qui exige un secret passe par `/api/app/*`. |
 
 ## 2. Hors périmètre de la v1
 
-Paiement en ligne · panier · livraison · gestion de stock · notation et avis ·
-page d'administration · multi-boutiques par commerçant · plusieurs langues.
-(Les notifications push et l'application mobile native en sont sorties : voir
-décisions 5 et 19.)
+Paiement en ligne · panier · livraison · stock · notation et avis · page
+d'administration · plusieurs boutiques par commerçant · plusieurs langues.
 
-## 3. Parcours utilisateurs
+## 3. Parcours
 
-**Visiteur** — arrive sur le fil (toutes villes), filtre par catégorie, recherche,
-ouvre une fiche produit. Pour écrire, on lui demande de créer un compte.
+- **Visiteur** — parcourt le fil de toute la Guinée, filtre par catégorie,
+  recherche, ouvre une fiche. Pour écrire, crée un compte et revient sur
+  le produit.
+- **Client** — s'inscrit (nom, email, téléphone, mot de passe), écrit au
+  commerçant à propos d'un produit, peut signaler ou bloquer.
+- **Commerçant** — s'inscrit, confirme son email, renseigne sa boutique
+  (nom, ville, repère, WhatsApp repris de son numéro), publie aussitôt,
+  reçoit les messages et répond.
+- **Client et commerçant à la fois** — une connexion, deux espaces, une
+  bascule qui change tout le contexte.
+- **Administrateur** — travaille dans le tableau de bord Supabase (masquer
+  un produit, suspendre un compte, mettre à la une) et lit `/suivi`.
 
-**Client** — s'inscrit (nom, email, téléphone, mot de passe), ouvre une
-conversation sur un produit, échange avec le commerçant, peut signaler.
+## 4. Risques
 
-**Commerçant** — s'inscrit, renseigne sa boutique (nom, ville, téléphone
-WhatsApp) après avoir confirmé son email, et publie aussitôt. Il reçoit
-les messages et répond.
+1. **Amorçage** — une marketplace vide n'attire personne : recruter les
+   premiers commerçants sur une zone unique.
+2. **Réactivité** — un message sans réponse tue la confiance : c'est la
+   raison d'être des notifications.
+3. **Confiance** — aucune vérification des vendeurs ; les conditions
+   d'utilisation et le signalement en tiennent lieu.
 
-**Une même personne, client et commerçant** — une seule connexion (email +
-mot de passe) donne accès aux deux comptes liés si les deux existent. Un
-menu permet de basculer de l'un à l'autre. Les deux espaces ne sont jamais
-visibles ni mélangés sur un même écran : la bascule change complètement le
-contexte (données, navigation, ton des textes).
+## 5. Questions ouvertes
 
-**Administrateur** — travaille directement dans le tableau de bord Supabase :
-approuve les commerçants, masque un produit, suspend un compte, met un
-produit à la une.
-
-## 4. Risques identifiés
-
-1. **Amorçage** — une marketplace vide n'attire personne. Priorité au
-   recrutement des premiers commerçants sur une zone unique, pas au volume.
-2. **Réactivité des commerçants** — un message sans réponse tue la confiance.
-   C'est la raison d'être de la notification par email.
-3. **Confiance** — aucune vérification des vendeurs au-delà d'un contrôle
-   humain sommaire. Prévoir des conditions d'utilisation avant le lancement.
-
-## 5. Questions encore ouvertes
-
-- Liste définitive des **9 catégories** et des **villes** — le NOMBRE est
-  tranché (10), les libellés ne le sont pas.
-- Conditions générales d'utilisation à rédiger avant la mise en ligne.
-
-*Tranchées le 2026-09-17, et donc sorties d'ici : le critère de
-validation (décision 11), le nombre de catégories (décision 3), la
-confirmation d'email (décision 1) et la symétrie de la suspension
-(décision 16). Une question qui reste écrite après avoir été tranchée se
-rediscute à la session suivante.*
+- Captcha à l'inscription.
+- Durée de conservation des messages et comptes anonymisés, en attente
+  d'un avis sur la loi guinéenne L/2016/037.

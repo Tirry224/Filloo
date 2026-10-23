@@ -1,781 +1,382 @@
 # Mémoire de Filloo
 
-Point d'entrée pour reprendre le projet dans une nouvelle conversation.
-Il remplace `docs/REPRISE.md` depuis le **2026-09-23**.
+Point d'entrée pour reprendre le projet. Réécrit le **2026-10-23** :
+mis à jour et raccourci ; l'ancienne version se relit par
+`git log -p -- docs/MEMOIRE.md`.
 
-Le fichier a deux parties, écrites de deux façons différentes :
+## Comment ce fichier marche
 
-- **Tout ce qui précède « Évolution, commit par commit » est écrit à la
-  main** : ce qui reste, ce qui est fait, ce qui est tranché, ce qui a
-  déjà fait mal — c'est-à-dire ce que Git ne sait pas dire.
-- **« Évolution, commit par commit » est généré par `npm run memoire`**
-  à partir de `git log`, et ne s'édite jamais à la main. L'ancien fichier
-  de reprise est mort deux fois d'un journal recopié de Git qui
-  vieillissait sans être relu : un historique produit par la machine ne
-  peut pas mentir sur ce qu'elle contient.
+- **Tout ce qui précède « Évolution, commit par commit » s'écrit à la
+  main** : ce qui reste, ce qui est en place, ce qui est tranché, ce qui
+  a déjà fait mal. Git ne sait pas le dire.
+- **L'historique est généré** par `npm run memoire`, lancé seul par le
+  hook `.githooks/pre-commit` (branché par `npm install` ; vérifier que
+  `git config core.hooksPath` répond `.githooks`). Il refuse un clone
+  partiel : `git fetch --unshallow` d'abord.
+- **À chaque commit qui ferme un point, en ouvre un ou enseigne quelque
+  chose, mettre à jour la section concernée.** Aucune machine ne le sait.
+- **Citer une section par son TITRE**, jamais par un numéro.
+- **Les migrations citent encore l'ancien `docs/REPRISE.md`** et ne se
+  corrigent pas (une migration appliquée ne se réécrit pas) :
+  `git show <empreinte>:docs/REPRISE.md` le relit à leur date.
+- **« À constater »** marque ce qu'une session ne peut pas vérifier
+  (production, téléphone, boîte mail) : ni fait, ni cassé.
 
-**À chaque commit :** lancer `npm run memoire`, et mettre à jour à la main
-les sections concernées si le commit ferme un point, en ouvre un ou
-enseigne quelque chose. Un commit ne peut pas citer sa propre empreinte :
-la liste générée s'arrête au commit précédent, et le suivant la rattrape.
+## État au 2026-10-23
 
-**Depuis le 2026-09-27, `npm run memoire` tourne tout seul** : le hook
-`.githooks/pre-commit`, branché par `npm install`, régénère l'historique
-et l'ajoute au commit. Il refuse le commit si ce fichier porte des
-retouches non ajoutées, et dans un clone partiel (`git fetch
---unshallow` d'abord). La mise à jour à la main, elle, reste à faire :
-aucune machine ne sait qu'un commit ferme un point. Un clone qui n'a pas
-lancé `npm install` n'a pas le hook — `git config core.hooksPath` doit
-répondre `.githooks`.
-
-**Citer ce fichier par le TITRE d'une section, jamais par un numéro.**
-Les numéros de l'ancien fichier désignaient un plan disparu depuis
-plusieurs réécritures, et une vingtaine de commentaires de code les
-citaient encore.
-
-**Les migrations citent encore `docs/REPRISE.md`**, souvent par un
-numéro d'étape. Elles ne se corrigent pas — une migration appliquée ne se
-réécrit pas, même pour un commentaire. Pour relire ce qu'elles citaient :
-`git log --follow -- docs/REPRISE.md` donne les versions de l'ancien
-fichier, et `git show <empreinte>:docs/REPRISE.md` en affiche une, à la
-date de la migration.
-
-**État en une phrase (2026-10-15) :** le site est en ligne sur
-`https://filloo.net`, ses parcours essentiels ont été vus marcher sur de
-vrais téléphones (inscription commerçant, photo, messagerie,
-notifications navigateur et app, application fermée), et le porteur du
-projet commence à chercher les premiers commerçants. Avant le premier
-vrai commerçant restent trois gestes hors code : passer Vercel en Pro,
-mettre la base sous sauvegarde, prouver « mot de passe oublié ».
-
-**Ce qu'une session peut vérifier, et ce qu'elle ne peut pas.** Tout ce
-qui porte sur le dépôt se relit dans le code. Tout ce qui porte sur la
-production (Vercel, Supabase, une boîte email) est invérifiable depuis
-une session, sauf par les connecteurs Supabase et Vercel quand la session
-en dispose (le 2026-10-02, le connecteur Supabase lisait la base et les
-journaux, mais pas la configuration Auth). Ces points sont marqués
-**« à constater »** — ni faits ni cassés.
+- **En ligne sur `https://filloo.net`** (`main`, Vercel, fonctions à
+  Paris), préversion sur `dev` avec **la même base**.
+- **Base** : 40 migrations, toutes appliquées en production (constaté
+  le 2026-10-23). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  0,8 Mo de photos (2026-10-22).
+- **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
+  commerçant jusqu'à la boutique en ligne, photo, messagerie,
+  notifications navigateur et app, application fermée.
+- **App mobile** dans `tirry224/filloo-mobile`, versions de test
+  seulement, rien sur les stores.
 
 ---
 
 ## Ce qui reste à faire
 
-### Bloquant pour ouvrir à un vrai commerçant
+### Bloquant avant de vrais commerçants
 
-- **Vercel est en offre Hobby, qui interdit l'usage commercial.** Une
-  marketplace avec de vrais commerçants y entre : risque de suspension du
-  site sans préavis. Passer en Pro (porteur du projet, réglages de
-  facturation Vercel).
-- **La base n'a aucune sauvegarde restaurable** (offre gratuite de
-  Supabase). Une erreur ou une migration ratée effacerait boutiques,
-  produits et messages pour de bon. Passer en Pro (7 jours de
-  sauvegardes), ou au minimum une sauvegarde manuelle chaque semaine.
+- **Vercel Hobby interdit l'usage commercial** ; une marketplace en
+  relève probablement, même gratuite. Risque de suspension, qui
+  couperait aussi l'API de l'app. Passer en Pro (~20 $/mois).
+- **La base n'a aucune sauvegarde.** Une erreur efface tout pour de bon.
+  Supabase Pro (~25 $/mois, sauvegarde quotidienne) ou une sauvegarde
+  automatique gratuite (tâche GitHub `pg_dump`, à écrire).
 - **« Mot de passe oublié » n'est pas prouvé.** Le modèle d'email
-  « Reset Password » de Supabase doit porter
-  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`
-  (Authentication → Emails) : sans lui, le lien échoue dès qu'il est
-  ouvert ailleurs que dans le navigateur qui l'a demandé (app Mail contre
-  site installé). Le code accepte les deux voies (`/auth/confirm`).
+  « Reset Password » doit porter
+  `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`.
   *À constater* : demander le lien sur un téléphone, l'ouvrir depuis
   l'app Mail.
 
-### Constaté le 2026-10-15
+### Décidé par le porteur du projet (2026-10-23), à faire
 
-Ce qui était « à constater » et ne l'est plus — les diagnostics qui y
-menaient (clé VAPID, clé `service_role` refusée, route de l'app en 404)
-sont dans l'historique Git de ce fichier.
-
-- **Parcours vus marcher sur téléphone par le porteur du projet** :
-  inscription d'un commerçant par le lien de confirmation jusqu'à sa
-  boutique en ligne, envoi d'une photo, messagerie entre deux comptes.
-- **Les notifications arrivent, application fermée** : navigateur
-  (Android et iPhone, site installé sur l'écran d'accueil) et app
-  mobile. Base : `last_used_at` rempli sur `push_subscriptions` et
-  `expo_push_tokens` le 2026-10-15. **Un abonnement se fait depuis
-  « Compte » ou « Boutique »** : la permission du navigateur seule ne
-  suffit pas, et le porteur du projet lui-même s'y est trompé.
-- **Clé VAPID** : la paire du 2026-09-24 était perdue ; nouvelle paire
-  le 2026-10-15, posée dans Vercel. **Piège** :
-  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` existe AUSSI dans Vercel et gagne sur
-  `.env` au build — changer la clé, c'est changer les deux, puis
-  redéployer. La clé privée n'est que dans Vercel et chez le porteur du
-  projet.
-- **Variables Vercel** (liste lue le 2026-10-15) : `VAPID_PRIVATE_KEY`,
-  `SENTRY_DSN`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`,
-  `OWNER_EMAIL` et `NEXT_PUBLIC_SITE_URL` sont posées pour Production ET
-  Preview.
-- **Emails de compte** : Resend, depuis `noreply@send.filloo.net` ; un
-  email de confirmation reçu et suivi le 2026-10-15.
-- **Ménage du matin** (`/api/quotidien`) : aucune photo orpheline et
-  aucune notification en attente en base le 2026-10-15.
+- **Au premier seuil de 50 % d'une limite gratuite, passer en Supabase
+  Pro.** La surveillance hebdomadaire le dira (voir « Surveillance »).
+- **Photos plus légères** (1024 px, ~60 Ko au lieu de 95) : proposé, non
+  décidé. Exige aussi une version de l'app.
+- **Photos vers Cloudflare R2** seulement quand le stockage deviendra la
+  limite (~3 000 produits). Plan : R2 + adresse dédiée, envoi par une
+  route du site qui vérifie le propriétaire, lecture aux deux endroits
+  pendant la transition, copie des anciennes, puis fermeture de l'ancien
+  envoi. Les photos sont stockées par chemin : la base ne change pas.
 
 ### À constater sur un téléphone
 
-- **La photo de profil d'une boutique** (0029) : la voir sur la page
-  publique, la fiche produit, les résultats et la messagerie côté client.
-- **Le son d'un message reçu sur iPhone** (interrupteur silencieux
-  respecté, c'est voulu).
-- **Le badge de non-lus s'éteint à l'ouverture d'un fil.**
+- **La cloche** (2026-10-22) : un tap active, un second coupe ; bulle
+  d'explication si le navigateur ne gère pas ou a bloqué.
+- **La demande de notifications au bon moment** (2026-10-23) : à
+  « Publier le produit » et au premier message envoyé, une fois par
+  occasion et par appareil ; acceptée, l'appareil s'abonne seul.
+- **Photo de profil d'une boutique** sur la page publique, la fiche, les
+  résultats et la messagerie.
+- **Son d'un message reçu sur iPhone** (l'interrupteur silencieux le
+  coupe, c'est voulu) ; **badge de non-lus** qui s'éteint à l'ouverture
+  d'un fil.
 
-### Gestes de ménage, non bloquants
+### À décider
 
-- **Fait le 2026-10-15** (audit par agents, site et app) : retirés
-  `/styleguide`, `/ecrans`, `src/lib/mock.ts` (les motifs de signalement
-  vivent dans `src/lib/motifs-signalement.ts`), `supabase/seed_demo.sql`,
-  `scripts/parcours.mjs` et `formatPhone`. Aucun fichier, asset ni
-  dépendance inutile ailleurs, site comme app.
-
-- **Regarder le projet Supabase « Fillo »** du 2026-08-25, qui tourne
-  encore à côté de `Filloo` sans qu'on sache s'il sert.
-- **Supprimer les branches `claude/*` restées sur GitHub.** Inventoriées
-  le 2026-09-21 : aucune ne portait alors de contenu absent de `main`. Le
-  relais Git des sessions refuse la suppression de références (403) :
-  **à faire depuis une machine où `git` parle directement à GitHub**, et
-  jamais sans l'accord du porteur du projet (règle de `CLAUDE.md`).
-
-### Une observation de terrain, pas un bug
-
-**Le parcours vers le compte lié ne se trouve pas tout seul.** Le porteur
-du projet lui-même a créé DEUX CONNEXIONS au lieu d'un second profil lié :
-l'écran d'inscription ne propose le compte lié qu'à une personne DÉJÀ
-connectée, ce qui n'est pas le réflexe de quelqu'un qui veut « aussi
-vendre ». Si celui qui a conçu le produit se trompe, l'utilisateur se
-trompera.
-
-### App mobile : ce qui touche le site et la base
-
-L'app vit depuis le 2026-10-07 dans son propre dépôt,
-`tirry224/filloo-mobile`. **Son avancement se suit dans SON README**,
-pas ici ; ne restent ici que les points qui touchent le site ou la base.
-
-- **L'API de l'app est en production depuis le 2026-10-09** (fusion de
-  `dev` dans `main`, sur demande du porteur du projet) :
-  `POST /api/app/message-envoye` (le site relance `notifyNewMessage`) et
-  `POST /api/app/supprimer-compte` (jeton + mot de passe, même effacement
-  que le site, `src/lib/suppression-compte.ts`). L'app les appelle sur
-  `EXPO_PUBLIC_SITE_URL`, soit `https://filloo.net`. Toute modification
-  de ces routes doit rester compatible avec l'app déjà installée.
-- **Notifications « comme une vraie application », plus d'email de
-  notification** (décision du 2026-10-07). Nouveaux messages, nouvelles
-  demandes et suspensions partent par notification seulement : téléphones
-  de l'app (Expo, `expo_push_tokens`, `0035`) et navigateurs abonnés (Web
-  Push, `0023`). Un utilisateur du site sans notifications activées n'est
-  prévenu de rien : assumé par le porteur du projet.
-- **Confirmation d'inscription et mot de passe oublié par CODE dans
-  l'app** : les modèles d'email Supabase portent `{{ .Token }}` (README,
-  « Le code dans les emails »), fonctionnel selon le porteur du projet
-  (2026-10-07).
+- **Sentry dans l'app**, **captcha à l'inscription** (Cloudflare
+  Turnstile est gratuit).
+- **Mesures d'usage de l'app** : `analytics_events` ne s'écrit qu'avec la
+  clé `service_role` ; une route ouverte laisserait fabriquer des
+  chiffres.
 - **On peut se signaler soi-même** : la policy « reports: je signale »
-  vérifie le signalant, pas la cible. L'app ne le propose plus depuis le
-  2026-10-09 ; le site n'a pas été vérifié sur ce point.
-  Migration à écrire, sur accord du porteur du projet.
-- **Le mot de passe redemandé protégeait l'écran, pas la base**
-  (2026-10-11) : nom, téléphone et boutique s'écrivaient avec la
-  session, qui suffisait seule. Écrits désormais par le serveur
-  (`src/lib/ecritures-protegees.ts`, fonctions de `0036`), y compris pour
-  l'app (`POST /api/app/mes-informations` et `/api/app/ma-boutique`).
-  **`0036` APPLIQUÉE le 2026-10-14, site en production le même soir ;
-  `0037` APPLIQUÉE le 2026-10-20** par le connecteur, sur accord du
-  porteur du projet, avant le nouveau build : une app de test d'avant
-  `dev` (2026-10-09) ne peut plus enregistrer « Mes informations » ni sa
-  boutique tant qu'elle n'est pas remplacée. Retour arrière possible :
-  ré-accorder l'`update` colonne par colonne retiré par `0037`.
-- **Aucune mesure d'usage venue de l'app** : `analytics_events` ne
-  s'écrit qu'avec la clé `service_role`. Une route ouverte permettrait à
-  n'importe qui de fabriquer des chiffres : la solution reste à décider.
+  vérifie le signalant, pas la cible. Migration à écrire, sur accord.
+- **`npm run espaces` échoue sur un cas** :
+  `compte/informations/supprimer/page.tsx:18` renvoie vers
+  `/vendeur/boutique`. Vrai mélange ou faux positif du script.
+- **Préchargement des liens** : `docs/PERFORMANCE.md` annonçait
+  `prefetch={false}` sur tous les liens de liste ; le code n'en porte
+  aucun (constaté le 2026-10-23). Poser la règle ou la retirer.
 
-### SEO (2026-10-15)
+### Ménage, non bloquant
 
-- **En place** : titre par page (`%s · Filloo`), image de partage de
-  l'accueil (`src/app/opengraph-image.tsx`), données `Product` sur
-  chaque fiche, adresses canoniques, recherches filtrées non indexées,
-  sitemap sans produits vendus.
-- **Reste à faire par le porteur du projet** : déclarer `filloo.net`
-  dans Google Search Console et y soumettre `/sitemap.xml`.
+- **Projet Supabase « Fillo »** (2026-08-25) : tourne à côté de `Filloo`,
+  on ne sait pas s'il sert.
+- **Branches `claude/*` sur GitHub** : à supprimer depuis une machine où
+  `git` parle directement à GitHub (le relais des sessions refuse,
+  403), jamais sans accord.
+- **Google Search Console** : déclarer `filloo.net`, soumettre
+  `/sitemap.xml` (porteur du projet).
+- **`/suivi` compte encore les « boutiques en attente »**, toujours 0
+  depuis `0033`.
 
-### Montée en charge et vitesse (2026-10-14 et 2026-10-15)
+### Dettes techniques connues
 
-Objectif du porteur du projet : tenir des milliers de personnes
-connectées sans réécrire l'app. Détail dans les savoirs des agents
-(`.claude/savoir/`).
-
-- **Les fonctions Vercel tournent à Paris (`cdg1`) depuis le 2026-10-15**
-  (`vercel.json`, `regions`). Avant, elles tournaient à Washington
-  (`iad1`, défaut de Vercel) alors que la base est à Paris
-  (`eu-west-3`) : chaque requête à la base traversait l'Atlantique, et
-  l'envoi d'un message, qui en enchaîne une dizaine, prenait environ
-  5 secondes. Ne pas changer de région sans déplacer la base avec.
-- **Le message envoyé s'affiche tout de suite** en « Envoi… »
-  (`EnvoiEnCours.tsx`), remplacé par la vraie bulle au retour de
-  l'action.
-- **Une page visitée reste 30 s dans le navigateur**
-  (`experimental.staleTimes.dynamic`, `next.config.ts`) : revenir sur un
-  onglet ne redemande plus rien au serveur. Les actions qui écrivent
-  (`revalidatePath`) et le temps réel (`router.refresh()`) vident ce
-  cache.
-- **Le client Supabase du navigateur (environ 65 Ko) et le compresseur
-  de photo (environ 20 Ko) se chargent à la demande** : au choix d'une
-  photo dans les formulaires, après l'affichage du fil dans une
-  discussion. Mesuré au build du 2026-10-15 : ils ne font plus partie
-  du chargement de ces pages.
-- **Temps réel par canal privé : `0038` APPLIQUÉE le 2026-10-14.** Chaque
-  compte écoute `user:<auth.uid()>` au lieu de la table `messages`
-  entière ; message reçu sans recharger constaté le 2026-10-15.
+- **`merchants.status` est un vestige** : figé à `'approved'` par
+  `merchants_always_approved` (`0033`), mais lu par les policies RLS.
+- **`profiles.city_id`** n'est plus lu par le site (2026-10-22) mais
+  l'app installée l'écrit encore. Le retirer attend une app qui ne le
+  touche plus.
 - **`messages` reste publiée en `postgres_changes`** pour les apps de
-  test installées. La retirer (migration à part) quand plus aucune ne
-  l'écoute : c'est alors que le coût en carré disparaît.
-- **`0039` APPLIQUÉE le 2026-10-15** (règles d'accès évaluées une fois
-  par requête, deux index) par le porteur du projet dans le SQL Editor :
-  elle supprime deux politiques, ce que le connecteur refuse (voir
-  « Méthode »). Absente de `list_migrations`, constatée par
-  `pg_policies`. Copier une migration par « Copy raw file » : une copie
-  partielle avait donné « LINE 1 » sur la ligne 151.
-- **`0040` APPLIQUÉE** : `product-images` limité à 1 Mo, WebP et JPEG.
-- **Cache côté serveur** : accueil, recherche, fiche produit et page
-  boutique lisent le catalogue public par le client anonyme, une minute
-  (villes et catégories une heure). Un visiteur sans compte n'y lit plus
-  la base ; restent les mesures de visite, une écriture par page vue.
-- **Photos en cache un an** à l'envoi (site et app).
-- **Suivi des erreurs du SERVEUR actif** (`src/instrumentation.ts`,
-  `@sentry/nextjs` 10.76) : `SENTRY_DSN` posée sur Vercel (Production et
-  Preview).
-- **`sendDefaultPii: false` laisse partir le cookie de session et
-  `Authorization`** (constaté, SDK 10.76) : `src/lib/erreurs-anonymes.ts`
-  ne garde que 4 en-têtes, retire la chaîne de requête et les
-  breadcrumbs (appels Supabase, `console.*`), testé. Le texte de
-  l'erreur, lui, part tel quel.
-- **Sentry côté navigateur : +72 Ko gzip** (socle 165 → 237 Ko, budget
-  200), mesuré le 2026-10-14. Non installé.
-- **Reste à décider** : Sentry dans l'app, captcha à l'inscription. (Les
-  offres Pro sont passées dans « Bloquant ».)
-
-### Dettes techniques connues, aucune bloquante
-
-- **`npm run tests` ne trouve aucun fichier sous Windows** : les
-  guillemets simples de `'tests/*.test.ts'` ne sont pas retirés par
-  `cmd.exe`, et le script affiche « pass 0 » sans échouer.
-  `node --experimental-strip-types --test tests/*.test.ts` depuis Git Bash
-  les lance (48 au 2026-09-25).
-- **La couche applicative n'est testée que par ses parcours.** Depuis le
-  2026-09-25, `npm run e2e` joue vingt parcours dans Chromium contre une
-  pile Supabase locale (voir `e2e/README.md`) : les actions serveur
-  d'inscription, de publication, de message, de signalement et de
-  suppression y passent pour de vrai. Aucune action n'a encore de test
-  unitaire, et les cas limites (prix, longueurs, quotas) restent à écrire.
-  La suite ne tourne pas en CI : il faut Docker et un build fait contre la
-  pile locale.
-- **L'envoi de photo charge un script depuis `cdn.jsdelivr.net`.**
-  `compresserPhoto` (`src/lib/compression.ts`, partagé depuis le
-  2026-09-25 par les deux sélecteurs de photo) passe `useWebWorker: true`
-  à `browser-image-compression`, qui va alors chercher son code de travail
-  sur ce CDN à chaque envoi. Sur iPhone, le repli WebP → JPEG compresse
-  la photo DEUX fois : le coût ci-dessous y est doublé.
-  Constaté par Playwright le 2026-09-25 : CDN bloqué, l'envoi réussit quand
-  même, la bibliothèque retombant sur le fil principal. Sur un téléphone
-  lent, c'est une requête externe de plus avant chaque photo et un écran
-  figé pendant la compression. À trancher : servir ce script depuis Filloo,
-  ou `useWebWorker: false`.
-- **Le dépôt et la production ne portent pas les mêmes commentaires
-  SQL.** Le mécanisme d'application les retire ; la logique est
-  identique. À traiter en corrigeant le mécanisme, **jamais en réécrivant
-  une migration appliquée**. Conséquence : comparer les empreintes
-  `md5(pg_get_functiondef())` entre local et production donne des faux
-  positifs sur toute fonction commentée.
-- **Le commentaire de la migration `0023` est faux** — le rectificatif
-  vit ici, parce qu'une migration appliquée ne se réécrit pas.
-- **Sept blocs `exception when others` dans `security_test.sql`.** Celui
-  du quota des 100 messages/jour affiche `OK` sans vérifier le
-  `sqlstate` : un refus RLS ou une faute de frappe produiraient le même
-  vert. Celui du quota de conversations exige `P0001` ; les deux
-  devraient se ressembler.
+  test ; la retirer quand aucune ne l'écoute (le canal privé `0038`
+  suffit au site).
+- **`browser-image-compression` charge son worker depuis
+  `cdn.jsdelivr.net`** à chaque photo (`useWebWorker: true`). Bloqué, il
+  retombe sur le fil principal. À trancher : servir le script depuis
+  Filloo, ou `useWebWorker: false`.
+- **Le dépôt et la production n'ont pas les mêmes commentaires SQL** (le
+  mécanisme d'application les retire) : comparer
+  `md5(pg_get_functiondef())` donne des faux positifs.
+- **Le commentaire de `0023` est faux** ; une migration appliquée ne se
+  corrige pas.
+- **`security_test.sql`** : le bloc du quota des 100 messages/jour
+  affiche `OK` sans vérifier le `sqlstate`.
 - **`middleware` est déprécié en Next 16** :
   `npx @next/codemod@canary middleware-to-proxy .`.
-- **`merchants.status` est un vestige** depuis `0033` : la contrainte
-  `merchants_always_approved` le fige à `'approved'`, mais les policies RLS
-  le lisent encore. Le retirer demande de réécrire ces policies.
-- **Test de chaos du 2026-09-25 : ce qui reste après corrections.**
-  L'application a été lancée en build de production contre une pile
-  Supabase IMITÉE (auth, REST et stockage réécrits sur un Postgres local
-  portant les 26 migrations), et pilotée dans Chromium au format
-  téléphone. Les défauts trouvés sont corrigés dans les commits du jour ;
-  restent :
-  - **un prix de 0 GNF est accepté** : `tests/prix.test.ts` l'affirme,
-    rien ne dit si c'est voulu ;
-  - **les bannières `?erreur=` et `?info=` affichent n'importe quel texte
-    mis dans l'adresse**, sur les écrans connectés : un lien piégé peut y
-    écrire ce qu'il veut, sans pouvoir exécuter de script ;
-  - **« trois tapes sur Créer mon compte envoient deux requêtes »** (noté
-    le 2026-09-24) ne s'est pas reproduit ; `useFormulaire` pose de toute
-    façon un verrou sur les onze formulaires ;
-  - **non testés faute de service** : temps réel, push, emails, affichage
-    des images par `next/image`. *À constater* sur un téléphone.
-- **`/inscription/boutique` hérite du squelette de chargement client** et
-  affiche brièvement « Conakry » pendant l'inscription commerçant.
+- **Un prix de 0 GNF est accepté** ; rien ne dit si c'est voulu.
+- **Les bannières `?erreur=` et `?info=` affichent tout texte mis dans
+  l'adresse** (sans exécuter de script).
+- **`npm run tests` ne trouve rien sous Windows** (guillemets de
+  `'tests/*.test.ts'`) : lancer depuis Git Bash.
+- **La couche applicative n'est testée que par ses parcours** (`npm run
+  e2e`, pile Supabase locale, Docker requis, pas en CI).
+- **Le parcours vers le compte lié ne se trouve pas seul** : le porteur
+  du projet lui-même a créé deux connexions au lieu d'un profil lié.
 
 ---
 
 ## Ce que Filloo est
 
-Une marketplace de **mise en relation** en Guinée. Les commerçants
-publient leurs produits avec un prix, les clients les parcourent et
-écrivent au vendeur par une messagerie interne. **Aucun paiement, aucun
-panier, aucune livraison** : la vente se conclut hors de l'application,
-en main propre.
-
-Conséquence à garder en tête en permanence : le système ne sait jamais
-qu'une vente a eu lieu. C'est pour cette raison qu'il n'y a **pas de
-notation** — aucun avis ne serait vérifiable, donc tous seraient truqués.
-
-Marché : Guinée · Devise : franc guinéen (GNF), en entiers · Langue :
-français.
+Une marketplace de **mise en relation** en Guinée : les commerçants
+publient, les clients parcourent et écrivent au vendeur. **Aucun
+paiement, aucun panier, aucune livraison** : la vente se conclut en main
+propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
+**aucune notation**, invérifiable. GNF en entiers, français.
 
 ---
 
-## Ce qui est fait
+## Ce qui est en place
 
-Les chiffres datés ont été comptés à cette date ; ils se recomptent, ils
-ne se recopient pas.
+### Base
 
-### Base de données — écrite, testée, déployée
+- **40 migrations**, `supabase/migrations/`. Tests de sécurité :
+  `supabase/tests/security_test.sql`, rejouables en local (183 contrôles
+  au vert le 2026-10-14 ; le nombre se relit dans la sortie, pas ici).
+- **Buckets** `product-images` et `shop-photos` : 1 Mo, WebP ou JPEG.
+  Photos que plus aucun produit ne cite effacées après 24 h.
+- **Un compte supprimé est anonymisé, jamais effacé** : ses messages
+  restent lisibles par l'autre partie, son email est libéré
+  (`supprime-<id>@filloo.invalid`).
+- **Écritures protégées par mot de passe** (nom, téléphone, boutique)
+  passées par le serveur (`0036`, `0037`, `src/lib/ecritures-protegees.ts`),
+  y compris pour l'app (`/api/app/mes-informations`, `/api/app/ma-boutique`).
 
-- **25 migrations** dans `supabase/migrations/` au 2026-09-23, de
-  `0001_schema.sql` à `0025_a_catalogue_without_a_catch_all.sql`.
-- **Les tests de sécurité** : `supabase/tests/security_test.sql`,
-  rejouables sur un PostgreSQL local (voir `supabase/tests/README.md`).
-  Le 2026-09-22 : **158 vérifications, toutes au vert** sur 24
-  migrations. Le nombre se relit dans la sortie du script, jamais dans un
-  document.
-- **Base vide, et c'est l'état voulu** : le jeu de démonstration a été
-  supprimé pour tester avec de vraies données ; son fichier
-  `supabase/seed_demo.sql` a été supprimé le 2026-10-15, sur décision du
-  porteur du projet.
+### Site — Next.js 16, React 19, TypeScript, Tailwind 4
 
-- **Photo de profil des boutiques** (0029, 2026-09-25) : colonne
-  `merchants.photo_path`, bucket **`shop-photos` séparé** — dans
-  `product-images`, le ménage de 0028 l'aurait effacée en 24 h. Une
-  contrainte interdit de citer le fichier d'une autre boutique. Le
-  dossier ne garde qu'un fichier : l'enregistrement efface les autres,
-  et la suppression de compte efface la photo.
-  Visible aussi dans la recherche et le fil (`search_products` renvoie
-  `shop_photo_path` depuis 0030) et dans la messagerie : en-tête du fil,
-  et pastille sur la vignette produit de la liste des fils.
-  **Depuis iPhone (0031, 2026-09-25)** : Safari n'encode pas le WebP
-  dans un canvas et rendait du PNG, que le bucket refusait. Les deux
-  sélecteurs retombent sur le JPEG (`compresserPhoto`), et `shop-photos`
-  accepte `image/webp` et `image/jpeg` — le PNG reste refusé.
-- **Un compte supprimé libère son email** (2026-09-25) : dans le même
-  appel que le bannissement, l'adresse de `auth.users` devient
-  `supprime-<id>@filloo.invalid` et les métadonnées d'inscription (nom,
-  téléphone) sont effacées. La ligne reste, les messages la référencent.
-  Passe par la clé `service_role`, réglée sur Vercel depuis le
-  2026-10-02.
+- **Deux espaces étanches** (client, commerçant), décrits dans
+  `docs/ARCHITECTURE.md`.
+- **Catalogue sans filtre de ville** (2026-10-22) : accueil et recherche
+  couvrent toute la Guinée ; la ville de la boutique s'affiche sur la
+  carte. Le client ne renseigne plus de ville.
+- **Notifications** : Web Push (`public/sw.js`, `0023`) et téléphones de
+  l'app (Expo, `0035`), plus d'email de notification depuis le
+  2026-10-07. **La cloche de l'en-tête** (accueils client et commerçant)
+  est le seul réglage depuis le 2026-10-23. Une suspension ne s'annonce
+  pas en clair sur un écran verrouillé.
+- **Temps réel par canal privé** `user:<uid>` (`0038`), son et bandeau à
+  chaque message reçu (`MessageAlerts`).
+- **Produit vendu remis en vente** depuis sa feuille d'actions
+  (2026-10-22).
+- **Inscription boutique** : le WhatsApp reprend le numéro du compte.
+- **Cache** : catalogue public lu une minute par le client anonyme ;
+  une page visitée reste 30 s dans le navigateur ; photos servies par
+  `next/image`.
+- **Erreurs du serveur dans Sentry**, filtrées de tout identifiant
+  (`src/lib/erreurs-anonymes.ts`). Pas de Sentry navigateur (+72 Ko).
+- **`/suivi`** : tableau de bord du porteur du projet (`OWNER_EMAIL`),
+  404 pour tous les autres.
+- **SEO** : titre par page, image de partage, données `Product`,
+  sitemap sans produits vendus.
 
-### Front-end — Next.js 16, React 19, TypeScript, Tailwind 4
+### Déploiement, surveillance et commandes
 
-- **44 pages** (`page.tsx`) et **63 composants** au 2026-09-23 ;
-  `src/components/ui/` est sans métier.
-- `src/lib/supabase/` — **un client par requête** : un client global
-  serait une faille, deux visiteurs partageraient la même session.
-  `public.ts` est un client ANONYME, utilisé par le plan du site.
-- `src/lib/data/` — **lecture seule**, seul endroit qui connaît la forme
-  de la base, traduite vers `src/lib/types.ts`.
-- `src/lib/actions/` — **écriture** : `auth`, `merchants`, `products`,
-  `messages`, `account`, `push`.
-- `src/lib/motifs-signalement.ts` — la liste fixe des motifs de
-  signalement (`mock.ts`, `/styleguide` et `/ecrans` supprimés le
-  2026-10-15).
-
-### Fonctionnalités entières
-
-- **Authentification** : inscription client et commerçant, connexion,
-  mot de passe oublié avec `?next=` conservé sur tout le parcours,
-  comptes liés.
-- **Toute l'application branchée sur la vraie base**, en lecture ET en
-  écriture : catalogue, espace vendeur, messagerie, compte, suppression
-  de compte (anonymisation, jamais un vrai `DELETE`).
-- **Compression des photos dans le navigateur** (`PhotoPicker`), dans un
-  worker pour ne pas geler un téléphone d'entrée de gamme.
-- **Recherche avec filtres** (`FilterChip`, en `<details>` natif) et
-  **recherches récentes**.
-- **Bandeau de réseau dégradé** (`OfflineBanner`), dans le layout racine.
-- **Conditions d'utilisation** (`src/content/conditions.ts`),
-  **Politique de confidentialité** (`src/content/confidentialite.ts`,
-  responsable nommé) et **écran de contact** — les promesses des articles
-  19 et 24, tenues. L'inscription nomme les conditions sous son bouton.
-- **Le partage** : `generateMetadata` sur la fiche produit et la fiche
-  boutique. **Pas à la racine** : mesuré, cela coûtait 0,2 Ko sur CHAQUE
-  écran et faisait sortir `/conditions` de son budget ; payer partout ce
-  qui ne sert qu'à deux écrans était le mauvais calcul.
-- **`sitemap.ts` et `robots.ts`**, construits avec le client anonyme :
-  c'est le RLS qui décide de la liste, donc aucune condition n'est écrite
-  deux fois.
-- **Compteurs d'usage** (`0024`, `src/lib/analytics.ts`) : mesurés côté
-  SERVEUR, zéro octet de JavaScript, aucune donnée identifiante. La table
-  refuse `anon` et `authenticated` des deux côtés (RLS sans policy ET
-  privilèges révoqués), vérifié en `set role anon`.
-- **Notifications push** de bout en bout (`public/sw.js`,
-  `src/lib/push.ts`, `0023`), et vers les téléphones de l'app mobile
-  depuis le 2026-10-07 (Expo, `0035`). **Une suspension ne s'annonce PAS
-  en clair sur un écran verrouillé** : la notification dit qu'une
-  décision attend, sans dire laquelle (plus d'email depuis le
-  2026-10-07). Le service worker **ne met rien en cache**.
-- **Temps réel et alertes** : `RealtimeThread` affiche un message reçu
-  pendant qu'on lit le fil ; `MessageAlerts` (layout racine, chargé
-  seulement avec une session) joue un son synthétisé, affiche un bandeau et
-  rafraîchit badge et tableau de bord à chaque message reçu, sur tous les
-  écrans. Le push part à chaque message (vibration ; muet si l'application
-  est au premier plan) ; plus aucun email de notification. Un
-  navigateur ne joue aucun son avant un premier geste sur la page. **Sur
-  iPhone, ce son se tait si l'interrupteur silencieux est mis** (Web Audio
-  le respecte, c'est voulu) et il n'y a jamais de vibration (Safari n'a
-  pas `navigator.vibrate`). Son iPhone *à constater*.
-- **Installation de l'application** proposée à l'entrée, et **mise en
-  page tenue sur grand écran**.
-
-### JavaScript : alléger reste une règle, s'en passer n'en est plus une
-
-L'exigence « tout écran doit marcher sans JavaScript » a été retirée par
-le porteur du projet le 2026-09-22 : une compression d'image ne s'écrit
-pas sans script, et un produit sans photo n'est pas publiable. Ce qui
-demeure : socle JavaScript plafonné à 200 Ko, liens de liste sans
-préchargement, filtres en `<details>` natif, et le serveur revalide
-toujours tout (voir `docs/PERFORMANCE.md`).
-
-### Déploiement et commandes
-
-Vercel, `main` en production sur `https://filloo.net` (depuis le
-2026-10-08 ; `www.filloo.net` et `filloo.vercel.app` y redirigent) :
-**ce qu'on pousse sur `main` part en ligne**, d'où les vérifications
-avant push (voir `CLAUDE.md`). `dev` a sa préversion Vercel, sur la même
-base.
+- **Vercel** : `main` en production, `dev` en préversion, région `cdg1`
+  (la base est à Paris : ne pas changer l'un sans l'autre). Cron
+  `/api/quotidien` à 07:00 UTC (notifications en attente, ménage des
+  photos).
+- **Emails de compte** par Resend, depuis `noreply@send.filloo.net`.
+- **Surveillance hebdomadaire** (2026-10-23) : tâche planifiée
+  `trig_015DkshW2gbcjy1WPZ4DebYM`, le lundi 07:58 heure de Conakry,
+  lecture seule ; alerte au-delà de 50 % d'une limite gratuite. **Elle
+  n'a pas encore les connecteurs Supabase et Vercel** : à ajouter par le
+  porteur du projet sur claude.ai, sans quoi elle ne mesure rien.
+- **Action GitHub `Migrations`** : compare dépôt et production ; exige
+  le secret `SUPABASE_ACCESS_TOKEN`, absent au 2026-10-20 (elle échoue
+  chaque matin sans rien comparer).
 
 ```bash
 npm install && npm run dev     # nécessite .env.local — voir README
 npm run typecheck && npm run build
+npm run tests                  # 55 tests, node --test
 npm run classes                # classes Tailwind fantômes
 npm run espaces                # étanchéité des deux espaces
 npm run gardes                 # gardes de route
-npm run poids                  # budgets de poids (docs/PERFORMANCE.md)
-npm run tests                  # couche applicative (node --test, sans dépendance)
-npm run e2e                    # parcours dans Chromium ; pile locale : e2e/README.md
+npm run poids                  # budgets (docs/PERFORMANCE.md)
+npm run largeurs               # débordements, serveur sur :3000
+npm run e2e                    # parcours Chromium, pile locale (e2e/README.md)
+npm run migrations             # dépôt ↔ production
 npm run memoire                # régénère l'historique de ce fichier
-npm run migrations             # dépôt ↔ production ; SUPABASE_ACCESS_TOKEN
-                               # dans .env.local, ou -- --json liste.json
 ```
 
 ---
 
 ## Décisions prises — ne pas les rediscuter
 
-`docs/SPEC.md` fait foi ; ce qui suit est le rappel de ce qu'une session
-suivante ne doit pas rouvrir.
+`docs/SPEC.md` fait foi ; rappel de ce qu'une session ne rouvre pas.
 
-- **Catalogue ouvert sans compte** ; compte exigé uniquement pour
-  écrire.
-- **Un seul fil par couple (client, boutique)** ; le premier message
-  d'un fil cite obligatoirement un produit.
-- **Deux comptes liés derrière une seule connexion**, avec bascule sans
-  se reconnecter, et **jamais les deux mélangés sur un même écran** :
-  barre d'onglets, écran d'ouverture et « Mon compte » compris.
-- **Une boutique est en ligne dès sa création** (`0033`, décision du
-  porteur du projet du 2026-10-02). Ni validation ni refus : l'email
-  confirmé par lien suffit, et la suspension ou la suppression du compte,
-  depuis le tableau de bord Supabase, restent les seuls retraits.
-- **Neuf catégories** sur un seul niveau, sans « Autre » (`0025`), et
-  **douze villes**. Mots et nombre arrêtés par le porteur du projet le
-  2026-09-23 : rien ne bouge avant qu'un besoin réel, constaté chez un
-  commerçant, ne le justifie.
-- **Publication immédiate des produits**, avec bouton « signaler » et
-  masquage par l'administrateur.
-- **Disponibilité binaire** : disponible ou vendu, pas de stock.
-- **Filtre de ville manuel**, jamais automatique.
-- **La suspension coupe l'écriture, jamais la lecture**, et **dans les
-  deux sens** (`0017`, `0022`).
-- **Un blocage ferme le fil dans les deux sens, et seul le bloqueur le
-  lève** (`0032`, décision du 2026-09-28, qui remplace « définitif en
-  v1 »). Débloquer se fait depuis le fil ou depuis « Personnes
-  bloquées » dans les paramètres de chaque espace.
-- **On ne contacte pas sa propre boutique** — sans quoi le compteur de
-  contacts, qui sert au tri « populaires », se remplit tout seul.
-- **L'intention survit à l'authentification.** Qui s'inscrit depuis
-  « Contacter le vendeur » revient sur CE produit. `?next=` porte cette
-  intention et `safeNextPath` est le seul endroit qui décide s'il est
-  sûr.
-- **Durées de conservation (2026-09-25).** Les mesures
-  (`analytics_events`) s'effacent après 13 mois (pg_cron
-  `purger-mesures`, 0028). Les photos que plus aucun produit ne
-  référence s'effacent après 24 heures (`/api/quotidien`). Messages,
-  signalements et comptes anonymisés sont gardés SANS limite : les
-  effacer attend un avis sur la loi guinéenne L/2016/037, qui n'a pas été
-  pris.
-- **Pas de notation**, **aucune monétisation en v1**.
-- **Une app mobile native, iPhone et Android, dans son propre dépôt
-  `tirry224/filloo-mobile`** (décision du porteur du projet du
-  2026-10-07 ; d'abord dans `mobile/`, sortie du dépôt le même jour). Expo (React Native), réécrite et
-  non un site emballé, publiée sur l'App Store et le Play Store. Elle
-  parle à la même base Supabase que le site et ne partage aucun code
-  avec lui : ce qui en est recopié (types, messages d'erreur) le dit en
-  tête de fichier. Le site reste en ligne pendant la réécriture.
-  Ce que l'app attend du site — tables, RLS, `POST
-  /api/app/message-envoye` — ne se change pas sans regarder
-  `filloo-mobile` : les téléphones gardent l'ancienne version de l'app
-  tant que l'utilisateur ne la met pas à jour. Les migrations restent
-  dans CE dépôt, la base n'en ayant qu'un historique.
-- Direction visuelle **« A — Marché »** : fond papier chaud, accent terre
-  cuite, bordures plutôt qu'ombres.
+- **Catalogue ouvert sans compte** ; compte exigé pour écrire.
+- **Un fil par couple (client, boutique)**, premier message citant un
+  produit.
+- **Deux comptes liés derrière une connexion**, jamais mélangés sur un
+  écran.
+- **Boutique en ligne dès sa création** (`0033`, 2026-10-02) : ni
+  validation ni refus ; suspension et suppression restent les seuls
+  retraits.
+- **Seule la boutique a une ville** (2026-10-22) ; aucun filtre de ville.
+- **Notifications proposées au moment utile** (publication, premier
+  message), jamais à l'inscription ni au chargement (2026-10-23).
+- **Neuf catégories, douze villes** (2026-09-23) : rien ne bouge sans un
+  besoin constaté chez un commerçant.
+- **Publication immédiate**, signalement, masquage par l'administrateur.
+- **Disponible ou vendu**, pas de stock ; un vendu se remet en vente.
+- **La suspension coupe l'écriture, jamais la lecture, dans les deux
+  sens** (`0017`, `0022`).
+- **Un blocage ferme le fil dans les deux sens ; seul le bloqueur le
+  lève** (`0032`).
+- **On ne contacte pas sa propre boutique** (le compteur sert au tri).
+- **L'intention survit à l'authentification** : `?next=`, validé par
+  `safeNextPath` seul.
+- **Conservation** : mesures 13 mois, photos orphelines 24 h ; messages,
+  signalements et comptes anonymisés sans limite, en attendant un avis
+  sur la loi guinéenne L/2016/037.
+- **Pas de notation, aucune monétisation en v1.**
+- **App native iPhone et Android** dans son propre dépôt, même base,
+  aucun code partagé ; ce qui exige un secret passe par `/api/app/*`.
+- **Direction visuelle « A — Marché »** : fond papier chaud, terre cuite,
+  bordures plutôt qu'ombres.
 
 ### Règles de travail
 
-- **`dev` pour travailler, `main` pour la production** (règle du
-  2026-10-07). La règle complète est dans `CLAUDE.md` — c'est elle qui
-  fait foi.
-- **Une migration ne se réécrit jamais après avoir été appliquée** : elle
-  décrit un pas déjà franchi, pas l'état final.
-- **Toute migration appliquée au tableau de bord est commitée dans la
-  même session**, et réciproquement.
-- **Relancer les tests de sécurité après TOUTE modification de
-  policy.** C'est ainsi que trois failles ont été trouvées, et aucune ne
-  produisait d'erreur.
+- **`dev` pour travailler, `main` pour la production** : `CLAUDE.md` fait
+  foi.
+- **Une migration appliquée ne se réécrit jamais**, et toute migration
+  appliquée est commitée dans la même session.
+- **Relancer les tests de sécurité après TOUTE modification de policy.**
 
 ---
 
 ## Pièges rencontrés — à ne pas refaire
 
-La section la plus utile du fichier. Chaque ligne a coûté du temps.
+Chaque ligne a coûté du temps.
 
 ### Sécurité et SQL
 
-- **Révoquer un privilège sur une colonne ne sert à rien** si `UPDATE`
-  existe au niveau de la table — ce que Supabase accorde par défaut. Il
-  faut révoquer la table entière puis ré-accorder colonne par colonne.
-  C'est ce qui permettait à un commerçant de s'auto-valider.
-- **Le RLS filtre des lignes, jamais des colonnes.** Les deux questions
-  se posent séparément à chaque table. C'est ce qui permettait à un
-  participant de réécrire le message de son interlocuteur.
-- **Le RLS ne se teste pas avec un outil qui le contourne.** Un défaut de
-  la policy du catalogue restait invisible tant qu'il était testé via un
-  accès administrateur. Trouvé en rejouant les requêtes en
-  `set role anon`, comme un vrai visiteur.
-- **Un avertissement de sécurité se vérifie, il ne se croit pas — dans
-  les deux sens.** Sur onze fonctions signalées par l'audit Supabase,
-  sept étaient de faux positifs et une était une vraie fuite.
-- **Un identifiant difficile à deviner n'est pas une protection.** La
-  première version de `conversation_is_open` (`0017`) répondait à un
-  troisième compte qui connaissait l'identifiant. Un identifiant circule
-  dans les URL, les journaux et les captures d'écran. **Toute fonction
-  `security definer` doit vérifier QUI demande, pas seulement CE QU'on
-  lui demande.**
-- **Un confort administratif est le moment exact où l'on rouvre une
-  faille.** Passer les fonctions de validation (`0012`) en
-  `security definer` les aurait rendues appelables en RPC par n'importe
-  quel visiteur. `security invoker` est écrit en clair pour que ce soit
-  un choix visible.
-- **Quand un modèle de données change, les protections écrites pour
-  l'ancien deviennent souvent décoratives** sans qu'aucun test ne le
-  signale. Arrivé au quota anti-spam lors du passage au fil unique, puis
-  au fichier de test lui-même lors du passage aux comptes liés.
-- **Une règle métier posée sur la table A ne voit pas les écritures sur
-  la table B.** `products_check_publishable` ne se déclenchait pas quand
-  les photos partaient par `product_images` — le chemin réel du code.
-  **Une protection se vérifie sur le chemin réel.**
-- **Une migration appliquée au tableau de bord n'existe nulle part tant
-  qu'elle n'est pas commitée.** Cinq migrations et une décision
-  d'architecture entière ont vécu uniquement dans
-  `supabase_migrations.schema_migrations`.
-- **Et l'inverse : une migration commitée n'existe pas en production
-  tant qu'elle n'est pas appliquée.** `0026` (cinq photos) a été
-  commitée le 2026-09-24 et déployée côté code, jamais appliquée : du
-  24 au 25, la base refusait la 4e photo que l'app proposait. Trouvé en
-  lisant `list_migrations` avant d'appliquer `0027`. Depuis,
-  `npm run migrations` fait la comparaison dans les deux sens : à
-  lancer avant de pousser tout commit qui touche `supabase/migrations/`.
-  L'Action GitHub `Migrations` (`.github/workflows/migrations.yml`) le
-  relance à chaque push sur `main` qui touche une migration, et chaque
-  matin à 6 h 17 pour attraper ce qui a été appliqué au tableau de
-  bord ; elle exige le secret `SUPABASE_ACCESS_TOKEN` dans GitHub.
-  En session, sans accès à `api.supabase.com`, passer la sortie de
-  `list_migrations` du connecteur par `--json`.
-  **Jusqu'au 2026-10-20, l'Action n'avait jamais rien comparé** : le
-  secret `SUPABASE_ACCESS_TOKEN` n'était pas posé (onglet Actions,
-  « Repository secrets »), et elle échouait en une seconde chaque matin.
-  Une migration passée au SQL Editor (`0039`) n'entre pas dans
-  `schema_migrations` : l'y inscrire à la main (version + nom), sans quoi
-  la comparaison la croit manquante.
+- **Révoquer une colonne ne sert à rien si `UPDATE` existe sur la
+  table** (défaut Supabase) : révoquer la table, ré-accorder colonne par
+  colonne.
+- **Le RLS filtre des lignes, jamais des colonnes** : les deux questions
+  se posent à chaque table.
+- **Le RLS ne se teste pas avec un accès qui le contourne** : rejouer en
+  `set role anon`.
+- **Un avertissement de sécurité se vérifie dans les deux sens** : sur
+  onze signalés, sept faux positifs, une vraie fuite.
+- **Toute fonction `security definer` vérifie QUI demande**, pas
+  seulement ce qu'on lui demande : un identifiant difficile à deviner
+  n'est pas une protection.
+- **Un confort administratif rouvre les failles** : `security invoker`
+  s'écrit en clair pour que ce soit un choix visible.
+- **Quand le modèle change, les protections de l'ancien deviennent
+  décoratives** sans qu'aucun test ne le dise.
+- **Une règle posée sur la table A ne voit pas les écritures sur B** :
+  une protection se vérifie sur le chemin réel du code.
+- **Commitée n'est pas appliquée, et appliquée n'est pas commitée** :
+  `npm run migrations` compare les deux, avant de pousser une migration.
+  Une migration passée au SQL Editor s'inscrit à la main dans
+  `schema_migrations`.
 
 ### Couche applicative
 
-- **Un abonnement temps réel parti avant la lecture de la session rejoint
-  le canal en `anon`**, et le RLS ne lui transmet alors rien, sans
-  erreur. Le badge de non-lus n'a jamais bougé pour cette raison. D'où
-  `createRealtimeClient`, qui pose le jeton AVANT `subscribe()`. Vu en
-  lisant les trames WebSocket : `phx_join` sans `access_token`.
-- **Une écriture pendant un rendu serveur n'atteint pas le layout déjà
-  en cache.** Le fil se marquait « lu » dans `ThreadScreen`, mais le badge
-  vit dans le layout `(onglets)`, que le cache client de Next garde jusqu'à
-  5 minutes : le badge restait allumé sur un fil ouvert. Le marquage est
-  passé dans `markThreadReadAction`, qui appelle
-  `revalidatePath("/", "layout")`. Correctif *à constater* sur téléphone.
-- **Supprimer toutes les photos puis les réinsérer dépubliait le
-  produit.** Le trigger de `0011` voyait un produit publié sans photo entre
-  les deux requêtes : toute modification d'un produit publié, même un
-  prix, le retirait du catalogue en affichant « enregistré ». Les photos
-  se réécrivent désormais position par position.
-- **Une liste blanche qui compare des préfixes valide une ORTHOGRAPHE,
-  pas une adresse.** `/<TAB>/faux-filloo.gn` passait `safeNextPath`, et
-  les navigateurs effacent les tabulations avant d'analyser l'adresse.
-  **Une adresse se valide en l'analysant comme le fera celui qui la
-  suivra.**
-- **« Pas d'erreur » ne veut pas dire « c'est fait » — pour `update` et
-  `delete`.** Quand le RLS écarte une ligne, PostgREST renvoie un SUCCÈS
-  portant zéro ligne : seul un `.select("id")` dit ce qui a changé. Un
-  `insert` refusé, lui, lève bien une erreur. **Une leçon formulée trop
-  largement fait corriger les mauvais endroits avec la bonne conscience
-  d'un travail fini.**
-- **Une action dont on ne peut pas savoir si elle a réussi est une action
-  cassée, même quand elle fonctionne.**
-- **`auth.getUser()` est un aller-retour réseau, pas une lecture de
-  cookie.** D'où `getSessionUser`, `getMyProfiles` ET `createClient` en
-  cache par requête — sans le dernier, deux clients différents font deux
-  clés de cache. Même logique pour la messagerie : vingt fils ne doivent
-  pas coûter vingt requêtes.
-- **Une règle posée dans la base doit être demandée à la base, et jamais
-  sans session.** `conversation_is_open` est révoquée à `anon` : un lien
-  de conversation ouvert sans session affichait une panne réseau
-  imaginaire.
-- **Une classe Tailwind qui n'existe pas ne produit aucune erreur.** D'où
-  `npm run classes`.
-- **Un paramètre qui rattrape une différence de structure est le signe
-  qu'il en faut deux.** `BottomNav` : le correctif n'était pas un
-  meilleur paramètre, c'étaient deux listes.
-- **Un correctif peut créer un défaut ailleurs.** Router un commerçant
-  vers `/vendeur` a rendu son onglet « Accueil » MORT. Un onglet qui ne
-  fait rien est pire qu'un onglet absent.
-- **Un squelette de chargement qui ne ressemble pas à la vraie page fait
-  sauter la page**, et **un `loading.tsx` placé dans un dossier prend le
-  pas sur celui du parent**.
-- **Un identifiant de démonstration survit à la donnée de
-  démonstration.** Neuf liens de `/ecrans` pointaient encore sur des
-  identifiants de démonstration morts.
-- **`Number()` ne lit pas un montant tapé par un humain.** « 450.000 »
-  devenait 450 GNF — le prix divisé par mille, sans un mot —,
-  « 450 000 », l'exemple même du champ, était refusé, et un champ vide
-  donnait un produit à 0 GNF. Trouvé le 2026-09-24 en tapant n'importe
-  quoi dans les formulaires. **Une saisie se lit avec la règle écrite du
-  format attendu** (`src/lib/prix.ts`), jamais avec le convertisseur du
-  langage, qui a ses propres idées.
-- **React 19 VIDE un `<form action={fonction}>` après chaque envoi,
-  erreur comprise.** Un chiffre manquant dans le téléphone effaçait les
-  cinq champs de l'inscription. D'où `garderLaSaisie`
-  (`src/lib/garder-la-saisie.ts`) sur neuf formulaires — pas sur la
-  zone de message ni sur le changement de mot de passe, qui DOIVENT se
-  vider après un succès. **Un formulaire se teste en se trompant**, pas
-  seulement en réussissant.
-- **`Intl.NumberFormat` en français** sépare les milliers par une espace
-  fine insécable, illisible sur mobile. Remplacée dans
-  `src/lib/format.ts`.
-- **Un champ sans colonne réelle ne s'invente pas.** La maquette
-  affichait un motif de suspension que la base ne stocke pas : retiré
-  plutôt que simulé.
-
-- **Un formulaire n'est robuste que s'il survit à l'échec.** Le
-  2026-09-25, trois défauts graves avaient la même forme : un envoi raté
-  (réseau coupé, refus, session fermée ailleurs) emportait la saisie, et
-  `useActionState` mettait deux tapes rapides EN FILE au lieu d'en
-  ignorer une. Tout formulaire passe désormais par `useFormulaire`
-  (`src/lib/use-formulaire.ts`) ; en écrire un avec `useActionState`
-  directement refait ces trois bugs.
-- **Le middleware ne redirige jamais une action serveur.** Un POST
-  portant `next-action` redirigé vers `/connexion` ne reçoit pas la
-  réponse de l'action, et l'écran tombe sur `error.tsx`.
+- **Un abonnement temps réel lancé avant la session rejoint en `anon`**
+  et ne reçoit rien, sans erreur : poser le jeton AVANT `subscribe()`.
+- **« Pas d'erreur » ne veut pas dire « fait »** : un `update` ou
+  `delete` écarté par le RLS réussit à zéro ligne ; seul
+  `.select("id")` le dit.
+- **Une action dont on ne sait pas si elle a réussi est cassée**, même
+  quand elle marche.
+- **Une écriture pendant un rendu n'atteint pas le layout en cache** :
+  passer par une action et `revalidatePath`.
+- **Supprimer puis réinsérer les photos dépubliait le produit** : se
+  réécrivent position par position.
+- **Une liste blanche de préfixes valide une orthographe, pas une
+  adresse** : analyser l'adresse comme le fera le navigateur.
+- **`auth.getUser()` est un aller-retour réseau** : session, profils et
+  client en cache par requête.
+- **Une classe Tailwind inexistante ne produit aucune erreur** :
+  `npm run classes` (encore utile le 2026-10-23).
+- **`Number()` ne lit pas un montant humain** : « 450.000 » devenait
+  450. Une saisie se lit avec la règle du format (`src/lib/prix.ts`).
+- **React 19 vide un `<form action>` après chaque envoi, erreur
+  comprise** : tout formulaire passe par `useFormulaire`, qui garde la
+  saisie, survit à une coupure et bloque le double envoi.
+- **Le middleware ne redirige jamais une action serveur.**
+- **Un squelette qui ne ressemble pas à la page la fait sauter**, et un
+  `loading.tsx` de dossier prend le pas sur celui du parent.
+- **Un navigateur ne repose plus la question des notifications** après
+  un refus ou plusieurs fermetures : la poser une fois, au moment utile.
 
 ### Supabase Auth
 
-- **`signOut()` sans argument est GLOBAL** : il révoque TOUS les jetons de
-  l'utilisateur, sur tous ses appareils. `verify.ts` déconnectait ainsi
-  la personne à chaque enregistrement ; le bug a vécu trois jours, et
-  aucun test, type ou build ne pouvait l'attraper.
-- **Un client Supabase « isolé » ne l'est que pour ce qu'il STOCKE.** Tout
-  ce qu'il demande au serveur porte sur le compte entier.
-- **Le client anonyme ne sait pas révoquer UNE session.** Un jeton obtenu
-  pour vérifier un mot de passe vit jusqu'à son expiration : c'est le
-  prix, bien moindre que déconnecter quelqu'un.
-- **Le lien PKCE (`?code=`) ne vit que dans le navigateur qui a fait la
-  demande** : la clé qui le valide est un cookie posé à ce moment-là.
-  L'app installée sur l'écran d'accueil et Safari n'ont pas les mêmes
-  cookies, et chaque nouvelle demande écrase la clé. Pour un lien reçu
-  par email, `token_hash` + `verifyOtp` est la voie qui tient.
+- **`signOut()` sans argument est GLOBAL** : il déconnecte tous les
+  appareils.
+- **Un client « isolé » ne l'est que pour ce qu'il stocke.**
+- **Le lien PKCE (`?code=`) ne vit que dans le navigateur qui l'a
+  demandé** : pour un lien d'email, `token_hash` + `verifyOtp`.
 
 ### Méthode
 
-- **Le connecteur Supabase attend une confirmation avant toute
-  suppression (`drop … if exists` compris), et elle n'arrive jamais en
-  session** : l'appel expire au bout de 60 s sans rien appliquer
-  (constaté le 2026-10-14, `0038`). Une migration qui doit supprimer
-  passe par le SQL Editor ; un `drop` inutile se retire. Toujours relire
-  l'état de la base après un délai dépassé avant de relancer.
-- **Une session s'ouvre parfois sur une copie de `main`**, plus vieille
-  que `dev` : la mémoire qu'on y lit est périmée. Repartir de `dev`
-  avant de lire quoi que ce soit (le 2026-10-14, la mémoire de `main`
-  parlait encore du SMTP Gmail remplacé par Resend le 2026-10-08).
-- **Un parcours réel à deux navigateurs trouve ce qu'aucun test ne
-  voit.** Le 2026-09-23, un script Playwright (réseau « 3G Conakry » et
-  « Slow 3G », CPU ralenti x4, trois comptes de test en production, puis
-  nettoyés) a trouvé trois défauts après que types, build et tests
-  unitaires étaient au vert : le temps réel anonyme, la dépublication à
-  la modification, et le message perdu d'une boutique en attente.
-- **La vérification automatique et le fait de regarder ne trouvent pas
-  les mêmes défauts.** Tout avait été vérifié autrement ; **le premier
-  vrai passage sur téléphone a trouvé quatre défauts en quelques
-  minutes.**
-- **Une décision écrite en plusieurs clauses se vérifie clause par
-  clause.** Une seule clause traitée, et le travail annoncé terminé.
-- **Un document écrit au passé avant que le code ne suive ment pendant
-  des jours.** **Une intention s'écrit au futur ; le passé attend le
-  commit.**
-- **Une branche locale périmée fabrique de faux défauts, et ils ont
-  l'air vrais.** `git branch --show-current` dit le NOM de la branche,
-  jamais si elle est à jour. **`git fetch` puis `git status` AVANT la
-  première lecture.**
-- **Un clone partiel cache l'histoire.** Les sessions clonent les 50
-  derniers commits : `git log` y paraît complet et ne l'est pas. D'où le
-  refus de `npm run memoire` sur un clone partiel.
-- **Un journal écrit à la main recopie Git et meurt.** L'ancien fichier
-  de reprise y est passé deux fois (725 lignes de journal sur 1506). La
-  mémoire écrite à la main garde le POURQUOI ; le QUOI est généré.
-- **Un fichier de reprise qui ment sur ce qui est fait fait perdre le
-  temps qu'il devait faire gagner.** Il annonçait encore, le 2026-09-23,
-  un responsable de traitement vide alors qu'il était rempli.
-- **Un formulaire qui accepte puis oublie est pire qu'un bouton mort : il
-  ment.** Tant qu'une action n'a pas d'effet visible à l'écran suivant,
-  elle n'est pas faite.
-- **Un test qui vérifie une redirection ne vérifie rien** : il regarde où
-  l'on ATTERRIT, jamais ce que l'écran d'après MONTRE.
-- **Un service worker mal retiré SURVIT à son application.** Le jour où
-  la mise en cache (R6 de `PERFORMANCE.md`) commencera, prévoir dès le
-  premier jour comment la désinstaller.
+- **Le connecteur Supabase attend une confirmation avant tout `drop`,
+  qui n'arrive jamais en session** : la migration passe par le SQL
+  Editor. Relire l'état après un délai dépassé.
+- **Une session peut s'ouvrir sur une branche périmée** : `git fetch`
+  puis repartir de `dev` avant de lire quoi que ce soit.
+- **Un clone partiel cache l'histoire** (50 commits).
+- **Regarder trouve ce que les tests ne voient pas** : le premier
+  passage sur téléphone a trouvé quatre défauts en quelques minutes.
+- **Un document écrit au passé avant le code ment** : une intention
+  s'écrit au futur. Le 2026-10-23, `docs/PERFORMANCE.md` affirmait des
+  règles que le code n'appliquait pas.
+- **Une constatation d'une session ancienne se revérifie** : le
+  2026-10-22, une « boutique refusée » a été signalée comme un défaut
+  alors que `0033` avait supprimé le refus.
+- **Une décision en plusieurs clauses se vérifie clause par clause.**
+- **Un service worker mal retiré survit à son application** : prévoir
+  sa désinstallation dès qu'il mettra en cache.
 
 ---
 
 ## Où lire le reste
 
-- `CLAUDE.md` — la règle Git, et la forme attendue des comptes rendus.
+- `CLAUDE.md` — la règle Git, les agents, la forme des comptes rendus.
 - `docs/SPEC.md` — les décisions produit, qui font foi.
-- `docs/ECRANS.md` — les écrans, un par ligne, avec leur route.
-- `docs/ARCHITECTURE.md` — les espaces, les groupes de routes, les
-  gardes.
-- `docs/PERFORMANCE.md` — les budgets et les règles R1 à R7.
-- `supabase/tests/README.md` — comment rejouer les tests de sécurité.
+- `docs/ECRANS.md` — les écrans et leurs routes.
+- `docs/ARCHITECTURE.md` — les espaces, les gardes, où va la logique.
+- `docs/PERFORMANCE.md` — les budgets, mesurés.
+- `.claude/savoir/` — la mémoire de chaque agent.
+- `supabase/tests/README.md` — rejouer les tests de sécurité.
 
 ---
 
 ## Le vrai risque
 
-Le code est presque fait ; ce n'est pas là que le projet se joue.
-
-Une marketplace vide n'attire aucun client, et sans clients aucun
-commerçant ne reste. **Recruter les vingt premiers commerçants — sur un
-seul marché, la densité battant le volume — est le travail le plus
-difficile du projet, et il ne s'écrit pas en TypeScript.**
+Le code est presque fait. **Recruter les vingt premiers commerçants, sur
+un seul marché, est le travail le plus difficile du projet**, et il ne
+s'écrit pas en TypeScript.
 
 ---
 
@@ -783,10 +384,11 @@ difficile du projet, et il ne s'écrit pas en TypeScript.**
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-331 commits, du plus récent au plus ancien.
+332 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `f615fc9` Cloche : retire une classe d'ombre qui n'existe pas
 - `d332da1` Notifications proposées au bon moment, plus à l'inscription
 - `e35c15f` Notifications : actives dès l'inscription, la cloche seul réglage
 
