@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { updatePasswordAction } from "@/lib/actions/auth";
 import { useFormulaire } from "@/lib/use-formulaire";
 
@@ -13,7 +14,7 @@ export function UpdatePasswordForm({ next }: { next?: string }) {
     <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Nouveau mot de passe" htmlFor="password">
-        <PasswordInput id="password" name="password" autoComplete="new-password" placeholder="8 caractères minimum" />
+        <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`} />
       </Field>
 
       {/* `updatePasswordAction` fait la comparaison côté serveur. */}

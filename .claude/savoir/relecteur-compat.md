@@ -63,6 +63,13 @@ l'app.
   l'app installée. Aucune table ni policy modifiée. Côté site, les
   profils `is_deleted` ne sont plus lus par `getMyProfiles`.
 
+- **2026-10-23, routes `/api/app/*` qui vérifient le mot de passe**
+  (`requete-app.ts`, `supprimer-compte`) : 403 seulement pour un mot de
+  passe faux (inchangé) ; « trop d'essais » répond désormais 429 et une
+  panne 503, avec un `message` en français. Avant, les deux répondaient
+  403 « mot de passe incorrect ». Une app installée traite 429/503 comme
+  une erreur générique : compatible.
+
 ## Décisions du porteur du projet
 
 - L'app vit dans son propre dépôt depuis le 2026-10-07 ; toute

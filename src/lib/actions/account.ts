@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, getMyProfiles } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
-import { passwordIsValid } from "@/lib/supabase/verify";
+import { refusMotDePasse } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
 import { ecrireMesInformations, lireInformations } from "@/lib/ecritures-protegees";
 import { supprimerProfil } from "@/lib/suppression-compte";
@@ -36,15 +36,18 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
 
   /* Vérifié AVANT la première écriture, pendant que rien n'a bougé.
-     `passwordIsValid` utilise un client jetable sans cookie, sinon une
+     `refusMotDePasse` utilise un client jetable sans cookie, sinon une
      faute de frappe déconnecterait au milieu du formulaire (voir
      `src/lib/supabase/verify.ts`). */
   const user = await getSessionUser(supabase);
   if (!user?.email) {
     return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
   }
-  if (!(await passwordIsValid(user.email, currentPassword))) {
-    return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
+  const refus = await refusMotDePasse(user.email, currentPassword);
+  if (refus) {
+    return {
+      error: refus.incorrect ? "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." : refus.message,
+    };
   }
 
   /* Écrits par le serveur, sur TOUS les profils de la connexion (0036,
@@ -102,8 +105,15 @@ async function supprimerMonCompte(formData: FormData, role: "client" | "merchant
   /* Mot de passe exigé, comme pour changer de téléphone : un téléphone
      laissé déverrouillé ne doit pas suffire à effacer un compte. */
   const currentPassword = String(formData.get("currentPassword") ?? "");
-  if (!user.email || !currentPassword || !(await passwordIsValid(user.email, currentPassword))) {
-    redirect(`${ecran}?erreur=${encodeURIComponent("Mot de passe incorrect. Votre compte n'a pas été supprimé.")}`);
+  const refus =
+    user.email && currentPassword
+      ? await refusMotDePasse(user.email, currentPassword)
+      : { incorrect: true, trop: false, message: "" };
+  if (refus) {
+    const texte = refus.incorrect
+      ? "Mot de passe incorrect. Votre compte n'a pas été supprimé."
+      : `${refus.message} Votre compte n'a pas été supprimé.`;
+    redirect(`${ecran}?erreur=${encodeURIComponent(texte)}`);
   }
 
   /* Un échec REVIENT sur l'écran de confirmation au lieu de lever : levée,

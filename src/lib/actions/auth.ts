@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { siteUrlOuLocalhost } from "@/lib/site-url";
 import { getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
-import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
+import { erreurNouveauMotDePasse } from "@/lib/password";
+import { messageErreurAuth } from "@/lib/erreurs-auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
-import { passwordIsValid } from "@/lib/supabase/verify";
+import { refusMotDePasse } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, texteNettoye } from "@/lib/saisie";
@@ -30,49 +31,6 @@ function lienDeConfirmation(next: string | null): string {
   }`;
 }
 
-function translateAuthError(message: string): string {
-  if (message.includes("already registered") || message.includes("already exists")) {
-    return "Un compte existe déjà avec cet email. Connectez-vous : vous pourrez ajouter votre second compte depuis « Mon compte », sans changer d'adresse.";
-  }
-  if (message.includes("Email not confirmed")) {
-    return "Votre adresse email n'est pas encore confirmée. Ouvrez le lien reçu par email (pensez aux courriers indésirables).";
-  }
-  if (message.includes("Invalid login credentials")) {
-    return "Email ou mot de passe incorrect.";
-  }
-  if (message.includes("Password should be at least")) {
-    return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
-  }
-  /* Règles réglées au tableau de bord Supabase (Authentication → Sign In
-     / Providers → Email), pas dans le code : sans ces deux cas, un mot de
-     passe refusé pour sa composition tombait dans « Une erreur est
-     survenue » — constaté le 2026-09-25 sur la réinitialisation. */
-  if (message.includes("should contain at least one character")) {
-    return "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre.";
-  }
-  if (message.includes("known to be weak") || message.includes("easy to guess")) {
-    return "Ce mot de passe figure dans des listes de mots de passe piratés. Choisissez-en un autre.";
-  }
-  if (message.includes("should be different from the old password")) {
-    return "Le nouveau mot de passe doit être différent de l'actuel.";
-  }
-  if (message.includes("validate email") || message.includes("invalid format")) {
-    return "Cette adresse email n'est pas valide. Vérifiez-la (exemple : mariama@exemple.com).";
-  }
-  /* `deleteAccountAction` BANNIT la connexion au lieu de la supprimer
-     (voir `account.ts`) : c'est donc aussi ce que lit quelqu'un qui a
-     supprimé son compte, pas seulement un compte sanctionné. */
-  if (message.includes("banned")) {
-    return "Ce compte a été supprimé ou fermé. Si vous pensez qu'il s'agit d'une erreur, écrivez-nous depuis la page Contact.";
-  }
-  if (message.includes("rate limit") || message.includes("too many")) {
-    return "Trop d'essais en peu de temps. Patientez quelques minutes, puis réessayez.";
-  }
-  /* Tout le reste s'affichait tel quel, en anglais. Le texte d'origine
-     part dans les journaux, où il sert. */
-  console.error("[auth]", message);
-  return "Une erreur est survenue. Réessayez dans un instant.";
-}
 
 /** Premier compte de la connexion : le trigger
  * `handle_new_user` (0002_rules_and_security.sql) crée le profil à partir
@@ -109,7 +67,7 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
       emailRedirectTo: retour,
     },
   });
-  if (error) return { error: translateAuthError(error.message) };
+  if (error) return { error: messageErreurAuth(error.message) };
 
   compter("inscription", { role });
 
@@ -200,7 +158,7 @@ export async function signInAction(_prevState: ActionState | null, formData: For
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     return {
-      error: translateAuthError(error.message),
+      error: messageErreurAuth(error.message),
       email: error.message.includes("Email not confirmed") ? email : undefined,
     };
   }
@@ -227,7 +185,7 @@ export async function resendConfirmationAction(
     email,
     options: { emailRedirectTo: lienDeConfirmation(null) },
   });
-  if (error) return { error: translateAuthError(error.message), email };
+  if (error) return { error: messageErreurAuth(error.message), email };
   return { sent: true, email };
 }
 
@@ -293,7 +251,7 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: translateAuthError(error.message) };
+  if (error) return { error: messageErreurAuth(error.message) };
 
   redirect(await destinationApresAuthentification(supabase, formData.get("next")));
 }
@@ -322,12 +280,11 @@ export async function changeMyPasswordAction(
   if (!user?.email) return { error: "Vous devez être connecté." };
 
   if (!currentPassword) return { error: "Entrez votre mot de passe actuel." };
-  if (!(await passwordIsValid(user.email, currentPassword))) {
-    return { error: "Mot de passe actuel incorrect." };
-  }
+  const refus = await refusMotDePasse(user.email, currentPassword);
+  if (refus) return { error: refus.incorrect ? "Mot de passe actuel incorrect." : refus.message };
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) return { error: translateAuthError(error.message) };
+  if (error) return { error: messageErreurAuth(error.message) };
 
   return { sent: true };
 }

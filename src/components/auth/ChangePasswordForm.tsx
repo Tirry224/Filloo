@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { changeMyPasswordAction } from "@/lib/actions/auth";
 import { useFormulaire } from "@/lib/use-formulaire";
 
@@ -42,7 +43,7 @@ export function ChangePasswordForm() {
           id="newPassword"
           name="newPassword"
           autoComplete="new-password"
-          placeholder="8 caractères minimum"
+          placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`}
         />
       </Field>
 

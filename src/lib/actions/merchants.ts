@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { passwordIsValid } from "@/lib/supabase/verify";
+import { refusMotDePasse } from "@/lib/supabase/verify";
 import { nettoyerTelephone } from "@/lib/telephone";
 import { CHEMIN_PHOTO, ecrireMaBoutique, lireBoutique } from "@/lib/ecritures-protegees";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
@@ -71,7 +71,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
      bonne personne ».
 
      Supabase n'ayant pas d'appel « vérifie ce mot de passe »,
-     `passwordIsValid` se connecte avec un client JETABLE, sans cookie
+     `refusMotDePasse` se connecte avec un client JETABLE, sans cookie
      (`src/lib/supabase/verify.ts`) : une faute de frappe ne déconnecte
      donc pas au milieu du formulaire. */
   const user = await getSessionUser(supabase);
@@ -81,8 +81,11 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
     return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
   }
 
-  if (!(await passwordIsValid(user.email, currentPassword))) {
-    return { error: "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." };
+  const refus = await refusMotDePasse(user.email, currentPassword);
+  if (refus) {
+    return {
+      error: refus.incorrect ? "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." : refus.message,
+    };
   }
 
   /* Écrite par le serveur (0036, 0037) : la session seule ne peut plus

@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { messageErreurAuth } from "@/lib/erreurs-auth";
 
 /**
  * Vérifie un mot de passe SANS toucher à la session en cours.
@@ -17,7 +18,18 @@ import type { Database } from "@/lib/database.types";
  * Il utilise la clé `anon`, comme l'écran de connexion : la limitation de
  * débit d'authentification de Supabase s'applique donc ici aussi.
  */
-export async function passwordIsValid(email: string, password: string): Promise<boolean> {
+/**
+ * `null` : le mot de passe ouvre bien ce compte. Sinon, ce qu'il faut
+ * dire, et si c'est le MOT DE PASSE qui est faux (`incorrect`).
+ *
+ * Avant le 2026-10-23, toute erreur répondait « faux » : trop d'essais ou
+ * Supabase injoignable s'affichaient « mot de passe incorrect », et la
+ * personne retapait le bon mot de passe sans comprendre.
+ */
+export async function refusMotDePasse(
+  email: string,
+  password: string,
+): Promise<null | { incorrect: boolean; trop: boolean; message: string }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new Error("Configuration Supabase manquante.");
@@ -37,5 +49,9 @@ export async function passwordIsValid(email: string, password: string): Promise<
      Ce que ça coûte : le jeton obtenu vit jusqu'à son expiration, écrit
      nulle part et renvoyé à personne — le risque d'un onglet fermé. */
 
-  return !error && Boolean(data?.session);
+  if (!error && data?.session) return null;
+  if (!error || error.code === "invalid_credentials" || error.message.includes("Invalid login credentials")) {
+    return { incorrect: true, trop: false, message: "Mot de passe incorrect." };
+  }
+  return { incorrect: false, trop: error.status === 429, message: messageErreurAuth(error.message) };
 }

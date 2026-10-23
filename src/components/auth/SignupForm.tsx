@@ -7,6 +7,7 @@ import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/cn";
@@ -171,7 +172,7 @@ export function SignupForm({
           </Field>
 
           <Field label="Mot de passe" htmlFor="password">
-            <PasswordInput id="password" name="password" autoComplete="new-password" placeholder="8 caractères minimum" />
+            <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`} />
           </Field>
 
           {/* La comparaison qui COMPTE est celle de `signUpAction`, côté

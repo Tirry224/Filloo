@@ -94,6 +94,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   `/api/app/supprimer-compte` garde l'ancien comportement pour les
   téléphones installés. Une version de l'app qui envoie `role`
   (`"client"` ou `"merchant"`) suivra le site.
+- **L'app vérifie peut-être encore 8 caractères** au lieu de 10 : Supabase
+  la refusera avec son propre message. À aligner dans `filloo-mobile`.
 - **Recréer un compte supprimé** : impossible avec la même adresse. Le
   permettre demande une migration (unicité seulement sur les profils non
   supprimés), sur accord.
@@ -347,6 +349,16 @@ Chaque ligne a coûté du temps.
 
 ### Supabase Auth
 
+- **Un réglage du tableau de bord se recopie dans le code, ou les deux
+  mentent** : Supabase exigeait 10 caractères, le site 8 ; six
+  inscriptions refusées le 2026-10-22 avec « 8 caractères minimum ». Le
+  site lit désormais le chiffre dans la réponse (`src/lib/erreurs-auth.ts`)
+  et `LONGUEUR_MIN_MOT_DE_PASSE` vaut 10. Les journaux
+  d'authentification (`auth_logs`) disent le vrai refus.
+- **« Faux » n'est pas « incorrect »** : la vérification du mot de passe
+  répondait faux pour un « trop d'essais » comme pour un mauvais mot de
+  passe. `refusMotDePasse` distingue les deux.
+
 - **`signOut()` sans argument est GLOBAL** : il déconnecte tous les
   appareils.
 - **Un client « isolé » ne l'est que pour ce qu'il stocke.**
@@ -399,10 +411,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-335 commits, du plus récent au plus ancien.
+336 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `3b535b6` Textes d'attente et placeholders sans points de suspension
 - `5a25296` Mot de passe affichable, et textes de formulaire corrigés
 - `a23389c` Supprimer un compte lié ne supprime plus l'autre
 - `4dbfb1c` Documentation réécrite : à jour, et deux fois plus courte

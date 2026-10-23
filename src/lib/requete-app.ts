@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { passwordIsValid } from "@/lib/supabase/verify";
+import { refusMotDePasse } from "@/lib/supabase/verify";
 
 /**
  * Les deux preuves qu'exige une écriture protégée venue de l'APP MOBILE,
@@ -38,8 +38,13 @@ export async function verifierJetonEtMotDePasse(
   const user = data?.user;
   if (error || !user) return NextResponse.json({ erreur: "jeton refusé" }, { status: 401 });
 
-  if (!user.email || !(await passwordIsValid(user.email, motDePasse))) {
-    return NextResponse.json({ erreur: "mot de passe incorrect" }, { status: 403 });
+  /* 403 seulement si c'est le mot de passe : l'app installée affiche
+     « mot de passe incorrect » sur un 403. Trop d'essais (429) ou panne
+     (503) portent un `message` à afficher tel quel. */
+  const refus = user.email ? await refusMotDePasse(user.email, motDePasse) : { incorrect: true, trop: false, message: "" };
+  if (refus) {
+    if (refus.incorrect) return NextResponse.json({ erreur: "mot de passe incorrect" }, { status: 403 });
+    return NextResponse.json({ erreur: "vérification impossible", message: refus.message }, { status: refus.trop ? 429 : 503 });
   }
   return { user, corps };
 }
