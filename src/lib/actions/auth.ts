@@ -118,7 +118,7 @@ export async function createLinkedProfileAction(
     if (error.code === "23505") {
       return {
         error: (await getMyDeletedRoles(supabase)).includes(role)
-          ? "Compte supprimé : il ne peut pas être recréé avec cet email."
+          ? "Ce compte ne peut pas encore être recréé. Réessayez plus tard."
           : "Vous avez déjà ce type de compte.",
       };
     }

@@ -30,10 +30,15 @@ export async function supprimerProfil(userId: string, role: Role): Promise<{ con
   const { data: profiles, error } = await admin
     .from("profiles")
     .select("id, role, is_deleted")
-    .eq("auth_user_id", userId);
+    .eq("auth_user_id", userId)
+    .order("created_at");
   if (error) throw error;
 
-  const cible = profiles.find((p) => p.role === role);
+  /* Le profil ACTIF de ce rôle : depuis `0041`, une connexion peut porter
+     d'anciens profils supprimés du même rôle à côté du nouveau. Sans profil
+     actif (suppression interrompue, relancée), on refait le dernier. */
+  const cible =
+    profiles.find((p) => p.role === role && !p.is_deleted) ?? [...profiles].reverse().find((p) => p.role === role);
   if (cible) await effacerProfil(admin, cible);
 
   if (profiles.some((p) => p.role !== role && !p.is_deleted)) return { connexionFermee: false };

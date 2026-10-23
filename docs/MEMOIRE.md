@@ -416,10 +416,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-338 commits, du plus récent au plus ancien.
+339 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `a142edb` Mot de passe : 8 caractères, comme Supabase désormais
 - `5f78dc8` Messages d'erreur courts, et un chiffre exigé dans le mot de passe
 - `7ed2202` Mot de passe : les messages d'échec disent enfin la vraie cause
 - `3b535b6` Textes d'attente et placeholders sans points de suspension

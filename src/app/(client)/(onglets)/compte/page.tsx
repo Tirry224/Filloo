@@ -7,7 +7,7 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { clientSpaceFallback, getMyDeletedRoles, getMyProfile, getSessionUser } from "@/lib/data/session";
+import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { signOutAction } from "@/lib/actions/auth";
 
@@ -17,7 +17,7 @@ export default async function AccountPage() {
   if (!profile) redirect(await clientSpaceFallback(supabase));
   if (profile.isSuspended) redirect("/compte/suspendu");
 
-  const [merchant, supprimes] = await Promise.all([getMyMerchant(supabase), getMyDeletedRoles(supabase)]);
+  const merchant = await getMyMerchant(supabase);
 
   return (
     <TabScreen largeur="rangees">
@@ -45,7 +45,7 @@ export default async function AccountPage() {
               target={merchant.shopName}
               href="/vendeur"
             />
-          ) : supprimes.includes("merchant") ? null : (
+          ) : (
             <MenuList>
               <MenuItem icon={Store} label="Créer mon compte vendeur" href="/inscription" />
             </MenuList>

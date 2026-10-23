@@ -10,7 +10,7 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfile, getMyDeletedRoles } from "@/lib/data/session";
+import { getMyProfile } from "@/lib/data/session";
 import { signOutAction } from "@/lib/actions/auth";
 import type { Merchant } from "@/lib/types";
 import { shopPhotoUrl } from "@/lib/storage";
@@ -30,10 +30,9 @@ type MerchantRow = {
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  const [merchantProfile, clientProfile, supprimes] = await Promise.all([
+  const [merchantProfile, clientProfile] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getMyProfile(supabase, "client"),
-    getMyDeletedRoles(supabase),
   ]);
   /* Rôle et suspension sont traités par `(vendeur)/layout.tsx`. Ce test
      porte sur la BOUTIQUE, qu'un profil commerçant neuf n'a pas encore :
@@ -106,7 +105,7 @@ export default async function EditShopPage() {
               target={clientProfile.fullName}
               href="/compte"
             />
-          ) : supprimes.includes("client") ? null : (
+          ) : (
             <MenuList>
               <MenuItem icon={ShoppingBag} label="Créer mon compte client" href="/inscription" />
             </MenuList>

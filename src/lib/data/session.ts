@@ -70,9 +70,10 @@ export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): P
 });
 
 /**
- * Les rôles dont le profil a été supprimé sur cette connexion. Un rôle
- * supprimé ne se recrée pas : `profiles` est unique par (connexion, rôle)
- * et la ligne anonymisée reste, citée par les messages.
+ * Les rôles dont un profil a été supprimé sur cette connexion. La ligne
+ * anonymisée reste (les messages la citent) ; depuis `0041`, un nouveau
+ * profil du même rôle peut naître à côté, l'unicité ne portant plus que
+ * sur les profils actifs.
  */
 export const getMyDeletedRoles = cache(
   async (supabase: SupabaseClient<Database>): Promise<("client" | "merchant")[]> => {
