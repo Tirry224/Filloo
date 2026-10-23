@@ -47,10 +47,16 @@ export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): P
      action qui demande « quels comptes porte cette connexion ? » passe
      ici — c'est donc ici que la règle tient sur tous les chemins. */
   if (estProprietaire(user)) redirect("/suivi");
+  /* Un profil SUPPRIMÉ n'existe plus pour le site (2026-10-23) : depuis
+     qu'on supprime un seul des deux comptes liés, l'autre continue de
+     vivre sur la même connexion, et le profil effacé ne doit plus ouvrir
+     d'espace, de bascule ni de garde. `getMyDeletedRoles` dit ce qui a
+     été supprimé, pour les deux écrans qui en ont besoin. */
   const { data, error } = await supabase
     .from("profiles")
     .select("id, role, full_name, phone, city_id, is_suspended, is_deleted")
-    .eq("auth_user_id", user.id);
+    .eq("auth_user_id", user.id)
+    .eq("is_deleted", false);
   if (error) throw error;
   return data.map((p) => ({
     id: p.id,
@@ -62,6 +68,25 @@ export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): P
     isDeleted: p.is_deleted,
   }));
 });
+
+/**
+ * Les rôles dont le profil a été supprimé sur cette connexion. Un rôle
+ * supprimé ne se recrée pas : `profiles` est unique par (connexion, rôle)
+ * et la ligne anonymisée reste, citée par les messages.
+ */
+export const getMyDeletedRoles = cache(
+  async (supabase: SupabaseClient<Database>): Promise<("client" | "merchant")[]> => {
+    const user = await getSessionUser(supabase);
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("auth_user_id", user.id)
+      .eq("is_deleted", true);
+    if (error) throw error;
+    return data.map((p) => p.role);
+  },
+);
 
 /**
  * Où envoyer quelqu'un qui demande l'espace CLIENT sans compte client :

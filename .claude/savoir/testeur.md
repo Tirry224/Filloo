@@ -10,7 +10,7 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 | `npm run typecheck`, `npm run build` | OK |
 | `npm run tests` (Node 22) | **55/55**, 9 fichiers |
 | `npm run classes`, `npm run gardes` | OK |
-| `npm run espaces` | **ÉCHEC, 1 cas connu** (voir « Échecs connus ») |
+| `npm run espaces` | OK depuis le 2026-10-23 (la suppression a sa route commerçant) |
 | `npm run poids` | OK (socle 169,4 Ko, police 19,7 Ko, HTML ≤ 12,1 Ko) |
 | `npm run largeurs` | non lancé : exige un serveur sur `localhost:3000` |
 | `security_test.sql` | **183 contrôles OK** (2026-10-14, avec `0038`–`0040`) |
@@ -49,10 +49,7 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 
 ## Échecs connus
 
-- **`npm run espaces`** :
-  `src/app/(client)/(plein-ecran)/compte/informations/supprimer/page.tsx:18`
-  renvoie vers `/vendeur/boutique` depuis une route client. Vrai mélange
-  ou faux positif du script : **à trancher** par le porteur du projet.
+- Aucun au 2026-10-23.
 
 ## Défauts récurrents
 
@@ -69,5 +66,9 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   (2026-10-22, 2026-10-23) : aucune exécution dans un navigateur ;
   Playwright peut accorder la permission (`context.grantPermissions`)
   pour un futur test e2e.
+- **La suppression d'un seul compte lié** (2026-10-23) : `supprimerProfil`
+  appelle le client `admin` sans injection possible, donc aucun test
+  unitaire ; candidat e2e (pile locale) : créer client + boutique,
+  supprimer l'un, vérifier que l'autre entre sans reconnexion.
 - L'app mobile en entier. Premiers candidats à un test unitaire :
   `src/lib/format.ts`, `src/lib/telephone.ts` — *supposé*.

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, getMyProfiles } from "@/lib/data/session";
@@ -7,7 +8,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { passwordIsValid } from "@/lib/supabase/verify";
 import { messagePourErreur } from "@/lib/erreurs";
 import { ecrireMesInformations, lireInformations } from "@/lib/ecritures-protegees";
-import { anonymiserEtBannir } from "@/lib/suppression-compte";
+import { supprimerProfil } from "@/lib/suppression-compte";
 
 /**
  * Le nom et le téléphone appartiennent à la CONNEXION : `profiles` porte
@@ -68,42 +69,64 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
  * partie 4 — et couper l'accès à `auth.users` exige `service_role` ; les
  * deux doivent arriver ENSEMBLE, d'où la connexion `admin`.
  *
+ * UN compte à la fois (2026-10-23) : supprimer le compte client laisse la
+ * boutique intacte, et inversement. Deux actions, une par espace, plutôt
+ * qu'un champ du formulaire : c'est la route qui décide quel compte
+ * disparaît, comme elle décide de l'espace partout ailleurs.
+ *
  * `auth.users` n'est PAS supprimé : `messages.sender_id` référence
  * `profiles` SANS cascade, donc un `deleteUser` échouerait sur une clé
- * étrangère. Un BANNISSEMENT (`ban_duration`) coupe l'accès en laissant
- * l'historique lisible, et l'email est remplacé pour pouvoir resservir.
+ * étrangère. Quand plus aucun compte ne reste, un BANNISSEMENT coupe
+ * l'accès en laissant l'historique lisible, et l'email est remplacé pour
+ * pouvoir resservir.
  */
-export async function deleteAccountAction(formData: FormData) {
+export async function deleteClientAccountAction(formData: FormData) {
+  await supprimerMonCompte(formData, "client");
+}
+
+export async function deleteMerchantAccountAction(formData: FormData) {
+  await supprimerMonCompte(formData, "merchant");
+}
+
+const ECRAN_SUPPRESSION = {
+  client: "/compte/informations/supprimer",
+  merchant: "/vendeur/informations/supprimer",
+} as const;
+
+async function supprimerMonCompte(formData: FormData, role: "client" | "merchant"): Promise<never> {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/connexion");
+  const ecran = ECRAN_SUPPRESSION[role];
 
   /* Mot de passe exigé, comme pour changer de téléphone : un téléphone
      laissé déverrouillé ne doit pas suffire à effacer un compte. */
   const currentPassword = String(formData.get("currentPassword") ?? "");
   if (!user.email || !currentPassword || !(await passwordIsValid(user.email, currentPassword))) {
-    redirect(
-      `/compte/informations/supprimer?erreur=${encodeURIComponent(
-        "Mot de passe incorrect. Votre compte n'a pas été supprimé.",
-      )}`,
-    );
+    redirect(`${ecran}?erreur=${encodeURIComponent("Mot de passe incorrect. Votre compte n'a pas été supprimé.")}`);
   }
 
   /* Un échec REVIENT sur l'écran de confirmation au lieu de lever : levée,
      l'erreur tombait sur `error.tsx`, et la personne concluait à une panne
      de réseau pour un compte resté intact. Le détail part dans les
      journaux Vercel, préfixé pour s'y chercher. */
+  let connexionFermee: boolean;
   try {
-    await anonymiserEtBannir(user.id);
+    ({ connexionFermee } = await supprimerProfil(user.id, role));
   } catch (erreur) {
     console.error("[suppression] compte non supprimé :", erreur instanceof Error ? erreur.message : erreur);
     redirect(
-      `/compte/informations/supprimer?erreur=${encodeURIComponent(
+      `${ecran}?erreur=${encodeURIComponent(
         "La suppression n'a pas abouti. Réessayez plus tard ; si cela se répète, écrivez-nous.",
       )}`,
     );
   }
 
-  await supabase.auth.signOut();
-  redirect("/connexion");
+  if (connexionFermee) {
+    await supabase.auth.signOut();
+    redirect("/connexion");
+  }
+  // L'autre compte reste : on y entre, sans se reconnecter.
+  revalidatePath("/", "layout");
+  redirect(role === "client" ? "/vendeur" : "/compte");
 }

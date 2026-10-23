@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrlOuLocalhost } from "@/lib/site-url";
-import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/session";
+import { getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
@@ -157,7 +157,13 @@ export async function createLinkedProfileAction(
       phone: existant.phone,
     });
   if (error) {
-    if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
+    if (error.code === "23505") {
+      return {
+        error: (await getMyDeletedRoles(supabase)).includes(role)
+          ? "Ce compte a été supprimé : il ne peut pas être recréé avec cette adresse email."
+          : "Vous avez déjà ce type de compte.",
+      };
+    }
     return { error: messagePourErreur(error, "compte") };
   }
 

@@ -31,7 +31,7 @@ Les routes `(client)` et `(vendeur)` sont des groupes de `src/app/`
 | 32b | Signaler une conversation | `/messages/[id]/signaler` | Motifs propres aux personnes. |
 | 17 | Mon compte | `/compte` | Bascule vers le compte commerçant lié, mot de passe, liens légaux, déconnexion. |
 | 18 | Mes informations | `/compte/informations` | Nom et téléphone, mot de passe exigé pour enregistrer. Plus de ville. |
-| 18 | Supprimer mon compte | `/compte/informations/supprimer` | Anonymisation, jamais un vrai effacement. |
+| 18 | Supprimer mon compte client | `/compte/informations/supprimer` | Anonymisation, jamais un vrai effacement. Ne touche pas la boutique liée. |
 | — | Personnes bloquées | `/compte/bloques` | Débloquer. |
 | 19 | Compte suspendu | `/compte/suspendu` | Lecture seule, recours. |
 | 34 | Conditions, confidentialité, contact | `/conditions`, `/confidentialite`, `/contact` | |
@@ -48,6 +48,7 @@ Les routes `(client)` et `(vendeur)` sont des groupes de `src/app/`
 | 27 | Messages | `/vendeur/messages` et `/vendeur/messages/[id]` (+ `citer`, `actions`, `signaler`) | Le même fil que côté client, monté dans l'espace commerçant. |
 | 26 | Ma boutique | `/vendeur/boutique` | Consultation, bascule vers le compte client, mot de passe, déconnexion. |
 | 26b | Modifier ma boutique | `/vendeur/boutique/modifier` | Mot de passe exigé : adresse et WhatsApp sont ce qu'un client lit avant de se déplacer. |
+| 18 | Supprimer ma boutique | `/vendeur/informations/supprimer` | Produits retirés, photos et coordonnées effacées. Ne touche pas le compte client lié. |
 | 18, 34 | Mes informations, bloqués, légal | `/vendeur/informations`, `/vendeur/bloques`, `/vendeur/conditions`, `/vendeur/confidentialite`, `/vendeur/contact` | Mêmes composants que côté client, autre retour. |
 
 ## Compte et accès

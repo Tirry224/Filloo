@@ -67,6 +67,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### À constater sur un téléphone
 
+- **Supprimer un seul des deux comptes liés** (2026-10-23) : l'autre
+  reste accessible sans se reconnecter, ses conversations et
+  notifications intactes. Jamais testé en vrai : à faire avec un compte
+  de test, la préversion écrivant dans la base de production.
+
 - **La cloche** (2026-10-22) : un tap active, un second coupe ; bulle
   d'explication si le navigateur ne gère pas ou a bloqué.
 - **La demande de notifications au bon moment** (2026-10-23) : à
@@ -85,11 +90,15 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Mesures d'usage de l'app** : `analytics_events` ne s'écrit qu'avec la
   clé `service_role` ; une route ouverte laisserait fabriquer des
   chiffres.
+- **L'app supprime encore les deux comptes d'un coup** : sans `role`,
+  `/api/app/supprimer-compte` garde l'ancien comportement pour les
+  téléphones installés. Une version de l'app qui envoie `role`
+  (`"client"` ou `"merchant"`) suivra le site.
+- **Recréer un compte supprimé** : impossible avec la même adresse. Le
+  permettre demande une migration (unicité seulement sur les profils non
+  supprimés), sur accord.
 - **On peut se signaler soi-même** : la policy « reports: je signale »
   vérifie le signalant, pas la cible. Migration à écrire, sur accord.
-- **`npm run espaces` échoue sur un cas** :
-  `compte/informations/supprimer/page.tsx:18` renvoie vers
-  `/vendeur/boutique`. Vrai mélange ou faux positif du script.
 - **Préchargement des liens** : `docs/PERFORMANCE.md` annonçait
   `prefetch={false}` sur tous les liens de liste ; le code n'en porte
   aucun (constaté le 2026-10-23). Poser la règle ou la retirer.
@@ -184,6 +193,12 @@ propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
 - **Produit vendu remis en vente** depuis sa feuille d'actions
   (2026-10-22).
 - **Inscription boutique** : le WhatsApp reprend le numéro du compte.
+- **Chaque compte lié se supprime seul** (2026-10-23) : une route par
+  espace (`/compte/…/supprimer`, `/vendeur/informations/supprimer`),
+  `supprimerProfil` dans `src/lib/suppression-compte.ts`. La connexion
+  n'est fermée, et l'email libéré, qu'avec le dernier compte. Le site
+  ignore les profils supprimés (`getMyProfiles`) ; un compte supprimé ne
+  se recrée pas (`profiles` unique par connexion et par rôle).
 - **Cache** : catalogue public lu une minute par le client anonyme ;
   une page visitée reste 30 s dans le navigateur ; photos servies par
   `next/image`.
@@ -384,10 +399,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-332 commits, du plus récent au plus ancien.
+333 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `4dbfb1c` Documentation réécrite : à jour, et deux fois plus courte
 - `f615fc9` Cloche : retire une classe d'ombre qui n'existe pas
 - `d332da1` Notifications proposées au bon moment, plus à l'inscription
 - `e35c15f` Notifications : actives dès l'inscription, la cloche seul réglage

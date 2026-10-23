@@ -56,6 +56,13 @@ l'app.
   tant qu'elles ne sont pas remplacées. Retour arrière possible :
   ré-accorder l'`update` colonne par colonne retiré par `0037`.
 
+- **2026-10-23, `/api/app/supprimer-compte`** : accepte un `role`
+  facultatif (`client` ou `merchant`) qui ne supprime que ce compte ;
+  réponse `{ supprime, connexionFermee }`. **Sans `role`, comportement
+  inchangé** (tout supprimer, `{ supprime: true }`) : compatible avec
+  l'app installée. Aucune table ni policy modifiée. Côté site, les
+  profils `is_deleted` ne sont plus lus par `getMyProfiles`.
+
 ## Décisions du porteur du projet
 
 - L'app vit dans son propre dépôt depuis le 2026-10-07 ; toute
