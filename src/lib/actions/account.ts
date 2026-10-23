@@ -28,12 +28,12 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   // commerçant rappelle, et le réécrire détournerait ces rappels.
   const currentPassword = String(formData.get("currentPassword") ?? "");
   if (!currentPassword) {
-    return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
+    return { error: "Entrez votre mot de passe actuel pour enregistrer." };
   }
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
-  if (!profiles.some((p) => !p.isDeleted)) return { error: "Vous devez être connecté." };
+  if (!profiles.some((p) => !p.isDeleted)) return { error: "Connectez-vous d'abord." };
 
   /* Vérifié AVANT la première écriture, pendant que rien n'a bougé.
      `refusMotDePasse` utilise un client jetable sans cookie, sinon une
@@ -41,12 +41,12 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
      `src/lib/supabase/verify.ts`). */
   const user = await getSessionUser(supabase);
   if (!user?.email) {
-    return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
+    return { error: "Vérification impossible. Reconnectez-vous." };
   }
   const refus = await refusMotDePasse(user.email, currentPassword);
   if (refus) {
     return {
-      error: refus.incorrect ? "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." : refus.message,
+      error: refus.incorrect ? "Mot de passe incorrect. Rien n'est enregistré." : refus.message,
     };
   }
 
@@ -57,7 +57,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   const { data: ecrits, error } = await ecrireMesInformations(user.id, informations.fullName, informations.phone);
   if (error) return { error: messagePourErreur(error, "compte") };
   if (!ecrits) {
-    return { error: "Modification impossible. Reconnectez-vous, puis réessayez." };
+    return { error: "Modification impossible. Reconnectez-vous." };
   }
 
   // L'espace vient du navigateur : il ne choisit qu'entre deux chemins
@@ -111,8 +111,8 @@ async function supprimerMonCompte(formData: FormData, role: "client" | "merchant
       : { incorrect: true, trop: false, message: "" };
   if (refus) {
     const texte = refus.incorrect
-      ? "Mot de passe incorrect. Votre compte n'a pas été supprimé."
-      : `${refus.message} Votre compte n'a pas été supprimé.`;
+      ? "Mot de passe incorrect. Compte non supprimé."
+      : `${refus.message} Compte non supprimé.`;
     redirect(`${ecran}?erreur=${encodeURIComponent(texte)}`);
   }
 
@@ -127,7 +127,7 @@ async function supprimerMonCompte(formData: FormData, role: "client" | "merchant
     console.error("[suppression] compte non supprimé :", erreur instanceof Error ? erreur.message : erreur);
     redirect(
       `${ecran}?erreur=${encodeURIComponent(
-        "La suppression n'a pas abouti. Réessayez plus tard ; si cela se répète, écrivez-nous.",
+        "Suppression impossible. Réessayez plus tard.",
       )}`,
     );
   }

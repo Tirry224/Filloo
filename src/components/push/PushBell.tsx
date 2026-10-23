@@ -36,9 +36,9 @@ export function PushBell({ connecte }: { connecte: boolean }) {
 const DUREE_BULLE_MS = 4_000;
 
 const BULLE_NON_SUPPORTE =
-  "Ce navigateur ne gère pas les notifications. Sur iPhone, ajoutez d'abord Filloo à l'écran d'accueil (Partager, puis « Sur l'écran d'accueil »).";
+  "Notifications impossibles ici. Sur iPhone : Partager, puis « Sur l'écran d'accueil ».";
 const BULLE_BLOQUE =
-  "Notifications bloquées pour ce site. Réautorisez-les dans les réglages du navigateur, ligne « Notifications ».";
+  "Notifications bloquées. Réautorisez-les dans les réglages du navigateur.";
 
 const classes = {
   bouton: "-m-2 flex size-tap items-center justify-center rounded-full text-ink-soft",

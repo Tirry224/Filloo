@@ -14,7 +14,7 @@ export function UpdatePasswordForm({ next }: { next?: string }) {
     <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Nouveau mot de passe" htmlFor="password">
-        <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`} />
+        <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`} />
       </Field>
 
       {/* `updatePasswordAction` fait la comparaison côté serveur. */}

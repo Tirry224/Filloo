@@ -27,7 +27,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <EmptyState
           icon={CircleAlert}
           title="Impossible d'afficher cette page"
-          description={`Une erreur est survenue de notre côté. Réessayez dans un instant.${
+          description={`Une erreur est survenue. Réessayez.${
             error.digest ? ` Référence : ${error.digest}` : ""
           }`}
         >

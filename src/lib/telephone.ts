@@ -31,7 +31,7 @@ export function erreurTelephone(valeur: string, obligatoire: boolean, champ = "t
     return obligatoire ? `Entrez votre numéro de ${champ}.` : null;
   }
   if (!estTelephone(nettoye)) {
-    return `Entrez un numéro guinéen à 9 chiffres commençant par 6 (exemple : 622 33 44 55).`;
+    return `Numéro invalide : 9 chiffres commençant par 6 (ex. 622 33 44 55).`;
   }
   return null;
 }

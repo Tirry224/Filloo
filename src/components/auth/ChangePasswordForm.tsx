@@ -43,7 +43,7 @@ export function ChangePasswordForm() {
           id="newPassword"
           name="newPassword"
           autoComplete="new-password"
-          placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`}
+          placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`}
         />
       </Field>
 

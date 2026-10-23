@@ -154,10 +154,10 @@ test("le commerçant supprime son compte : produit retiré, connexion refusée",
   const page = await personne(browser);
   await connecter(page, V.email, V.mdp);
   await page.goto("/compte/informations/supprimer");
-  await page.getByLabel("Mot de passe").fill("pas-le-bon");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("pas-le-bon");
   await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
   await expect(page.getByText(/Mot de passe incorrect/)).toBeVisible();
-  await page.getByLabel("Mot de passe").fill(V.mdp);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(V.mdp);
   await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
   await expect(page).toHaveURL(/\/connexion/);
 
@@ -166,7 +166,7 @@ test("le commerçant supprime son compte : produit retiré, connexion refusée",
   expect(r?.status()).toBe(404);
   await visiteur.goto("/connexion");
   await visiteur.getByLabel("Email").fill(V.email);
-  await visiteur.getByLabel("Mot de passe").fill(V.mdp);
+  await visiteur.getByLabel("Mot de passe", { exact: true }).fill(V.mdp);
   await visiteur.getByRole("button", { name: /connecter/i }).click();
   await expect(visiteur).toHaveURL(/\/connexion/);
   await expect(visiteur.getByText(/supprimé|fermé/i).first()).toBeVisible();

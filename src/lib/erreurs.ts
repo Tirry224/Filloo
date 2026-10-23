@@ -16,9 +16,9 @@
 
 type ErreurBase = { code?: string | null; message: string };
 
-export const DECONNECTE = "Vous avez été déconnecté. Reconnectez-vous, puis réessayez : votre saisie est gardée.";
+export const DECONNECTE = "Vous êtes déconnecté. Reconnectez-vous : votre saisie est gardée.";
 
-export const ERREUR_INCONNUE = "Une erreur est survenue. Réessayez dans un instant.";
+export const ERREUR_INCONNUE = "Une erreur est survenue. Réessayez.";
 
 export function messagePourErreur(erreur: ErreurBase, contexte = "action"): string {
   switch (erreur.code) {
@@ -27,13 +27,13 @@ export function messagePourErreur(erreur: ErreurBase, contexte = "action"): stri
     case "22P02": // un identifiant ou un nombre mal formé
     case "23503": // une catégorie, une ville ou un produit qui n'existe pas
       console.error(`[${contexte}]`, erreur.code, erreur.message);
-      return "Ce formulaire n'est plus à jour. Rechargez la page, puis réessayez.";
+      return "Page plus à jour. Rechargez-la.";
     case "23514": // une contrainte `check` : longueur, borne
       console.error(`[${contexte}]`, erreur.code, erreur.message);
-      return "Un des champs dépasse ce qui est permis. Raccourcissez-le, puis réessayez.";
+      return "Un champ est trop long. Raccourcissez-le.";
     case "42501": // RLS : session expirée, compte suspendu ou supprimé
       console.error(`[${contexte}]`, erreur.code, erreur.message);
-      return "Action refusée. Reconnectez-vous, puis réessayez.";
+      return "Action refusée. Reconnectez-vous.";
     default:
       console.error(`[${contexte}]`, erreur.code ?? "", erreur.message);
       return ERREUR_INCONNUE;

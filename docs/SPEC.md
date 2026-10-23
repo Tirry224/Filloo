@@ -16,7 +16,7 @@ l'ancienne version se relit par `git log -p -- docs/SPEC.md`.
 
 | # | Sujet | Décision |
 |---|-------|----------|
-| 1 | Authentification | Email + mot de passe (**10 caractères minimum**, réglage Supabase recopié dans `src/lib/password.ts`), **email confirmé obligatoire** (2026-09-17) : sans confirmation, n'importe qui s'inscrit avec l'adresse d'un tiers. Téléphone obligatoire, **non vérifié** (pas de SMS). |
+| 1 | Authentification | Email + mot de passe (**10 caractères minimum, dont au moins un chiffre**, 2026-10-23 ; la longueur est le réglage Supabase recopié dans `src/lib/password.ts`), **email confirmé obligatoire** (2026-09-17) : sans confirmation, n'importe qui s'inscrit avec l'adresse d'un tiers. Téléphone obligatoire, **non vérifié** (pas de SMS). |
 | 2 | Navigation | Catalogue **libre sans compte** ; compte exigé seulement pour écrire. |
 | 3 | Catégories | **Neuf**, fixes, sur un niveau, sans fourre-tout « Autre » (`0025`, 2026-09-22) : une catégorie fourre-tout se remplit et vide les autres de leur sens. |
 | 4 | Classement | Pas de notation. *À la une* (manuel) → *populaires* (nombre de conversations) → *récents*. |

@@ -39,7 +39,7 @@ export const NOM_MAX = 80;
 
 export function erreurNom(nom: string, champ: string): string | null {
   const n = longueur(nom);
-  if (n < NOM_MIN) return `${champ} : ${NOM_MIN} caractères visibles minimum.`;
+  if (n < NOM_MIN) return `${champ} : ${NOM_MIN} caractères minimum.`;
   if (n > NOM_MAX) return `${champ} : ${NOM_MAX} caractères maximum.`;
   return null;
 }

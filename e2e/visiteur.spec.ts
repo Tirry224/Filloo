@@ -15,7 +15,7 @@ for (const chemin of ["/messages", "/compte/informations", "/vendeur", "/vendeur
 test("une connexion avec un mauvais mot de passe est refusée", async ({ page }) => {
   await page.goto("/connexion");
   await page.getByLabel("Email").fill("personne@exemple.com");
-  await page.getByLabel("Mot de passe").fill("mauvais-mdp-123");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("mauvais-mdp-123");
   await page.getByRole("button", { name: /connecter/i }).click();
   await expect(page.locator("p.text-danger, [role=alert]").first()).toBeVisible();
   await expect(page).toHaveURL(/\/connexion/);

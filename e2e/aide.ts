@@ -73,7 +73,7 @@ export async function inscrire(
 export async function connecter(page: Page, email: string, mdp: string) {
   await page.goto("/connexion");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Mot de passe").fill(mdp);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(mdp);
   await page.getByRole("button", { name: /connecter/i }).click();
   await expect(page).not.toHaveURL(/\/connexion/);
 }

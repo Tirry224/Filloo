@@ -52,13 +52,13 @@ export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
   const description = texteNettoye(lire("description"));
 
   if (!shopName || !cityId) {
-    return { error: "Le nom de la boutique et la ville sont obligatoires." };
+    return { error: "Nom de la boutique et ville obligatoires." };
   }
   const erreurNomBoutique = erreurNom(shopName, "Nom de la boutique");
   if (erreurNomBoutique) return { error: erreurNomBoutique };
   if (longueur(addressHint) > ADRESSE_MAX) return { error: `« Où vous trouver » : ${ADRESSE_MAX} caractères maximum.` };
   if (longueur(description) > DESCRIPTION_BOUTIQUE_MAX) {
-    return { error: `La description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.` };
+    return { error: `Description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.` };
   }
   const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
   if (erreurWhatsapp) return { error: erreurWhatsapp };
@@ -70,7 +70,7 @@ export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
 export function lireInformations(lire: Lire): { fullName: string; phone: string } | { error: string } {
   const fullName = texteNettoye(lire("fullName"));
   const phone = String(lire("phone") ?? "").trim();
-  if (!fullName || !phone) return { error: "Le nom et le téléphone sont obligatoires." };
+  if (!fullName || !phone) return { error: "Nom et téléphone obligatoires." };
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
   if (erreurNomComplet) return { error: erreurNomComplet };
   const erreurNumero = erreurTelephone(phone, true);

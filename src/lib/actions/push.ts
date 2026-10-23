@@ -32,7 +32,7 @@ export async function savePushSubscriptionAction(
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) return { error: "Vous devez être connecté." };
+  if (!user) return { error: "Connectez-vous d'abord." };
 
   /* `upsert` sur `endpoint`, non `insert` : le même appareil se réabonne
      régulièrement (mise à jour du navigateur, effacement de données), et
@@ -58,7 +58,7 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<Ac
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) return { error: "Vous devez être connecté." };
+  if (!user) return { error: "Connectez-vous d'abord." };
 
   // Pas de `eq("auth_user_id", …)` : le RLS le fait, et le répéter ici
   // laisserait croire que c'est ce filtre qui protège.

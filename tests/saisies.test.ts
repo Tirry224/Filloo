@@ -71,8 +71,8 @@ test("une espace de bord fait partie du mot de passe", () => {
      sont deux mots de passe. Les rogner ici accepterait une paire qui
      n'ouvrira aucune session — et la personne serait enfermée dehors sans
      comprendre. */
-  assert.notEqual(erreurNouveauMotDePasse("motdepasse ", "motdepasse"), null);
-  assert.equal(erreurNouveauMotDePasse("motdepasse ", "motdepasse "), null);
+  assert.notEqual(erreurNouveauMotDePasse("motdepasse1 ", "motdepasse1"), null);
+  assert.equal(erreurNouveauMotDePasse("motdepasse1 ", "motdepasse1 "), null);
 });
 
 test("un montant se lit sur un téléphone", () => {

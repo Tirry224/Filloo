@@ -172,7 +172,7 @@ export function SignupForm({
           </Field>
 
           <Field label="Mot de passe" htmlFor="password">
-            <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum`} />
+            <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`} />
           </Field>
 
           {/* La comparaison qui COMPTE est celle de `signUpAction`, côté

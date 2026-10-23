@@ -94,8 +94,13 @@ mis à jour et raccourci ; l'ancienne version se relit par
   `/api/app/supprimer-compte` garde l'ancien comportement pour les
   téléphones installés. Une version de l'app qui envoie `role`
   (`"client"` ou `"merchant"`) suivra le site.
-- **L'app vérifie peut-être encore 8 caractères** au lieu de 10 : Supabase
-  la refusera avec son propre message. À aligner dans `filloo-mobile`.
+- **L'app vérifie peut-être encore 8 caractères** au lieu de 10, et pas
+  le chiffre exigé depuis le 2026-10-23 : à aligner dans `filloo-mobile`.
+  Pour que Supabase exige aussi le chiffre, cocher « letters and digits »
+  dans Authentication → Sign In / Providers → Email (porteur du projet).
+- **Messages d'erreur réécrits courts le 2026-10-23**, sauf ceux des
+  triggers de la base (`raise exception`, code P0001), affichés tels quels
+  : les changer demande une migration.
 - **Recréer un compte supprimé** : impossible avec la même adresse. Le
   permettre demande une migration (unicité seulement sur les profils non
   supprimés), sur accord.
@@ -411,10 +416,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-336 commits, du plus récent au plus ancien.
+337 commits, du plus récent au plus ancien.
 
 ### 2026-10-23
 
+- `7ed2202` Mot de passe : les messages d'échec disent enfin la vraie cause
 - `3b535b6` Textes d'attente et placeholders sans points de suspension
 - `5a25296` Mot de passe affichable, et textes de formulaire corrigés
 - `a23389c` Supprimer un compte lié ne supprime plus l'autre

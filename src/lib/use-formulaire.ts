@@ -5,7 +5,7 @@ import { garderLaSaisie } from "@/lib/garder-la-saisie";
 type Action = (etat: ActionState | null, donnees: FormData) => Promise<ActionState>;
 
 export const MESSAGE_HORS_LIGNE =
-  "Pas de connexion : rien n'a été envoyé. Votre saisie est gardée, réessayez quand le réseau revient.";
+  "Pas de connexion. Votre saisie est gardée : réessayez plus tard.";
 
 /**
  * Une coupure réseau ne doit JAMAIS emporter la saisie.

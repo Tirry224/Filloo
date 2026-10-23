@@ -13,12 +13,18 @@ export const LONGUEUR_MIN_MOT_DE_PASSE = 10;
 
 export function erreurNouveauMotDePasse(motDePasse: string, confirmation: string): string | null {
   if (motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {
-    return `${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum pour le mot de passe.`;
+    return `Mot de passe trop court : ${LONGUEUR_MIN_MOT_DE_PASSE} caractères minimum, dont un chiffre.`;
+  }
+  /* Au moins un chiffre, pas seulement des lettres (décision du porteur
+     du projet, 2026-10-23). Le site l'exige ; Supabase ne l'exige que si
+     son réglage « Password requirements » le demande aussi. */
+  if (!/\d/.test(motDePasse)) {
+    return "Ajoutez au moins un chiffre au mot de passe.";
   }
   // Sans `trim` : pour Supabase une espace de bord FAIT PARTIE du mot de
   // passe, la rogner ici accepterait une paire qui n'ouvrira rien.
   if (motDePasse !== confirmation) {
-    return "Les deux mots de passe ne correspondent pas.";
+    return "Les deux mots de passe sont différents.";
   }
   return null;
 }

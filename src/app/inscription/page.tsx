@@ -36,7 +36,7 @@ export default async function SignupPage({
           <EmptyState
             icon={UserX}
             title={manquant === "client" ? "Compte client supprimé" : "Boutique supprimée"}
-            description="Un compte supprimé ne peut pas être recréé avec cette adresse email. Pour en ouvrir un nouveau, inscrivez-vous avec une autre adresse."
+            description="Un compte supprimé ne se recrée pas avec le même email. Utilisez une autre adresse."
           >
             <Button variant="secondary" href={existing.role === "merchant" ? "/vendeur/boutique" : "/compte"}>
               Retour

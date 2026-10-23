@@ -132,7 +132,7 @@ async function enregistrementPret(): Promise<ServiceWorkerRegistration | null> {
 }
 
 const SERVICE_WORKER_ABSENT =
-  "Les notifications ne sont pas prêtes sur cet appareil. Rechargez la page, puis réessayez.";
+  "Notifications pas prêtes. Rechargez la page.";
 
 export type PushAbonnement = {
   /** `null` tant que la vérification initiale n'a pas eu lieu. */
@@ -211,7 +211,7 @@ export function usePushAbonnement({ auto = false }: { auto?: boolean } = {}): Pu
     const accord = await Notification.requestPermission();
     setPermission(accord);
     if (accord !== "granted") {
-      signaler("Notifications refusées. Vous pouvez les réactiver dans les réglages du site.");
+      signaler("Notifications refusées. Réactivez-les dans les réglages du site.");
       return;
     }
     ecrireCoupe(false);

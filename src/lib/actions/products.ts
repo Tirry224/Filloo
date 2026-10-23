@@ -21,7 +21,7 @@ async function requireMerchantId(): Promise<{ merchantId: string } | { error: st
   // onglet, ou expirée pendant la saisie).
   if (!(await getSessionUser(supabase))) return { error: DECONNECTE };
   const merchant = await getMyMerchant(supabase);
-  if (!merchant) return { error: "Vous devez d'abord créer une boutique." };
+  if (!merchant) return { error: "Créez d'abord votre boutique." };
   return { merchantId: merchant.id };
 }
 
@@ -46,17 +46,17 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
   const imagePaths = formData.getAll("imagePaths").map(String).filter(Boolean);
 
   if (longueur(title) < 3 || longueur(title) > 120) {
-    return { error: "Le titre doit faire entre 3 et 120 caractères." };
+    return { error: "Titre : entre 3 et 120 caractères." };
   }
   if (!categoryId) return { error: "Choisissez une catégorie." };
   if ("erreur" in prix) return { error: prix.erreur };
-  if (longueur(description) > 2000) return { error: "La description est trop longue : 2 000 caractères maximum." };
-  if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos au maximum.` };
+  if (longueur(description) > 2000) return { error: "Description : 2 000 caractères maximum." };
+  if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos maximum.` };
   /* `PhotoPicker` pose ce champ tant qu'une photo s'envoie encore : le
      bouton restait actif, et publier à ce moment-là répondait « ajoutez
      au moins une photo » à quelqu'un qui venait d'en ajouter une. */
   if (formData.get("photosEnCours")) {
-    return { error: "Une photo est encore en cours d'envoi. Attendez qu'elle s'affiche, puis réessayez." };
+    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche." };
   }
 
   return {
@@ -99,19 +99,19 @@ export async function createProductAction(_prevState: ActionState | null, formDa
   if ("error" in owner) return owner;
 
   const productId = String(formData.get("productId") ?? "");
-  if (!estUuid(productId)) return { error: "Formulaire invalide, rechargez la page." };
+  if (!estUuid(productId)) return { error: "Page plus à jour. Rechargez-la." };
 
   const lu = readProductFields(formData);
   if ("error" in lu) return lu;
   const { fields } = lu;
 
   if (!photosRangees(fields.imagePaths, owner.merchantId, productId)) {
-    return { error: "Formulaire invalide, rechargez la page." };
+    return { error: "Page plus à jour. Rechargez-la." };
   }
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
-    return { error: "Ajoutez au moins une photo avant de publier." };
+    return { error: "Ajoutez au moins une photo." };
   }
 
   const supabase = await createClient();
@@ -156,7 +156,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .select("id");
     if (repriseError) return { error: messagePourErreur(repriseError, "produits") };
     if (!repris || repris.length === 0) {
-      return { error: "Ce produit existe déjà et n'est pas le vôtre. Rechargez la page pour en créer un nouveau." };
+      return { error: "Ce produit n'est pas le vôtre. Rechargez la page." };
     }
   }
 
@@ -188,7 +188,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     // vient du RLS, qui n'écarte que compte suspendu, supprimé ou produit
     // d'autrui. Le message ci-dessous nomme CE cas.
     if (!published || published.length === 0) {
-      return { error: "Publication impossible : votre compte commerçant n'est plus actif. Le produit est enregistré en brouillon." };
+      return { error: "Compte commerçant inactif : produit gardé en brouillon." };
     }
   }
 
@@ -203,7 +203,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
  */
 export async function updateProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
-  if (!estUuid(productId)) return { error: "Formulaire invalide, rechargez la page." };
+  if (!estUuid(productId)) return { error: "Page plus à jour. Rechargez-la." };
 
   const owner = await requireMerchantId();
   if ("error" in owner) return owner;
@@ -213,12 +213,12 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
   const { fields } = lu;
 
   if (!photosRangees(fields.imagePaths, owner.merchantId, productId)) {
-    return { error: "Formulaire invalide, rechargez la page." };
+    return { error: "Page plus à jour. Rechargez-la." };
   }
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
-    return { error: "Ajoutez au moins une photo avant de publier." };
+    return { error: "Ajoutez au moins une photo." };
   }
 
   const supabase = await createClient();
@@ -235,7 +235,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       .eq("id", productId)
       .maybeSingle();
     if (current?.status === "active") {
-      return { error: "Gardez au moins une photo : sans photo, votre produit ne peut pas rester publié." };
+      return { error: "Gardez au moins une photo." };
     }
   }
 
@@ -252,7 +252,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     .select("id");
   if (updateError) return { error: messagePourErreur(updateError, "produits") };
   if (!updated || updated.length === 0) {
-    return { error: "Modification impossible : ce produit n'est pas le vôtre, ou votre compte commerçant n'est plus actif." };
+    return { error: "Modification impossible : produit introuvable ou compte inactif." };
   }
 
   // Réécrire position par position, puis retirer les positions en trop :
@@ -313,7 +313,7 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
       .select("id");
     if (publishError) return { error: messagePourErreur(publishError, "produits") };
     if (!published || published.length === 0) {
-      return { error: "Publication impossible : ce produit n'est plus un brouillon, ou votre compte commerçant n'est plus actif. Vos modifications sont enregistrées." };
+      return { error: "Publication impossible : produit déjà publié ou compte inactif. Modifications enregistrées." };
     }
   }
 
@@ -347,7 +347,7 @@ async function setProductStatus(
   doneMessage: string = STATUS_DONE[status],
 ) {
   const productId = String(formData.get("productId") ?? "");
-  if (!estUuid(productId)) backToSeller("Formulaire invalide, rechargez la page.");
+  if (!estUuid(productId)) backToSeller("Page plus à jour. Rechargez-la.");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -358,7 +358,7 @@ async function setProductStatus(
 
   if (error) backToSeller(messagePourErreur(error, "produits"));
   if (!data || data.length === 0) {
-    backToSeller("Action impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
+    backToSeller("Action impossible : produit introuvable.");
   }
   backToSeller(undefined, doneMessage);
 }
@@ -390,7 +390,7 @@ export async function relistProductAction(formData: FormData) {
  * disparaît mais pas les messages qui le citaient. */
 export async function deleteProductAction(formData: FormData) {
   const productId = String(formData.get("productId") ?? "");
-  if (!estUuid(productId)) backToSeller("Formulaire invalide, rechargez la page.");
+  if (!estUuid(productId)) backToSeller("Page plus à jour. Rechargez-la.");
 
   const supabase = await createClient();
 
@@ -411,7 +411,7 @@ export async function deleteProductAction(formData: FormData) {
   // rien et supprime zéro ligne. On ne se tait pas sur un geste
   // irréversible.
   if (!data || data.length === 0) {
-    backToSeller("Suppression impossible : ce produit n'existe plus, ou il n'est pas le vôtre.");
+    backToSeller("Suppression impossible : produit introuvable.");
   }
 
   /* Même précaution que dans `updateProductAction` : `storage_path` n'est

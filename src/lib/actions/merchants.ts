@@ -22,7 +22,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
 
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");
-  if (!merchantProfile) return { error: "Vous devez d'abord créer un compte commerçant." };
+  if (!merchantProfile) return { error: "Créez d'abord un compte commerçant." };
 
   const numeroWhatsapp = nettoyerTelephone(whatsappPhone) || merchantProfile.phone || null;
 
@@ -51,19 +51,19 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const photoPath = String(formData.get("photoPath") ?? "");
 
   if (formData.get("photoEnCours")) {
-    return { error: "La photo est encore en cours d'envoi. Attendez qu'elle s'affiche, puis réessayez." };
+    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche." };
   }
   if (photoPath && !CHEMIN_PHOTO.test(photoPath)) {
     return { error: "Photo invalide. Choisissez-la de nouveau." };
   }
 
   if (!currentPassword) {
-    return { error: "Confirmez avec votre mot de passe actuel pour enregistrer." };
+    return { error: "Entrez votre mot de passe actuel pour enregistrer." };
   }
 
   const supabase = await createClient();
   const merchantProfile = await getMyProfile(supabase, "merchant");
-  if (!merchantProfile) return { error: "Vous devez être connecté en tant que commerçant." };
+  if (!merchantProfile) return { error: "Connectez-vous avec votre compte commerçant." };
 
   /* Adresse et WhatsApp sont ce qu'un client lit avant de se déplacer :
      les réécrire détourne les acheteurs d'une boutique. Le mot de passe
@@ -78,13 +78,13 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   if (!user?.email) {
     // Cas théorique (l'inscription passe toujours par un email) : on
     // refuse plutôt que d'écrire sans avoir rien pu vérifier.
-    return { error: "Impossible de vérifier votre mot de passe. Reconnectez-vous, puis réessayez." };
+    return { error: "Vérification impossible. Reconnectez-vous." };
   }
 
   const refus = await refusMotDePasse(user.email, currentPassword);
   if (refus) {
     return {
-      error: refus.incorrect ? "Mot de passe actuel incorrect. Aucune modification n'a été enregistrée." : refus.message,
+      error: refus.incorrect ? "Mot de passe incorrect. Rien n'est enregistré." : refus.message,
     };
   }
 
@@ -96,7 +96,7 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   // Profil suspendu, supprimé, ou pas de boutique : rien n'a été écrit, et
   // on ne le laisse pas passer pour un enregistrement.
   if (!boutiqueId) {
-    return { error: "Enregistrement impossible. Reconnectez-vous, puis réessayez." };
+    return { error: "Enregistrement impossible. Reconnectez-vous." };
   }
 
   await effacerAnciennesPhotos(boutiqueId, photoPath || null);

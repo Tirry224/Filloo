@@ -51,7 +51,7 @@ export function lirePrixGnf(saisie: string): { prix: number } | { erreur: string
   } else if (MILLIERS_GROUPES.test(texte)) {
     chiffres = texte.replace(/[.,]/g, "");
   } else if (/^[\d.,]+$/.test(texte)) {
-    return { erreur: `Le prix s'écrit en francs entiers, sans virgule (${EXEMPLE}).` };
+    return { erreur: `Prix invalide : francs entiers, sans virgule (${EXEMPLE}).` };
   } else {
     return { erreur: `Le prix ne doit contenir que des chiffres (${EXEMPLE}).` };
   }

@@ -9,7 +9,7 @@ import { getMyProfiles, getSessionUser, landingForSession } from "@/lib/data/ses
 import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
 import { estUuid, longueur, PRECISIONS_MAX, texteNettoye } from "@/lib/saisie";
 
-const DEJA_SIGNALE = "Vous l'avez déjà signalé : notre équipe n'a pas encore traité votre signalement.";
+const DEJA_SIGNALE = "Déjà signalé. Notre équipe va le traiter.";
 
 /** La borne de `messages.body` (0001). */
 const MESSAGE_MAX = 2000;
@@ -100,11 +100,11 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   // Trois U+200B passaient pour un message et s'affichaient en bulle vide.
   const body = texteNettoye(formData.get("body"));
   const productId = String(formData.get("productId") ?? "") || null;
-  if (!conversationId || !body) return { error: "Écrivez un message avant d'envoyer." };
+  if (!conversationId || !body) return { error: "Écrivez un message." };
   if (longueur(body) > MESSAGE_MAX) {
-    return { error: `Message trop long : ${MESSAGE_MAX} caractères maximum. Coupez-le en deux.` };
+    return { error: `Message trop long : ${MESSAGE_MAX} caractères maximum.` };
   }
-  if (productId && !estUuid(productId)) return { error: "Ce produit n'existe plus. Retirez-le, puis renvoyez votre message." };
+  if (productId && !estUuid(productId)) return { error: "Ce produit n'existe plus. Retirez-le du message." };
 
   const supabase = await createClient();
   if (!(await getSessionUser(supabase))) return { error: DECONNECTE };
@@ -130,7 +130,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
      entre-temps. */
   if (error) {
     if (error.code === "42501") {
-      return { error: "Ce fil n'accepte plus de nouveaux messages. Vos échanges restent consultables." };
+      return { error: "Conversation fermée. Vous pouvez encore la lire." };
     }
     return { error: messagePourErreur(error, "messages") };
   }
@@ -285,7 +285,7 @@ export async function reportConversationAction(formData: FormData) {
   }
   if (error) backToThread(conversationId, context.iAmMerchant, messagePourErreur(error, "messages"));
   if (!data || data.length === 0) {
-    backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous, puis réessayez.");
+    backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous.");
   }
   backToThread(conversationId, context.iAmMerchant, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
 }
@@ -304,7 +304,7 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
   const reporter = profiles.find((p) => !p.isSuspended && !p.isDeleted);
-  if (!reporter) return { error: "Vous devez être connecté pour signaler un produit." };
+  if (!reporter) return { error: "Connectez-vous pour signaler." };
 
   const { data, error } = await supabase
     .from("reports")
@@ -319,7 +319,7 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
   if (error?.code === "23505") redirect(`/produit/${productId}?info=${encodeURIComponent(DEJA_SIGNALE)}`);
   if (error) return { error: messagePourErreur(error, "messages") };
   if (!data || data.length === 0) {
-    return { error: "Signalement impossible. Reconnectez-vous, puis réessayez." };
+    return { error: "Signalement impossible. Reconnectez-vous." };
   }
 
   redirect(`/produit/${productId}?info=${encodeURIComponent("Signalement envoyé. Notre équipe va examiner ce produit.")}`);

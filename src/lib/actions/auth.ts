@@ -98,13 +98,13 @@ export async function createLinkedProfileAction(
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) return { error: "Vous devez être connecté." };
+  if (!user) return { error: "Connectez-vous d'abord." };
 
   // L'identité vient du profil existant, jamais du formulaire. Sans
   // profil, on n'est pas dans le cas « second compte ».
   const profiles = await getMyProfiles(supabase);
   const existant = profiles.find((p) => !p.isDeleted);
-  if (!existant) return { error: "Aucun compte à lier. Reconnectez-vous, puis réessayez." };
+  if (!existant) return { error: "Aucun compte à lier. Reconnectez-vous." };
 
   const { error } = await supabase
     .from("profiles")
@@ -118,7 +118,7 @@ export async function createLinkedProfileAction(
     if (error.code === "23505") {
       return {
         error: (await getMyDeletedRoles(supabase)).includes(role)
-          ? "Ce compte a été supprimé : il ne peut pas être recréé avec cette adresse email."
+          ? "Compte supprimé : il ne peut pas être recréé avec cet email."
           : "Vous avez déjà ce type de compte.",
       };
     }
@@ -177,7 +177,7 @@ export async function resendConfirmationAction(
   formData: FormData,
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
-  if (!email) return { error: "Adresse email manquante." };
+  if (!email) return { error: "Entrez votre email." };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resend({
@@ -277,7 +277,7 @@ export async function changeMyPasswordAction(
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user?.email) return { error: "Vous devez être connecté." };
+  if (!user?.email) return { error: "Connectez-vous d'abord." };
 
   if (!currentPassword) return { error: "Entrez votre mot de passe actuel." };
   const refus = await refusMotDePasse(user.email, currentPassword);
