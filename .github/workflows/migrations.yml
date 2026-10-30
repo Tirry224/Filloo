@@ -3,9 +3,16 @@
 # Lance `npm run migrations` (scripts/migrations.mjs), qui compare dans les
 # deux sens et sort en erreur s'il manque une migration d'un côté.
 #
+# Le dépôt comparé est TOUJOURS `dev`, même quand le contrôle part de
+# `main` (une tâche planifiée tourne sur la branche par défaut) : depuis
+# le 2026-10-07, une migration appliquée est commitée sur `dev`, et
+# `main` ne la reçoit qu'à la mise en production. Comparer `main` mettait
+# au rouge chaque migration appliquée en attendant cette mise en ligne
+# (0041, fin octobre), et un rouge permanent ne prévient plus de rien.
+#
 # Trois déclencheurs, parce que les deux pièges n'arrivent pas au même
 # endroit :
-#   - un push sur `main` qui touche une migration : une migration COMMITÉE
+#   - un push sur `dev` qui touche une migration : une migration COMMITÉE
 #     sans être appliquée (0026, du 24 au 25 septembre). Le rouge dure
 #     jusqu'à l'application — c'est le rappel voulu ;
 #   - chaque matin : une migration APPLIQUÉE au tableau de bord sans être
@@ -14,13 +21,13 @@
 #
 # Le secret `SUPABASE_ACCESS_TOKEN` (GitHub → Settings → Secrets and
 # variables → Actions) est un jeton personnel Supabase : il ouvre TOUS les
-# projets du compte. Il n'est lu que par cette étape, sur `main`.
+# projets du compte. Il n'est lu que par cette étape.
 
 name: Migrations
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
     paths:
       - "supabase/migrations/**"
       - "scripts/migrations.mjs"
@@ -44,6 +51,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: dev
 
       - uses: actions/setup-node@v5
         with:
