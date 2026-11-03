@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Bell, BellOff, BellRing } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
 import { usePushAbonnement } from "@/components/push/usePushAbonnement";
 import { cn } from "@/lib/cn";
 
@@ -14,6 +14,11 @@ import { cn } from "@/lib/cn";
  * abonné ou non. Les deux
  * premiers ne peuvent rien basculer : le tap ouvre alors une bulle qui
  * dit quoi faire, sinon la cloche paraîtrait cassée.
+ *
+ * Deux icônes seulement (décision du 2026-11-02) : la cloche quand cet
+ * appareil reçoit les notifications, la cloche barrée dans tous les
+ * autres cas, déconnecté compris. Noire et épaisse, comme les boutons
+ * de la page produit.
  */
 export function PushBell({ connecte }: { connecte: boolean }) {
   /* Sans session, l'abonnement n'a personne à qui se rattacher
@@ -26,7 +31,7 @@ export function PushBell({ connecte }: { connecte: boolean }) {
         aria-label="Se connecter pour recevoir les notifications"
         className={classes.bouton}
       >
-        <Bell size={21} strokeWidth={1.9} aria-hidden />
+        <BellOff size={21} strokeWidth={2.5} aria-hidden />
       </Link>
     );
   }
@@ -41,8 +46,7 @@ const BULLE_BLOQUE =
   "Notifications bloquées. Réautorisez-les dans les réglages du navigateur.";
 
 const classes = {
-  bouton: "-m-2 flex size-tap items-center justify-center rounded-full text-ink-soft",
-  actif: "text-accent",
+  bouton: "-m-2 flex size-tap items-center justify-center rounded-full text-black",
   bulle:
     "absolute top-full right-0 z-20 mt-2 w-64 rounded-lg border border-line bg-surface p-3 text-sm",
 };
@@ -70,7 +74,7 @@ function ClocheConnectee() {
     void (abonne ? desactiver() : activer());
   };
 
-  const Icone = abonne ? BellRing : bloque ? BellOff : Bell;
+  const Icone = abonne ? Bell : BellOff;
   const libelle = abonne ? "Désactiver les notifications" : "Activer les notifications";
 
   return (
@@ -82,9 +86,9 @@ function ClocheConnectee() {
         disabled={enCours || supporte === null}
         aria-label={libelle}
         aria-pressed={abonne}
-        className={cn(classes.bouton, abonne && classes.actif)}
+        className={classes.bouton}
       >
-        <Icone size={21} strokeWidth={1.9} aria-hidden />
+        <Icone size={21} strokeWidth={2.5} aria-hidden />
       </button>
       {bulle ? (
         <p role="status" className={cn(classes.bulle, erreur || bloque ? "text-danger" : "text-ink")}>
