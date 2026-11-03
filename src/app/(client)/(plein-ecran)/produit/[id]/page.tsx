@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, Flag, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -8,6 +8,7 @@ import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Scree
 import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
+import { ShareButton } from "@/components/product/ShareButton";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { produitEnCache } from "@/lib/data/catalogue-public";
@@ -134,10 +135,16 @@ export default async function ProductPage({
           <Link
             href="/"
             aria-label="Retour"
-            className="absolute top-3.5 left-3.5 flex size-10 items-center justify-center rounded-full bg-surface/90"
+            className="absolute top-3.5 left-3.5 flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface"
           >
-            <span className="text-lg leading-none">←</span>
+            <ArrowLeft size={22} strokeWidth={2.75} aria-hidden className="text-black" />
           </Link>
+          <ShareButton
+            productId={product.id}
+            title={product.title}
+            price={formatGnf(product.priceGnf)}
+            shopName={product.merchant.shopName}
+          />
           {sold ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold tracking-wide text-paper">
