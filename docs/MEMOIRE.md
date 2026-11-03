@@ -420,7 +420,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-350 commits, du plus récent au plus ancien.
+351 commits, du plus récent au plus ancien.
+
+### 2026-11-03
+
+- `28e9aa9` Champs obligatoires : le refus nomme ceux qui manquent, et eux seuls
 
 ### 2026-11-02
 

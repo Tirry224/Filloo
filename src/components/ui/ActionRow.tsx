@@ -17,7 +17,7 @@ type ActionRowProps =
       action: (formData: FormData) => void | Promise<void>;
       hiddenFields?: Record<string, string>;
     })
-  | (BaseProps & { href?: undefined; action?: undefined; hiddenFields?: undefined });
+  | (BaseProps & { href?: undefined; action?: undefined; hiddenFields?: undefined; onClick?: () => void });
 
 export function ActionRow(props: ActionRowProps) {
   const { icon: Icon, label, description, tone = "default" } = props;
@@ -57,7 +57,7 @@ export function ActionRow(props: ActionRowProps) {
   }
 
   return (
-    <button type="button" className={classes}>
+    <button type="button" className={classes} onClick={"onClick" in props ? props.onClick : undefined}>
       {content}
     </button>
   );

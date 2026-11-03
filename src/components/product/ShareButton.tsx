@@ -2,16 +2,9 @@
 
 import { useState } from "react";
 import { Check, Share2 } from "lucide-react";
+import { partagerProduit } from "@/lib/partage";
 
-/**
- * Partage le lien de la page produit. La photo, le nom et le prix de
- * l'aperçu (WhatsApp, Facebook, SMS) viennent des balises Open Graph de
- * `generateMetadata` ; le nom de la boutique est dans le texte, l'aperçu
- * ne le montre que pour un produit sans description. Même message que
- * le bouton Partager de l'app mobile.
- *
- * Sans `navigator.share` (la plupart des ordinateurs), le lien est copié.
- */
+/** Le bouton Partager de la fiche produit côté client : voir `partagerProduit`. */
 export function ShareButton({
   productId,
   title,
@@ -26,23 +19,9 @@ export function ShareButton({
   const [copie, setCopie] = useState(false);
 
   async function partager() {
-    // L'origine et non `location.href` : l'adresse peut porter `?info=`.
-    const url = `${window.location.origin}/produit/${productId}`;
-    const text = `${title}, ${price}, chez ${shopName} sur Filloo :`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text, url });
-      } catch {
-        // Fermer la feuille de partage lève une erreur : ce n'est pas une panne.
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
+    if ((await partagerProduit({ productId, title, price, shopName })) === "copie") {
       setCopie(true);
       setTimeout(() => setCopie(false), 2000);
-    } catch {
-      window.prompt("Copiez ce lien :", url);
     }
   }
 

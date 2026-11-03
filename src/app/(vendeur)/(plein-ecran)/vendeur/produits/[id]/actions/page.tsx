@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { Check, Eye, EyeOff, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { PartagerProduitRow } from "@/components/product/PartagerProduitRow";
 import { ActionRow } from "@/components/ui/ActionRow";
 import { Sheet } from "@/components/ui/Sheet";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
+import { formatGnf } from "@/lib/format";
 import { markSoldAction, hideProductAction, republishProductAction, relistProductAction, deleteProductAction } from "@/lib/actions/products";
 
 /**
@@ -30,6 +32,17 @@ export default async function ProductActionsPage({ params }: { params: Promise<{
             description="Il entre dans le catalogue et devient visible de tous."
             action={republishProductAction}
             hiddenFields={{ productId: product.id }}
+          />
+        ) : null}
+
+        {/* Seul un produit `active` est en ligne et à vendre : le lien d'un
+            brouillon ou d'un produit masqué répond « introuvable » (RLS). */}
+        {product.status === "active" ? (
+          <PartagerProduitRow
+            productId={product.id}
+            title={product.title}
+            price={formatGnf(product.priceGnf)}
+            shopName={product.merchant.shopName}
           />
         ) : null}
 
