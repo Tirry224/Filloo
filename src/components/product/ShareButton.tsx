@@ -51,12 +51,12 @@ export function ShareButton({
       type="button"
       onClick={partager}
       aria-label={copie ? "Lien copié" : "Partager ce produit"}
-      className="absolute top-3.5 right-3.5 flex size-10 items-center justify-center rounded-full bg-surface/90"
+      className="absolute top-3.5 right-3.5 flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface"
     >
       {copie ? (
-        <Check size={20} strokeWidth={2.2} aria-hidden className="text-success" />
+        <Check size={20} strokeWidth={2.75} aria-hidden className="text-success" />
       ) : (
-        <Share2 size={20} strokeWidth={1.8} aria-hidden />
+        <Share2 size={20} strokeWidth={2.5} aria-hidden className="text-black" />
       )}
     </button>
   );

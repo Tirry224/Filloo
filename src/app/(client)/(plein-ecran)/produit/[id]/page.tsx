@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, Flag, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -135,9 +135,9 @@ export default async function ProductPage({
           <Link
             href="/"
             aria-label="Retour"
-            className="absolute top-3.5 left-3.5 flex size-10 items-center justify-center rounded-full bg-surface/90"
+            className="absolute top-3.5 left-3.5 flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface"
           >
-            <span className="text-lg leading-none">←</span>
+            <ArrowLeft size={22} strokeWidth={2.75} aria-hidden className="text-black" />
           </Link>
           <ShareButton
             productId={product.id}
