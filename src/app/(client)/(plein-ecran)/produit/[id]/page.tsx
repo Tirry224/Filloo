@@ -8,6 +8,7 @@ import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Scree
 import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
+import { ShareButton } from "@/components/product/ShareButton";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { produitEnCache } from "@/lib/data/catalogue-public";
@@ -138,6 +139,12 @@ export default async function ProductPage({
           >
             <span className="text-lg leading-none">←</span>
           </Link>
+          <ShareButton
+            productId={product.id}
+            title={product.title}
+            price={formatGnf(product.priceGnf)}
+            shopName={product.merchant.shopName}
+          />
           {sold ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold tracking-wide text-paper">
