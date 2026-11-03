@@ -44,6 +44,21 @@ export function erreurNom(nom: string, champ: string): string | null {
   return null;
 }
 
+/**
+ * Le refus d'un formulaire dont des champs obligatoires sont vides :
+ * il nomme CEUX qui manquent, et eux seuls. Un message figé (« Nom de la
+ * boutique et ville obligatoires. ») accusait le nom alors que seule la
+ * ville manquait (2026-11-03). Chaque champ arrive avec son article :
+ * `["la ville", cityId]`. Rend `null` quand tout est rempli.
+ */
+export function erreurChampsManquants(champs: ReadonlyArray<readonly [libelle: string, valeur: unknown]>): string | null {
+  const manquants = champs.filter(([, valeur]) => !valeur).map(([libelle]) => libelle);
+  if (manquants.length === 0) return null;
+  const liste =
+    manquants.length === 1 ? manquants[0] : `${manquants.slice(0, -1).join(", ")} et ${manquants[manquants.length - 1]}`;
+  return `Il manque ${liste}.`;
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**

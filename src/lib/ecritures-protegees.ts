@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
-import { erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { erreurChampsManquants, erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
 
 /**
  * Les écritures protégées par le mot de passe : nom et téléphone d'une
@@ -51,8 +51,14 @@ export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
   const whatsappPhone = String(lire("whatsappPhone") ?? "").trim();
   const description = texteNettoye(lire("description"));
 
+  /* Le test reste écrit ici : c'est lui qui apprend à TypeScript que
+     `cityId` n'est plus `null` ensuite. */
   if (!shopName || !cityId) {
-    return { error: "Nom de la boutique et ville obligatoires." };
+    const manquants = erreurChampsManquants([
+      ["le nom de la boutique", shopName],
+      ["la ville", cityId],
+    ]);
+    return { error: manquants ?? "Il manque un champ obligatoire." };
   }
   const erreurNomBoutique = erreurNom(shopName, "Nom de la boutique");
   if (erreurNomBoutique) return { error: erreurNomBoutique };
@@ -70,7 +76,11 @@ export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
 export function lireInformations(lire: Lire): { fullName: string; phone: string } | { error: string } {
   const fullName = texteNettoye(lire("fullName"));
   const phone = String(lire("phone") ?? "").trim();
-  if (!fullName || !phone) return { error: "Nom et téléphone obligatoires." };
+  const manquants = erreurChampsManquants([
+    ["le nom complet", fullName],
+    ["le téléphone", phone],
+  ]);
+  if (manquants) return { error: manquants };
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
   if (erreurNomComplet) return { error: erreurNomComplet };
   const erreurNumero = erreurTelephone(phone, true);

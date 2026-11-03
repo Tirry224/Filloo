@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { erreurNom, estUuid, lireIdEntier, longueur, NOM_MAX, texteNettoye } from "../src/lib/saisie.ts";
+import { erreurChampsManquants, erreurNom, estUuid, lireIdEntier, longueur, NOM_MAX, texteNettoye } from "../src/lib/saisie.ts";
 import { messagePourErreur } from "../src/lib/erreurs.ts";
 
 /**
@@ -61,4 +61,28 @@ test("seuls les refus écrits pour être lus passent tels quels", () => {
   } finally {
     console.error = silence;
   }
+});
+
+test("un champ obligatoire vide est nommé, et lui seul", () => {
+  /* Le 2026-11-03, « Nom de la boutique et ville obligatoires. »
+     s'affichait alors que seule la ville manquait : le commerçant
+     cherchait une erreur dans un nom bien rempli. */
+  const boutique = (nom: string, ville: number | null) =>
+    erreurChampsManquants([
+      ["le nom de la boutique", nom],
+      ["la ville", ville],
+    ]);
+  assert.equal(boutique("Chez Awa", null), "Il manque la ville.");
+  assert.equal(boutique("", 3), "Il manque le nom de la boutique.");
+  assert.equal(boutique("", null), "Il manque le nom de la boutique et la ville.");
+  assert.equal(boutique("Chez Awa", 3), null);
+  assert.equal(
+    erreurChampsManquants([
+      ["le nom complet", ""],
+      ["le téléphone", "620000000"],
+      ["l'email", ""],
+      ["le mot de passe", ""],
+    ]),
+    "Il manque le nom complet, l'email et le mot de passe.",
+  );
 });

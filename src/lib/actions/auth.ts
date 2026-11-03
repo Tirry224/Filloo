@@ -11,7 +11,7 @@ import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { refusMotDePasse } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
 import { messagePourErreur } from "@/lib/erreurs";
-import { erreurNom, texteNettoye } from "@/lib/saisie";
+import { erreurChampsManquants, erreurNom, texteNettoye } from "@/lib/saisie";
 
 export type ActionState = {
   error?: string;
@@ -43,9 +43,13 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-  if (!fullName || !phone || !email || !password) {
-    return { error: "Tous les champs sont obligatoires." };
-  }
+  const manquants = erreurChampsManquants([
+    ["le nom complet", fullName],
+    ["le téléphone", phone],
+    ["l'email", email],
+    ["le mot de passe", password],
+  ]);
+  if (manquants) return { error: manquants };
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
   if (erreurNomComplet) return { error: erreurNomComplet };
   const erreurNumero = erreurTelephone(phone, true);
@@ -152,7 +156,11 @@ async function destinationApresAuthentification(
 export async function signInAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (!email || !password) return { error: "Email et mot de passe obligatoires." };
+  const manquants = erreurChampsManquants([
+    ["l'email", email],
+    ["le mot de passe", password],
+  ]);
+  if (manquants) return { error: manquants };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });

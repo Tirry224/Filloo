@@ -420,10 +420,23 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-343 commits, du plus récent au plus ancien.
+350 commits, du plus récent au plus ancien.
+
+### 2026-11-02
+
+- `c3641c5` Merge remote-tracking branch 'origin/dev'
+- `c610295` Cloche : barrée quand les notifications sont coupées, noire et plus épaisse
+- `992ea2c` Merge pull request #7 from Tirry224/dev
+- `39c7d1d` Page produit : boutons Retour et Partager opaques, flèche noire plus épaisse
+- `47bf67a` Page produit : bouton Partager, même message que l'app mobile
+
+### 2026-10-30
+
+- `04edbcd` Contrôle des migrations : comparer la production à dev, pas à main
 
 ### 2026-10-23
 
+- `fe34718` 0041 appliquée : un compte supprimé peut être recréé
 - `8111c24` 0041 : savoir de gardien-base et README des tests (194 contrôles)
 - `73a4bfd` 0041 (brouillon) : tests de sécurité en cours d'écriture — NON APPLIQUÉE
 - `40c4c8c` 0041 (brouillon) : recréer un profil supprimé — EN COURS, NON APPLIQUÉE
