@@ -3,14 +3,15 @@ import { Card } from "@/components/ui/Card";
 import { ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/cn";
-import { PERIODES, lireChiffres, lireConnexions, type Periode } from "@/lib/data/suivi";
+import { PERIODES, lireChiffres, lireConnexions, type Periode } from "@/lib/data/statistiques";
 
 /**
  * Le tableau de bord de Filloo : ce qui se passe, sans écrire de SQL.
- * Monté par `/suivi` (le compte du porteur du projet) et par
- * `/admin/statistiques` (toute l'équipe, 0042).
+ * Monté par `/admin/statistiques`, pour toute l'équipe (0042). Il
+ * remplace `/suivi`, supprimée le 2026-11-05 à la demande du porteur du
+ * projet.
  *
- * Il lit en `service_role` (`lib/data/suivi.ts`) : la page qui le monte
+ * Il lit en `service_role` (`lib/data/statistiques.ts`) : la page qui le monte
  * DOIT avoir vérifié qui regarde avant de le rendre.
  *
  * Depuis le 2026-11-05, les robots et les préchargements ne sont plus

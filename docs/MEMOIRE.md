@@ -80,7 +80,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Une annonce n'atteint que les inscrits du moment**, du public visé
   (tous, clients, commerçants) : liste figée à la publication.
 - **Statistiques dans `/admin/statistiques`** pour toute l'équipe : le
-  même tableau que `/suivi` (`components/suivi/TableauDeBord.tsx`).
+  ancien tableau de `/suivi` (`components/statistiques/TableauDeBord.tsx`).
+  `/suivi` est supprimée (2026-11-05, demande du porteur du projet).
 - **Les robots ne sont plus comptés** (2026-11-05,
   `lib/robots-detecte.ts`) : constaté, 99 % des 6 009 « recherches »
   sans aucun mot, jusqu'à 360 par heure la nuit, contre 118 fiches
@@ -149,7 +150,7 @@ mis à jour et raccourci ; l'ancienne version se relit par
   403), jamais sans accord.
 - **Google Search Console** : déclarer `filloo.net`, soumettre
   `/sitemap.xml` (porteur du projet).
-- **`/suivi` compte encore les « boutiques en attente »**, toujours 0
+- **`/admin/statistiques` compte encore les « boutiques en attente »**, toujours 0
   depuis `0033`.
 
 ### Dettes techniques connues
@@ -244,8 +245,10 @@ propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
   `next/image`.
 - **Erreurs du serveur dans Sentry**, filtrées de tout identifiant
   (`src/lib/erreurs-anonymes.ts`). Pas de Sentry navigateur (+72 Ko).
-- **`/suivi`** : tableau de bord du porteur du projet (`OWNER_EMAIL`),
-  404 pour tous les autres.
+- **`/admin`** : l'espace de l'équipe (boîte, annonces, statistiques),
+  404 pour qui n'est pas dans `equipe`. Remplace `/suivi`, supprimée le
+  2026-11-05 ; le compte `OWNER_EMAIL` n'a que `/admin` et y est inscrit
+  dans l'équipe à sa première visite.
 - **SEO** : titre par page, image de partage, données `Product`,
   sitemap sans produits vendus.
 
@@ -449,10 +452,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-357 commits, du plus récent au plus ancien.
+358 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `1f31129` Statistiques dans /admin pour toute l'équipe
 - `3e789b8` Mesures : les robots et les préchargements ne sont plus comptés
 - `933f78e` Savoir de la base : Alpha Nouhou Diallo rejoint l'équipe
 - `3c0fe51` Équipe Filloo sur le site : annonces et fil avec l'équipe, côté utilisateur

@@ -9,12 +9,12 @@ import { estProprietaire } from "@/lib/proprietaire";
  * qu'elle porte. Le contrôle fait ici s'arrête à « une session existe » ;
  * le RÔLE se vérifie dans `src/app/(vendeur)/layout.tsx` — voir plus bas.
  */
-const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi", "/admin", "/equipe"];
+const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/admin", "/equipe"];
 
 /** Ce que le compte du porteur du projet peut encore ouvrir (voir plus bas). */
-/* `/admin` aussi (2026-11-05) : le porteur du projet répond aux
-   utilisateurs depuis l'espace de l'équipe (0042). */
-const CHEMINS_DU_PROPRIETAIRE = ["/suivi", "/admin", "/api", "/auth", "/reinitialiser-mot-de-passe"];
+/* `/admin` depuis le 2026-11-05 : l'espace de l'équipe (0042) remplace
+   `/suivi`, supprimée à la demande du porteur du projet. */
+const CHEMINS_DU_PROPRIETAIRE = ["/admin", "/api", "/auth", "/reinitialiser-mot-de-passe"];
 
 /**
  * `supabaseResponse` est reconstruit après `getUser()` : `setAll` doit
@@ -83,7 +83,7 @@ export async function updateSession(request: NextRequest) {
      vous » DANS le formulaire. */
   const actionServeur = request.method === "POST" && request.headers.has("next-action");
 
-  /* Le compte du porteur du projet ne voit QUE `/suivi` (règle du
+  /* Le compte du porteur du projet ne voit QUE `/admin` (règle du
      2026-10-07) : toute autre page l'y renvoie. Ici et non dans chaque
      layout, parce que c'est le seul endroit par où passent TOUTES les
      pages ; et sans coût, `user` étant déjà lu ci-dessus. Restent
@@ -96,12 +96,12 @@ export async function updateSession(request: NextRequest) {
     !CHEMINS_DU_PROPRIETAIRE.some((p) => chemin === p || chemin.startsWith(`${p}/`)) &&
     !/\.[a-z0-9]+$/i.test(chemin)
   ) {
-    const suivi = request.nextUrl.clone();
-    suivi.pathname = "/suivi";
-    suivi.search = "";
+    const admin = request.nextUrl.clone();
+    admin.pathname = "/admin";
+    admin.search = "";
     // Les cookies que `getUser()` vient peut-être de rafraîchir partent
     // avec la redirection, sinon la session expirerait au tour suivant.
-    const redirection = NextResponse.redirect(suivi);
+    const redirection = NextResponse.redirect(admin);
     supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));
     return redirection;
   }

@@ -65,11 +65,11 @@ Preview :
 | Variable | Rôle |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | `https://filloo.net`, sans barre finale : les liens des emails de compte. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Contourne le RLS : suppression de compte, écritures protégées, notifications, `/suivi`. Jamais dans le code du navigateur. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Contourne le RLS : suppression de compte, écritures protégées, notifications, statistiques de `/admin`. Jamais dans le code du navigateur. |
 | `VAPID_PRIVATE_KEY` | Signe les notifications navigateur. Quiconque l'obtient peut notifier tous les abonnés. |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Aussi dans Vercel, où elle **gagne sur `.env`** : changer de paire, c'est changer les deux, puis redéployer. |
 | `CRON_SECRET` | Joint par Vercel aux appels du cron ; sans elle, `/api/quotidien` et `/api/notifications` refusent tout le monde. |
-| `OWNER_EMAIL` | La seule connexion (confirmée) qui voit `/suivi` ; sans elle, personne. |
+| `OWNER_EMAIL` | Le compte (confirmé) du porteur du projet : il ne voit que `/admin`, où il est inscrit dans l'équipe à sa première visite. |
 | `SENTRY_DSN` | Erreurs du serveur, filtrées de tout identifiant. |
 | `EXPO_ACCESS_TOKEN` | Facultatif : seulement si la sécurité renforcée des notifications Expo est activée. |
 
@@ -120,7 +120,8 @@ refuse alors **tous** les déploiements.
 
 ## Administration
 
-Pas de page d'administration en v1 : masquer un produit, suspendre un
-compte ou mettre à la une se fait dans le tableau de bord Supabase. Les
-chiffres d'usage se lisent sur `/suivi`. Une boutique est en ligne dès sa
+L'équipe (table `equipe`, 0042) lit les messages, publie des annonces et
+lit les statistiques sur `/admin`. Masquer un produit, suspendre un
+compte ou mettre à la une se fait encore dans le tableau de bord
+Supabase. Une boutique est en ligne dès sa
 création (`0033`) : il n'y a rien à valider.

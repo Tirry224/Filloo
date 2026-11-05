@@ -28,7 +28,6 @@ export default function robots(): MetadataRoute.Robots {
 
         "/api/",
 
-        "/suivi",
         "/admin",
         "/equipe",
         "/produit/*/whatsapp",

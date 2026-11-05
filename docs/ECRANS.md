@@ -67,5 +67,5 @@ Les routes `(client)` et `(vendeur)` sont des groupes de `src/app/`
 |---|---|---|---|
 | 33 | Page introuvable | `not-found.tsx` | Un lien WhatsApp périmé doit pouvoir repartir. |
 | — | Erreur | `error.tsx` | Toute erreur non rattrapée ; ne prétend jamais que c'est le réseau (les formulaires disent eux-mêmes une coupure). |
-| — | Suivi | `/suivi` | Porteur du projet seul (`OWNER_EMAIL`) ; 404 pour tous les autres. |
+| — | Espace de l'équipe | `/admin` | Membres de `equipe` ; 404 pour tous les autres. Remplace `/suivi` (supprimée le 2026-11-05). |
 | 3, 4 | Hors ligne | — | Un bandeau seulement (`OfflineBanner`) ; aucune page n'est gardée hors ligne. |

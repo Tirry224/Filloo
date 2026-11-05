@@ -40,13 +40,13 @@ export const getMyProfiles = cache(async (supabase: SupabaseClient<Database>): P
   const user = await getSessionUser(supabase);
   if (!user) return [];
 
-  /* Le compte du porteur du projet ne voit que `/suivi` (règle du
+  /* Le compte du porteur du projet ne voit que `/admin` (règle du
      2026-10-07). Le middleware ne suffit pas : après une connexion,
      l'action serveur rend la page d'arrivée DANS sa propre réponse, sans
      nouvelle requête, donc sans passer par lui. Toute page, layout ou
      action qui demande « quels comptes porte cette connexion ? » passe
      ici — c'est donc ici que la règle tient sur tous les chemins. */
-  if (estProprietaire(user)) redirect("/suivi");
+  if (estProprietaire(user)) redirect("/admin");
   /* Un profil SUPPRIMÉ n'existe plus pour le site (2026-10-23) : depuis
      qu'on supprime un seul des deux comptes liés, l'autre continue de
      vivre sur la même connexion, et le profil effacé ne doit plus ouvrir

@@ -2,19 +2,32 @@ import { notFound } from "next/navigation";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getSessionUser } from "@/lib/data/session";
+import { estProprietaire } from "@/lib/proprietaire";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * La frontière de `/admin` : un membre de l'équipe (0042), sinon la page
- * n'existe pas — `notFound()` et non un refus, comme `/suivi`, pour ne pas
- * dire qu'il y a ici quelque chose à forcer. Le RLS décide des lignes ;
- * ceci décide seulement quels écrans existent.
+ * n'existe pas — `notFound()` et non un refus, pour ne pas dire qu'il y
+ * a ici quelque chose à forcer. Le RLS décide des lignes ; ceci décide
+ * seulement quels écrans existent.
+ *
+ * Le compte du porteur du projet (`OWNER_EMAIL`, confirmé) n'a QUE
+ * `/admin` : il est inscrit dans l'équipe à sa première visite, sinon il
+ * tomberait sur une page introuvable sans aucune autre page où aller.
  */
 export async function requireEquipe(supabase: SupabaseClient<Database>): Promise<User> {
   const user = await getSessionUser(supabase);
   if (!user) notFound();
   const { data, error } = await supabase.rpc("je_suis_de_l_equipe");
   if (error) throw error;
-  if (!data) notFound();
+  if (data) return user;
+  if (!estProprietaire(user)) notFound();
+
+  // `service_role` : personne n'entre dans l'équipe par le RLS (0042).
+  const { error: erreurInscription } = await createAdminClient()
+    .from("equipe")
+    .upsert({ auth_user_id: user.id, nom: "Porteur du projet" }, { onConflict: "auth_user_id", ignoreDuplicates: true });
+  if (erreurInscription) throw erreurInscription;
   return user;
 }
 

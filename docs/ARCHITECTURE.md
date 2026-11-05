@@ -23,7 +23,7 @@ navigation ni une route (décision 8 de `docs/SPEC.md`).
 | `(vendeur)` | La frontière de l'espace commerçant. **Ne dessine rien.** | `requireMerchantSpace` dans `layout.tsx` | — |
 | `(vendeur)/(onglets)` | Accueil, produits, messages, boutique. | héritée | `MerchantNav` |
 | `(vendeur)/(plein-ecran)` | Formulaires et feuilles d'actions. | héritée | Chaque écran rend son cadre |
-| racine | Authentification, `/suivi`, routes `api/` et `auth/`. | — | Chaque écran rend son cadre |
+| racine | Authentification, `/admin`, `/equipe`, routes `api/` et `auth/`. | — | Chaque écran rend son cadre |
 
 **Ce qui se partage se partage en composant, jamais en route.** Un fil de
 discussion se dessine pareil des deux côtés : `ThreadScreen` est monté
@@ -66,7 +66,7 @@ séparation tient ; ils sont faits pour échouer.
   qu'une session voit.
 - `admin.ts` — clé `service_role`, qui contourne le RLS : réservée à ce
   que la session ne peut pas faire (écritures protégées, suppression de
-  compte, notifications, mesures, ménage, chiffres de `/suivi`). Chaque
+  compte, notifications, mesures, ménage, statistiques de `/admin`). Chaque
   appel vérifie lui-même QUI demande.
 - `client.ts`, `mes-messages.ts` — navigateur, pour le temps réel
   seulement ; chargés à la demande.

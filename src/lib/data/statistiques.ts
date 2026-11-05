@@ -1,13 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Les chiffres de `/suivi`, l'écran du porteur du projet.
+ * Les chiffres de `/admin/statistiques`. La fonction SQL garde son nom
+ * d'origine, `suivi_chiffres` (0034) : la renommer serait une migration
+ * pour rien.
  *
  * TOUT passe par `service_role` : les mesures (0024) refusent `anon` et
  * `authenticated`, et compter les comptes demande l'API d'administration
  * de l'authentification. C'est exactement pourquoi une garde doit
- * avoir répondu OUI avant le premier appel ici : `estProprietaire`
- * (`/suivi`) ou `requireEquipe` (`/admin`, membre de l'équipe, 0042).
+ * avoir répondu OUI avant le premier appel ici : `requireEquipe`
+ * (`/admin`, membre de l'équipe, 0042).
  */
 
 export const PERIODES = {

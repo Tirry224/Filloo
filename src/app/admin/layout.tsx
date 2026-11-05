@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireEquipe } from "@/lib/data/equipe";
+import { signOutAction } from "@/lib/actions/auth";
 
 export const metadata: Metadata = {
   title: "Équipe Filloo",
@@ -32,6 +33,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link href="/admin/statistiques" className="text-ink underline-offset-2 hover:underline">
           Statistiques
         </Link>
+        {/* Le compte du porteur du projet n'a pas d'autre page où se déconnecter. */}
+        <form action={signOutAction} className="ml-auto">
+          <button type="submit" className="cursor-pointer text-ink-soft underline underline-offset-2">
+            Se déconnecter
+          </button>
+        </form>
       </nav>
       {children}
     </>

@@ -1,11 +1,11 @@
-import { TableauDeBord } from "@/components/suivi/TableauDeBord";
+import { TableauDeBord } from "@/components/statistiques/TableauDeBord";
 import { Screen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
-import { lirePeriode } from "@/lib/data/suivi";
+import { lirePeriode } from "@/lib/data/statistiques";
 
 /**
- * Les statistiques de Filloo pour toute l'équipe : le même tableau que
- * `/suivi`. La garde est `admin/layout.tsx` (membre de l'équipe, sinon la
+ * Les statistiques de Filloo pour toute l'équipe (elles remplacent
+ * `/suivi`, supprimée le 2026-11-05). La garde est `admin/layout.tsx` (membre de l'équipe, sinon la
  * page n'existe pas) : elle a répondu avant que le tableau lise quoi que
  * ce soit en `service_role`.
  */

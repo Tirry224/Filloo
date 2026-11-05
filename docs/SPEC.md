@@ -55,7 +55,8 @@ d'administration · plusieurs boutiques par commerçant · plusieurs langues.
 - **Client et commerçant à la fois** — une connexion, deux espaces, une
   bascule qui change tout le contexte.
 - **Administrateur** — travaille dans le tableau de bord Supabase (masquer
-  un produit, suspendre un compte, mettre à la une) et lit `/suivi`.
+  un produit, suspendre un compte, mettre à la une) et travaille sur
+  `/admin` (messages, annonces, statistiques).
 
 ## 4. Risques
 
