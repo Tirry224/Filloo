@@ -18,3 +18,21 @@ export function estProprietaire(user: Pick<User, "email" | "email_confirmed_at">
   if (!attendu || !user?.email || !user.email_confirmed_at) return false;
   return user.email.trim().toLowerCase() === attendu;
 }
+
+/**
+ * Un membre de l'équipe (0042), d'après la marque que la base pose sur sa
+ * connexion (`app_metadata.equipe`, 0043). Sans requête : `getUser()` la
+ * rend déjà, et seul le serveur peut l'écrire.
+ */
+export function estDeLEquipe(user: Pick<User, "app_metadata"> | null): boolean {
+  return user?.app_metadata?.equipe === true;
+}
+
+/**
+ * Les comptes qui n'ont QUE `/admin` : le porteur du projet et chaque
+ * membre de l'équipe (décision du 2026-11-05) — ni espace client, ni
+ * espace boutique, ni catalogue.
+ */
+export function naQueLAdmin(user: Pick<User, "email" | "email_confirmed_at" | "app_metadata"> | null): boolean {
+  return estProprietaire(user) || estDeLEquipe(user);
+}

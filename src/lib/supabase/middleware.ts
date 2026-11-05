@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
-import { estProprietaire } from "@/lib/proprietaire";
+import { naQueLAdmin } from "@/lib/proprietaire";
 
 /**
  * Les préfixes qui exigent une session, quels que soient les rôles
@@ -83,7 +83,8 @@ export async function updateSession(request: NextRequest) {
      vous » DANS le formulaire. */
   const actionServeur = request.method === "POST" && request.headers.has("next-action");
 
-  /* Le compte du porteur du projet ne voit QUE `/admin` (règle du
+  /* Le compte du porteur du projet et ceux de l'équipe (0043, décision
+     du 2026-11-05) ne voient QUE `/admin` (règle du
      2026-10-07) : toute autre page l'y renvoie. Ici et non dans chaque
      layout, parce que c'est le seul endroit par où passent TOUTES les
      pages ; et sans coût, `user` étant déjà lu ci-dessus. Restent
@@ -91,7 +92,7 @@ export async function updateSession(request: NextRequest) {
      routes techniques (`/api`, `/auth` pour les liens reçus par e-mail),
      la réinitialisation du mot de passe, et les fichiers. */
   if (
-    estProprietaire(user) &&
+    naQueLAdmin(user) &&
     !actionServeur &&
     !CHEMINS_DU_PROPRIETAIRE.some((p) => chemin === p || chemin.startsWith(`${p}/`)) &&
     !/\.[a-z0-9]+$/i.test(chemin)

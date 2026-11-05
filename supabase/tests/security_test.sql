@@ -2426,5 +2426,51 @@ select pg_temp.check('0042 : les fonctions de l''equipe sont fermees a anon',
   and not has_function_privilege('anon', 'public.marquer_fil_lu_par_l_equipe(uuid)', 'execute')
   and not has_function_privilege('authenticated', 'public.annonce_fixer_destinataires()', 'execute'));
 
+-- =====================================================================
+-- Un membre de l'équipe ne voit que l'espace de l'équipe (0043)
+-- =====================================================================
+-- S est dans l'équipe depuis 0042 : la migration l'a marqué au passage.
+select pg_temp.check('0043 : un membre de l''equipe est marque sur sa connexion',
+  (select raw_app_meta_data ->> 'equipe' from auth.users where id = 'a0420000-0000-0000-0000-000000000005') = 'true');
+
+-- Entrer dans l'équipe marque ; en sortir démarque.
+insert into public.equipe (auth_user_id, nom) values ('44444444-4444-4444-4444-444444444444', 'D');
+select pg_temp.check('0043 : entrer dans l''equipe marque la connexion',
+  (select raw_app_meta_data ->> 'equipe' from auth.users where id = '44444444-4444-4444-4444-444444444444') = 'true');
+
+-- Une annonce publiée maintenant n'atteint pas l'équipe.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+insert into public.annonces (id, auteur_id, titre, corps, public) values
+  ('a0430000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Apres 0043', 'Bonjour', 'tous');
+reset role;
+select pg_temp.check('0043 : une annonce ne part pas vers l''equipe',
+  not exists (select 1 from public.annonce_destinataires
+               where annonce_id = 'a0430000-0000-0000-0000-0000000000a1'
+                 and auth_user_id in ('a0420000-0000-0000-0000-000000000005', '44444444-4444-4444-4444-444444444444'))
+  and exists (select 1 from public.annonce_destinataires
+               where annonce_id = 'a0430000-0000-0000-0000-0000000000a1'
+                 and auth_user_id = '33333333-3333-3333-3333-333333333333'));
+
+delete from public.equipe where auth_user_id = '44444444-4444-4444-4444-444444444444';
+select pg_temp.check('0043 : sortir de l''equipe retire la marque, et elle seule',
+  (select not (raw_app_meta_data ? 'equipe') from auth.users where id = '44444444-4444-4444-4444-444444444444'));
+
+-- Personne ne se marque soi-même : ni `equipe` ni `auth.users` ne
+-- s'écrivent depuis un écran.
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+do $$
+begin
+  update auth.users set raw_app_meta_data = '{"equipe": true}' where id = '33333333-3333-3333-3333-333333333333';
+  raise exception 'ECHEC 0043 : un client se marque lui-meme membre de l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0043 : un client ne peut pas se marquer membre de l''equipe';
+end $$;
+reset role;
+select pg_temp.check('0043 : la fonction de marquage n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.equipe_marquer_la_connexion()', 'execute')
+  and not has_function_privilege('anon', 'public.equipe_marquer_la_connexion()', 'execute'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

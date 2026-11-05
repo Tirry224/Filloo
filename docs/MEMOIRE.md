@@ -248,7 +248,9 @@ propre. Le système ne sait donc jamais qu'une vente a eu lieu — d'où
 - **`/admin`** : l'espace de l'équipe (boîte, annonces, statistiques),
   404 pour qui n'est pas dans `equipe`. Remplace `/suivi`, supprimée le
   2026-11-05 ; le compte `OWNER_EMAIL` n'a que `/admin` et y est inscrit
-  dans l'équipe à sa première visite.
+  dans l'équipe à sa première visite. Chaque membre de l'équipe n'a,
+  lui aussi, QUE `/admin` (`0043`, décision du 2026-11-05) : ni espace
+  client, ni boutique, ni catalogue, et il ne reçoit pas les annonces.
 - **SEO** : titre par page, image de partage, données `Product`,
   sitemap sans produits vendus.
 
@@ -452,10 +454,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-358 commits, du plus récent au plus ancien.
+359 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `7082deb` Supprime /suivi : l'espace de l'équipe /admin la remplace
 - `1f31129` Statistiques dans /admin pour toute l'équipe
 - `3e789b8` Mesures : les robots et les préchargements ne sont plus comptés
 - `933f78e` Savoir de la base : Alpha Nouhou Diallo rejoint l'équipe
