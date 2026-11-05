@@ -123,11 +123,14 @@ export async function monNomDansLEquipe(supabase: SupabaseClient<Database>, auth
 /** Une ligne de l'onglet « Notifications » : ce que Filloo m'a envoyé (décision du 2026-11-05). */
 export type NotificationEquipe =
   | { type: "annonce"; id: string; titre: string; texte: string; quand: string; nonLue: boolean }
-  | { type: "reponse"; id: string; texte: string; quand: string; nonLue: boolean };
+  | { type: "reponse"; id: string; texte: string; quand: string; nonLue: boolean }
+  /** Un message que J'AI envoyé ; `reponseId` : la réponse de l'équipe qui l'a suivi, s'il y en a une. */
+  | { type: "envoye"; id: string; texte: string; quand: string; nonLue: false; reponseId: string | null };
 
 /**
- * Les annonces de cet espace et chaque réponse de l'équipe, la plus
- * récente d'abord. Rien de nouveau en base : les deux y sont déjà. Les
+ * Les annonces de cet espace, chaque réponse de l'équipe et chaque message
+ * que j'ai envoyé (avec son état : en attente ou répondu ; décision du
+ * 2026-11-05), le plus récent d'abord. Rien de nouveau en base. Les
  * messages entre clients et boutiques n'y sont pas : ils ont leur onglet.
  */
 export async function lireNotificationsEquipe(
@@ -144,11 +147,10 @@ export async function lireNotificationsEquipe(
       .order("created_at", { ascending: false }),
     supabase
       .from("fil_equipe")
-      .select("id, corps, created_at, lu_at")
+      .select("id, de_l_equipe, corps, created_at, lu_at")
       .eq("fil_de", authUserId)
       .eq("espace", espace)
-      .eq("de_l_equipe", true)
-      .order("created_at", { ascending: false }),
+      .order("created_at"),
   ]);
   if (annonces.error) throw annonces.error;
   if (reponses.error) throw reponses.error;
@@ -162,13 +164,20 @@ export async function lireNotificationsEquipe(
       quand: a.created_at,
       nonLue: a.annonce_destinataires.some((d) => d.lue_at === null),
     })),
-    ...reponses.data.map((r) => ({
-      type: "reponse" as const,
-      id: r.id,
-      texte: r.corps,
-      quand: r.created_at,
-      nonLue: r.lu_at === null,
-    })),
+    // Le fil, du plus ancien au plus récent : un message envoyé est
+    // « répondu » par la première réponse de l'équipe qui le suit.
+    ...reponses.data.map((r, i, fil) =>
+      r.de_l_equipe
+        ? { type: "reponse" as const, id: r.id, texte: r.corps, quand: r.created_at, nonLue: r.lu_at === null }
+        : {
+            type: "envoye" as const,
+            id: r.id,
+            texte: r.corps,
+            quand: r.created_at,
+            nonLue: false as const,
+            reponseId: fil.slice(i + 1).find((s) => s.de_l_equipe)?.id ?? null,
+          },
+    ),
   ];
   return elements.sort((a, b) => b.quand.localeCompare(a.quand));
 }
@@ -221,4 +230,27 @@ export async function lireEchangeEquipe(
   let fin = i + 1;
   while (fin < fil.length && !fil[fin]!.deLEquipe) fin++;
   return { question: fil.slice(debut, i), reponse, suite: fil.slice(i + 1, fin) };
+}
+
+/** Un message que j'ai envoyé, encore sans réponse (sinon : la page de la réponse). */
+export async function lireMonMessageEquipe(
+  supabase: SupabaseClient<Database>,
+  authUserId: string,
+  espace: EspaceEquipe,
+  id: string,
+): Promise<{ message: MessageEchange; reponseId: string | null } | null> {
+  const { data, error } = await supabase
+    .from("fil_equipe")
+    .select("id, de_l_equipe, corps, created_at")
+    .eq("fil_de", authUserId)
+    .eq("espace", espace)
+    .order("created_at");
+  if (error) throw error;
+  const i = data.findIndex((m) => m.id === id);
+  const m = data[i];
+  if (!m || m.de_l_equipe) return null;
+  return {
+    message: { id: m.id, deLEquipe: false, texte: m.corps, quand: m.created_at },
+    reponseId: data.slice(i + 1).find((s) => s.de_l_equipe)?.id ?? null,
+  };
 }

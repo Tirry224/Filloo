@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, Megaphone, MessageCircleReply, SquarePen } from "lucide-react";
+import { ChevronRight, Megaphone, MessageCircleReply, Send, SquarePen } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { gardeEquipe } from "@/components/equipe/garde";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Notice } from "@/components/ui/Notice";
@@ -12,7 +13,8 @@ import { formatMessageTime } from "@/lib/format";
 
 /**
  * « Équipe Filloo » (décision du 2026-11-05) : UNE liste — les annonces de
- * cet espace et les réponses de l'équipe, la plus récente d'abord — et le
+ * cet espace, les réponses de l'équipe et mes messages envoyés (en attente
+ * ou répondus), le plus récent d'abord — et le
  * bouton « Écrire » en haut à droite. Une annonce se LIT (on n'y répond
  * pas) ; une réponse s'ouvre avec la question et un champ pour répondre.
  * Les points disent ce qui était non lu en arrivant ; ouvrir la liste
@@ -67,28 +69,27 @@ export function EquipeVue({
       <ScreenBody>
         {envoye ? (
           <div className="px-4 pt-4">
-            <Notice tone="success">Message envoyé. La réponse de l&apos;équipe apparaîtra ici.</Notice>
+            <Notice tone="success">Message envoyé. Il est en haut de la liste ; la réponse de l&apos;équipe apparaîtra ici.</Notice>
           </div>
         ) : null}
         {notifications.length === 0 ? (
           <EmptyState
             icon={Megaphone}
             title="Rien pour l'instant"
-            description="Les annonces de l'équipe Filloo et ses réponses arriveront ici. Une question ? Touchez « Écrire » en haut à droite."
+            description="Les annonces de l'équipe Filloo, vos messages et ses réponses apparaîtront ici. Une question ? Touchez « Écrire » en haut à droite."
           />
         ) : (
           <ul className="flex flex-col">
             {notifications.map((n) => (
               <li key={`${n.type}-${n.id}`} className={cn("border-b border-line", n.nonLue ? "bg-accent-soft/50" : "bg-surface")}>
-                <Link
-                  href={n.type === "annonce" ? `${chemin}/annonce/${n.id}` : `${chemin}/reponse/${n.id}`}
-                  className="flex items-center gap-3 px-4 py-3.5"
-                >
+                <Link href={lien(chemin, n)} className="flex items-center gap-3 px-4 py-3.5">
                   <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
                     {n.type === "annonce" ? (
                       <Megaphone size={18} strokeWidth={2} aria-hidden />
-                    ) : (
+                    ) : n.type === "reponse" ? (
                       <MessageCircleReply size={18} strokeWidth={2} aria-hidden />
+                    ) : (
+                      <Send size={17} strokeWidth={2} aria-hidden />
                     )}
                     {n.nonLue ? (
                       <span aria-label="Non lu" className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-accent ring-2 ring-surface" />
@@ -97,11 +98,17 @@ export function EquipeVue({
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className={cn("truncate text-base", n.nonLue ? "font-bold" : "font-semibold")}>
-                        {n.type === "annonce" ? n.titre : "Réponse de l'équipe"}
+                        {n.type === "annonce" ? n.titre : n.type === "reponse" ? "Réponse de l'équipe" : "Votre message"}
                       </span>
                       <time className="shrink-0 text-2xs text-ink-soft">{formatMessageTime(n.quand)}</time>
                     </div>
-                    <span className="text-2xs font-semibold text-accent-hover">{n.type === "annonce" ? "Annonce" : "À votre message"}</span>
+                    {n.type === "envoye" ? (
+                      <Badge tone={n.reponseId ? "success" : "warn"}>{n.reponseId ? "Répondu" : "En attente de réponse"}</Badge>
+                    ) : (
+                      <span className="text-2xs font-semibold text-accent-hover">
+                        {n.type === "annonce" ? "Annonce" : "À votre message"}
+                      </span>
+                    )}
                     <p className="line-clamp-2 text-sm text-ink-soft">{n.texte}</p>
                   </div>
                   <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
@@ -113,4 +120,11 @@ export function EquipeVue({
       </ScreenBody>
     </Screen>
   );
+}
+
+/** Où mène une ligne : l'annonce, la réponse, ou pour un message envoyé, sa réponse s'il en a une. */
+function lien(chemin: string, n: NotificationEquipe): string {
+  if (n.type === "annonce") return `${chemin}/annonce/${n.id}`;
+  if (n.type === "reponse") return `${chemin}/reponse/${n.id}`;
+  return n.reponseId ? `${chemin}/reponse/${n.reponseId}` : `${chemin}/message/${n.id}`;
 }
