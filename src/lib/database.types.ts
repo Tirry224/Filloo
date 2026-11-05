@@ -64,6 +64,59 @@ export type Database = {
         }
         Relationships: []
       }
+      annonce_destinataires: {
+        Row: {
+          annonce_id: string
+          auth_user_id: string
+          lue_at: string | null
+        }
+        Insert: {
+          annonce_id: string
+          auth_user_id: string
+          lue_at?: string | null
+        }
+        Update: {
+          annonce_id?: string
+          auth_user_id?: string
+          lue_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annonce_destinataires_annonce_id_fkey"
+            columns: ["annonce_id"]
+            isOneToOne: false
+            referencedRelation: "annonces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annonces: {
+        Row: {
+          auteur_id: string | null
+          corps: string
+          created_at: string
+          id: string
+          public: Database["public"]["Enums"]["public_annonce"]
+          titre: string
+        }
+        Insert: {
+          auteur_id?: string | null
+          corps: string
+          created_at?: string
+          id?: string
+          public: Database["public"]["Enums"]["public_annonce"]
+          titre: string
+        }
+        Update: {
+          auteur_id?: string | null
+          corps?: string
+          created_at?: string
+          id?: string
+          public?: Database["public"]["Enums"]["public_annonce"]
+          titre?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           id: number
@@ -152,6 +205,24 @@ export type Database = {
           },
         ]
       }
+      equipe: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          nom: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          nom: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          nom?: string
+        }
+        Relationships: []
+      }
       expo_push_tokens: {
         Row: {
           auth_user_id: string
@@ -178,6 +249,47 @@ export type Database = {
           token?: string
         }
         Relationships: []
+      }
+      fil_equipe: {
+        Row: {
+          annonce_id: string | null
+          auteur_id: string | null
+          corps: string
+          created_at: string
+          de_l_equipe: boolean
+          fil_de: string
+          id: string
+          lu_at: string | null
+        }
+        Insert: {
+          annonce_id?: string | null
+          auteur_id?: string | null
+          corps: string
+          created_at?: string
+          de_l_equipe: boolean
+          fil_de: string
+          id?: string
+          lu_at?: string | null
+        }
+        Update: {
+          annonce_id?: string | null
+          auteur_id?: string | null
+          corps?: string
+          created_at?: string
+          de_l_equipe?: boolean
+          fil_de?: string
+          id?: string
+          lu_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fil_equipe_annonce_id_fkey"
+            columns: ["annonce_id"]
+            isOneToOne: false
+            referencedRelation: "annonces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchants: {
         Row: {
@@ -544,6 +656,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      boite_equipe: {
+        Args: never
+        Returns: {
+          dernier_at: string
+          dernier_corps: string
+          dernier_de_l_equipe: boolean
+          fil_de: string
+          non_lus: number
+          nom: string
+        }[]
+      }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
       enregistrer_telephone: {
         Args: { p_plateforme: string; p_token: string }
@@ -551,6 +674,14 @@ export type Database = {
       }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
+      je_peux_ecrire_a_l_equipe: { Args: never; Returns: boolean }
+      je_suis_de_l_equipe: { Args: never; Returns: boolean }
+      marquer_annonces_lues: { Args: never; Returns: undefined }
+      marquer_fil_equipe_lu: { Args: never; Returns: undefined }
+      marquer_fil_lu_par_l_equipe: {
+        Args: { p_fil_de: string }
+        Returns: undefined
+      }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }
       modifier_ma_boutique: {
         Args: {
@@ -579,7 +710,6 @@ export type Database = {
         Returns: string[]
       }
       purger_mesures: { Args: never; Returns: number }
-      suivi_chiffres: { Args: { depuis: string }; Returns: Json }
       search_products: {
         Args: {
           p_category_id?: number
@@ -608,6 +738,7 @@ export type Database = {
           title: string
         }[]
       }
+      suivi_chiffres: { Args: { depuis: string }; Returns: Json }
     }
     Enums: {
       merchant_status: "pending" | "approved" | "rejected"
@@ -616,6 +747,7 @@ export type Database = {
         | "merchant_rejected"
         | "profile_suspended"
       product_status: "draft" | "active" | "sold" | "hidden"
+      public_annonce: "tous" | "clients" | "commercants"
       report_target: "product" | "conversation" | "merchant"
       user_role: "client" | "merchant"
     }
@@ -752,6 +884,7 @@ export const Constants = {
         "profile_suspended",
       ],
       product_status: ["draft", "active", "sold", "hidden"],
+      public_annonce: ["tous", "clients", "commercants"],
       report_target: ["product", "conversation", "merchant"],
       user_role: ["client", "merchant"],
     },

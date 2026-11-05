@@ -27,7 +27,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **En ligne sur `https://filloo.net`** (`main`, Vercel, fonctions à
   Paris), préversion sur `dev` avec **la même base**.
 - **Base** : 41 migrations, toutes appliquées en production (constaté
-  le 2026-10-23). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  le 2026-10-23). `0042` (équipe, annonces) écrite le 2026-11-05, **pas
+  appliquée**. 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
@@ -64,6 +65,19 @@ mis à jour et raccourci ; l'ancienne version se relit par
   route du site qui vérifie le propriétaire, lecture aux deux endroits
   pendant la transition, copie des anciennes, puis fermeture de l'ancien
   envoi. Les photos sont stockées par chemin : la base ne change pas.
+
+### Décidé par le porteur du projet (2026-11-05) : l'équipe Filloo
+
+- **Annonces et fil avec l'équipe**, écrits mais en attente : appliquer
+  `0042`, puis inscrire chaque membre (un compte par personne) dans
+  `equipe` au tableau de bord. L'équipe lit et répond sur `/admin` ;
+  l'app (« Équipe Filloo » sur la page de compte) lit et répond.
+- **Une annonce n'atteint que les inscrits du moment**, du public visé
+  (tous, clients, commerçants) : liste figée à la publication.
+- **L'équipe est prévenue par notification, pas par email** : le site
+  n'envoie plus d'email depuis le 2026-10-07. Un email d'alerte
+  demanderait une clé d'API Resend sur Vercel (Resend sert déjà de SMTP
+  à Supabase) : à décider.
 
 ### À constater sur un téléphone
 
@@ -420,10 +434,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-351 commits, du plus récent au plus ancien.
+352 commits, du plus récent au plus ancien.
 
 ### 2026-11-03
 
+- `562c34a` Espace vendeur : partager un produit en ligne depuis sa feuille d'actions
 - `28e9aa9` Champs obligatoires : le refus nomme ceux qui manquent, et eux seuls
 
 ### 2026-11-02

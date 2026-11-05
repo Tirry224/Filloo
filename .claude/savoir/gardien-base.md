@@ -112,6 +112,12 @@ source, constaté ou supposé.
 
 ## Questions ouvertes
 
+- **`0042` (équipe, annonces, fil avec l'équipe)** écrite le 2026-11-05,
+  PAS appliquée : 219 contrôles OK en local (25 nouveaux). L'équipe est
+  une table à part (`equipe`, écrite seulement en `service_role`), pas
+  une valeur de `user_role`. Les types de `database.types.ts` ont été
+  écrits à la main : à régénérer après application.
+
 - **`0041` garde la suspension après suppression** (un client suspendu
   qui supprime son compte ne le recrée pas) : choix du gardien, à faire
   confirmer par le porteur du projet.

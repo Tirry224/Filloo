@@ -2258,5 +2258,173 @@ select pg_temp.check('0041 : my_role_is_suspended fermee a anon, ouverte a authe
   and has_function_privilege('authenticated', 'public.my_role_is_suspended(public.user_role)', 'execute'));
 
 
+-- =====================================================================
+-- L'équipe parle avec chaque personne inscrite (0042)
+-- =====================================================================
+-- S : membre de l'équipe (inscrit au tableau de bord). A : commerçant,
+-- K et D : clients, déjà inscrits. L : client inscrit APRÈS l'annonce.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0420000-0000-0000-0000-000000000005', 's0042@test.gn', '{"role":"client","full_name":"Collegue S","phone":"620004201"}'),
+  ('a0420000-0000-0000-0000-00000000000b', 'k0042@test.gn', '{"role":"client","full_name":"Client K","phone":"620004203"}');
+insert into public.equipe (auth_user_id, nom) values ('a0420000-0000-0000-0000-000000000005', 'S');
+
+set role authenticated;
+
+-- Personne n'entre dans l'équipe depuis un écran.
+select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
+do $$
+begin
+  insert into public.equipe (auth_user_id, nom) values ('a0420000-0000-0000-0000-00000000000b', 'Pirate');
+  raise exception 'ECHEC 0042 : un client s''inscrit lui-meme dans l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : on n''entre pas dans l''equipe depuis un ecran';
+end $$;
+select pg_temp.check('0042 : un client ne voit pas l''equipe', (select count(*) from public.equipe) = 0);
+select pg_temp.check('0042 : un client n''est pas de l''equipe', not public.je_suis_de_l_equipe());
+
+-- Un client ne publie pas d'annonce.
+do $$
+begin
+  insert into public.annonces (auteur_id, titre, corps, public)
+  values ('a0420000-0000-0000-0000-00000000000b', 'Faux', 'Fausse annonce', 'tous');
+  raise exception 'ECHEC 0042 : un client publie une annonce';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : un client ne publie pas d''annonce';
+end $$;
+
+-- S publie une annonce aux commerçants, puis une à tous.
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0042 : S est de l''equipe', public.je_suis_de_l_equipe());
+do $$
+begin
+  insert into public.annonces (auteur_id, titre, corps, public)
+  values ('11111111-1111-1111-1111-111111111111', 'Usurpee', 'Au nom d''un autre', 'tous');
+  raise exception 'ECHEC 0042 : l''equipe publie au nom d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : une annonce porte le nom de qui la publie';
+end $$;
+insert into public.annonces (id, auteur_id, titre, corps, public) values
+  ('a0420000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux commercants', 'Bonjour les commercants', 'commercants'),
+  ('a0420000-0000-0000-0000-0000000000a2', 'a0420000-0000-0000-0000-000000000005', 'A tous', 'Bonjour a tous', 'tous');
+reset role;
+
+-- L s'inscrit APRÈS les deux annonces.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0420000-0000-0000-0000-00000000000c', 'l0042@test.gn', '{"role":"client","full_name":"Client L","phone":"620004202"}');
+
+select pg_temp.check('0042 : l''annonce aux commercants atteint A, pas K',
+  exists (select 1 from public.annonce_destinataires
+           where annonce_id = 'a0420000-0000-0000-0000-0000000000a1' and auth_user_id = '11111111-1111-1111-1111-111111111111')
+  and not exists (select 1 from public.annonce_destinataires
+           where annonce_id = 'a0420000-0000-0000-0000-0000000000a1' and auth_user_id = 'a0420000-0000-0000-0000-00000000000b'));
+select pg_temp.check('0042 : une connexion a deux comptes recoit l''annonce une seule fois',
+  (select count(*) from public.annonce_destinataires
+    where annonce_id = 'a0420000-0000-0000-0000-0000000000a2'
+      and auth_user_id = '33333333-3333-3333-3333-333333333333') = 1);
+
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
+select pg_temp.check('0042 : K voit l''annonce a tous, pas celle aux commercants',
+  (select array_agg(id::text order by id) from public.annonces) = array['a0420000-0000-0000-0000-0000000000a2']);
+select pg_temp.check('0042 : K ne voit que ses propres destinataires',
+  (select bool_and(auth_user_id = 'a0420000-0000-0000-0000-00000000000b') from public.annonce_destinataires));
+
+select pg_temp.login('a0420000-0000-0000-0000-00000000000c');
+select pg_temp.check('0042 : inscrit apres, L ne voit aucune annonce', (select count(*) from public.annonces) = 0);
+
+-- K répond à l'annonce : dans SON fil seulement, jamais au nom de l'équipe.
+select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
+insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, annonce_id, created_at, lu_at)
+values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', false,
+        'Merci !', 'a0420000-0000-0000-0000-0000000000a2', '2020-01-01', now());
+select pg_temp.check('0042 : l''heure et l''etat lu viennent du serveur',
+  (select created_at > now() - interval '1 minute' and lu_at is null from public.fil_equipe));
+do $$
+begin
+  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
+  values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', true, 'Je suis l''equipe');
+  raise exception 'ECHEC 0042 : un client ecrit au nom de l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : un client n''ecrit pas au nom de l''equipe';
+end $$;
+do $$
+begin
+  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
+  values ('44444444-4444-4444-4444-444444444444', 'a0420000-0000-0000-0000-00000000000b', false, 'Chez D');
+  raise exception 'ECHEC 0042 : un client ecrit dans le fil d''un autre';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : un client n''ecrit que dans son fil';
+end $$;
+do $$
+begin
+  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, annonce_id)
+  values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', false,
+          'Je reponds a une annonce que je n''ai pas recue', 'a0420000-0000-0000-0000-0000000000a1');
+  raise exception 'ECHEC 0042 : un client repond a une annonce qui ne lui etait pas destinee';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : on ne repond qu''a ses propres annonces';
+end $$;
+do $$
+begin
+  update public.fil_equipe set corps = 'Modifie';
+  if exists (select 1 from public.fil_equipe where corps = 'Modifie') then
+    raise exception 'ECHEC 0042 : un message du fil se modifie';
+  end if;
+  raise notice 'OK    0042 : un message du fil ne se modifie pas';
+end $$;
+
+-- D ne voit rien du fil de K ; ni la boîte de l'équipe.
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+select pg_temp.check('0042 : D ne voit pas le fil de K', (select count(*) from public.fil_equipe) = 0);
+select pg_temp.check('0042 : la boite de l''equipe est vide hors equipe', (select count(*) from public.boite_equipe()) = 0);
+select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b');
+
+-- L'équipe voit le message, toujours non lu (D n'a rien pu marquer), et répond.
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0042 : l''equipe voit le fil de K, non lu',
+  (select count(*) from public.boite_equipe()
+    where fil_de = 'a0420000-0000-0000-0000-00000000000b' and nom = 'Client K' and non_lus = 1) = 1);
+select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b');
+select pg_temp.check('0042 : ouvert par l''equipe, le fil est lu',
+  (select non_lus from public.boite_equipe() where fil_de = 'a0420000-0000-0000-0000-00000000000b') = 0);
+insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
+values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-000000000005', true, 'Avec plaisir');
+
+-- K lit la réponse.
+select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
+select pg_temp.check('0042 : K voit la reponse de l''equipe',
+  (select count(*) from public.fil_equipe where de_l_equipe) = 1);
+select public.marquer_fil_equipe_lu();
+select public.marquer_annonces_lues();
+select pg_temp.check('0042 : K a tout lu',
+  not exists (select 1 from public.fil_equipe where de_l_equipe and lu_at is null)
+  and not exists (select 1 from public.annonce_destinataires where lue_at is null));
+reset role;
+
+-- Une personne suspendue lit, mais n'écrit plus.
+update public.profiles set is_suspended = true, suspended_at = now()
+ where auth_user_id = '44444444-4444-4444-4444-444444444444';
+set role authenticated;
+select pg_temp.login('44444444-4444-4444-4444-444444444444');
+select pg_temp.check('0042 : suspendu, D lit encore l''annonce a tous',
+  (select count(*) from public.annonces) = 1);
+do $$
+begin
+  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
+  values ('44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', false, 'Suspendu');
+  raise exception 'ECHEC 0042 : une personne suspendue ecrit a l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0042 : une personne suspendue n''ecrit plus a l''equipe';
+end $$;
+reset role;
+update public.profiles set is_suspended = false, suspended_at = null
+ where auth_user_id = '44444444-4444-4444-4444-444444444444';
+
+select pg_temp.check('0042 : les fonctions de l''equipe sont fermees a anon',
+  not has_function_privilege('anon', 'public.je_suis_de_l_equipe()', 'execute')
+  and not has_function_privilege('anon', 'public.boite_equipe()', 'execute')
+  and not has_function_privilege('anon', 'public.marquer_fil_lu_par_l_equipe(uuid)', 'execute')
+  and not has_function_privilege('authenticated', 'public.annonce_fixer_destinataires()', 'execute'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
