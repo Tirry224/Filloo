@@ -56,47 +56,6 @@ export const CHEMINS_EQUIPE = {
   merchant: "/vendeur/equipe",
 } as const satisfies Record<"client" | "merchant", string>;
 
-export type ElementEquipe =
-  | { type: "annonce"; id: string; titre: string; texte: string; quand: string }
-  | { type: "message"; id: string; deLEquipe: boolean; texte: string; quand: string; enReponseA: string | null };
-
-/**
- * Mes annonces et mon fil avec l'équipe POUR CET ESPACE (0044), du plus
- * ancien au plus récent : le fil client et le fil boutique d'une même
- * connexion ne se mélangent pas. Le RLS borne à moi ; le filtre d'espace,
- * lui, est un tri d'affichage.
- */
-export async function lireMonFilEquipe(
-  supabase: SupabaseClient<Database>,
-  authUserId: string,
-  espace: EspaceEquipe,
-): Promise<ElementEquipe[]> {
-  const [annonces, messages] = await Promise.all([
-    supabase.from("annonces").select("id, titre, corps, created_at").in("public", [...PUBLICS_DE[espace]]).order("created_at"),
-    supabase
-      .from("fil_equipe")
-      .select("id, de_l_equipe, corps, created_at, annonces(titre)")
-      .eq("fil_de", authUserId)
-      .eq("espace", espace)
-      .order("created_at"),
-  ]);
-  if (annonces.error) throw annonces.error;
-  if (messages.error) throw messages.error;
-
-  const elements: ElementEquipe[] = [
-    ...annonces.data.map((a) => ({ type: "annonce" as const, id: a.id, titre: a.titre, texte: a.corps, quand: a.created_at })),
-    ...messages.data.map((m) => ({
-      type: "message" as const,
-      id: m.id,
-      deLEquipe: m.de_l_equipe,
-      texte: m.corps,
-      quand: m.created_at,
-      enReponseA: m.annonces?.titre ?? null,
-    })),
-  ];
-  return elements.sort((a, b) => a.quand.localeCompare(b.quand));
-}
-
 /** Annonces et réponses de l'équipe que je n'ai pas lues ; 0 en cas d'échec (une pastille ne bloque rien). */
 export async function compterNonLusEquipe(
   supabase: SupabaseClient<Database>,
@@ -159,4 +118,81 @@ export async function compterNonLusBoite(supabase: SupabaseClient<Database>): Pr
 export async function monNomDansLEquipe(supabase: SupabaseClient<Database>, authUserId: string): Promise<string | null> {
   const { data } = await supabase.from("equipe").select("nom").eq("auth_user_id", authUserId).maybeSingle();
   return data?.nom ?? null;
+}
+
+/** Une ligne de l'onglet « Notifications » : ce que Filloo m'a envoyé (décision du 2026-11-05). */
+export type NotificationEquipe =
+  | { type: "annonce"; id: string; titre: string; texte: string; quand: string; nonLue: boolean }
+  | { type: "reponse"; id: string; texte: string; quand: string; nonLue: boolean };
+
+/**
+ * Les annonces de cet espace et chaque réponse de l'équipe, la plus
+ * récente d'abord. Rien de nouveau en base : les deux y sont déjà. Les
+ * messages entre clients et boutiques n'y sont pas : ils ont leur onglet.
+ */
+export async function lireNotificationsEquipe(
+  supabase: SupabaseClient<Database>,
+  authUserId: string,
+  espace: EspaceEquipe,
+): Promise<NotificationEquipe[]> {
+  const [annonces, reponses] = await Promise.all([
+    supabase
+      .from("annonces")
+      .select("id, titre, corps, created_at, annonce_destinataires(lue_at, auth_user_id)")
+      .in("public", [...PUBLICS_DE[espace]])
+      .eq("annonce_destinataires.auth_user_id", authUserId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("fil_equipe")
+      .select("id, corps, created_at, lu_at")
+      .eq("fil_de", authUserId)
+      .eq("espace", espace)
+      .eq("de_l_equipe", true)
+      .order("created_at", { ascending: false }),
+  ]);
+  if (annonces.error) throw annonces.error;
+  if (reponses.error) throw reponses.error;
+
+  const elements: NotificationEquipe[] = [
+    ...annonces.data.map((a) => ({
+      type: "annonce" as const,
+      id: a.id,
+      titre: a.titre,
+      texte: a.corps,
+      quand: a.created_at,
+      nonLue: a.annonce_destinataires.some((d) => d.lue_at === null),
+    })),
+    ...reponses.data.map((r) => ({
+      type: "reponse" as const,
+      id: r.id,
+      texte: r.corps,
+      quand: r.created_at,
+      nonLue: r.lu_at === null,
+    })),
+  ];
+  return elements.sort((a, b) => b.quand.localeCompare(a.quand));
+}
+
+export type MessageConversation = { id: string; deLEquipe: boolean; texte: string; quand: string; enReponseA: string | null };
+
+/** La conversation privée avec l'équipe pour cet espace, du plus ancien au plus récent. */
+export async function lireConversationEquipe(
+  supabase: SupabaseClient<Database>,
+  authUserId: string,
+  espace: EspaceEquipe,
+): Promise<MessageConversation[]> {
+  const { data, error } = await supabase
+    .from("fil_equipe")
+    .select("id, de_l_equipe, corps, created_at, annonces(titre)")
+    .eq("fil_de", authUserId)
+    .eq("espace", espace)
+    .order("created_at");
+  if (error) throw error;
+  return data.map((m) => ({
+    id: m.id,
+    deLEquipe: m.de_l_equipe,
+    texte: m.corps,
+    quand: m.created_at,
+    enReponseA: m.annonces?.titre ?? null,
+  }));
 }

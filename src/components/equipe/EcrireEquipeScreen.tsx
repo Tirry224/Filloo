@@ -18,9 +18,9 @@ export async function EcrireEquipeScreen({
   searchParams,
 }: {
   espace: Espace;
-  searchParams: Promise<{ repondre?: string }>;
+  searchParams: Promise<{ repondre?: string; depuis?: string }>;
 }) {
-  const { repondre } = await searchParams;
+  const { repondre, depuis } = await searchParams;
   const { supabase } = await gardeEquipe(espace);
   const chemin = CHEMINS_EQUIPE[espace];
 
@@ -35,7 +35,12 @@ export async function EcrireEquipeScreen({
 
   return (
     <Screen>
-      <TopBar title={annonce ? "Répondre à l'équipe" : "Écrire à l'équipe"} backHref={chemin} />
+      {/* Le retour ramène à l'onglet d'où l'on vient : Notifications pour
+          « Répondre » sous une annonce, sinon celui du bouton « Écrire ». */}
+      <TopBar
+        title={annonce ? "Répondre à l'équipe" : "Écrire à l'équipe"}
+        backHref={annonce || depuis !== "conversation" ? chemin : `${chemin}/conversation`}
+      />
       <ScreenBody>
         <Section className="gap-4">
           {annonce ? (
@@ -44,7 +49,7 @@ export async function EcrireEquipeScreen({
               <span className="min-w-0 flex-1 truncate">
                 En réponse à <strong>{annonce.titre}</strong>
               </span>
-              <Link href={`${chemin}/ecrire`} className="shrink-0 text-xs font-medium text-ink-soft underline underline-offset-2">
+              <Link href={`${chemin}/ecrire?depuis=notifications`} className="shrink-0 text-xs font-medium text-ink-soft underline underline-offset-2">
                 Retirer
               </Link>
             </div>

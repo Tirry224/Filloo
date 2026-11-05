@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { EquipeScreen } from "@/components/equipe/EquipeScreen";
+import { NotificationsEquipeScreen } from "@/components/equipe/NotificationsEquipeScreen";
 
 export const metadata: Metadata = { title: "Équipe Filloo", robots: { index: false, follow: false } };
 
-export default function MerchantEquipePage({ searchParams }: { searchParams: Promise<{ envoye?: string }> }) {
-  return <EquipeScreen espace="merchant" searchParams={searchParams} />;
+export default function MerchantEquipeNotificationsPage() {
+  return <NotificationsEquipeScreen espace="merchant" />;
 }

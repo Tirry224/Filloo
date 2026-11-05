@@ -91,7 +91,8 @@ export async function prevenirDeLaReponse(filDe: string, espace: "client" | "mer
     await sendPushToUser(filDe, {
       titre: "Équipe Filloo",
       corps: espace === "merchant" ? "L'équipe a répondu à votre boutique." : "L'équipe vous a répondu.",
-      url: CHEMIN_EQUIPE[espace],
+      // Une réponse ouvre la conversation ; une annonce, l'onglet Notifications.
+      url: `${CHEMIN_EQUIPE[espace]}/conversation`,
       tag: `equipe-${espace}`,
     });
   } catch (cause) {

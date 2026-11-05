@@ -128,5 +128,5 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
      cède sa place dans l'historique, et le retour du téléphone mène au fil,
      pas à un formulaire vide (constaté par le porteur du projet le
      2026-11-05). */
-  redirect(`${chemin}?envoye=1`, RedirectType.replace);
+  redirect(`${chemin}/conversation?envoye=1`, RedirectType.replace);
 }
