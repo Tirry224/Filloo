@@ -5,8 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * TOUT passe par `service_role` : les mesures (0024) refusent `anon` et
  * `authenticated`, et compter les comptes demande l'API d'administration
- * de l'authentification. C'est exactement pourquoi la garde
- * `estProprietaire` (`src/lib/proprietaire.ts`) doit avoir répondu OUI avant le premier appel ici.
+ * de l'authentification. C'est exactement pourquoi une garde doit
+ * avoir répondu OUI avant le premier appel ici : `estProprietaire`
+ * (`/suivi`) ou `requireEquipe` (`/admin`, membre de l'équipe, 0042).
  */
 
 export const PERIODES = {

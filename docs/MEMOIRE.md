@@ -79,6 +79,16 @@ mis à jour et raccourci ; l'ancienne version se relit par
   from auth.users where email = 'adresse';`
 - **Une annonce n'atteint que les inscrits du moment**, du public visé
   (tous, clients, commerçants) : liste figée à la publication.
+- **Statistiques dans `/admin/statistiques`** pour toute l'équipe : le
+  même tableau que `/suivi` (`components/suivi/TableauDeBord.tsx`).
+- **Les robots ne sont plus comptés** (2026-11-05,
+  `lib/robots-detecte.ts`) : constaté, 99 % des 6 009 « recherches »
+  sans aucun mot, jusqu'à 360 par heure la nuit, contre 118 fiches
+  produit vues. Les chiffres d'avant le 2026-11-05 restent gonflés.
+  L'agent utilisateur est lu, jamais enregistré.
+- **Visiteurs uniques et impressions : non mesurés, à décider.** Les
+  visiteurs uniques exigent un identifiant anonyme par navigateur, ce
+  que la politique de confidentialité exclut aujourd'hui (`0024`).
 - **Par notification, jamais par email** (confirmé le 2026-11-05) :
   l'équipe est prévenue quand on lui écrit (au plus une fois par fil
   tous les quarts d'heure), la personne quand l'équipe répond ou
@@ -439,10 +449,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-356 commits, du plus récent au plus ancien.
+357 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `3e789b8` Mesures : les robots et les préchargements ne sont plus comptés
 - `933f78e` Savoir de la base : Alpha Nouhou Diallo rejoint l'équipe
 - `3c0fe51` Équipe Filloo sur le site : annonces et fil avec l'équipe, côté utilisateur
 - `1311fb4` Espace /admin : la boîte de l'équipe, ses réponses et ses annonces
