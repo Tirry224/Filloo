@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { FilVue } from "@/components/admin/FilVue";
-import { lireBoite } from "@/lib/data/equipe";
+import { lireBoite, lireEspace } from "@/lib/data/equipe";
 import { estUuid } from "@/lib/saisie";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,11 +16,13 @@ export default async function FilPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; espace?: string }>;
 }) {
   const { id } = await params;
   if (!estUuid(id)) notFound();
-  const { erreur } = await searchParams;
+  const { erreur, espace: brut } = await searchParams;
+  // Le fil client ou le fil boutique de cette personne (0044).
+  const espace = lireEspace(brut);
 
   const supabase = await createClient();
   const [{ data: messages, error }, { data: membres }, boite] = await Promise.all([
@@ -28,15 +30,16 @@ export default async function FilPage({
       .from("fil_equipe")
       .select("id, auteur_id, de_l_equipe, corps, created_at, annonces(titre)")
       .eq("fil_de", id)
+      .eq("espace", espace)
       .order("created_at"),
     supabase.from("equipe").select("auth_user_id, nom"),
     lireBoite(supabase),
   ]);
   if (error) throw error;
   if (!messages.length) notFound();
-  await supabase.rpc("marquer_fil_lu_par_l_equipe", { p_fil_de: id });
+  await supabase.rpc("marquer_fil_lu_par_l_equipe", { p_fil_de: id, p_espace: espace });
 
   const nomDe = new Map((membres ?? []).map((m) => [m.auth_user_id, m.nom]));
-  const nom = boite.find((f) => f.filDe === id)?.nom ?? "Utilisateur";
-  return <FilVue id={id} nom={nom} messages={messages} nomDe={nomDe} erreur={erreur} />;
+  const nom = boite.find((f) => f.filDe === id && f.espace === espace)?.nom ?? "Utilisateur";
+  return <FilVue id={id} espace={espace} nom={nom} messages={messages} nomDe={nomDe} erreur={erreur} />;
 }

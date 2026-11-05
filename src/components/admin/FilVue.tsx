@@ -19,12 +19,14 @@ export type MessageDuFil = {
 /** Le fil, affichage seul (données lues par `admin/(plein-ecran)/fil/[id]/page.tsx`). */
 export function FilVue({
   id,
+  espace,
   nom,
   messages,
   nomDe,
   erreur,
 }: {
   id: string;
+  espace: "client" | "merchant";
   nom: string;
   messages: MessageDuFil[];
   nomDe: Map<string, string>;
@@ -36,10 +38,12 @@ export function FilVue({
         backHref="/admin"
         title={
           <div className="flex items-center gap-3">
-            <Avatar name={nom} size={38} />
+            <Avatar name={nom} size={38} kind={espace === "merchant" ? "shop" : "person"} />
             <span className="flex flex-col">
               <span className="text-base font-semibold">{nom}</span>
-              <span className="text-2xs text-ink-soft">Conversation avec l&apos;équipe Filloo</span>
+              <span className="text-2xs text-ink-soft">
+                {espace === "merchant" ? "Espace boutique" : "Espace client"} · conversation avec l&apos;équipe
+              </span>
             </span>
           </div>
         }
@@ -78,6 +82,7 @@ export function FilVue({
         {erreur ? <Notice>{erreur}</Notice> : null}
         <form action={repondreAuFilAction} className="flex items-center gap-2.5">
           <input type="hidden" name="filDe" value={id} />
+          <input type="hidden" name="espace" value={espace} />
           <input
             name="corps"
             maxLength={2000}

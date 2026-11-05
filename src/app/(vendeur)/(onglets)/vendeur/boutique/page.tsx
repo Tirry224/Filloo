@@ -36,7 +36,7 @@ export default async function EditShopPage() {
     getMyProfile(supabase, "client"),
     getSessionUser(supabase),
   ]);
-  const nonLusEquipe = user ? await compterNonLusEquipe(supabase, user.id) : 0;
+  const nonLusEquipe = user ? await compterNonLusEquipe(supabase, user.id, "merchant") : 0;
   /* Rôle et suspension sont traités par `(vendeur)/layout.tsx`. Ce test
      porte sur la BOUTIQUE, qu'un profil commerçant neuf n'a pas encore :
      le seul cas que le layout laisse passer. */

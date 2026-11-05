@@ -4,7 +4,7 @@ import { FormulaireEquipe } from "@/components/equipe/FormulaireEquipe";
 import { gardeEquipe } from "@/components/equipe/garde";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
-import { CHEMINS_EQUIPE } from "@/lib/data/equipe";
+import { CHEMINS_EQUIPE, PUBLICS_DE } from "@/lib/data/equipe";
 import type { Espace } from "@/lib/espace";
 import { estUuid } from "@/lib/saisie";
 
@@ -25,7 +25,12 @@ export async function EcrireEquipeScreen({
   const chemin = CHEMINS_EQUIPE[espace];
 
   const { data: annonce } = estUuid(repondre)
-    ? await supabase.from("annonces").select("id, titre").eq("id", repondre).maybeSingle()
+    ? await supabase
+        .from("annonces")
+        .select("id, titre")
+        .eq("id", repondre)
+        .in("public", [...PUBLICS_DE[espace]])
+        .maybeSingle()
     : { data: null };
 
   return (

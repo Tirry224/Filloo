@@ -2334,31 +2334,31 @@ select pg_temp.check('0042 : inscrit apres, L ne voit aucune annonce', (select c
 
 -- K répond à l'annonce : dans SON fil seulement, jamais au nom de l'équipe.
 select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
-insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, annonce_id, created_at, lu_at)
-values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', false,
+insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps, annonce_id, created_at, lu_at)
+values ('a0420000-0000-0000-0000-00000000000b', 'client', 'a0420000-0000-0000-0000-00000000000b', false,
         'Merci !', 'a0420000-0000-0000-0000-0000000000a2', '2020-01-01', now());
 select pg_temp.check('0042 : l''heure et l''etat lu viennent du serveur',
   (select created_at > now() - interval '1 minute' and lu_at is null from public.fil_equipe));
 do $$
 begin
-  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
-  values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', true, 'Je suis l''equipe');
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+  values ('a0420000-0000-0000-0000-00000000000b', 'client', 'a0420000-0000-0000-0000-00000000000b', true, 'Je suis l''equipe');
   raise exception 'ECHEC 0042 : un client ecrit au nom de l''equipe';
 exception when insufficient_privilege then
   raise notice 'OK    0042 : un client n''ecrit pas au nom de l''equipe';
 end $$;
 do $$
 begin
-  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
-  values ('44444444-4444-4444-4444-444444444444', 'a0420000-0000-0000-0000-00000000000b', false, 'Chez D');
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+  values ('44444444-4444-4444-4444-444444444444', 'client', 'a0420000-0000-0000-0000-00000000000b', false, 'Chez D');
   raise exception 'ECHEC 0042 : un client ecrit dans le fil d''un autre';
 exception when insufficient_privilege then
   raise notice 'OK    0042 : un client n''ecrit que dans son fil';
 end $$;
 do $$
 begin
-  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, annonce_id)
-  values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-00000000000b', false,
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps, annonce_id)
+  values ('a0420000-0000-0000-0000-00000000000b', 'client', 'a0420000-0000-0000-0000-00000000000b', false,
           'Je reponds a une annonce que je n''ai pas recue', 'a0420000-0000-0000-0000-0000000000a1');
   raise exception 'ECHEC 0042 : un client repond a une annonce qui ne lui etait pas destinee';
 exception when insufficient_privilege then
@@ -2377,25 +2377,25 @@ end $$;
 select pg_temp.login('44444444-4444-4444-4444-444444444444');
 select pg_temp.check('0042 : D ne voit pas le fil de K', (select count(*) from public.fil_equipe) = 0);
 select pg_temp.check('0042 : la boite de l''equipe est vide hors equipe', (select count(*) from public.boite_equipe()) = 0);
-select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b');
+select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b', 'client');
 
 -- L'équipe voit le message, toujours non lu (D n'a rien pu marquer), et répond.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select pg_temp.check('0042 : l''equipe voit le fil de K, non lu',
   (select count(*) from public.boite_equipe()
     where fil_de = 'a0420000-0000-0000-0000-00000000000b' and nom = 'Client K' and non_lus = 1) = 1);
-select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b');
+select public.marquer_fil_lu_par_l_equipe('a0420000-0000-0000-0000-00000000000b', 'client');
 select pg_temp.check('0042 : ouvert par l''equipe, le fil est lu',
   (select non_lus from public.boite_equipe() where fil_de = 'a0420000-0000-0000-0000-00000000000b') = 0);
-insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
-values ('a0420000-0000-0000-0000-00000000000b', 'a0420000-0000-0000-0000-000000000005', true, 'Avec plaisir');
+insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+values ('a0420000-0000-0000-0000-00000000000b', 'client', 'a0420000-0000-0000-0000-000000000005', true, 'Avec plaisir');
 
 -- K lit la réponse.
 select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
 select pg_temp.check('0042 : K voit la reponse de l''equipe',
   (select count(*) from public.fil_equipe where de_l_equipe) = 1);
-select public.marquer_fil_equipe_lu();
-select public.marquer_annonces_lues();
+select public.marquer_fil_equipe_lu('client');
+select public.marquer_annonces_lues('client');
 select pg_temp.check('0042 : K a tout lu',
   not exists (select 1 from public.fil_equipe where de_l_equipe and lu_at is null)
   and not exists (select 1 from public.annonce_destinataires where lue_at is null));
@@ -2410,8 +2410,8 @@ select pg_temp.check('0042 : suspendu, D lit encore l''annonce a tous',
   (select count(*) from public.annonces) = 1);
 do $$
 begin
-  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
-  values ('44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', false, 'Suspendu');
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+  values ('44444444-4444-4444-4444-444444444444', 'client', '44444444-4444-4444-4444-444444444444', false, 'Suspendu');
   raise exception 'ECHEC 0042 : une personne suspendue ecrit a l''equipe';
 exception when insufficient_privilege then
   raise notice 'OK    0042 : une personne suspendue n''ecrit plus a l''equipe';
@@ -2423,7 +2423,7 @@ update public.profiles set is_suspended = false, suspended_at = null
 select pg_temp.check('0042 : les fonctions de l''equipe sont fermees a anon',
   not has_function_privilege('anon', 'public.je_suis_de_l_equipe()', 'execute')
   and not has_function_privilege('anon', 'public.boite_equipe()', 'execute')
-  and not has_function_privilege('anon', 'public.marquer_fil_lu_par_l_equipe(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.marquer_fil_lu_par_l_equipe(uuid, public.user_role)', 'execute')
   and not has_function_privilege('authenticated', 'public.annonce_fixer_destinataires()', 'execute'));
 
 -- =====================================================================
@@ -2471,6 +2471,86 @@ reset role;
 select pg_temp.check('0043 : la fonction de marquage n''est appelable par personne',
   not has_function_privilege('authenticated', 'public.equipe_marquer_la_connexion()', 'execute')
   and not has_function_privilege('anon', 'public.equipe_marquer_la_connexion()', 'execute'));
+
+-- =====================================================================
+-- Chaque espace a son propre fil avec l'équipe (0044)
+-- =====================================================================
+-- C a un compte client ET une boutique (comptes liés, plus haut).
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+values ('33333333-3333-3333-3333-333333333333', 'client', '33333333-3333-3333-3333-333333333333', false, 'Plainte contre une boutique');
+insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+values ('33333333-3333-3333-3333-333333333333', 'merchant', '33333333-3333-3333-3333-333333333333', false, 'Probleme avec ma boutique');
+select pg_temp.check('0044 : les deux espaces de C ont chacun leur fil',
+  (select count(*) from public.fil_equipe where fil_de = '33333333-3333-3333-3333-333333333333' and espace = 'client') = 1
+  and (select count(*) from public.fil_equipe where fil_de = '33333333-3333-3333-3333-333333333333' and espace = 'merchant') = 1);
+do $$
+begin
+  insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps)
+  values ('33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333', false, 'Sans espace');
+  raise exception 'ECHEC 0044 : un message sans espace est accepte';
+-- Le RLS refuse avant même la contrainte NOT NULL : les deux disent non.
+exception when not_null_violation or insufficient_privilege then
+  raise notice 'OK    0044 : un message appartient toujours a un espace';
+end $$;
+
+-- K n'a qu'un compte client : il n'écrit pas côté boutique.
+select pg_temp.login('a0420000-0000-0000-0000-00000000000b');
+do $$
+begin
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps)
+  values ('a0420000-0000-0000-0000-00000000000b', 'merchant', 'a0420000-0000-0000-0000-00000000000b', false, 'Boutique fantome');
+  raise exception 'ECHEC 0044 : on ecrit depuis un espace qu''on n''a pas';
+exception when insufficient_privilege then
+  raise notice 'OK    0044 : on n''ecrit que depuis un espace qu''on possede';
+end $$;
+reset role;
+
+-- Une annonce aux clients ne se répond pas depuis la boutique.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+insert into public.annonces (id, auteur_id, titre, corps, public) values
+  ('a0440000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux clients', 'Bonjour', 'clients');
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+do $$
+begin
+  insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps, annonce_id)
+  values ('33333333-3333-3333-3333-333333333333', 'merchant', '33333333-3333-3333-3333-333333333333', false,
+          'Je reponds cote boutique', 'a0440000-0000-0000-0000-0000000000a1');
+  raise exception 'ECHEC 0044 : une annonce aux clients se repond depuis la boutique';
+exception when insufficient_privilege then
+  raise notice 'OK    0044 : une annonce ne se repond que depuis l''espace qu''elle concerne';
+end $$;
+insert into public.fil_equipe (fil_de, espace, auteur_id, de_l_equipe, corps, annonce_id)
+values ('33333333-3333-3333-3333-333333333333', 'client', '33333333-3333-3333-3333-333333333333', false,
+        'Je reponds cote client', 'a0440000-0000-0000-0000-0000000000a1');
+
+-- Lire côté boutique ne marque pas l'annonce aux clients.
+select public.marquer_annonces_lues('merchant');
+select pg_temp.check('0044 : lire cote boutique laisse non lue l''annonce aux clients',
+  (select lue_at is null from public.annonce_destinataires
+    where annonce_id = 'a0440000-0000-0000-0000-0000000000a1' and auth_user_id = '33333333-3333-3333-3333-333333333333'));
+reset role;
+
+-- L'équipe voit deux fils pour C, et marque lu l'un sans l'autre.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0044 : la boite montre un fil par espace',
+  (select count(*) from public.boite_equipe() where fil_de = '33333333-3333-3333-3333-333333333333') = 2);
+-- Le compte commerçant de C n'a pas encore de boutique : le nom du
+-- compte s'affiche (avec une boutique, c'est son nom qui s'afficherait).
+select pg_temp.check('0044 : cote boutique, la boite nomme le compte commercant',
+  (select nom from public.boite_equipe() where fil_de = '33333333-3333-3333-3333-333333333333' and espace = 'merchant') = 'Client C');
+select public.marquer_fil_lu_par_l_equipe('33333333-3333-3333-3333-333333333333', 'merchant');
+select pg_temp.check('0044 : lu cote boutique, le fil client reste non lu',
+  (select non_lus from public.boite_equipe() where fil_de = '33333333-3333-3333-3333-333333333333' and espace = 'merchant') = 0
+  and (select non_lus from public.boite_equipe() where fil_de = '33333333-3333-3333-3333-333333333333' and espace = 'client') = 2);
+reset role;
+select pg_temp.check('0044 : les anciennes fonctions sans espace n''existent plus',
+  to_regprocedure('public.marquer_fil_equipe_lu()') is null
+  and to_regprocedure('public.marquer_annonces_lues()') is null
+  and to_regprocedure('public.marquer_fil_lu_par_l_equipe(uuid)') is null);
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

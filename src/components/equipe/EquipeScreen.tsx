@@ -36,8 +36,11 @@ export async function EquipeScreen({
 
   const chemin = CHEMINS_EQUIPE[espace];
   const retour = espace === "merchant" ? "/vendeur/boutique" : "/compte";
-  const elements = await lireMonFilEquipe(supabase, user.id);
-  await Promise.all([supabase.rpc("marquer_annonces_lues"), supabase.rpc("marquer_fil_equipe_lu")]);
+  const elements = await lireMonFilEquipe(supabase, user.id, espace);
+  await Promise.all([
+    supabase.rpc("marquer_annonces_lues", { p_espace: espace }),
+    supabase.rpc("marquer_fil_equipe_lu", { p_espace: espace }),
+  ]);
 
   return (
     <Screen largeur="rangees">

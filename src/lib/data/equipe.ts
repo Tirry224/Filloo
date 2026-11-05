@@ -37,6 +37,19 @@ export const PUBLICS = {
   commercants: "Les commerçants",
 } as const satisfies Record<Database["public"]["Enums"]["public_annonce"], string>;
 
+export type EspaceEquipe = Database["public"]["Enums"]["user_role"];
+
+/** Un espace lu dans une URL ou un formulaire : « merchant », sinon « client ». */
+export function lireEspace(valeur: unknown): EspaceEquipe {
+  return valeur === "merchant" ? "merchant" : "client";
+}
+
+/** Les publics d'annonce qu'un espace lit (0044) : « tous » partout, puis le sien. */
+export const PUBLICS_DE = {
+  client: ["tous", "clients"],
+  merchant: ["tous", "commercants"],
+} as const satisfies Record<EspaceEquipe, readonly Database["public"]["Enums"]["public_annonce"][]>;
+
 /** La page « Équipe Filloo » de chaque espace. */
 export const CHEMINS_EQUIPE = {
   client: "/compte/equipe",
@@ -48,16 +61,23 @@ export type ElementEquipe =
   | { type: "message"; id: string; deLEquipe: boolean; texte: string; quand: string; enReponseA: string | null };
 
 /**
- * Mes annonces et mon fil avec l'équipe, du plus ancien au plus récent.
- * Le RLS fait le tri (0042) : aucun filtre ici n'est une protection.
+ * Mes annonces et mon fil avec l'équipe POUR CET ESPACE (0044), du plus
+ * ancien au plus récent : le fil client et le fil boutique d'une même
+ * connexion ne se mélangent pas. Le RLS borne à moi ; le filtre d'espace,
+ * lui, est un tri d'affichage.
  */
-export async function lireMonFilEquipe(supabase: SupabaseClient<Database>, authUserId: string): Promise<ElementEquipe[]> {
+export async function lireMonFilEquipe(
+  supabase: SupabaseClient<Database>,
+  authUserId: string,
+  espace: EspaceEquipe,
+): Promise<ElementEquipe[]> {
   const [annonces, messages] = await Promise.all([
-    supabase.from("annonces").select("id, titre, corps, created_at").order("created_at"),
+    supabase.from("annonces").select("id, titre, corps, created_at").in("public", [...PUBLICS_DE[espace]]).order("created_at"),
     supabase
       .from("fil_equipe")
       .select("id, de_l_equipe, corps, created_at, annonces(titre)")
       .eq("fil_de", authUserId)
+      .eq("espace", espace)
       .order("created_at"),
   ]);
   if (annonces.error) throw annonces.error;
@@ -78,17 +98,23 @@ export async function lireMonFilEquipe(supabase: SupabaseClient<Database>, authU
 }
 
 /** Annonces et réponses de l'équipe que je n'ai pas lues ; 0 en cas d'échec (une pastille ne bloque rien). */
-export async function compterNonLusEquipe(supabase: SupabaseClient<Database>, authUserId: string): Promise<number> {
+export async function compterNonLusEquipe(
+  supabase: SupabaseClient<Database>,
+  authUserId: string,
+  espace: EspaceEquipe,
+): Promise<number> {
   const [annonces, reponses] = await Promise.all([
     supabase
       .from("annonce_destinataires")
-      .select("annonce_id", { count: "exact", head: true })
+      .select("annonce_id, annonces!inner(public)", { count: "exact", head: true })
       .eq("auth_user_id", authUserId)
+      .in("annonces.public", [...PUBLICS_DE[espace]])
       .is("lue_at", null),
     supabase
       .from("fil_equipe")
       .select("id", { count: "exact", head: true })
       .eq("fil_de", authUserId)
+      .eq("espace", espace)
       .eq("de_l_equipe", true)
       .is("lu_at", null),
   ]);
@@ -97,6 +123,7 @@ export async function compterNonLusEquipe(supabase: SupabaseClient<Database>, au
 
 export type FilBoite = {
   filDe: string;
+  espace: EspaceEquipe;
   nom: string;
   dernierCorps: string;
   dernierAt: string;
@@ -110,6 +137,7 @@ export async function lireBoite(supabase: SupabaseClient<Database>): Promise<Fil
   if (error) throw error;
   return data.map((f) => ({
     filDe: f.fil_de,
+    espace: f.espace,
     nom: f.nom,
     dernierCorps: f.dernier_corps,
     dernierAt: f.dernier_at,

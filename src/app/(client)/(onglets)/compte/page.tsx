@@ -20,7 +20,7 @@ export default async function AccountPage() {
 
   const [merchant, nonLusEquipe] = await Promise.all([
     getMyMerchant(supabase),
-    user ? compterNonLusEquipe(supabase, user.id) : 0,
+    user ? compterNonLusEquipe(supabase, user.id, "client") : 0,
   ]);
 
   return (

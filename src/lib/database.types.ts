@@ -257,6 +257,7 @@ export type Database = {
           corps: string
           created_at: string
           de_l_equipe: boolean
+          espace: Database["public"]["Enums"]["user_role"]
           fil_de: string
           id: string
           lu_at: string | null
@@ -267,6 +268,7 @@ export type Database = {
           corps: string
           created_at?: string
           de_l_equipe: boolean
+          espace: Database["public"]["Enums"]["user_role"]
           fil_de: string
           id?: string
           lu_at?: string | null
@@ -277,6 +279,7 @@ export type Database = {
           corps?: string
           created_at?: string
           de_l_equipe?: boolean
+          espace?: Database["public"]["Enums"]["user_role"]
           fil_de?: string
           id?: string
           lu_at?: string | null
@@ -656,12 +659,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      annonce_concerne: {
+        Args: {
+          p_espace: Database["public"]["Enums"]["user_role"]
+          p_public: Database["public"]["Enums"]["public_annonce"]
+        }
+        Returns: boolean
+      }
       boite_equipe: {
         Args: never
         Returns: {
           dernier_at: string
           dernier_corps: string
           dernier_de_l_equipe: boolean
+          espace: Database["public"]["Enums"]["user_role"]
           fil_de: string
           nom: string
           non_lus: number
@@ -674,12 +685,21 @@ export type Database = {
       }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
-      je_peux_ecrire_a_l_equipe: { Args: never; Returns: boolean }
+      je_peux_ecrire_a_l_equipe: {
+        Args: { p_espace: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
+      }
       je_suis_de_l_equipe: { Args: never; Returns: boolean }
-      marquer_annonces_lues: { Args: never; Returns: undefined }
-      marquer_fil_equipe_lu: { Args: never; Returns: undefined }
+      marquer_annonces_lues: {
+        Args: { p_espace: Database["public"]["Enums"]["user_role"] }
+        Returns: undefined
+      }
+      marquer_fil_equipe_lu: {
+        Args: { p_espace: Database["public"]["Enums"]["user_role"] }
+        Returns: undefined
+      }
       marquer_fil_lu_par_l_equipe: {
-        Args: { p_fil_de: string }
+        Args: { p_espace: Database["public"]["Enums"]["user_role"]; p_fil_de: string }
         Returns: undefined
       }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }

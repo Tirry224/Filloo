@@ -67,6 +67,15 @@ source, constaté ou supposé.
   sur `auth.users` (propriétaire `supabase_auth_admin`). Le stub local
   porte désormais `raw_app_meta_data`.
 
+- **`0044` écrite le 2026-11-05, PAS appliquée** : `fil_equipe.espace`
+  (client ou commerçant), un fil par (personne, espace) ; fonctions de
+  « lu » et `boite_equipe` par espace, `je_peux_ecrire_a_l_equipe(espace)`
+  (suspension par compte), annonce à laquelle on répond seulement depuis
+  l'espace qu'elle concerne (`annonce_concerne`). Le seul fil existant
+  (2 messages, écrits côté client) est rangé côté client. 234 contrôles
+  OK en local. Piège : une policy dépend de sa fonction, la remplacer
+  AVANT de supprimer l'ancienne ; et le RLS refuse avant NOT NULL.
+
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
 - **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par

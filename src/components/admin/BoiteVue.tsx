@@ -41,7 +41,7 @@ export function BoiteVue({ nom, fils }: { nom: string | null; fils: FilBoite[] }
                   <SectionLabel>À répondre</SectionLabel>
                   <div className="flex flex-col">
                     {aRepondre.map((f) => (
-                      <LigneFil key={f.filDe} fil={f} />
+                      <LigneFil key={`${f.filDe}-${f.espace}`} fil={f} />
                     ))}
                   </div>
                 </div>
@@ -57,7 +57,7 @@ export function BoiteVue({ nom, fils }: { nom: string | null; fils: FilBoite[] }
                   <SectionLabel>Déjà répondu</SectionLabel>
                   <div className="flex flex-col">
                     {repondus.map((f) => (
-                      <LigneFil key={f.filDe} fil={f} />
+                      <LigneFil key={`${f.filDe}-${f.espace}`} fil={f} />
                     ))}
                   </div>
                 </div>

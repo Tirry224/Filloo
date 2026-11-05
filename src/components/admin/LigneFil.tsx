@@ -10,11 +10,20 @@ export function LigneFil({ fil }: { fil: FilBoite }) {
   const nonLu = fil.nonLus > 0;
   const aRepondre = !fil.dernierDeLEquipe;
   return (
-    <Link href={`/admin/fil/${fil.filDe}`} className="flex items-start gap-3 border-b border-line py-3.5 last:border-b-0">
-      <Avatar name={fil.nom} />
+    <Link
+      href={`/admin/fil/${fil.filDe}?espace=${fil.espace}`}
+      className="flex items-start gap-3 border-b border-line py-3.5 last:border-b-0"
+    >
+      <Avatar name={fil.nom} kind={fil.espace === "merchant" ? "shop" : "person"} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-base font-semibold">{fil.nom}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-base font-semibold">{fil.nom}</span>
+            {/* Le même compte peut écrire des deux côtés (0044) : l'équipe voit d'où. */}
+            <Badge tone={fil.espace === "merchant" ? "accent" : "neutral"} className="shrink-0 self-center">
+              {fil.espace === "merchant" ? "Boutique" : "Client"}
+            </Badge>
+          </span>
           <time className="shrink-0 text-2xs text-ink-soft">{formatMessageTime(fil.dernierAt)}</time>
         </div>
         <div className="flex items-center gap-2">

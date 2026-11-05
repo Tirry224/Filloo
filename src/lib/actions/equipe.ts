@@ -4,7 +4,7 @@ import { RedirectType, redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
-import { CHEMINS_EQUIPE, PUBLICS } from "@/lib/data/equipe";
+import { CHEMINS_EQUIPE, PUBLICS, lireEspace } from "@/lib/data/equipe";
 import { messagePourErreur } from "@/lib/erreurs";
 import { estUuid, longueur, texteNettoye } from "@/lib/saisie";
 import { annoncerAuxDestinataires, prevenirDeLaReponse, prevenirLEquipe } from "@/lib/notifications-equipe";
@@ -20,7 +20,7 @@ function retour(chemin: string, erreur?: string, info?: string): never {
   if (erreur) params.set("erreur", erreur);
   if (info) params.set("info", info);
   const q = params.toString();
-  redirect(`${chemin}${q ? `?${q}` : ""}`);
+  redirect(`${chemin}${q ? `${chemin.includes("?") ? "&" : "?"}${q}` : ""}`);
 }
 
 /**
@@ -30,7 +30,9 @@ function retour(chemin: string, erreur?: string, info?: string): never {
 export async function repondreAuFilAction(formData: FormData): Promise<void> {
   const filDe = formData.get("filDe");
   if (!estUuid(filDe)) retour("/admin", "Fil introuvable.");
-  const chemin = `/admin/fil/${filDe}`;
+  // Le fil client ou le fil boutique de cette personne (0044).
+  const espace = lireEspace(formData.get("espace"));
+  const chemin = `/admin/fil/${filDe}?espace=${espace}`;
   const corps = texteNettoye(formData.get("corps"));
   if (!corps) retour(chemin, "Écrivez une réponse.");
   if (longueur(corps) > CORPS_MAX) retour(chemin, `${CORPS_MAX} caractères au plus.`);
@@ -39,10 +41,12 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
   const user = await getSessionUser(supabase);
   if (!user) retour("/connexion");
 
-  const { error } = await supabase.from("fil_equipe").insert({ fil_de: filDe, auteur_id: user.id, de_l_equipe: true, corps });
+  const { error } = await supabase
+    .from("fil_equipe")
+    .insert({ fil_de: filDe, espace, auteur_id: user.id, de_l_equipe: true, corps });
   if (error) retour(chemin, messagePourErreur(error, "réponse"));
 
-  after(() => prevenirDeLaReponse(filDe));
+  after(() => prevenirDeLaReponse(filDe, espace));
   retour(chemin);
 }
 
@@ -85,7 +89,7 @@ export async function publierAnnonceAction(formData: FormData): Promise<void> {
  * le succès ramène au fil.
  */
 export async function ecrireALEquipeAction(_etat: ActionState | null, formData: FormData): Promise<ActionState> {
-  const espace = formData.get("espace") === "merchant" ? "merchant" : "client";
+  const espace = lireEspace(formData.get("espace"));
   const chemin = CHEMINS_EQUIPE[espace];
   const annonceId = formData.get("annonceId");
   const corps = texteNettoye(formData.get("corps"));
@@ -100,6 +104,7 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
     .from("fil_equipe")
     .insert({
       fil_de: user.id,
+      espace,
       auteur_id: user.id,
       de_l_equipe: false,
       corps,
