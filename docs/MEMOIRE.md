@@ -455,10 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-362 commits, du plus récent au plus ancien.
+363 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `5bc50b4` Savoir de la base : Laouratou Barry rejoint l'équipe
 - `ab846f4` 0043 appliquée : l'équipe n'a plus que /admin
 - `e54aa74` Espace /admin habillé comme le site : onglets, tuiles, conversation, graphique
 - `d4028c0` L'équipe n'a que /admin : ni espace client, ni boutique (0043 écrite, PAS appliquée)
