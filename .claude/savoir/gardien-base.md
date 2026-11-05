@@ -56,7 +56,9 @@ source, constaté ou supposé.
   le porteur du projet (« Tirry ») et Alpha Nouhou Diallo (« Alpha
   Nouhou », compte client), inscrits par la session sur sa demande.
 
-- **`0043` écrite le 2026-11-05, PAS appliquée** : trigger sur `equipe`
+- **`0043` appliquée le 2026-11-05** sur accord du porteur du projet
+  (constaté : 43 migrations, trigger présent, Tirry et Alpha Nouhou
+  marqués, fonction fermée à `authenticated`) : trigger sur `equipe`
   qui pose ou retire `app_metadata.equipe` dans `auth.users` (le site la
   lit sans requête), et annonces qui ne partent plus vers l'équipe. 225
   contrôles OK en local. Constaté le 2026-11-05 : `postgres` a `UPDATE`

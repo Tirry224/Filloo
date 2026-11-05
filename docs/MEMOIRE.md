@@ -27,8 +27,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **En ligne sur `https://filloo.net`** (`main`, Vercel, fonctions à
   Paris), préversion sur `dev` avec **la même base**.
 - **Base** : 41 migrations, toutes appliquées en production (constaté
-  le 2026-10-23). `0042` (équipe, annonces) appliquée le 2026-11-05 sur
-  accord du porteur du projet (42 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  le 2026-10-23). `0042` (équipe, annonces) et `0043` (l'équipe n'a que
+  `/admin`) appliquées le 2026-11-05 sur accord du porteur du projet
+  (43 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
@@ -454,10 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-360 commits, du plus récent au plus ancien.
+361 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `e54aa74` Espace /admin habillé comme le site : onglets, tuiles, conversation, graphique
 - `d4028c0` L'équipe n'a que /admin : ni espace client, ni boutique (0043 écrite, PAS appliquée)
 - `7082deb` Supprime /suivi : l'espace de l'équipe /admin la remplace
 - `1f31129` Statistiques dans /admin pour toute l'équipe
