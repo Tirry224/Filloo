@@ -19,6 +19,10 @@ import { formatMessageTime } from "@/lib/format";
  * annonce : les deux mènent à l'écran d'écriture (`…/equipe/ecrire`),
  * pour que cette page reste une lecture (décision du 2026-11-05).
  * L'ouvrir marque tout comme lu.
+ *
+ * Après un envoi (`?envoye=1`) : message envoyé → retour → le fil →
+ * retour → la page de compte. Le formulaire est REMPLACÉ dans l'historique
+ * (`ecrireALEquipeAction`), il ne revient jamais par le retour.
  */
 export async function EquipeScreen({
   espace,
@@ -39,7 +43,10 @@ export async function EquipeScreen({
     <Screen largeur="rangees">
       <TopBar
         title="Équipe Filloo"
-        backHref={retour}
+        /* Juste après un envoi, le retour mène d'abord au fil lui-même
+           (sans le bandeau), puis seulement à la page de compte : le
+           parcours attendu par le porteur du projet (2026-11-05). */
+        backHref={envoye ? chemin : retour}
         right={
           <Link
             href={`${chemin}/ecrire`}

@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { RedirectType, redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
@@ -119,5 +119,9 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
   }
 
   after(() => prevenirLEquipe(data.id));
-  redirect(`${chemin}?envoye=1`);
+  /* `replace` et non `push` (le défaut d'une action) : l'écran d'écriture
+     cède sa place dans l'historique, et le retour du téléphone mène au fil,
+     pas à un formulaire vide (constaté par le porteur du projet le
+     2026-11-05). */
+  redirect(`${chemin}?envoye=1`, RedirectType.replace);
 }
