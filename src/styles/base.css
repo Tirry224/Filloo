@@ -41,8 +41,12 @@
     color: inherit;
   }
 
+  /* Le texte d'exemple se voit à peine : en `ink-soft`, il se lisait comme
+     une saisie déjà faite (constaté par le porteur du projet le
+     2026-11-05). `opacity: 1` : Firefox l'atténue sinon une seconde fois. */
   input::placeholder, textarea::placeholder {
-    color: var(--color-ink-soft);
+    color: var(--color-ink-faint);
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {

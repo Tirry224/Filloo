@@ -455,10 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-365 commits, du plus récent au plus ancien.
+366 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `1ceeb6f` Équipe Filloo : après un envoi, le retour repasse par le fil avant Mon compte
 - `eed05a4` Équipe Filloo : on écrit depuis un bouton en haut à droite, plus au milieu de la page
 - `e12ac6e` Mon compte : retire « Mes messages », déjà un onglet de la barre de navigation
 - `5bc50b4` Savoir de la base : Laouratou Barry rejoint l'équipe

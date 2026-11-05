@@ -17,6 +17,8 @@
   --color-ink: #182b49;         /* texte principal, titres : indigo */
   --color-ink-soft: #334155;    /* texte secondaire, légendes : gris foncé */
   --color-on-accent: #ffffff;   /* texte posé sur un fond accent */
+  --color-ink-faint: #94a3b8;   /* texte d'exemple des champs : se lit, sans
+                                   jamais passer pour une saisie (2026-11-05) */
 
   --color-line: #e2e8f0;        /* bordures et séparateurs */
   --color-line-strong: #cbd5e1; /* bordure appuyée */

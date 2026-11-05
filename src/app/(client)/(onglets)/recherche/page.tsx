@@ -105,7 +105,7 @@ export default async function SearchPage({
               autoComplete="off"
               placeholder="Rechercher un produit"
               aria-label="Rechercher un produit"
-              className="h-full min-w-0 flex-1 bg-transparent text-base font-medium outline-none placeholder:font-normal placeholder:text-ink-soft"
+              className="h-full min-w-0 flex-1 bg-transparent text-base font-medium outline-none placeholder:font-normal placeholder:text-ink-faint"
             />
             {q ? (
               <Link
