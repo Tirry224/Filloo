@@ -3,6 +3,6 @@ import { EcrireEquipeScreen } from "@/components/equipe/EcrireEquipeScreen";
 
 export const metadata: Metadata = { title: "Écrire à l'équipe", robots: { index: false, follow: false } };
 
-export default function MerchantEquipeEcrirePage({ searchParams }: { searchParams: Promise<{ repondre?: string; depuis?: string }> }) {
-  return <EcrireEquipeScreen espace="merchant" searchParams={searchParams} />;
+export default function MerchantEquipeEcrirePage() {
+  return <EcrireEquipeScreen espace="merchant" />;
 }

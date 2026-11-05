@@ -8,12 +8,11 @@ import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
 
 /** Le message à l'équipe. Un refus ou une coupure réseau garde la saisie (`useFormulaire`). */
-export function FormulaireEquipe({ espace, annonceId }: { espace: Espace; annonceId?: string }) {
+export function FormulaireEquipe({ espace }: { espace: Espace }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(ecrireALEquipeAction);
   return (
     <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
       <input type="hidden" name="espace" value={espace} />
-      {annonceId ? <input type="hidden" name="annonceId" value={annonceId} /> : null}
       <Field label="Votre message" htmlFor="corps" hint="Une personne de l'équipe vous répondra dans « Équipe Filloo ».">
         <Textarea
           id="corps"

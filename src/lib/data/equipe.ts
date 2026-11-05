@@ -173,26 +173,52 @@ export async function lireNotificationsEquipe(
   return elements.sort((a, b) => b.quand.localeCompare(a.quand));
 }
 
-export type MessageConversation = { id: string; deLEquipe: boolean; texte: string; quand: string; enReponseA: string | null };
+/** Une annonce de cet espace, à lire (le RLS ne rend que les miennes). */
+export async function lireAnnonceEquipe(
+  supabase: SupabaseClient<Database>,
+  id: string,
+  espace: EspaceEquipe,
+): Promise<{ titre: string; texte: string; quand: string } | null> {
+  const { data, error } = await supabase
+    .from("annonces")
+    .select("titre, corps, created_at")
+    .eq("id", id)
+    .in("public", [...PUBLICS_DE[espace]])
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { titre: data.titre, texte: data.corps, quand: data.created_at } : null;
+}
 
-/** La conversation privée avec l'équipe pour cet espace, du plus ancien au plus récent. */
-export async function lireConversationEquipe(
+export type MessageEchange = { id: string; deLEquipe: boolean; texte: string; quand: string };
+
+/**
+ * Une réponse de l'équipe, avec ce qui l'entoure dans le même fil
+ * (décision du 2026-11-05) : la QUESTION (mes messages depuis la réponse
+ * précédente de l'équipe), la RÉPONSE, puis la SUITE (ce que j'ai écrit
+ * après, jusqu'à la réponse suivante de l'équipe, qui a sa propre page).
+ * `null` si ce n'est pas une réponse de l'équipe dans mon fil de cet espace.
+ */
+export async function lireEchangeEquipe(
   supabase: SupabaseClient<Database>,
   authUserId: string,
   espace: EspaceEquipe,
-): Promise<MessageConversation[]> {
+  reponseId: string,
+): Promise<{ question: MessageEchange[]; reponse: MessageEchange; suite: MessageEchange[] } | null> {
   const { data, error } = await supabase
     .from("fil_equipe")
-    .select("id, de_l_equipe, corps, created_at, annonces(titre)")
+    .select("id, de_l_equipe, corps, created_at")
     .eq("fil_de", authUserId)
     .eq("espace", espace)
     .order("created_at");
   if (error) throw error;
-  return data.map((m) => ({
-    id: m.id,
-    deLEquipe: m.de_l_equipe,
-    texte: m.corps,
-    quand: m.created_at,
-    enReponseA: m.annonces?.titre ?? null,
-  }));
+  const fil = data.map((m) => ({ id: m.id, deLEquipe: m.de_l_equipe, texte: m.corps, quand: m.created_at }));
+  const i = fil.findIndex((m) => m.id === reponseId);
+  const reponse = fil[i];
+  if (!reponse || !reponse.deLEquipe) return null;
+
+  let debut = i;
+  while (debut > 0 && !fil[debut - 1]!.deLEquipe) debut--;
+  let fin = i + 1;
+  while (fin < fil.length && !fil[fin]!.deLEquipe) fin++;
+  return { question: fil.slice(debut, i), reponse, suite: fil.slice(i + 1, fin) };
 }

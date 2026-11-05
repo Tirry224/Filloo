@@ -41,12 +41,14 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
   const user = await getSessionUser(supabase);
   if (!user) retour("/connexion");
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("fil_equipe")
-    .insert({ fil_de: filDe, espace, auteur_id: user.id, de_l_equipe: true, corps });
-  if (error) retour(chemin, messagePourErreur(error, "réponse"));
+    .insert({ fil_de: filDe, espace, auteur_id: user.id, de_l_equipe: true, corps })
+    .select("id")
+    .single();
+  if (error || !data) retour(chemin, error ? messagePourErreur(error, "réponse") : "Réponse non envoyée.");
 
-  after(() => prevenirDeLaReponse(filDe, espace));
+  after(() => prevenirDeLaReponse(filDe, espace, data.id));
   retour(chemin);
 }
 
@@ -91,7 +93,8 @@ export async function publierAnnonceAction(formData: FormData): Promise<void> {
 export async function ecrireALEquipeAction(_etat: ActionState | null, formData: FormData): Promise<ActionState> {
   const espace = lireEspace(formData.get("espace"));
   const chemin = CHEMINS_EQUIPE[espace];
-  const annonceId = formData.get("annonceId");
+  // Depuis la page d'une réponse de l'équipe : on y revient après l'envoi.
+  const reponseA = formData.get("reponseA");
   const corps = texteNettoye(formData.get("corps"));
   if (!corps) return { error: "Écrivez un message avant d'envoyer." };
   if (longueur(corps) > CORPS_MAX) return { error: `${CORPS_MAX} caractères au plus.` };
@@ -108,7 +111,8 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
       auteur_id: user.id,
       de_l_equipe: false,
       corps,
-      annonce_id: estUuid(annonceId) ? annonceId : null,
+      // On ne répond plus à une annonce (décision du 2026-11-05).
+      annonce_id: null,
     })
     .select("id")
     .single();
@@ -128,5 +132,5 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
      cède sa place dans l'historique, et le retour du téléphone mène au fil,
      pas à un formulaire vide (constaté par le porteur du projet le
      2026-11-05). */
-  redirect(`${chemin}/conversation?envoye=1`, RedirectType.replace);
+  redirect(estUuid(reponseA) ? `${chemin}/reponse/${reponseA}` : `${chemin}?envoye=1`, RedirectType.replace);
 }
