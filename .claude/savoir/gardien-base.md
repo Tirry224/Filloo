@@ -67,7 +67,9 @@ source, constaté ou supposé.
   sur `auth.users` (propriétaire `supabase_auth_admin`). Le stub local
   porte désormais `raw_app_meta_data`.
 
-- **`0044` écrite le 2026-11-05, PAS appliquée** : `fil_equipe.espace`
+- **`0044` appliquée le 2026-11-05** sur accord du porteur du projet
+  (constaté : 44 migrations, `espace` obligatoire, anciennes fonctions
+  retirées, le fil existant rangé côté client) : `fil_equipe.espace`
   (client ou commerçant), un fil par (personne, espace) ; fonctions de
   « lu » et `boite_equipe` par espace, `je_peux_ecrire_a_l_equipe(espace)`
   (suspension par compte), annonce à laquelle on répond seulement depuis
@@ -92,11 +94,10 @@ source, constaté ou supposé.
 
 ## Pièges appris
 
-- **Le connecteur Supabase attend une confirmation avant tout `drop`,
-  qui n'arrive jamais en session** : délai dépassé à 60 s, rien
-  d'appliqué (2026-10-14). Écrire sans `drop` inutile ; ce qui doit
-  supprimer passe par le SQL Editor du porteur du projet. Relire l'état
-  avant tout nouvel essai.
+- **`drop` par le connecteur Supabase** : bloqué le 2026-10-14 (délai
+  dépassé à 60 s, rien d'appliqué), passé sans difficulté le 2026-11-05
+  dans `apply_migration` (`0044`, quatre `drop function`). Relire
+  l'état après chaque essai, dans les deux cas.
 - **Une politique de `realtime.messages` juge le canal demandé
   (`realtime.topic()`), pas la colonne `topic`** : un test pose
   `realtime.topic` et vérifie « 0 ligne visible » pour un refus.
