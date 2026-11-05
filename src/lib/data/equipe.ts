@@ -94,3 +94,41 @@ export async function compterNonLusEquipe(supabase: SupabaseClient<Database>, au
   ]);
   return (annonces.count ?? 0) + (reponses.count ?? 0);
 }
+
+export type FilBoite = {
+  filDe: string;
+  nom: string;
+  dernierCorps: string;
+  dernierAt: string;
+  dernierDeLEquipe: boolean;
+  nonLus: number;
+};
+
+/** La boîte de l'équipe (`boite_equipe`, 0042), le fil le plus récent d'abord. */
+export async function lireBoite(supabase: SupabaseClient<Database>): Promise<FilBoite[]> {
+  const { data, error } = await supabase.rpc("boite_equipe");
+  if (error) throw error;
+  return data.map((f) => ({
+    filDe: f.fil_de,
+    nom: f.nom,
+    dernierCorps: f.dernier_corps,
+    dernierAt: f.dernier_at,
+    dernierDeLEquipe: f.dernier_de_l_equipe,
+    nonLus: Number(f.non_lus),
+  }));
+}
+
+/** La pastille de l'onglet Messages ; 0 en cas d'échec (une pastille ne bloque rien). */
+export async function compterNonLusBoite(supabase: SupabaseClient<Database>): Promise<number> {
+  try {
+    return (await lireBoite(supabase)).reduce((total, f) => total + f.nonLus, 0);
+  } catch {
+    return 0;
+  }
+}
+
+/** Le prénom affiché à un collègue (« Bonjour, … ») ; celui de la table `equipe`. */
+export async function monNomDansLEquipe(supabase: SupabaseClient<Database>, authUserId: string): Promise<string | null> {
+  const { data } = await supabase.from("equipe").select("nom").eq("auth_user_id", authUserId).maybeSingle();
+  return data?.nom ?? null;
+}

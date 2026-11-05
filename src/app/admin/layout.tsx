@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireEquipe } from "@/lib/data/equipe";
-import { signOutAction } from "@/lib/actions/auth";
 
 export const metadata: Metadata = {
   title: "Équipe Filloo",
@@ -13,34 +11,13 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * L'espace de l'équipe (0042) : la boîte des fils et les annonces. Un
- * layout et non un contrôle par écran, comme `(vendeur)/layout.tsx` : un
- * écran ajouté plus tard sera protégé sans que son auteur y pense.
+ * La frontière de l'espace de l'équipe (0042). Ce fichier ne dessine
+ * rien, comme `(vendeur)/layout.tsx` : un écran ajouté plus tard sera
+ * protégé sans que son auteur y pense. L'habillage vit dans `(onglets)`
+ * (barre de navigation) et `(plein-ecran)` (un fil, sans barre).
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   await requireEquipe(supabase);
-
-  return (
-    <>
-      <nav aria-label="Espace de l'équipe" className="mx-auto flex max-w-rangees gap-4 px-4 pt-4 text-sm font-medium">
-        <Link href="/admin" className="text-ink underline-offset-2 hover:underline">
-          Boîte
-        </Link>
-        <Link href="/admin/annonces" className="text-ink underline-offset-2 hover:underline">
-          Annonces
-        </Link>
-        <Link href="/admin/statistiques" className="text-ink underline-offset-2 hover:underline">
-          Statistiques
-        </Link>
-        {/* Le compte du porteur du projet n'a pas d'autre page où se déconnecter. */}
-        <form action={signOutAction} className="ml-auto">
-          <button type="submit" className="cursor-pointer text-ink-soft underline underline-offset-2">
-            Se déconnecter
-          </button>
-        </form>
-      </nav>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
