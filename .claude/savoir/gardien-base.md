@@ -52,8 +52,9 @@ source, constaté ou supposé.
   identiques à ceux écrits à la main). Envoyée par `apply_migration` sans
   les commentaires du fichier : les instructions sont les mêmes.
   L'équipe est une table à part (`equipe`, écrite seulement en
-  `service_role`), pas une valeur de `user_role`. Membre au 2026-11-05 :
-  le porteur du projet seul.
+  `service_role`), pas une valeur de `user_role`. Membres au 2026-11-05 :
+  le porteur du projet (« Tirry ») et Alpha Nouhou Diallo (« Alpha
+  Nouhou », compte client), inscrits par la session sur sa demande.
 
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
