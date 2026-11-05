@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToPhones, sendPushToUser } from "@/lib/push";
+import { sendPushToUser } from "@/lib/push";
 
 /**
  * Les notifications du fil avec l'équipe (0042), par NOTIFICATION
@@ -15,8 +15,9 @@ import { sendPushToPhones, sendPushToUser } from "@/lib/push";
 /** Une personne qui écrit trois messages d'affilée ne fait sonner l'équipe qu'une fois. */
 const SILENCE_MS = 15 * 60 * 1000;
 
-/** Le chemin de l'app où vivent les annonces et le fil (`src/app/equipe.tsx` de l'app). */
-const CHEMIN_APP = "/equipe";
+/** La même adresse sur le site (`src/app/equipe/page.tsx`, qui aiguille vers
+ *  l'espace de la personne) et dans l'app mobile (`src/app/equipe.tsx`). */
+const CHEMIN_EQUIPE = "/equipe";
 
 /** Une personne vient d'écrire à l'équipe : chaque membre est prévenu. */
 export async function prevenirLEquipe(messageId: string): Promise<void> {
@@ -78,13 +79,13 @@ export async function prevenirLEquipe(messageId: string): Promise<void> {
   }
 }
 
-/** L'équipe vient de répondre : la personne est prévenue sur son téléphone. */
+/** L'équipe vient de répondre : la personne est prévenue (navigateur abonné et téléphone). */
 export async function prevenirDeLaReponse(filDe: string): Promise<void> {
   try {
-    await sendPushToPhones(filDe, {
+    await sendPushToUser(filDe, {
       titre: "Équipe Filloo",
       corps: "L'équipe vous a répondu.",
-      url: CHEMIN_APP,
+      url: CHEMIN_EQUIPE,
       tag: "equipe",
     });
   } catch (cause) {
@@ -111,7 +112,7 @@ export async function annoncerAuxDestinataires(annonceId: string): Promise<void>
     for (let i = 0; i < ids.length; i += PAQUET) {
       await Promise.all(
         ids.slice(i, i + PAQUET).map((id) =>
-          sendPushToPhones(id, { titre: "Équipe Filloo", corps: annonce.titre, url: CHEMIN_APP, tag: `annonce-${annonceId}` }),
+          sendPushToUser(id, { titre: "Équipe Filloo", corps: annonce.titre, url: CHEMIN_EQUIPE, tag: `annonce-${annonceId}` }),
         ),
       );
     }

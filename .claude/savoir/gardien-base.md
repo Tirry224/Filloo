@@ -47,6 +47,14 @@ source, constaté ou supposé.
   2026-10-22, encore écrit par l'app. Ne retirer ni l'un ni l'autre sans
   relecture de compatibilité.
 
+- **`0042` appliquée le 2026-11-05** (constaté : 42 lignes dans
+  `schema_migrations`, 4 tables sous RLS, 7 policies ; types régénérés
+  identiques à ceux écrits à la main). Envoyée par `apply_migration` sans
+  les commentaires du fichier : les instructions sont les mêmes.
+  L'équipe est une table à part (`equipe`, écrite seulement en
+  `service_role`), pas une valeur de `user_role`. Membre au 2026-11-05 :
+  le porteur du projet seul.
+
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
 - **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par
@@ -112,11 +120,6 @@ source, constaté ou supposé.
 
 ## Questions ouvertes
 
-- **`0042` (équipe, annonces, fil avec l'équipe)** écrite le 2026-11-05,
-  PAS appliquée : 219 contrôles OK en local (25 nouveaux). L'équipe est
-  une table à part (`equipe`, écrite seulement en `service_role`), pas
-  une valeur de `user_role`. Les types de `database.types.ts` ont été
-  écrits à la main : à régénérer après application.
 
 - **`0041` garde la suspension après suppression** (un client suspendu
   qui supprime son compte ne le recrée pas) : choix du gardien, à faire

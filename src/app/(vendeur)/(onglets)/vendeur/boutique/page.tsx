@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Ban, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
+import { Ban, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
@@ -10,7 +10,8 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfile } from "@/lib/data/session";
+import { getMyProfile, getSessionUser } from "@/lib/data/session";
+import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
 import type { Merchant } from "@/lib/types";
 import { shopPhotoUrl } from "@/lib/storage";
@@ -30,10 +31,12 @@ type MerchantRow = {
 export default async function EditShopPage() {
   const supabase = await createClient();
 
-  const [merchantProfile, clientProfile] = await Promise.all([
+  const [merchantProfile, clientProfile, user] = await Promise.all([
     getMyProfile(supabase, "merchant"),
     getMyProfile(supabase, "client"),
+    getSessionUser(supabase),
   ]);
+  const nonLusEquipe = user ? await compterNonLusEquipe(supabase, user.id) : 0;
   /* Rôle et suspension sont traités par `(vendeur)/layout.tsx`. Ce test
      porte sur la BOUTIQUE, qu'un profil commerçant neuf n'a pas encore :
      le seul cas que le layout laisse passer. */
@@ -114,6 +117,12 @@ export default async function EditShopPage() {
           <MenuList>
             <MenuItem icon={User} label="Mes informations" href="/vendeur/informations" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/vendeur/bloques" />
+            <MenuItem
+              icon={Megaphone}
+              label="Équipe Filloo"
+              value={nonLusEquipe > 0 ? `${nonLusEquipe} non lu(s)` : undefined}
+              href="/vendeur/equipe"
+            />
             <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
               <ChangePasswordForm />
             </MenuPanel>

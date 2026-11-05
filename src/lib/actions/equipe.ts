@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
-import { PUBLICS } from "@/lib/data/equipe";
+import { CHEMINS_EQUIPE, PUBLICS } from "@/lib/data/equipe";
 import { messagePourErreur } from "@/lib/erreurs";
 import { estUuid, longueur, texteNettoye } from "@/lib/saisie";
-import { annoncerAuxDestinataires, prevenirDeLaReponse } from "@/lib/notifications-equipe";
+import { annoncerAuxDestinataires, prevenirDeLaReponse, prevenirLEquipe } from "@/lib/notifications-equipe";
 import type { Database } from "@/lib/database.types";
 
 /** Les bornes de 0042. */
@@ -74,4 +74,47 @@ export async function publierAnnonceAction(formData: FormData): Promise<void> {
 
   after(() => annoncerAuxDestinataires(data.id));
   retour(chemin, undefined, "Annonce publiée.");
+}
+
+/**
+ * Une personne écrit à l'équipe depuis le site, en répondant ou non à une
+ * annonce. Écrit AVEC la session : le RLS (0042) borne le fil à soi,
+ * refuse un compte suspendu et une annonce qui ne m'était pas destinée.
+ */
+export async function ecrireALEquipeAction(formData: FormData): Promise<void> {
+  const espace = formData.get("espace") === "merchant" ? "merchant" : "client";
+  const chemin = CHEMINS_EQUIPE[espace];
+  const annonceId = formData.get("annonceId");
+  const corps = texteNettoye(formData.get("corps"));
+  if (!corps) retour(chemin, "Écrivez un message avant d'envoyer.");
+  if (longueur(corps) > CORPS_MAX) retour(chemin, `${CORPS_MAX} caractères au plus.`);
+
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) retour(`/connexion?next=${encodeURIComponent(chemin)}`);
+
+  const { data, error } = await supabase
+    .from("fil_equipe")
+    .insert({
+      fil_de: user.id,
+      auteur_id: user.id,
+      de_l_equipe: false,
+      corps,
+      annonce_id: estUuid(annonceId) ? annonceId : null,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    retour(
+      chemin,
+      error?.code === "42501"
+        ? "Votre compte ne peut plus envoyer de messages. Vos échanges restent consultables."
+        : error
+          ? messagePourErreur(error, "message")
+          : "Message non envoyé.",
+    );
+  }
+
+  after(() => prevenirLEquipe(data.id));
+  retour(chemin);
 }

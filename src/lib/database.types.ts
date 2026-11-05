@@ -663,8 +663,8 @@ export type Database = {
           dernier_corps: string
           dernier_de_l_equipe: boolean
           fil_de: string
-          non_lus: number
           nom: string
+          non_lus: number
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }

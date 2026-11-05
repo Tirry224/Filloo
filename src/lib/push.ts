@@ -77,12 +77,6 @@ const EXPO_PUSH = "https://exp.host/--/api/v2/push/send";
  * `EXPO_ACCESS_TOKEN` est facultatif : posé, il exige que les envois
  * viennent de nous (réglage « Enhanced Security » du projet Expo).
  */
-/** Les téléphones seulement : pour ce qui n'existe que dans l'app (les
- *  annonces de l'équipe, 0042), un navigateur ouvrirait une page absente. */
-export async function sendPushToPhones(authUserId: string, contenu: ContenuPush): Promise<number> {
-  return (await envoyerPushTelephone(authUserId, contenu)).atteints;
-}
-
 async function envoyerPushTelephone(authUserId: string, contenu: ContenuPush): Promise<Resultat> {
   try {
     const admin = createAdminClient();

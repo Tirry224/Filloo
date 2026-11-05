@@ -9,7 +9,7 @@ import { estProprietaire } from "@/lib/proprietaire";
  * qu'elle porte. Le contrôle fait ici s'arrête à « une session existe » ;
  * le RÔLE se vérifie dans `src/app/(vendeur)/layout.tsx` — voir plus bas.
  */
-const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi", "/admin"];
+const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi", "/admin", "/equipe"];
 
 /** Ce que le compte du porteur du projet peut encore ouvrir (voir plus bas). */
 /* `/admin` aussi (2026-11-05) : le porteur du projet répond aux

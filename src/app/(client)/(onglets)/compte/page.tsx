@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Ban, FileText, LifeBuoy, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, Trash2, User } from "lucide-react";
+import { Ban, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, MessageCircle, Store, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -9,6 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
+import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
 
 export default async function AccountPage() {
@@ -17,7 +18,10 @@ export default async function AccountPage() {
   if (!profile) redirect(await clientSpaceFallback(supabase));
   if (profile.isSuspended) redirect("/compte/suspendu");
 
-  const merchant = await getMyMerchant(supabase);
+  const [merchant, nonLusEquipe] = await Promise.all([
+    getMyMerchant(supabase),
+    user ? compterNonLusEquipe(supabase, user.id) : 0,
+  ]);
 
   return (
     <TabScreen largeur="rangees">
@@ -37,6 +41,12 @@ export default async function AccountPage() {
             <MenuItem icon={User} label="Mes informations" href="/compte/informations" />
             <MenuItem icon={MessageCircle} label="Mes messages" href="/messages" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/compte/bloques" />
+            <MenuItem
+              icon={Megaphone}
+              label="Équipe Filloo"
+              value={nonLusEquipe > 0 ? `${nonLusEquipe} non lu(s)` : undefined}
+              href="/compte/equipe"
+            />
           </MenuList>
 
           {merchant ? (
