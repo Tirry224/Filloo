@@ -9,10 +9,12 @@ import { estProprietaire } from "@/lib/proprietaire";
  * qu'elle porte. Le contrôle fait ici s'arrête à « une session existe » ;
  * le RÔLE se vérifie dans `src/app/(vendeur)/layout.tsx` — voir plus bas.
  */
-const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi"];
+const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/suivi", "/admin"];
 
 /** Ce que le compte du porteur du projet peut encore ouvrir (voir plus bas). */
-const CHEMINS_DU_PROPRIETAIRE = ["/suivi", "/api", "/auth", "/reinitialiser-mot-de-passe"];
+/* `/admin` aussi (2026-11-05) : le porteur du projet répond aux
+   utilisateurs depuis l'espace de l'équipe (0042). */
+const CHEMINS_DU_PROPRIETAIRE = ["/suivi", "/admin", "/api", "/auth", "/reinitialiser-mot-de-passe"];
 
 /**
  * `supabaseResponse` est reconstruit après `getUser()` : `setAll` doit
