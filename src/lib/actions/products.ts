@@ -192,7 +192,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     }
   }
 
-  compter("produit_cree", { role: "merchant", merchantId: owner.merchantId, categoryId: fields.categoryId });
+  await compter("produit_cree", { role: "merchant", merchantId: owner.merchantId, categoryId: fields.categoryId });
 
   backToSeller(undefined, publish ? "Produit publié. Il est visible dans le catalogue." : "Brouillon enregistré.");
 }

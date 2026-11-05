@@ -1,4 +1,6 @@
+import { headers } from "next/headers";
 import { after } from "next/server";
+import { nEstPasUnePersonne } from "@/lib/robots-detecte";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -57,7 +59,17 @@ function normaliserRequete(brut: string | null | undefined): string | null {
   return propre ? propre.slice(0, LONGUEUR_MAX_RECHERCHE) : null;
 }
 
-export function compter(nom: NomEvenement, contexte: ContexteEvenement = {}): void {
+/**
+ * À appeler avec `await` : les en-têtes se lisent pendant la requête, pas
+ * dans `after()`. Un robot ou un préchargement n'est pas compté
+ * (`robots-detecte.ts`, depuis le 2026-11-05).
+ */
+export async function compter(nom: NomEvenement, contexte: ContexteEvenement = {}): Promise<void> {
+  try {
+    if (nEstPasUnePersonne(await headers())) return;
+  } catch {
+    // Hors requête (script, test) : rien à décider, on compte.
+  }
   after(async () => {
     try {
       const admin = createAdminClient();

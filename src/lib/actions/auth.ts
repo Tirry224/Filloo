@@ -73,7 +73,7 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   });
   if (error) return { error: messageErreurAuth(error.message) };
 
-  compter("inscription", { role });
+  await compter("inscription", { role });
 
   // `data.session` est null quand la confirmation par email est activée
   // (réglage Supabase) : aucune session tant que le lien n'est pas cliqué.
@@ -129,7 +129,7 @@ export async function createLinkedProfileAction(
     return { error: messagePourErreur(error, "compte") };
   }
 
-  compter("inscription", { role });
+  await compter("inscription", { role });
 
   if (role === "merchant") redirect("/inscription/boutique");
   redirect(safeNextPath(formData.get("next")) ?? "/");

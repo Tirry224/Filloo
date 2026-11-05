@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!product || !lien) return NextResponse.redirect(new URL(`/produit/${id}`, request.url));
 
   const client = await getMyProfile(supabase, "client");
-  compter("whatsapp_ouvert", {
+  await compter("whatsapp_ouvert", {
     productId: product.id,
     merchantId: product.merchant.id,
     role: client ? "client" : "anon",

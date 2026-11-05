@@ -69,7 +69,7 @@ export async function findOrCreateConversation(
      insertions. C'est `unique (client_id, merchant_id)` (0001), pas ce
      code, qui garantit un seul fil par couple ; une course perdue (23505)
      n'est pas un échec, il suffit de relire. */
-  if (!createError) compter("contact_abouti", { role: "client", merchantId });
+  if (!createError) await compter("contact_abouti", { role: "client", merchantId });
 
   if (createError) {
     /* P0001 = `raise exception` d'un trigger ; ici le quota de 20 par
@@ -142,7 +142,7 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
 
   /* Le CONTENU du message n'est jamais écrit dans la mesure (0024) : seul
      compte qu'un message soit parti, et de quel côté. */
-  compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
+  await compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
 
   backToThread(conversationId, context.iAmMerchant);
 }

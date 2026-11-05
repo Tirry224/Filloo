@@ -99,7 +99,7 @@ export default async function ProductPage({
   const myMerchant = await getMyMerchant(supabase);
   const own = myMerchant?.id === product.merchant.id;
 
-  compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
+  await compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
   /* Les données structurées que Google lit pour afficher le prix et la
      disponibilité dans ses résultats (schema.org `Product`). Le `<`

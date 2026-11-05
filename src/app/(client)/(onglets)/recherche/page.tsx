@@ -66,7 +66,7 @@ export default async function SearchPage({
   });
 
   if (q || category) {
-    compter("recherche", {
+    await compter("recherche", {
       query: q || null,
       categoryId: category?.id ?? null,
       resultCount: results.length,

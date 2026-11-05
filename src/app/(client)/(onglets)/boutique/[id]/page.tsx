@@ -61,7 +61,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     ? await getMerchantProducts(supabase, merchant)
     : await produitsBoutiqueEnCache(merchant);
 
-  compter("boutique_vue", { merchantId: merchant.id });
+  await compter("boutique_vue", { merchantId: merchant.id });
 
   return (
     <TabScreen largeur="grille">

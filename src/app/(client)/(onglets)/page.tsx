@@ -65,7 +65,7 @@ export default async function HomePage({
     `/?categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
   const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
 
-  compter("visite", {});
+  await compter("visite", {});
 
   return (
     <TabScreen largeur="grille">

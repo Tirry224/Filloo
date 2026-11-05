@@ -56,7 +56,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
      « Vérifiez votre connexion », il ferait réessayer toute la journée un
      geste refusé. Aucune conversation n'est créée, le trigger précédant
      l'insertion (0002, 3.4). */
-  compter("contact_ouvert", {
+  await compter("contact_ouvert", {
     productId: product.id,
     merchantId: product.merchant.id,
     role: clientProfile ? "client" : "anon",

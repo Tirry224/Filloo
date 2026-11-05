@@ -39,7 +39,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
     return { error: messagePourErreur(error, "boutique") };
   }
 
-  compter("boutique_creee", { role: "merchant", cityId: cityId });
+  await compter("boutique_creee", { role: "merchant", cityId: cityId });
 
   redirect("/vendeur");
 }
