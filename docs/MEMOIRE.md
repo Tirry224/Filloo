@@ -455,10 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-361 commits, du plus récent au plus ancien.
+362 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `ab846f4` 0043 appliquée : l'équipe n'a plus que /admin
 - `e54aa74` Espace /admin habillé comme le site : onglets, tuiles, conversation, graphique
 - `d4028c0` L'équipe n'a que /admin : ni espace client, ni boutique (0043 écrite, PAS appliquée)
 - `7082deb` Supprime /suivi : l'espace de l'équipe /admin la remplace

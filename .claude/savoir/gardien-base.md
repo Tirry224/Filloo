@@ -53,8 +53,10 @@ source, constaté ou supposé.
   les commentaires du fichier : les instructions sont les mêmes.
   L'équipe est une table à part (`equipe`, écrite seulement en
   `service_role`), pas une valeur de `user_role`. Membres au 2026-11-05 :
-  le porteur du projet (« Tirry ») et Alpha Nouhou Diallo (« Alpha
-  Nouhou », compte client), inscrits par la session sur sa demande.
+  le porteur du projet (« Tirry »), Alpha Nouhou Diallo (« Alpha
+  Nouhou ») et Laouratou Barry (« Laouratou », ajoutée après
+  confirmation de son email), inscrits par la session sur sa demande.
+  Règle suivie : pas d'entrée dans l'équipe avant l'email confirmé.
 
 - **`0043` appliquée le 2026-11-05** sur accord du porteur du projet
   (constaté : 43 migrations, trigger présent, Tirry et Alpha Nouhou
