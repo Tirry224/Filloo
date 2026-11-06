@@ -44,9 +44,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Vercel Hobby interdit l'usage commercial** ; une marketplace en
   relève probablement, même gratuite. Risque de suspension, qui
   couperait aussi l'API de l'app. Passer en Pro (~20 $/mois).
-- **La base n'a aucune sauvegarde.** Une erreur efface tout pour de bon.
-  Supabase Pro (~25 $/mois, sauvegarde quotidienne) ou une sauvegarde
-  automatique gratuite (tâche GitHub `pg_dump`, à écrire).
+- **Les photos n'ont aucune sauvegarde.** L'organisation Supabase est en
+  Pro (constaté le 2026-11-06) : la BASE a une sauvegarde quotidienne
+  gardée 7 jours, mais elle ne contient que les métadonnées du stockage,
+  pas les fichiers. Une photo effacée est perdue. Copie régulière du
+  bucket ailleurs (à écrire) ; restauration de la base jamais essayée.
 - **« Mot de passe oublié » n'est pas prouvé.** Le modèle d'email
   « Reset Password » doit porter
   `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`.
@@ -55,8 +57,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### Décidé par le porteur du projet (2026-10-23), à faire
 
-- **Au premier seuil de 50 % d'une limite gratuite, passer en Supabase
-  Pro.** La surveillance hebdomadaire le dira (voir « Surveillance »).
+- **Supabase Pro : fait** (constaté le 2026-11-06). Les seuils de la
+  surveillance hebdomadaire visent encore les limites gratuites ; à
+  revoir.
 - **Photos plus légères** (1024 px, ~60 Ko au lieu de 95) : proposé, non
   décidé. Exige aussi une version de l'app.
 - **Photos vers Cloudflare R2** seulement quand le stockage deviendra la
