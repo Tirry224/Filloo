@@ -515,10 +515,13 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-383 commits, du plus récent au plus ancien.
+386 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `fbf6d30` Merge branch 'claude/festive-babbage-egch2j' into dev
+- `2b064d5` Mémoire : Supabase est en Pro ; seules les photos restent sans sauvegarde
+- `2bf210a` 0047 appliquée ; une migration écrite s'applique désormais aussitôt testée
 - `169cb26` Accueil mélangé selon les goûts de l'appareil, suggestions, et emplacements publicitaires
 - `d6a4e7d` Publicité : 0047 écrite, PAS appliquée — campagnes demandées par le commerçant, validées par l'équipe
 - `b87d488` Savoir du gardien-base : 0046 notée appliquée

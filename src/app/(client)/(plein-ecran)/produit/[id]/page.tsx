@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { PriceTag } from "@/components/product/PriceTag";
 import { MerchantCard } from "@/components/product/MerchantCard";
@@ -227,7 +228,7 @@ export default async function ProductPage({
                   className: "w-control shrink-0 text-success",
                 })}
               >
-                WA
+                <WhatsAppIcon className="size-6" />
               </a>
             ) : null}
           </>
