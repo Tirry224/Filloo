@@ -28,8 +28,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   Paris), préversion sur `dev` avec **la même base**.
 - **Base** : 41 migrations, toutes appliquées en production (constaté
   le 2026-10-23). `0042` (équipe, annonces), `0043` (l'équipe n'a que
-  `/admin`) et `0044` (un fil par espace) appliquées le 2026-11-05 sur
-  accord du porteur du projet (44 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  `/admin`), `0044` (un fil par espace) et `0045` (gestion des annonces,
+  2026-11-06) appliquées sur accord du porteur du projet (45 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
@@ -460,10 +460,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-375 commits, du plus récent au plus ancien.
+376 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `628bdb1` Annonces de l'équipe : brouillons, programmation, modification, retrait, lecteurs (0045 écrite, PAS appliquée)
 - `ccc434a` Espace /admin : la réponse de l'équipe s'affiche tout de suite dans le fil
 - `5c68bdf` Discussion avec l'équipe : le message envoyé s'affiche tout de suite, sans recharger
 - `ebbd729` Équipe Filloo : une seule discussion par espace, quel que soit le chemin pris pour écrire

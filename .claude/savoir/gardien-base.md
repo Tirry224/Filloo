@@ -78,7 +78,9 @@ source, constaté ou supposé.
   OK en local. Piège : une policy dépend de sa fonction, la remplacer
   AVANT de supprimer l'ancienne ; et le RLS refuse avant NOT NULL.
 
-- **`0045` écrite le 2026-11-06, PAS appliquée** : `annonces.etat`
+- **`0045` appliquée le 2026-11-06** sur accord du porteur du projet
+  (constaté : 45 migrations, 2 triggers, 4 policies, cron seul à pouvoir
+  publier les programmées ; types régénérés identiques) : `annonces.etat`
   (brouillon, programmée, publiée, retirée), cycle tenu par un trigger
   (`annonce_tenir_le_cycle`, `security definer` : il lit `auth.uid()`
   pour signer), destinataires figés à la PUBLICATION, retrait au lieu de
