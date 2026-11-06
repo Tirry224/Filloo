@@ -97,7 +97,7 @@ source, constaté ou supposé.
   `reports.handled_by`/`decision`, `products.masque_par_equipe`. 301
   contrôles OK en local ; le test « commercant republie » tombe sans le
   déclencheur (vérifié en le retirant).
-- **`0047` ÉCRITE, NON appliquée** (2026-11-06) : publicité sans
+- **`0047` APPLIQUÉE le 2026-11-06** : publicité sans
   paiement (`campagnes`, `demander/annuler/decider/interrompre_campagne`,
   `produits_sponsorises`, `boutiques_mises_en_avant`,
   `resultats_campagnes`, `campagnes_equipe`, `analytics_events.campagne_id`,

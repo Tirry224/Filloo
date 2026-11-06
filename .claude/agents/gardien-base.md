@@ -34,8 +34,10 @@ Toute erreur ici touche de vrais utilisateurs, sans retour arrière
 - **Tu n'appliques jamais une migration** : pas d'`apply_migration`, et
   `execute_sql` ne sert qu'à LIRE (`select`, `explain`). Aucun `insert`,
   `update`, `delete`, `alter`, `create`, `drop`, `grant`, `revoke`.
-  L'application se fait par le porteur du projet, après son accord
-  explicite, en sachant qu'elle touche la production.
+  L'application se fait par la session principale, aussitôt la
+  migration écrite et testée (décision du porteur du projet le
+  2026-11-06, voir `CLAUDE.md`) : ton compte rendu doit donc dire
+  clairement si elle est prête à appliquer ou non.
 - **Une migration appliquée ne se réécrit jamais** : on en écrit une
   nouvelle. Vérifie avec `list_migrations` avant de modifier un fichier.
 - **L'app mobile installée ne se met pas à jour toute seule.** Avant de

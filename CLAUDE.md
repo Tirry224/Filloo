@@ -42,8 +42,14 @@ Une migration appliquée « pour tester » s'applique donc aux vraies
 données, et un compte ou un message créé en préversion est un vrai
 compte, un vrai message.
 
-- **Aucune migration ne s'applique sans accord explicite du porteur du
-  projet**, en disant qu'elle touchera la production.
+- **Une migration écrite s'applique aussitôt, sans redemander** (décision
+  du porteur du projet le 2026-11-06, qui remplace l'accord au cas par
+  cas). Elle s'applique quand même SEULEMENT après que ses tests
+  (`supabase/tests/security_test.sql`) passent en local, que `relecteur-compat`
+  (ou l'agent qui l'a écrite) a dit que l'app installée survit, et que
+  `npm run typecheck` passe ; sinon on corrige avant d'appliquer. Le
+  compte rendu dit qu'elle a été appliquée et ce qui a été constaté en
+  production juste après.
 - Une migration appliquée est commitée dans la même session (règle de
   `docs/MEMOIRE.md`), sur `dev`.
 

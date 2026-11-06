@@ -28,8 +28,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   Paris), préversion sur `dev` avec **la même base**.
 - **Base** : 41 migrations, toutes appliquées en production (constaté
   le 2026-10-23). `0042` (équipe, annonces), `0043` (l'équipe n'a que
-  `/admin`), `0044` (un fil par espace), `0045` (gestion des annonces) et `0046`
-  (modération, 2026-11-06) appliquées sur accord du porteur du projet (46 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  `/admin`), `0044` (un fil par espace), `0045` (gestion des annonces) `0046`
+  (modération) et `0047` (publicité, 2026-11-06) appliquées sur accord du porteur du projet (47 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
@@ -143,9 +143,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### Décidé par le porteur du projet (2026-11-06) : la publicité, sans paiement
 
-- **`0047` écrite, PAS appliquée** : tant qu'elle ne l'est pas, les
-  emplacements restent vides (le site ignore l'erreur) et les pages
-  publicité plantent en préversion.
+- **`0047` appliquée le 2026-11-06** : table, 8 fonctions et
+  `analytics_events.campagne_id` constatés en production ; 0 campagne.
 - **Trois types** : produit sponsorisé (accueil + recherches pertinentes),
   promotion dans la catégorie du produit, boutique mise en avant
   (« Boutiques à découvrir »). Au plus 2 produits par emplacement, marqués
@@ -513,10 +512,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-382 commits, du plus récent au plus ancien.
+383 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `169cb26` Accueil mélangé selon les goûts de l'appareil, suggestions, et emplacements publicitaires
 - `d6a4e7d` Publicité : 0047 écrite, PAS appliquée — campagnes demandées par le commerçant, validées par l'équipe
 - `b87d488` Savoir du gardien-base : 0046 notée appliquée
 - `6152d1d` 0046 appliquée : l'équipe modère et garde l'historique
