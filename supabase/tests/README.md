@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 194 vérifications (compte du 2026-10-23, migration 0041
+Les 301 vérifications (compte du 2026-11-06, migration 0046
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 

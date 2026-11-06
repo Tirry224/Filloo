@@ -315,6 +315,47 @@ export type Database = {
           },
         ]
       }
+      journal_equipe: {
+        Row: {
+          action: string
+          auteur: string | null
+          auteur_nom: string
+          cible_id: string
+          cible_type: string
+          created_at: string
+          id: string
+          motif: string | null
+        }
+        Insert: {
+          action: string
+          auteur?: string | null
+          auteur_nom: string
+          cible_id: string
+          cible_type: string
+          created_at?: string
+          id?: string
+          motif?: string | null
+        }
+        Update: {
+          action?: string
+          auteur?: string | null
+          auteur_nom?: string
+          cible_id?: string
+          cible_type?: string
+          created_at?: string
+          id?: string
+          motif?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_equipe_auteur_fkey"
+            columns: ["auteur"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           address_hint: string | null
@@ -503,6 +544,7 @@ export type Database = {
           id: string
           is_featured: boolean
           is_negotiable: boolean
+          masque_par_equipe: boolean
           merchant_id: string
           price_gnf: number
           status: Database["public"]["Enums"]["product_status"]
@@ -517,6 +559,7 @@ export type Database = {
           id?: string
           is_featured?: boolean
           is_negotiable?: boolean
+          masque_par_equipe?: boolean
           merchant_id: string
           price_gnf: number
           status?: Database["public"]["Enums"]["product_status"]
@@ -531,6 +574,7 @@ export type Database = {
           id?: string
           is_featured?: boolean
           is_negotiable?: boolean
+          masque_par_equipe?: boolean
           merchant_id?: string
           price_gnf?: number
           status?: Database["public"]["Enums"]["product_status"]
@@ -567,6 +611,7 @@ export type Database = {
           phone: string
           role: Database["public"]["Enums"]["user_role"]
           suspended_at: string | null
+          suspension_reason: string | null
         }
         Insert: {
           auth_user_id: string
@@ -580,6 +625,7 @@ export type Database = {
           phone: string
           role: Database["public"]["Enums"]["user_role"]
           suspended_at?: string | null
+          suspension_reason?: string | null
         }
         Update: {
           auth_user_id?: string
@@ -593,6 +639,7 @@ export type Database = {
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
           suspended_at?: string | null
+          suspension_reason?: string | null
         }
         Relationships: [
           {
@@ -640,7 +687,9 @@ export type Database = {
       reports: {
         Row: {
           created_at: string
+          decision: string | null
           handled_at: string | null
+          handled_by: string | null
           id: string
           reason: string
           reporter_id: string
@@ -649,7 +698,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decision?: string | null
           handled_at?: string | null
+          handled_by?: string | null
           id?: string
           reason: string
           reporter_id: string
@@ -658,7 +709,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decision?: string | null
           handled_at?: string | null
+          handled_by?: string | null
           id?: string
           reason?: string
           reporter_id?: string
@@ -666,6 +719,13 @@ export type Database = {
           target_type?: Database["public"]["Enums"]["report_target"]
         }
         Relationships: [
+          {
+            foreignKeyName: "reports_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
           {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
@@ -697,6 +757,16 @@ export type Database = {
           fil_de: string
           nom: string
           non_lus: number
+        }[]
+      }
+      comptes_suspendus: {
+        Args: never
+        Returns: {
+          nom: string
+          profile_id: string
+          role: string
+          shop_name: string
+          suspension_reason: string
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
@@ -731,7 +801,20 @@ export type Database = {
         Args: { p_espace: Database["public"]["Enums"]["user_role"]; p_fil_de: string }
         Returns: undefined
       }
+      masquer_produit: {
+        Args: { p_motif: string; p_product: string }
+        Returns: undefined
+      }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }
+      messages_signales: {
+        Args: { p_report: string }
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+        }[]
+      }
       modifier_ma_boutique: {
         Args: {
           p_adresse: string
@@ -760,6 +843,10 @@ export type Database = {
       }
       publier_annonces_programmees: { Args: never; Returns: string[] }
       purger_mesures: { Args: never; Returns: number }
+      reactiver_profil: {
+        Args: { p_motif: string; p_profile: string }
+        Returns: undefined
+      }
       search_products: {
         Args: {
           p_category_id?: number
@@ -788,7 +875,35 @@ export type Database = {
           title: string
         }[]
       }
+      signalements_a_traiter: {
+        Args: never
+        Returns: {
+          conv_client_nom: string
+          conv_client_profile_id: string
+          conv_merchant_profile_id: string
+          conv_shop_name: string
+          created_at: string
+          id: string
+          merchant_profile_id: string
+          produit_status: string
+          produit_titre: string
+          reason: string
+          reporter_id: string
+          reporter_nom: string
+          shop_name: string
+          target_id: string
+          target_type: string
+        }[]
+      }
       suivi_chiffres: { Args: { depuis: string }; Returns: Json }
+      suspendre_profil: {
+        Args: { p_motif: string; p_profile: string }
+        Returns: undefined
+      }
+      traiter_signalement: {
+        Args: { p_decision: string; p_report: string }
+        Returns: undefined
+      }
     }
     Enums: {
       etat_annonce: "brouillon" | "programmee" | "publiee" | "retiree"

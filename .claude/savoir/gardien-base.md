@@ -90,6 +90,26 @@ source, constaté ou supposé.
   qui lit `auth.uid()` y échoue. Piège de test : une instruction ne voit
   pas son propre changement (publier puis vérifier = deux instructions).
 
+- **`0046` ÉCRITE, NON APPLIQUÉE** (2026-11-06) : modération par
+  l'équipe (`suspendre_profil`, `reactiver_profil`, `masquer_produit`,
+  `traiter_signalement`, `signalements_a_traiter`, `messages_signales`,
+  `comptes_suspendus`), `journal_equipe`, `profiles.suspension_reason`,
+  `reports.handled_by`/`decision`, `products.masque_par_equipe`. 301
+  contrôles OK en local ; le test « commercant republie » tombe sans le
+  déclencheur (vérifié en le retirant). À corriger ici une fois appliquée.
+- **`hidden` sert AUSSI au commerçant** (constaté 2026-11-06, site
+  `hideProductAction`/`republishProductAction`) : il masque et republie
+  lui-même. Un masquage de l'équipe ne peut donc pas être « status =
+  hidden » seul : c'est `masque_par_equipe` (0046) qui le tient.
+- **`profiles` : `SELECT` au niveau TABLE pour anon/authenticated**
+  (constaté 2026-11-06) : la policy « je vois mes interlocuteurs » montre
+  TOUTES les colonnes, `phone` et `suspension_reason` compris. Masquer une
+  colonne = révoquer la table et ré-accorder par colonne, ce qui casse
+  tout `select('*')` de l'app installée.
+- **`reports` : `UPDATE` au niveau table pour anon/authenticated, aucune
+  policy d'update ni de delete** (constaté 2026-11-06) : seul le RLS
+  ferme l'écriture.
+
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
 - **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par
@@ -135,6 +155,9 @@ source, constaté ou supposé.
   (`my_role_is_suspended`, `0041`).
 - **Limites de bucket non testables en local** (c'est le service Storage
   qui refuse) : tester le réglage dans `storage.buckets`.
+- **plpgsql `returns table (id …)`** : chaque nom de sortie est une
+  variable ; une colonne non qualifiée du même nom devient ambiguë.
+  Qualifier toutes les colonnes (`r.id`) dans `return query` (0046).
 - **Tests locaux** : un dossier de données NEUF à chaque passe, pas de
   `rm -rf` dans un `su -c` (recette dans `.claude/savoir/testeur.md`).
   194 contrôles OK le 2026-10-23 (avec `0041`), 183 sans.
@@ -160,5 +183,9 @@ source, constaté ou supposé.
   confirmer par le porteur du projet.
 - Fermer `EXECUTE` à `anon` sur les fonctions que ni le site ni l'app
   n'appellent ? Inventaire à faire.
+- **`suspension_reason` lisible par l'interlocuteur** de la personne
+  suspendue (voir `profiles` plus haut) : à faire trancher par le porteur
+  du projet (accepter, ou déplacer le motif dans une table à part lue
+  par une fonction).
 - La policy « reports: je signale » laisse se signaler soi-même :
   migration à écrire, sur accord.

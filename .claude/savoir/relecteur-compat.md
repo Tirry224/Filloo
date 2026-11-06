@@ -70,6 +70,26 @@ l'app.
   403 « mot de passe incorrect ». Une app installée traite 429/503 comme
   une erreur générique : compatible.
 
+- **2026-11-06, `0046` (modération de l'équipe, NON appliquée)** : relue
+  côté serveur seulement, **code de l'app inaccessible** (voir
+  « Accès »). Que des ajouts ; les policies réécrites sont reprises à
+  l'identique de `0002` (`reports: je signale`) et `0041` (`profiles: je
+  cree mon second compte`) plus une condition `is null` sur une colonne
+  neuve. Seul vrai risque : un `update` de `products` (ou de `profiles`)
+  qui renverrait la ligne LUE entière (`...produit`) contiendrait
+  `masque_par_equipe` (ou `suspension_reason`), hors liste blanche
+  `update` (`0002`) → « permission denied » à chaque enregistrement. À
+  vérifier par `grep -rn "update(" src/` dans l'app avant application
+  (supposé absent, non constaté).
+
+## Accès au code de l'app
+
+- **2026-11-06 (constaté)** : `../Filloo-mobile` absent, et
+  `tirry224/filloo-mobile` refusé à la session (MCP GitHub : seul
+  `tirry224/filloo` autorisé ; `gh`/`git clone` en 403). Il faut que la
+  session principale ajoute le dépôt (`add_repo`) ou clone l'app à côté.
+  L'historique de ce dépôt-ci ne contient aucune copie de l'app.
+
 ## Décisions du porteur du projet
 
 - L'app vit dans son propre dépôt depuis le 2026-10-07 ; toute

@@ -2687,5 +2687,396 @@ select pg_temp.check('0045 : un brouillon se supprime',
   not exists (select 1 from public.annonces where id = 'a0450000-0000-0000-0000-0000000000d1'));
 reset role;
 
+-- =====================================================================
+-- L'équipe modère et garde un historique (0046)
+-- =====================================================================
+-- S (équipe, 0042). M : commerçant, boutique « Chez M46 », deux produits
+-- publiés (P1 sera signalé et masqué par l'équipe, P2 reste au
+-- commerçant). N : client qui écrit à M, puis signale P1 et le fil.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0460000-0000-0000-0000-00000000000a', 'm0046@test.gn', '{"role":"merchant","full_name":"Marchand M","phone":"620004601"}'),
+  ('a0460000-0000-0000-0000-00000000000c', 'n0046@test.gn', '{"role":"client","full_name":"Client N","phone":"620004602"}');
+update public.profiles set id = auth_user_id
+ where auth_user_id in ('a0460000-0000-0000-0000-00000000000a', 'a0460000-0000-0000-0000-00000000000c');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0460000-0000-0000-0000-0000000000b1', 'a0460000-0000-0000-0000-00000000000a', 'Chez M46', 1);
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0460000-0000-0000-0000-0000000000f1', 'a0460000-0000-0000-0000-0000000000b1', 1, 'Telephone douteux', 100000, 'draft'),
+  ('a0460000-0000-0000-0000-0000000000f2', 'a0460000-0000-0000-0000-0000000000b1', 1, 'Pagne honnete', 50000, 'draft');
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0460000-0000-0000-0000-0000000000f1', 'a0460000/f1/0.webp', 0),
+  ('a0460000-0000-0000-0000-0000000000f2', 'a0460000/f2/0.webp', 0);
+update public.products set status = 'active'
+ where id in ('a0460000-0000-0000-0000-0000000000f1', 'a0460000-0000-0000-0000-0000000000f2');
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0460000-0000-0000-0000-0000000000c1', 'a0460000-0000-0000-0000-00000000000c', 'a0460000-0000-0000-0000-0000000000b1');
+insert into public.messages (conversation_id, sender_id, product_id, body) values
+  ('a0460000-0000-0000-0000-0000000000c1', 'a0460000-0000-0000-0000-00000000000c', 'a0460000-0000-0000-0000-0000000000f1', 'Il marche ?');
+insert into public.messages (conversation_id, sender_id, body) values
+  ('a0460000-0000-0000-0000-0000000000c1', 'a0460000-0000-0000-0000-00000000000a', 'Payez d''abord par virement');
+
+-- Les droits : fermés à anon, ouverts à authenticated (la fonction trie).
+select pg_temp.check('0046 : les fonctions de moderation sont fermees a anon, ouvertes a authenticated',
+  (select bool_and(not has_function_privilege('anon', f, 'execute')
+                   and has_function_privilege('authenticated', f, 'execute'))
+     from unnest(array[
+       'public.suspendre_profil(uuid, text)', 'public.reactiver_profil(uuid, text)',
+       'public.masquer_produit(uuid, text)', 'public.traiter_signalement(uuid, text)',
+       'public.signalements_a_traiter()', 'public.messages_signales(uuid)',
+       'public.comptes_suspendus()']) as f));
+select pg_temp.check('0046 : personne n''ecrit le journal directement',
+  not has_table_privilege('authenticated', 'public.journal_equipe', 'insert')
+  and not has_table_privilege('authenticated', 'public.journal_equipe', 'update')
+  and not has_table_privilege('authenticated', 'public.journal_equipe', 'delete')
+  and not has_table_privilege('anon', 'public.journal_equipe', 'select')
+  and not has_table_privilege('anon', 'public.journal_equipe', 'insert'));
+select pg_temp.check('0046 : le declencheur du masquage n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.produit_masque_par_equipe_reste_masque()', 'execute'));
+
+-- N signale P1 et le fil. Il ne pose ni décision ni auteur à la place de l'équipe.
+set role authenticated;
+select pg_temp.login('a0460000-0000-0000-0000-00000000000c');
+do $$
+begin
+  insert into public.reports (reporter_id, target_type, target_id, reason, decision)
+  values ('a0460000-0000-0000-0000-00000000000c', 'product', 'a0460000-0000-0000-0000-0000000000f1', 'Arnaque deja classee', 'sans_suite');
+  raise exception 'ECHEC 0046 : un signaleur pose lui-meme la decision';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : un signaleur ne pose pas la decision';
+end $$;
+do $$
+begin
+  insert into public.reports (reporter_id, target_type, target_id, reason, handled_by)
+  values ('a0460000-0000-0000-0000-00000000000c', 'product', 'a0460000-0000-0000-0000-0000000000f1', 'Arnaque signee', 'a0420000-0000-0000-0000-000000000005');
+  raise exception 'ECHEC 0046 : un signaleur signe au nom de l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : un signaleur ne signe pas au nom de l''equipe';
+end $$;
+insert into public.reports (id, reporter_id, target_type, target_id, reason) values
+  ('a0460000-0000-0000-0000-0000000000d1', 'a0460000-0000-0000-0000-00000000000c', 'product', 'a0460000-0000-0000-0000-0000000000f1', 'Produit contrefait'),
+  ('a0460000-0000-0000-0000-0000000000d2', 'a0460000-0000-0000-0000-00000000000c', 'conversation', 'a0460000-0000-0000-0000-0000000000c1', 'Demande un virement');
+
+-- Un client ne modère pas et ne lit rien de l'équipe.
+do $$
+begin
+  perform public.suspendre_profil('a0460000-0000-0000-0000-00000000000a', 'Je le suspends');
+  raise exception 'ECHEC 0046 : un client suspend un compte';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne suspend pas';
+end $$;
+do $$
+begin
+  perform public.masquer_produit('a0460000-0000-0000-0000-0000000000f1', 'Je le masque');
+  raise exception 'ECHEC 0046 : un client masque un produit';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne masque pas';
+end $$;
+do $$
+begin
+  perform public.traiter_signalement('a0460000-0000-0000-0000-0000000000d1', 'sans_suite');
+  raise exception 'ECHEC 0046 : un client classe un signalement';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne classe pas un signalement';
+end $$;
+do $$
+begin
+  perform * from public.messages_signales('a0460000-0000-0000-0000-0000000000d2');
+  raise exception 'ECHEC 0046 : un client lit un fil signale par la porte de l''equipe';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne passe pas par messages_signales';
+end $$;
+do $$
+begin
+  perform * from public.signalements_a_traiter();
+  raise exception 'ECHEC 0046 : un client lit la file des signalements';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne lit pas la file des signalements';
+end $$;
+do $$
+begin
+  perform * from public.comptes_suspendus();
+  raise exception 'ECHEC 0046 : un client lit la liste des comptes suspendus';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un client ne lit pas les comptes suspendus';
+end $$;
+-- Le signalement d'un autre reste invisible (C n'en voit aucun de N).
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+select pg_temp.check('0046 : un utilisateur ne voit pas les signalements d''autrui',
+  not exists (select 1 from public.reports where reporter_id = 'a0460000-0000-0000-0000-00000000000c'));
+reset role;
+
+-- L'équipe voit la file, avec de quoi décider.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0046 : l''equipe lit les signalements (policy de lecture)',
+  (select count(*) from public.reports where reporter_id = 'a0460000-0000-0000-0000-00000000000c') = 2);
+select pg_temp.check('0046 : la file nomme le produit signale et sa boutique',
+  exists (select 1 from public.signalements_a_traiter() s
+           where s.id = 'a0460000-0000-0000-0000-0000000000d1'
+             and s.target_type = 'product' and s.reporter_nom = 'Client N'
+             and s.produit_titre = 'Telephone douteux' and s.produit_status = 'active'
+             and s.merchant_profile_id = 'a0460000-0000-0000-0000-00000000000a'
+             and s.shop_name = 'Chez M46' and s.conv_client_profile_id is null));
+select pg_temp.check('0046 : la file nomme les deux comptes d''un fil signale',
+  exists (select 1 from public.signalements_a_traiter() s
+           where s.id = 'a0460000-0000-0000-0000-0000000000d2'
+             and s.conv_client_profile_id = 'a0460000-0000-0000-0000-00000000000c'
+             and s.conv_client_nom = 'Client N'
+             and s.conv_merchant_profile_id = 'a0460000-0000-0000-0000-00000000000a'
+             and s.conv_shop_name = 'Chez M46' and s.produit_titre is null));
+select pg_temp.check('0046 : l''equipe lit un fil signale',
+  (select count(*) from public.messages_signales('a0460000-0000-0000-0000-0000000000d2')) = 2
+  and exists (select 1 from public.messages_signales('a0460000-0000-0000-0000-0000000000d2')
+               where body = 'Payez d''abord par virement'));
+do $$
+begin
+  perform * from public.messages_signales('a0460000-0000-0000-0000-0000000000d1');
+  raise exception 'ECHEC 0046 : un signalement de produit ouvre une conversation';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : seul un fil signale s''ouvre a l''equipe';
+end $$;
+select pg_temp.check('0046 : l''equipe ne lit toujours pas les conversations en direct',
+  not exists (select 1 from public.messages where conversation_id = 'a0460000-0000-0000-0000-0000000000c1')
+  and not exists (select 1 from public.conversations where id = 'a0460000-0000-0000-0000-0000000000c1'));
+
+-- Classer « produit masqué » avant d'avoir masqué : refusé.
+do $$
+begin
+  perform public.traiter_signalement('a0460000-0000-0000-0000-0000000000d1', 'produit_masque');
+  raise exception 'ECHEC 0046 : « produit masque » sans masquage';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : « produit masque » exige le masquage';
+end $$;
+do $$
+begin
+  perform public.traiter_signalement('a0460000-0000-0000-0000-0000000000d1', 'oublie');
+  raise exception 'ECHEC 0046 : une decision inconnue est acceptee';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : une decision inconnue est refusee';
+end $$;
+do $$
+begin
+  perform public.masquer_produit('a0460000-0000-0000-0000-0000000000f1', '  ');
+  raise exception 'ECHEC 0046 : un masquage sans motif';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un masquage exige un motif';
+end $$;
+select public.masquer_produit('a0460000-0000-0000-0000-0000000000f1', 'Contrefacon manifeste');
+-- Rappelé (essai interrompu) : sans effet, sans seconde ligne d'historique.
+select public.masquer_produit('a0460000-0000-0000-0000-0000000000f1', 'Contrefacon manifeste');
+reset role;
+select pg_temp.check('0046 : masquer pose hidden et la case de l''equipe, une seule trace',
+  (select status = 'hidden' and masque_par_equipe from public.products where id = 'a0460000-0000-0000-0000-0000000000f1')
+  and (select count(*) from public.journal_equipe
+        where action = 'masquer_produit' and cible_id = 'a0460000-0000-0000-0000-0000000000f1'
+          and auteur = 'a0420000-0000-0000-0000-000000000005' and auteur_nom = 'S'
+          and motif = 'Contrefacon manifeste') = 1);
+
+-- Le commerçant ne republie pas un produit masqué par l'équipe…
+set role authenticated;
+select pg_temp.login('a0460000-0000-0000-0000-00000000000a');
+do $$
+begin
+  update public.products set status = 'active' where id = 'a0460000-0000-0000-0000-0000000000f1';
+  raise exception 'ECHEC 0046 : un commercant republie un produit masque par l''equipe (LA FAILLE)';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un commercant ne republie pas un produit masque par l''equipe';
+end $$;
+do $$
+begin
+  update public.products set masque_par_equipe = false where id = 'a0460000-0000-0000-0000-0000000000f1';
+  raise exception 'ECHEC 0046 : un commercant decoche le masquage de l''equipe';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : un commercant ne decoche pas le masquage de l''equipe';
+end $$;
+-- … mais corrige encore sa fiche, et masque puis republie LUI-MÊME ses autres produits.
+update public.products set title = 'Telephone corrige' where id = 'a0460000-0000-0000-0000-0000000000f1';
+update public.products set status = 'hidden' where id = 'a0460000-0000-0000-0000-0000000000f2';
+update public.products set status = 'active' where id = 'a0460000-0000-0000-0000-0000000000f2';
+reset role;
+select pg_temp.check('0046 : le commercant garde son masquage a lui et ses corrections',
+  (select status = 'active' and not masque_par_equipe from public.products where id = 'a0460000-0000-0000-0000-0000000000f2')
+  and (select title = 'Telephone corrige' and status = 'hidden' from public.products where id = 'a0460000-0000-0000-0000-0000000000f1'));
+
+-- Classer le signalement du produit : signé, une seule fois.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.traiter_signalement('a0460000-0000-0000-0000-0000000000d1', 'produit_masque');
+do $$
+begin
+  perform public.traiter_signalement('a0460000-0000-0000-0000-0000000000d1', 'sans_suite');
+  raise exception 'ECHEC 0046 : un signalement se classe deux fois';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un signalement ne se classe qu''une fois';
+end $$;
+select pg_temp.check('0046 : un signalement classe sort de la file',
+  not exists (select 1 from public.signalements_a_traiter() where id = 'a0460000-0000-0000-0000-0000000000d1'));
+reset role;
+select pg_temp.check('0046 : le signalement classe dit qui et quoi, l''historique aussi',
+  (select handled_at is not null and handled_by = 'a0420000-0000-0000-0000-000000000005' and decision = 'produit_masque'
+     from public.reports where id = 'a0460000-0000-0000-0000-0000000000d1')
+  and exists (select 1 from public.journal_equipe
+               where action = 'classer_signalement' and cible_type = 'signalement'
+                 and cible_id = 'a0460000-0000-0000-0000-0000000000d1' and motif = 'produit_masque'));
+
+-- Suspendre : motif obligatoire, compte suspendu une fois, notification enfilée.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+do $$
+begin
+  perform public.traiter_signalement('a0460000-0000-0000-0000-0000000000d2', 'compte_suspendu');
+  raise exception 'ECHEC 0046 : « compte suspendu » sans suspension';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : « compte suspendu » exige la suspension';
+end $$;
+do $$
+begin
+  perform public.suspendre_profil('a0460000-0000-0000-0000-00000000000a', ' ok ');
+  raise exception 'ECHEC 0046 : une suspension avec un motif trop court';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : une suspension exige un motif de 3 caracteres au moins';
+end $$;
+do $$
+begin
+  perform public.suspendre_profil('a0460000-0000-0000-0000-00000000000a', repeat('x', 501));
+  raise exception 'ECHEC 0046 : une suspension avec un motif trop long';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un motif de suspension fait 500 caracteres au plus';
+end $$;
+select public.suspendre_profil('a0460000-0000-0000-0000-00000000000a', '  Demande de paiement hors Filloo  ');
+do $$
+begin
+  perform public.suspendre_profil('a0460000-0000-0000-0000-00000000000a', 'Encore une fois');
+  raise exception 'ECHEC 0046 : un compte se suspend deux fois';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : un compte deja suspendu ne se resuspend pas';
+end $$;
+select public.traiter_signalement('a0460000-0000-0000-0000-0000000000d2', 'compte_suspendu');
+select pg_temp.check('0046 : la liste de reactivation montre le compte, sa boutique et son motif',
+  exists (select 1 from public.comptes_suspendus()
+           where profile_id = 'a0460000-0000-0000-0000-00000000000a' and role = 'merchant'
+             and nom = 'Marchand M' and shop_name = 'Chez M46'
+             and suspension_reason = 'Demande de paiement hors Filloo'));
+reset role;
+select pg_temp.check('0046 : suspendre pose la case, le motif nettoye et la date',
+  (select is_suspended and suspension_reason = 'Demande de paiement hors Filloo' and suspended_at is not null
+     from public.profiles where id = 'a0460000-0000-0000-0000-00000000000a'));
+select pg_temp.check('0046 : la suspension enfile toujours la notification de 0021',
+  exists (select 1 from public.notifications
+           where kind = 'profile_suspended' and profile_id = 'a0460000-0000-0000-0000-00000000000a'));
+select pg_temp.check('0046 : la suspension est dans l''historique avec son motif',
+  exists (select 1 from public.journal_equipe
+           where action = 'suspendre' and cible_type = 'profil'
+             and cible_id = 'a0460000-0000-0000-0000-00000000000a'
+             and motif = 'Demande de paiement hors Filloo' and auteur_nom = 'S'));
+
+-- La personne suspendue lit son motif, ne l'efface pas, ne s'en crée pas un autre.
+set role authenticated;
+select pg_temp.login('a0460000-0000-0000-0000-00000000000a');
+select pg_temp.check('0046 : la personne suspendue lit son motif',
+  (select suspension_reason from public.profiles where id = 'a0460000-0000-0000-0000-00000000000a')
+    = 'Demande de paiement hors Filloo');
+do $$
+begin
+  update public.profiles set suspension_reason = null where id = 'a0460000-0000-0000-0000-00000000000a';
+  raise exception 'ECHEC 0046 : la personne efface son motif de suspension';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : la personne n''ecrit pas son motif de suspension';
+end $$;
+do $$
+begin
+  update public.profiles set is_suspended = false where id = 'a0460000-0000-0000-0000-00000000000a';
+  raise exception 'ECHEC 0046 : la personne leve sa propre suspension';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : la personne ne leve pas sa suspension';
+end $$;
+select pg_temp.login('a0460000-0000-0000-0000-00000000000c');
+do $$
+begin
+  insert into public.profiles (auth_user_id, role, full_name, phone, suspension_reason)
+  values ('a0460000-0000-0000-0000-00000000000c', 'merchant', 'Client N', '620004602', 'Faux motif');
+  raise exception 'ECHEC 0046 : un second compte nait avec un motif de suspension';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : un second compte ne nait pas avec un motif de suspension';
+end $$;
+reset role;
+
+-- Réactiver : motif obligatoire, efface le motif montré, une seule fois.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+do $$
+begin
+  perform public.reactiver_profil('a0460000-0000-0000-0000-00000000000a', null);
+  raise exception 'ECHEC 0046 : une reactivation sans motif';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : une reactivation exige un motif';
+end $$;
+select public.reactiver_profil('a0460000-0000-0000-0000-00000000000a', 'Explications recues par telephone');
+do $$
+begin
+  perform public.reactiver_profil('a0460000-0000-0000-0000-00000000000a', 'Encore une fois');
+  raise exception 'ECHEC 0046 : un compte actif se reactive';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0046 : on ne reactive qu''un compte suspendu';
+end $$;
+select pg_temp.check('0046 : un compte reactive sort de la liste',
+  not exists (select 1 from public.comptes_suspendus() where profile_id = 'a0460000-0000-0000-0000-00000000000a'));
+-- L'historique se lit par l'équipe, ne se réécrit pas.
+select pg_temp.check('0046 : l''equipe lit l''historique des cinq gestes',
+  (select count(*) from public.journal_equipe
+    where cible_id in ('a0460000-0000-0000-0000-00000000000a', 'a0460000-0000-0000-0000-0000000000f1',
+                       'a0460000-0000-0000-0000-0000000000d1', 'a0460000-0000-0000-0000-0000000000d2')) = 5);
+do $$
+begin
+  delete from public.journal_equipe;
+  raise exception 'ECHEC 0046 : l''equipe efface l''historique';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : l''equipe n''efface pas l''historique';
+end $$;
+do $$
+begin
+  update public.journal_equipe set motif = 'Reecrit';
+  raise exception 'ECHEC 0046 : l''equipe reecrit l''historique';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : l''equipe ne reecrit pas l''historique';
+end $$;
+do $$
+begin
+  insert into public.journal_equipe (auteur, auteur_nom, action, cible_type, cible_id)
+  values ('a0420000-0000-0000-0000-000000000005', 'S', 'suspendre', 'profil', 'a0460000-0000-0000-0000-00000000000c');
+  raise exception 'ECHEC 0046 : l''equipe ecrit une fausse ligne d''historique';
+exception when insufficient_privilege then
+  raise notice 'OK    0046 : l''historique ne s''ecrit que par les fonctions';
+end $$;
+reset role;
+select pg_temp.check('0046 : reactiver efface le motif et la date, et laisse une trace',
+  (select not is_suspended and suspension_reason is null and suspended_at is null
+     from public.profiles where id = 'a0460000-0000-0000-0000-00000000000a')
+  and exists (select 1 from public.journal_equipe
+               where action = 'reactiver' and motif = 'Explications recues par telephone'));
+set role authenticated;
+select pg_temp.login('a0460000-0000-0000-0000-00000000000c');
+select pg_temp.check('0046 : un utilisateur ne lit pas l''historique',
+  not exists (select 1 from public.journal_equipe));
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

@@ -119,6 +119,27 @@ mis à jour et raccourci ; l'ancienne version se relit par
   coupe, c'est voulu) ; **badge de non-lus** qui s'éteint à l'ouverture
   d'un fil.
 
+### Décidé par le porteur du projet (2026-11-06) : la modération
+
+- **Onglet « Modération » de `/admin`** : signalements à traiter (classer
+  sans suite, masquer le produit, suspendre un compte), comptes suspendus
+  à réactiver, historique de l'équipe (`journal_equipe`, écrit par la
+  base seule, jamais modifiable).
+- **`0046` écrite, PAS appliquée** : tant qu'elle ne l'est pas, l'onglet
+  plante en préversion (la préversion lit la base de production).
+- **Tout membre de l'équipe peut suspendre ; le motif est obligatoire**
+  et s'affiche à la personne sur `/compte/suspendu`.
+- **Un produit masqué par l'équipe ne se republie pas**
+  (`products.masque_par_equipe` + trigger) ; vérifié dans `filloo-mobile` :
+  l'app met à jour colonne par colonne, elle reçoit seulement un refus.
+- **Le motif d'une suspension est lisible par l'interlocuteur** (droit
+  `select` sur tout `profiles`) : à accepter ou déplacer dans une table à
+  part.
+- **Aucun écran pour démasquer un produit** ; contournement restant : le
+  commerçant supprime et recrée le produit.
+- **Abonnements : plus tard**, après décision des prix et limites
+  (`Filloo_Document_Reference_Monetisation_Strategie.docx`).
+
 ### À décider
 
 - **Sentry dans l'app**, **captcha à l'inscription** (Cloudflare
@@ -460,10 +481,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-376 commits, du plus récent au plus ancien.
+377 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `2c0a9f9` 0045 appliquée : l'équipe gère ses annonces
 - `628bdb1` Annonces de l'équipe : brouillons, programmation, modification, retrait, lecteurs (0045 écrite, PAS appliquée)
 - `ccc434a` Espace /admin : la réponse de l'équipe s'affiche tout de suite dans le fil
 - `5c68bdf` Discussion avec l'équipe : le message envoyé s'affiche tout de suite, sans recharger
