@@ -482,10 +482,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-379 commits, du plus récent au plus ancien.
+380 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `6152d1d` 0046 appliquée : l'équipe modère et garde l'historique
 - `ba23bee` Espace /admin : onglet Modération, page d'un signalement, historique, motif sur /compte/suspendu
 - `a07b320` Modération : 0046 écrite, PAS appliquée — suspension avec motif, masquage par l'équipe, historique
 - `2c0a9f9` 0045 appliquée : l'équipe gère ses annonces

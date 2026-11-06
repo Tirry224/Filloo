@@ -90,7 +90,7 @@ source, constaté ou supposé.
   qui lit `auth.uid()` y échoue. Piège de test : une instruction ne voit
   pas son propre changement (publier puis vérifier = deux instructions).
 
-- **`0046` ÉCRITE, NON APPLIQUÉE** (2026-11-06) : modération par
+- **`0046` APPLIQUÉE le 2026-11-06** (connecteur, accord du porteur du projet) : modération par
   l'équipe (`suspendre_profil`, `reactiver_profil`, `masquer_produit`,
   `traiter_signalement`, `signalements_a_traiter`, `messages_signales`,
   `comptes_suspendus`), `journal_equipe`, `profiles.suspension_reason`,
