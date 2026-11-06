@@ -28,8 +28,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   Paris), préversion sur `dev` avec **la même base**.
 - **Base** : 41 migrations, toutes appliquées en production (constaté
   le 2026-10-23). `0042` (équipe, annonces), `0043` (l'équipe n'a que
-  `/admin`), `0044` (un fil par espace) et `0045` (gestion des annonces,
-  2026-11-06) appliquées sur accord du porteur du projet (45 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
+  `/admin`), `0044` (un fil par espace), `0045` (gestion des annonces) et `0046`
+  (modération, 2026-11-06) appliquées sur accord du porteur du projet (46 migrations). 5 boutiques, 2 produits, 17 messages, 15 Mo de base,
   0,8 Mo de photos (2026-10-22).
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
@@ -125,8 +125,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
   sans suite, masquer le produit, suspendre un compte), comptes suspendus
   à réactiver, historique de l'équipe (`journal_equipe`, écrit par la
   base seule, jamais modifiable).
-- **`0046` écrite, PAS appliquée** : tant qu'elle ne l'est pas, l'onglet
-  plante en préversion (la préversion lit la base de production).
+- **`0046` appliquée le 2026-11-06** par le connecteur, accord du
+  porteur du projet. Constaté : table, 4 colonnes, 7 fonctions et le
+  trigger en place ; 0 signalement en attente, 0 compte suspendu.
 - **Tout membre de l'équipe peut suspendre ; le motif est obligatoire**
   et s'affiche à la personne sur `/compte/suspendu`.
 - **Un produit masqué par l'équipe ne se republie pas**
@@ -481,10 +482,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-378 commits, du plus récent au plus ancien.
+379 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `ba23bee` Espace /admin : onglet Modération, page d'un signalement, historique, motif sur /compte/suspendu
 - `a07b320` Modération : 0046 écrite, PAS appliquée — suspension avec motif, masquage par l'équipe, historique
 - `2c0a9f9` 0045 appliquée : l'équipe gère ses annonces
 - `628bdb1` Annonces de l'équipe : brouillons, programmation, modification, retrait, lecteurs (0045 écrite, PAS appliquée)
