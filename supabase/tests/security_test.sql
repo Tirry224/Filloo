@@ -3078,5 +3078,485 @@ select pg_temp.check('0046 : un utilisateur ne lit pas l''historique',
   not exists (select 1 from public.journal_equipe));
 reset role;
 
+-- =====================================================================
+-- Une boutique demande de la visibilité, l'équipe la valide (0047)
+-- =====================================================================
+-- S (équipe, 0042). G : commerçant « Chez G47 », produits g1 (cat. 1,
+-- « Riz parfume »), g2 (cat. 2, « Pagne wax »), g3 (brouillon).
+-- H : commerçant « Chez H47 », produits h1 et h2 (cat. 1). K : client.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0470000-0000-0000-0000-00000000000a', 'g0047@test.gn', '{"role":"merchant","full_name":"Marchand G","phone":"620004701"}'),
+  ('a0470000-0000-0000-0000-00000000000b', 'h0047@test.gn', '{"role":"merchant","full_name":"Marchand H","phone":"620004702"}'),
+  ('a0470000-0000-0000-0000-00000000000c', 'k0047@test.gn', '{"role":"client","full_name":"Client K47","phone":"620004703"}');
+update public.profiles set id = auth_user_id
+ where auth_user_id in ('a0470000-0000-0000-0000-00000000000a', 'a0470000-0000-0000-0000-00000000000b',
+                        'a0470000-0000-0000-0000-00000000000c');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0470000-0000-0000-0000-0000000000a1', 'a0470000-0000-0000-0000-00000000000a', 'Chez G47', 1),
+  ('a0470000-0000-0000-0000-0000000000b1', 'a0470000-0000-0000-0000-00000000000b', 'Chez H47', 1);
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0470000-0000-0000-0000-0000000000f1', 'a0470000-0000-0000-0000-0000000000a1', 1, 'Riz parfume', 300000, 'draft'),
+  ('a0470000-0000-0000-0000-0000000000f2', 'a0470000-0000-0000-0000-0000000000a1', 2, 'Pagne wax', 80000, 'draft'),
+  ('a0470000-0000-0000-0000-0000000000f3', 'a0470000-0000-0000-0000-0000000000a1', 1, 'Brouillon G', 1000, 'draft'),
+  ('a0470000-0000-0000-0000-0000000000e1', 'a0470000-0000-0000-0000-0000000000b1', 1, 'Huile rouge', 40000, 'draft'),
+  ('a0470000-0000-0000-0000-0000000000e2', 'a0470000-0000-0000-0000-0000000000b1', 1, 'Sel fin', 5000, 'draft');
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0470000-0000-0000-0000-0000000000f1', 'a0470000/f1/0.webp', 0),
+  ('a0470000-0000-0000-0000-0000000000f2', 'a0470000/f2/0.webp', 0),
+  ('a0470000-0000-0000-0000-0000000000e1', 'a0470000/e1/0.webp', 0),
+  ('a0470000-0000-0000-0000-0000000000e2', 'a0470000/e2/0.webp', 0);
+update public.products set status = 'active'
+ where id in ('a0470000-0000-0000-0000-0000000000f1', 'a0470000-0000-0000-0000-0000000000f2',
+              'a0470000-0000-0000-0000-0000000000e1', 'a0470000-0000-0000-0000-0000000000e2');
+
+-- Les droits.
+select pg_temp.check('0047 : les fonctions de campagne sont fermees a anon, ouvertes a authenticated',
+  (select bool_and(not has_function_privilege('anon', f, 'execute')
+                   and has_function_privilege('authenticated', f, 'execute'))
+     from unnest(array[
+       'public.demander_campagne(text, uuid, int, int)', 'public.annuler_campagne(uuid)',
+       'public.decider_campagne(uuid, boolean, text)', 'public.interrompre_campagne(uuid, text)',
+       'public.resultats_campagnes()', 'public.campagnes_equipe()']) as f));
+select pg_temp.check('0047 : la vitrine sponsorisee est ouverte a anon et authenticated',
+  (select bool_and(has_function_privilege('anon', f, 'execute')
+                   and has_function_privilege('authenticated', f, 'execute'))
+     from unnest(array['public.produits_sponsorises(text, int, int)',
+                       'public.boutiques_mises_en_avant(int)']) as f));
+select pg_temp.check('0047 : personne n''ecrit une campagne directement',
+  not has_table_privilege('authenticated', 'public.campagnes', 'insert')
+  and not has_table_privilege('authenticated', 'public.campagnes', 'update')
+  and not has_table_privilege('authenticated', 'public.campagnes', 'delete')
+  and not has_table_privilege('anon', 'public.campagnes', 'select')
+  and not has_table_privilege('anon', 'public.campagnes', 'insert'));
+select pg_temp.check('0047 : les contraintes du type et de la periode existent',
+  (select count(*) from pg_constraint
+    where conrelid = 'public.campagnes'::regclass
+      and conname in ('campagnes_cible_selon_le_type', 'campagnes_active_a_une_periode',
+                      'campagnes_refus_et_interruption_motives')) = 3);
+do $$
+begin
+  insert into public.campagnes (merchant_id, type, product_id, duree_jours)
+  values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 'a0470000-0000-0000-0000-0000000000f1', 7);
+  raise exception 'ECHEC 0047 : une campagne boutique vise un produit';
+exception when check_violation then
+  raise notice 'OK    0047 : une campagne boutique ne vise pas de produit (contrainte)';
+end $$;
+do $$
+begin
+  insert into public.campagnes (merchant_id, type, product_id, duree_jours, statut)
+  values ('a0470000-0000-0000-0000-0000000000a1', 'produit', 'a0470000-0000-0000-0000-0000000000f1', 7, 'active');
+  raise exception 'ECHEC 0047 : une campagne active sans periode';
+exception when check_violation then
+  raise notice 'OK    0047 : une campagne active a une periode (contrainte)';
+end $$;
+
+-- Un client ne demande pas de campagne.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000c');
+do $$
+begin
+  perform public.demander_campagne('boutique', null, null, 7);
+  raise exception 'ECHEC 0047 : un client demande une campagne';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un client ne demande pas de campagne';
+end $$;
+
+-- G : demandes refusées.
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000e1', null, 7);
+  raise exception 'ECHEC 0047 : une boutique sponsorise le produit d''une autre';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : on ne sponsorise que son propre produit';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f3', null, 7);
+  raise exception 'ECHEC 0047 : un brouillon est sponsorise';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : on ne sponsorise qu''un produit publie';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 5);
+  raise exception 'ECHEC 0047 : une duree hors liste';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : la duree est 3, 7, 14 ou 30 jours';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', 1, 7);
+  raise exception 'ECHEC 0047 : une campagne produit avec une categorie';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne produit ne vise pas de categorie';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
+  raise exception 'ECHEC 0047 : une campagne categorie sans categorie';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne categorie exige sa categorie';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', 999, 7);
+  raise exception 'ECHEC 0047 : une categorie inexistante';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : la categorie doit exister';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('boutique', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
+  raise exception 'ECHEC 0047 : une campagne boutique avec un produit';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne boutique ne vise ni produit ni categorie';
+end $$;
+do $$
+begin
+  perform public.demander_campagne(p_type => 'produit', p_product => 'a0470000-0000-0000-0000-0000000000f1');
+  raise exception 'ECHEC 0047 : une demande sans duree';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une demande sans duree est refusee';
+end $$;
+do $$
+begin
+  perform public.demander_campagne('vitrine', null, null, 7);
+  raise exception 'ECHEC 0047 : un type inconnu';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un type inconnu est refuse';
+end $$;
+
+-- G : trois demandes acceptées par la base, un doublon refusé.
+create temp table t47 (nom text primary key, id uuid);
+grant all on t47 to authenticated, anon;
+insert into t47 select 'g_produit', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 30);
+  raise exception 'ECHEC 0047 : deux campagnes identiques en attente';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : pas deux campagnes identiques en attente';
+end $$;
+insert into t47 select 'g_categorie_refusee', public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', 1, 14);
+-- Le site omet p_product et p_category quand ils ne servent pas (défauts null).
+insert into t47 select 'g_boutique', public.demander_campagne(p_type => 'boutique', p_duree => 3);
+do $$
+begin
+  perform public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7);
+  raise exception 'ECHEC 0047 : une quatrieme campagne en meme temps';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : trois campagnes au plus en meme temps';
+end $$;
+do $$
+begin
+  insert into public.campagnes (merchant_id, type, duree_jours)
+  values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 30);
+  raise exception 'ECHEC 0047 : un commercant ecrit une campagne directement';
+exception when insufficient_privilege then
+  raise notice 'OK    0047 : un commercant n''ecrit pas une campagne directement';
+end $$;
+do $$
+begin
+  update public.campagnes set statut = 'active', debut_at = now(), fin_at = now() + interval '30 days';
+  raise exception 'ECHEC 0047 : un commercant active lui-meme sa campagne';
+exception when insufficient_privilege then
+  raise notice 'OK    0047 : un commercant n''active pas sa campagne';
+end $$;
+do $$
+begin
+  perform public.decider_campagne((select id from t47 where nom = 'g_produit'), true, null);
+  raise exception 'ECHEC 0047 : un commercant valide sa campagne';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un commercant ne valide pas sa campagne';
+end $$;
+do $$
+begin
+  perform * from public.campagnes_equipe();
+  raise exception 'ECHEC 0047 : un commercant lit la file de l''equipe';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un commercant ne lit pas la file de l''equipe';
+end $$;
+select pg_temp.check('0047 : la boutique lit ses trois campagnes, en attente',
+  (select count(*) from public.campagnes where statut = 'en_attente') = 3);
+
+-- H ne voit ni n'annule les campagnes de G.
+select pg_temp.login('a0470000-0000-0000-0000-00000000000b');
+select pg_temp.check('0047 : une boutique ne lit pas les campagnes d''une autre',
+  not exists (select 1 from public.campagnes));
+do $$
+begin
+  perform public.annuler_campagne((select id from t47 where nom = 'g_boutique'));
+  raise exception 'ECHEC 0047 : une boutique annule la campagne d''une autre';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une boutique n''annule pas la campagne d''une autre';
+end $$;
+insert into t47 select 'h_1', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000e1', null, 7);
+insert into t47 select 'h_2', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000e2', null, 7);
+reset role;
+
+-- Avant validation, rien n'est montré.
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : une campagne en attente n''est pas montree',
+  not exists (select 1 from public.produits_sponsorises(null, null, 4))
+  and not exists (select 1 from public.boutiques_mises_en_avant(12)));
+reset role;
+
+-- L'équipe juge.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0047 : l''equipe lit toutes les campagnes (policy)',
+  (select count(*) from public.campagnes c join t47 on t47.id = c.id) = 5);
+select pg_temp.check('0047 : la file de l''equipe nomme le produit, la boutique, la categorie',
+  exists (select 1 from public.campagnes_equipe() ce
+           where ce.id = (select id from t47 where nom = 'g_categorie_refusee')
+             and ce.type = 'categorie' and ce.statut = 'en_attente' and ce.duree_jours = 14
+             and ce.shop_name = 'Chez G47' and ce.produit_titre = 'Riz parfume'
+             and ce.category_id = 1 and ce.category_name is not null
+             and ce.merchant_id = 'a0470000-0000-0000-0000-0000000000a1'));
+do $$
+begin
+  perform public.decider_campagne((select id from t47 where nom = 'g_categorie_refusee'), false, ' no ');
+  raise exception 'ECHEC 0047 : un refus sans vrai motif';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un refus exige un motif de 3 caracteres';
+end $$;
+select public.decider_campagne((select id from t47 where nom = 'g_categorie_refusee'), false, '  Photo floue  ');
+do $$
+begin
+  perform public.decider_campagne((select id from t47 where nom = 'g_categorie_refusee'), true, null);
+  raise exception 'ECHEC 0047 : une campagne refusee est validee ensuite';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne ne se decide qu''une fois';
+end $$;
+select public.decider_campagne((select id from t47 where nom = 'g_produit'), true, null);
+select public.decider_campagne((select id from t47 where nom = 'g_boutique'), true, null);
+-- Le site omet p_motif pour une validation (défaut null).
+select public.decider_campagne(p_id => (select id from t47 where nom = 'h_1'), p_accepter => true);
+select public.decider_campagne((select id from t47 where nom = 'h_2'), true, null);
+reset role;
+select pg_temp.check('0047 : un refus pose le statut, le motif nettoye et la signature',
+  (select statut = 'refusee' and motif = 'Photo floue' and decidee_par = 'a0420000-0000-0000-0000-000000000005'
+          and decidee_at is not null and debut_at is null
+     from public.campagnes where id = (select id from t47 where nom = 'g_categorie_refusee')));
+select pg_temp.check('0047 : une validation ouvre la periode de sa duree',
+  (select statut = 'active' and fin_at - debut_at = interval '7 days' and debut_at <= now()
+          and decidee_par = 'a0420000-0000-0000-0000-000000000005'
+     from public.campagnes where id = (select id from t47 where nom = 'g_produit')));
+select pg_temp.check('0047 : valider et refuser sont dans l''historique',
+  (select count(*) from public.journal_equipe
+    where cible_type = 'campagne' and auteur_nom = 'S'
+      and ((action = 'refuser_campagne' and motif = 'Photo floue'
+            and cible_id = (select id from t47 where nom = 'g_categorie_refusee'))
+        or (action = 'valider_campagne' and cible_id = (select id from t47 where nom = 'g_produit')))) = 2);
+
+-- G, débloqué par le refus, demande une promotion de g2 dans la catégorie 3.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+insert into t47 select 'g_categorie', public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f2', 3, 7);
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.decider_campagne((select id from t47 where nom = 'g_categorie'), true, null);
+reset role;
+
+-- Ce que voit un visiteur.
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : l''accueil montre un produit sponsorise par boutique',
+  (select count(*) from public.produits_sponsorises(null, null, 10)) = 2
+  and (select count(distinct merchant_id) from public.produits_sponsorises(null, null, 10)) = 2);
+select pg_temp.check('0047 : le produit sponsorise porte sa campagne et les colonnes de la recherche',
+  exists (select 1 from public.produits_sponsorises(null, null, 4) s
+           where s.product_id = 'a0470000-0000-0000-0000-0000000000f1'
+             and s.campagne_id = (select id from t47 where nom = 'g_produit')
+             and s.shop_name = 'Chez G47' and s.title = 'Riz parfume' and s.status = 'active'
+             and s.image_path = 'a0470000/f1/0.webp' and s.city_name is not null));
+select pg_temp.check('0047 : une campagne categorie ne sort pas hors de sa categorie',
+  not exists (select 1 from public.produits_sponsorises(null, null, 4)
+               where campagne_id = (select id from t47 where nom = 'g_categorie')));
+select pg_temp.check('0047 : une campagne categorie sort dans sa categorie',
+  (select array_agg(campagne_id) from public.produits_sponsorises(null, 3, 4))
+    = array[(select id from t47 where nom = 'g_categorie')]);
+select pg_temp.check('0047 : une campagne produit sort dans la categorie du produit, pas ailleurs',
+  exists (select 1 from public.produits_sponsorises(null, 1, 4) where product_id = 'a0470000-0000-0000-0000-0000000000f1')
+  and not exists (select 1 from public.produits_sponsorises(null, 2, 4)));
+select pg_temp.check('0047 : la recherche ne sponsorise que les produits pertinents',
+  (select array_agg(product_id) from public.produits_sponsorises('riz parfumé', null, 4))
+    = array['a0470000-0000-0000-0000-0000000000f1'::uuid]
+  and not exists (select 1 from public.produits_sponsorises('introuvable zz', null, 4)));
+select pg_temp.check('0047 : meme verdict texte que search_products',
+  not exists (
+    select 1 from public.produits_sponsorises('chez h47', null, 4) s
+     where s.product_id not in (select product_id from public.search_products('chez h47', null, null, 'recent', 50, 0)))
+  and exists (select 1 from public.produits_sponsorises('chez h47', null, 4)));
+select pg_temp.check('0047 : le plafond de 4 tient',
+  (select count(*) from public.produits_sponsorises(null, 1, 100)) <= 4
+  and (select count(*) from public.produits_sponsorises(null, null, -3)) = 0);
+select pg_temp.check('0047 : la boutique mise en avant et ses produits actifs',
+  (select array_agg(merchant_id::text || ':' || produits_actifs || ':' || shop_name)
+     from public.boutiques_mises_en_avant(12))
+    = array['a0470000-0000-0000-0000-0000000000a1:2:Chez G47']);
+reset role;
+
+-- Les règles du catalogue coupent la publicité, sans geste de plus.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+update public.products set status = 'hidden' where id = 'a0470000-0000-0000-0000-0000000000f2';
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : un produit masque par son commercant n''est plus sponsorise',
+  not exists (select 1 from public.produits_sponsorises(null, 3, 4))
+  and (select produits_actifs from public.boutiques_mises_en_avant(12)) = 1);
+reset role;
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+update public.products set status = 'active' where id = 'a0470000-0000-0000-0000-0000000000f2';
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.suspendre_profil('a0470000-0000-0000-0000-00000000000a', 'Essai de suspension 0047');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : une boutique suspendue perd toute sa publicite',
+  not exists (select 1 from public.produits_sponsorises(null, null, 4) where merchant_id = 'a0470000-0000-0000-0000-0000000000a1')
+  and not exists (select 1 from public.produits_sponsorises(null, 3, 4))
+  and not exists (select 1 from public.boutiques_mises_en_avant(12)));
+select pg_temp.check('0047 : les autres boutiques restent sponsorisees',
+  exists (select 1 from public.produits_sponsorises(null, null, 4) where merchant_id = 'a0470000-0000-0000-0000-0000000000b1'));
+reset role;
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.reactiver_profil('a0470000-0000-0000-0000-00000000000a', 'Fin de l''essai 0047');
+select public.masquer_produit('a0470000-0000-0000-0000-0000000000e1', 'Essai de masquage 0047');
+select public.masquer_produit('a0470000-0000-0000-0000-0000000000e2', 'Essai de masquage 0047');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : un produit masque par l''equipe n''est plus sponsorise',
+  not exists (select 1 from public.produits_sponsorises(null, null, 4) where merchant_id = 'a0470000-0000-0000-0000-0000000000b1')
+  and exists (select 1 from public.produits_sponsorises(null, null, 4) where merchant_id = 'a0470000-0000-0000-0000-0000000000a1'));
+reset role;
+
+-- Une campagne terminée (fin passée) n'est plus montrée, et se redemande.
+update public.campagnes set debut_at = now() - interval '8 days', fin_at = now() - interval '1 day'
+ where id = (select id from t47 where nom = 'g_boutique');
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : une campagne terminee n''est plus montree',
+  not exists (select 1 from public.boutiques_mises_en_avant(12)));
+reset role;
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+do $$
+begin
+  perform public.annuler_campagne((select id from t47 where nom = 'g_boutique'));
+  raise exception 'ECHEC 0047 : une campagne terminee s''annule';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne terminee ne s''annule plus';
+end $$;
+insert into t47 select 'g_boutique_2', public.demander_campagne('boutique', null, null, 7);
+-- Annuler : en attente, puis en cours.
+select public.annuler_campagne((select id from t47 where nom = 'g_boutique_2'));
+select public.annuler_campagne((select id from t47 where nom = 'g_categorie'));
+do $$
+begin
+  perform public.annuler_campagne((select id from t47 where nom = 'g_categorie'));
+  raise exception 'ECHEC 0047 : une campagne s''annule deux fois';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une campagne annulee ne s''annule plus';
+end $$;
+select pg_temp.check('0047 : annuler en attente laisse la periode vide, en cours l''arrete',
+  (select statut = 'annulee' and debut_at is null and fin_at is null
+     from public.campagnes where id = (select id from t47 where nom = 'g_boutique_2'))
+  and (select statut = 'annulee' and fin_at <= now()
+     from public.campagnes where id = (select id from t47 where nom = 'g_categorie')));
+reset role;
+
+-- L'équipe interrompt une campagne en cours.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+do $$
+begin
+  perform public.interrompre_campagne((select id from t47 where nom = 'g_produit'), 'Je m''interromps');
+  raise exception 'ECHEC 0047 : un commercant interrompt via la porte de l''equipe';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : un commercant n''interrompt pas';
+end $$;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+do $$
+begin
+  perform public.interrompre_campagne((select id from t47 where nom = 'g_produit'), null);
+  raise exception 'ECHEC 0047 : une interruption sans motif';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : une interruption exige un motif';
+end $$;
+do $$
+begin
+  perform public.interrompre_campagne((select id from t47 where nom = 'g_boutique'), 'Deja finie');
+  raise exception 'ECHEC 0047 : une campagne terminee s''interrompt';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0047 : seule une campagne en cours s''interrompt';
+end $$;
+select public.interrompre_campagne((select id from t47 where nom = 'g_produit'), '  Produit trompeur  ');
+reset role;
+select pg_temp.check('0047 : interrompre pose le statut, le motif, arrete la periode et laisse une trace',
+  (select statut = 'interrompue' and motif = 'Produit trompeur' and fin_at <= now()
+     from public.campagnes where id = (select id from t47 where nom = 'g_produit'))
+  and exists (select 1 from public.journal_equipe
+               where action = 'interrompre_campagne' and cible_type = 'campagne'
+                 and cible_id = (select id from t47 where nom = 'g_produit') and motif = 'Produit trompeur'));
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0047 : une campagne interrompue n''est plus montree',
+  not exists (select 1 from public.produits_sponsorises(null, null, 4)));
+reset role;
+
+-- Les résultats : chacun les siens, l'équipe tout.
+insert into public.analytics_events (name, campagne_id)
+select n, (select id from t47 where nom = 'g_produit')
+  from unnest(array['pub_vue', 'pub_vue', 'pub_vue', 'pub_clic']) n;
+insert into public.analytics_events (name, campagne_id)
+values ('pub_vue', (select id from t47 where nom = 'h_1'));
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.check('0047 : la boutique lit ses vues et clics',
+  (select vues = 3 and clics = 1 from public.resultats_campagnes()
+    where campagne_id = (select id from t47 where nom = 'g_produit')));
+select pg_temp.check('0047 : la boutique ne lit que ses resultats, campagnes sans mesure comprises',
+  (select count(*) from public.resultats_campagnes()) = 5
+  and not exists (select 1 from public.resultats_campagnes()
+                   where campagne_id in (select id from t47 where nom like 'h_%')));
+select pg_temp.login('a0470000-0000-0000-0000-00000000000c');
+select pg_temp.check('0047 : un client ne lit aucun resultat',
+  not exists (select 1 from public.resultats_campagnes()));
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0047 : l''equipe lit les resultats de toutes les campagnes',
+  (select count(*) from public.resultats_campagnes() r join t47 on t47.id = r.campagne_id) = 7
+  and (select vues = 1 and clics = 0 from public.resultats_campagnes()
+        where campagne_id = (select id from t47 where nom = 'h_1')));
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

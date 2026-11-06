@@ -28,6 +28,7 @@ export type Database = {
       analytics_events: {
         Row: {
           actor_role: string | null
+          campagne_id: string | null
           category_id: number | null
           city_id: number | null
           id: number
@@ -40,6 +41,7 @@ export type Database = {
         }
         Insert: {
           actor_role?: string | null
+          campagne_id?: string | null
           category_id?: number | null
           city_id?: number | null
           id?: never
@@ -52,6 +54,7 @@ export type Database = {
         }
         Update: {
           actor_role?: string | null
+          campagne_id?: string | null
           category_id?: number | null
           city_id?: number | null
           id?: never
@@ -62,7 +65,15 @@ export type Database = {
           result_count?: number | null
           search_query?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_campagne_id_fkey"
+            columns: ["campagne_id"]
+            isOneToOne: false
+            referencedRelation: "campagnes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       annonce_destinataires: {
         Row: {
@@ -137,6 +148,83 @@ export type Database = {
           titre?: string
         }
         Relationships: []
+      }
+      campagnes: {
+        Row: {
+          category_id: number | null
+          created_at: string
+          debut_at: string | null
+          decidee_at: string | null
+          decidee_par: string | null
+          duree_jours: number
+          fin_at: string | null
+          id: string
+          merchant_id: string
+          motif: string | null
+          product_id: string | null
+          statut: string
+          type: string
+        }
+        Insert: {
+          category_id?: number | null
+          created_at?: string
+          debut_at?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          duree_jours: number
+          fin_at?: string | null
+          id?: string
+          merchant_id: string
+          motif?: string | null
+          product_id?: string | null
+          statut?: string
+          type: string
+        }
+        Update: {
+          category_id?: number | null
+          created_at?: string
+          debut_at?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          duree_jours?: number
+          fin_at?: string | null
+          id?: string
+          merchant_id?: string
+          motif?: string | null
+          product_id?: string | null
+          statut?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campagnes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campagnes_decidee_par_fkey"
+            columns: ["decidee_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "campagnes_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campagnes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -747,6 +835,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      annuler_campagne: { Args: { p_id: string }; Returns: undefined }
       boite_equipe: {
         Args: never
         Returns: {
@@ -757,6 +846,36 @@ export type Database = {
           fil_de: string
           nom: string
           non_lus: number
+        }[]
+      }
+      boutiques_mises_en_avant: {
+        Args: { p_limit?: number }
+        Returns: {
+          campagne_id: string
+          city_name: string
+          merchant_id: string
+          produits_actifs: number
+          shop_name: string
+          shop_photo_path: string | null
+        }[]
+      }
+      campagnes_equipe: {
+        Args: never
+        Returns: {
+          category_id: number | null
+          category_name: string | null
+          created_at: string
+          debut_at: string | null
+          duree_jours: number
+          fin_at: string | null
+          id: string
+          merchant_id: string
+          motif: string | null
+          product_id: string | null
+          produit_titre: string | null
+          shop_name: string
+          statut: string
+          type: string
         }[]
       }
       comptes_suspendus: {
@@ -770,11 +889,28 @@ export type Database = {
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      decider_campagne: {
+        Args: { p_accepter: boolean; p_id: string; p_motif?: string }
+        Returns: undefined
+      }
+      demander_campagne: {
+        Args: {
+          p_category?: number
+          p_duree?: number
+          p_product?: string
+          p_type: string
+        }
+        Returns: string
+      }
       enregistrer_telephone: {
         Args: { p_plateforme: string; p_token: string }
         Returns: undefined
       }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
+      interrompre_campagne: {
+        Args: { p_id: string; p_motif: string }
+        Returns: undefined
+      }
       is_active_profile: { Args: { pid: string }; Returns: boolean }
       je_peux_ecrire_a_l_equipe: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
@@ -841,11 +977,41 @@ export type Database = {
         Args: { age?: unknown; limite?: number }
         Returns: string[]
       }
+      produits_sponsorises: {
+        Args: { p_category_id?: number; p_limit?: number; p_query?: string }
+        Returns: {
+          campagne_id: string
+          category_id: number
+          category_name: string
+          city_id: number
+          city_name: string
+          contact_count: number
+          created_at: string
+          image_path: string
+          is_featured: boolean
+          is_negotiable: boolean
+          merchant_id: string
+          price_gnf: number
+          product_id: string
+          shop_name: string
+          shop_photo_path: string | null
+          status: Database["public"]["Enums"]["product_status"]
+          title: string
+        }[]
+      }
       publier_annonces_programmees: { Args: never; Returns: string[] }
       purger_mesures: { Args: never; Returns: number }
       reactiver_profil: {
         Args: { p_motif: string; p_profile: string }
         Returns: undefined
+      }
+      resultats_campagnes: {
+        Args: never
+        Returns: {
+          campagne_id: string
+          clics: number
+          vues: number
+        }[]
       }
       search_products: {
         Args: {

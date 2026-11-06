@@ -96,7 +96,16 @@ source, constaté ou supposé.
   `comptes_suspendus`), `journal_equipe`, `profiles.suspension_reason`,
   `reports.handled_by`/`decision`, `products.masque_par_equipe`. 301
   contrôles OK en local ; le test « commercant republie » tombe sans le
-  déclencheur (vérifié en le retirant). À corriger ici une fois appliquée.
+  déclencheur (vérifié en le retirant).
+- **`0047` ÉCRITE, NON appliquée** (2026-11-06) : publicité sans
+  paiement (`campagnes`, `demander/annuler/decider/interrompre_campagne`,
+  `produits_sponsorises`, `boutiques_mises_en_avant`,
+  `resultats_campagnes`, `campagnes_equipe`, `analytics_events.campagne_id`,
+  checks de `journal_equipe` élargis). 360 contrôles OK en local (59 pour
+  0047) ; le filtre « boutique suspendue » prouvé par mutation. Noms
+  constatés en production des checks de 0046 :
+  `journal_equipe_action_check`, `journal_equipe_cible_type_check`.
+  À corriger ici une fois appliquée.
 - **`hidden` sert AUSSI au commerçant** (constaté 2026-11-06, site
   `hideProductAction`/`republishProductAction`) : il masque et republie
   lui-même. Un masquage de l'équipe ne peut donc pas être « status =
@@ -158,6 +167,15 @@ source, constaté ou supposé.
 - **plpgsql `returns table (id …)`** : chaque nom de sortie est une
   variable ; une colonne non qualifiée du même nom devient ambiguë.
   Qualifier toutes les colonnes (`r.id`) dans `return query` (0046).
+- **PostgREST ne trouve une fonction que si chaque paramètre ABSENT a un
+  défaut** (constaté 2026-11-06, `src/lib/actions/publicite.ts`) :
+  supabase-js retire les clés `undefined`, et le site écrit `x ??
+  undefined`. Lire les appels `rpc(` du site avant de figer des
+  paramètres sans défaut ; un défaut ne change pas l'identité de la
+  fonction (types d'arguments), mais impose un défaut aux suivants.
+- **Fonction publique `security definer`** (vitrine) : refaire à la main
+  les filtres du catalogue (`merchant_is_public` de 0013, `status`,
+  `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : un dossier de données NEUF à chaque passe, pas de
   `rm -rf` dans un `su -c` (recette dans `.claude/savoir/testeur.md`).
   194 contrôles OK le 2026-10-23 (avec `0041`), 183 sans.

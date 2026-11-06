@@ -141,6 +141,37 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Abonnements : plus tard**, après décision des prix et limites
   (`Filloo_Document_Reference_Monetisation_Strategie.docx`).
 
+### Décidé par le porteur du projet (2026-11-06) : la publicité, sans paiement
+
+- **`0047` écrite, PAS appliquée** : tant qu'elle ne l'est pas, les
+  emplacements restent vides (le site ignore l'erreur) et les pages
+  publicité plantent en préversion.
+- **Trois types** : produit sponsorisé (accueil + recherches pertinentes),
+  promotion dans la catégorie du produit, boutique mise en avant
+  (« Boutiques à découvrir »). Au plus 2 produits par emplacement, marqués
+  « Sponsorisé », les mêmes pour tous (jamais choisis par les goûts).
+- **Le commerçant demande** (`/vendeur/publicite`, 3 en cours au plus,
+  3 à 30 jours), **l'équipe valide ou refuse** (`/admin/publicite`, motif
+  au refus, signé dans l'historique). Gratuit tant que le paiement manque.
+- **Résultats** : affichages et clics (`pub_vue`, `pub_clic`, robots
+  exclus), clic compté par `/pub/[id]` seulement pendant la campagne.
+- **Le commerçant n'est pas notifié** d'une décision : il la lit sur sa
+  page. À décider.
+
+### Décidé par le porteur du projet (2026-11-06) : l'accueil mélangé
+
+- **« Pour vous » par défaut** (accueil et recherche) : tirage pondéré à
+  chaque visite (`src/lib/melange.ts`), deux produits d'une même boutique
+  ne se suivent pas, les vendus derrière. « Récents » et « Populaires »
+  restent au choix.
+- **Les goûts de l'appareil** (cookie `filloo_gouts`, catégories et
+  boutiques regardées, sans identifiant, jamais en base) pèsent jusqu'à
+  ×5, jamais exclusifs. Politique de confidentialité mise à jour (art. 4).
+- **« Vous aimerez aussi »** sous chaque fiche : 2/3 de la même catégorie.
+- **Les catégories ne sont PAS mélangées** : les plus regardées d'abord,
+  les autres à leur place, pour s'y retrouver.
+- **Sans effet visible aujourd'hui** : 1 produit en ligne (2026-11-06).
+
 ### À décider
 
 - **Sentry dans l'app**, **captcha à l'inscription** (Cloudflare
@@ -482,10 +513,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-380 commits, du plus récent au plus ancien.
+381 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `b87d488` Savoir du gardien-base : 0046 notée appliquée
 - `6152d1d` 0046 appliquée : l'équipe modère et garde l'historique
 - `ba23bee` Espace /admin : onglet Modération, page d'un signalement, historique, motif sur /compte/suspendu
 - `a07b320` Modération : 0046 écrite, PAS appliquée — suspension avec motif, masquage par l'équipe, historique
