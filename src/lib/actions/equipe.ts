@@ -58,16 +58,46 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
   retour(chemin);
 }
 
-/** Publier une annonce : les destinataires sont figés par la base à cet instant (0042). */
-export async function publierAnnonceAction(formData: FormData): Promise<void> {
-  const chemin = "/admin/annonces";
+/* ---------------------------------------------------------------------
+   Les annonces de l'équipe (0045, décision du 2026-11-06) : brouillon,
+   programmée (part le matin du jour choisi), publiée, retirée. Tout membre
+   de l'équipe peut tout faire ; la base date et signe, et refuse ce qui
+   ferait reculer le cycle (ses refus, en français, s'affichent tels quels).
+   --------------------------------------------------------------------- */
+
+const ANNONCES = "/admin/annonces";
+
+/** Une date « AAAA-MM-JJ » à partir de demain (le jour même partirait trop tard : le cron passe à 7 h). */
+function lireDateProgrammee(valeur: unknown): string | null {
+  if (typeof valeur !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return null;
+  const demain = new Date();
+  demain.setUTCDate(demain.getUTCDate() + 1);
+  return valeur >= demain.toISOString().slice(0, 10) ? valeur : null;
+}
+
+function lireTexteAnnonce(formData: FormData, chemin: string): { titre: string; corps: string } {
   const titre = texteNettoye(formData.get("titre"));
   const corps = texteNettoye(formData.get("corps"));
-  const publicVise = formData.get("public");
   if (!titre || !corps) retour(chemin, "Le titre et le texte sont obligatoires.");
   if (longueur(titre) > TITRE_MAX) retour(chemin, `Titre : ${TITRE_MAX} caractères au plus.`);
   if (longueur(corps) > CORPS_MAX) retour(chemin, `Texte : ${CORPS_MAX} caractères au plus.`);
+  return { titre, corps };
+}
+
+function lirePublic(formData: FormData, chemin: string): Database["public"]["Enums"]["public_annonce"] {
+  const publicVise = formData.get("public");
   if (typeof publicVise !== "string" || !(publicVise in PUBLICS)) retour(chemin, "Choisissez à qui l'envoyer.");
+  return publicVise as Database["public"]["Enums"]["public_annonce"];
+}
+
+/** Créer une annonce : publiée tout de suite, en brouillon, ou programmée (`mode`). */
+export async function creerAnnonceAction(formData: FormData): Promise<void> {
+  const { titre, corps } = lireTexteAnnonce(formData, ANNONCES);
+  const publicVise = lirePublic(formData, ANNONCES);
+  const mode = formData.get("mode");
+  const date = lireDateProgrammee(formData.get("date"));
+  if (mode === "programmer" && !date) retour(ANNONCES, "Choisissez une date à partir de demain.");
+  const etat = mode === "publier" ? "publiee" : mode === "programmer" ? "programmee" : "brouillon";
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
@@ -75,18 +105,82 @@ export async function publierAnnonceAction(formData: FormData): Promise<void> {
 
   const { data, error } = await supabase
     .from("annonces")
-    .insert({
-      auteur_id: user.id,
-      titre,
-      corps,
-      public: publicVise as Database["public"]["Enums"]["public_annonce"],
-    })
+    .insert({ auteur_id: user.id, titre, corps, public: publicVise, etat, programmee_pour: date })
     .select("id")
     .single();
-  if (error || !data) retour(chemin, error ? messagePourErreur(error, "annonce") : "Annonce non publiée.");
+  if (error || !data) retour(ANNONCES, error ? messagePourErreur(error, "annonce") : "Annonce non enregistrée.");
 
-  after(() => annoncerAuxDestinataires(data.id));
-  retour(chemin, undefined, "Annonce publiée.");
+  if (etat === "publiee") after(() => annoncerAuxDestinataires(data.id));
+  revalidatePath(ANNONCES);
+  retour(
+    `${ANNONCES}/${data.id}`,
+    undefined,
+    etat === "publiee" ? "Annonce publiée." : etat === "programmee" ? "Annonce programmée." : "Brouillon enregistré.",
+  );
+}
+
+/** Modifier le texte (et le public, tant qu'elle n'est pas publiée). Publiée : mention « Modifiée », sans notification. */
+export async function modifierAnnonceAction(formData: FormData): Promise<void> {
+  const id = formData.get("id");
+  if (!estUuid(id)) retour(ANNONCES, "Annonce introuvable.");
+  const chemin = `${ANNONCES}/${id}`;
+  const { titre, corps } = lireTexteAnnonce(formData, chemin);
+  const changements: Database["public"]["Tables"]["annonces"]["Update"] = { titre, corps };
+  if (formData.get("public") !== null) changements.public = lirePublic(formData, chemin);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("annonces").update(changements).eq("id", id).select("id");
+  if (error) retour(chemin, error.code === "P0001" ? error.message : messagePourErreur(error, "annonce"));
+  if (!data?.length) retour(chemin, "Modification impossible.");
+  revalidatePath(ANNONCES);
+  revalidatePath(chemin);
+  retour(chemin, undefined, "Modifications enregistrées.");
+}
+
+/** Faire avancer une annonce : publier, programmer, repasser en brouillon, retirer ou supprimer (`action`). */
+export async function changerEtatAnnonceAction(formData: FormData): Promise<void> {
+  const id = formData.get("id");
+  if (!estUuid(id)) retour(ANNONCES, "Annonce introuvable.");
+  const chemin = `${ANNONCES}/${id}`;
+  const action = formData.get("action");
+  const supabase = await createClient();
+
+  if (action === "supprimer") {
+    const { data, error } = await supabase.from("annonces").delete().eq("id", id).select("id");
+    if (error) retour(chemin, messagePourErreur(error, "annonce"));
+    // Le RLS ne supprime qu'un brouillon ou une programmée : rien de supprimé = elle était publiée.
+    if (!data?.length) retour(chemin, "Une annonce publiée ne se supprime pas : retirez-la.");
+    revalidatePath(ANNONCES);
+    retour(ANNONCES, undefined, "Brouillon supprimé.");
+  }
+
+  let changements: Database["public"]["Tables"]["annonces"]["Update"];
+  let info: string;
+  if (action === "publier") {
+    changements = { etat: "publiee" };
+    info = "Annonce publiée.";
+  } else if (action === "programmer") {
+    const date = lireDateProgrammee(formData.get("date"));
+    if (!date) retour(chemin, "Choisissez une date à partir de demain.");
+    changements = { etat: "programmee", programmee_pour: date };
+    info = "Annonce programmée.";
+  } else if (action === "brouillon") {
+    changements = { etat: "brouillon" };
+    info = "Programmation annulée : l'annonce est redevenue un brouillon.";
+  } else if (action === "retirer") {
+    changements = { etat: "retiree" };
+    info = "Annonce retirée : elle n'apparaît plus chez les utilisateurs.";
+  } else {
+    retour(chemin, "Action inconnue.");
+  }
+
+  const { data, error } = await supabase.from("annonces").update(changements).eq("id", id).select("id");
+  if (error) retour(chemin, error.code === "P0001" ? error.message : messagePourErreur(error, "annonce"));
+  if (!data?.length) retour(chemin, "Action impossible.");
+  if (action === "publier") after(() => annoncerAuxDestinataires(id));
+  revalidatePath(ANNONCES);
+  revalidatePath(chemin);
+  retour(chemin, undefined, info);
 }
 
 /**

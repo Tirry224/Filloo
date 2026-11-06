@@ -2285,8 +2285,8 @@ select pg_temp.check('0042 : un client n''est pas de l''equipe', not public.je_s
 -- Un client ne publie pas d'annonce.
 do $$
 begin
-  insert into public.annonces (auteur_id, titre, corps, public)
-  values ('a0420000-0000-0000-0000-00000000000b', 'Faux', 'Fausse annonce', 'tous');
+  insert into public.annonces (auteur_id, titre, corps, public, etat)
+  values ('a0420000-0000-0000-0000-00000000000b', 'Faux', 'Fausse annonce', 'tous', 'publiee');
   raise exception 'ECHEC 0042 : un client publie une annonce';
 exception when insufficient_privilege then
   raise notice 'OK    0042 : un client ne publie pas d''annonce';
@@ -2297,15 +2297,15 @@ select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select pg_temp.check('0042 : S est de l''equipe', public.je_suis_de_l_equipe());
 do $$
 begin
-  insert into public.annonces (auteur_id, titre, corps, public)
-  values ('11111111-1111-1111-1111-111111111111', 'Usurpee', 'Au nom d''un autre', 'tous');
+  insert into public.annonces (auteur_id, titre, corps, public, etat)
+  values ('11111111-1111-1111-1111-111111111111', 'Usurpee', 'Au nom d''un autre', 'tous', 'publiee');
   raise exception 'ECHEC 0042 : l''equipe publie au nom d''un autre';
 exception when insufficient_privilege then
   raise notice 'OK    0042 : une annonce porte le nom de qui la publie';
 end $$;
-insert into public.annonces (id, auteur_id, titre, corps, public) values
-  ('a0420000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux commercants', 'Bonjour les commercants', 'commercants'),
-  ('a0420000-0000-0000-0000-0000000000a2', 'a0420000-0000-0000-0000-000000000005', 'A tous', 'Bonjour a tous', 'tous');
+insert into public.annonces (id, auteur_id, titre, corps, public, etat) values
+  ('a0420000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux commercants', 'Bonjour les commercants', 'commercants', 'publiee'),
+  ('a0420000-0000-0000-0000-0000000000a2', 'a0420000-0000-0000-0000-000000000005', 'A tous', 'Bonjour a tous', 'tous', 'publiee');
 reset role;
 
 -- L s'inscrit APRÈS les deux annonces.
@@ -2441,8 +2441,8 @@ select pg_temp.check('0043 : entrer dans l''equipe marque la connexion',
 -- Une annonce publiée maintenant n'atteint pas l'équipe.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-insert into public.annonces (id, auteur_id, titre, corps, public) values
-  ('a0430000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Apres 0043', 'Bonjour', 'tous');
+insert into public.annonces (id, auteur_id, titre, corps, public, etat) values
+  ('a0430000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Apres 0043', 'Bonjour', 'tous', 'publiee');
 reset role;
 select pg_temp.check('0043 : une annonce ne part pas vers l''equipe',
   not exists (select 1 from public.annonce_destinataires
@@ -2510,8 +2510,8 @@ reset role;
 -- Une annonce aux clients ne se répond pas depuis la boutique.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-insert into public.annonces (id, auteur_id, titre, corps, public) values
-  ('a0440000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux clients', 'Bonjour', 'clients');
+insert into public.annonces (id, auteur_id, titre, corps, public, etat) values
+  ('a0440000-0000-0000-0000-0000000000a1', 'a0420000-0000-0000-0000-000000000005', 'Aux clients', 'Bonjour', 'clients', 'publiee');
 select pg_temp.login('33333333-3333-3333-3333-333333333333');
 do $$
 begin
@@ -2551,6 +2551,141 @@ select pg_temp.check('0044 : les anciennes fonctions sans espace n''existent plu
   to_regprocedure('public.marquer_fil_equipe_lu()') is null
   and to_regprocedure('public.marquer_annonces_lues()') is null
   and to_regprocedure('public.marquer_fil_lu_par_l_equipe(uuid)') is null);
+
+-- =====================================================================
+-- L'équipe gère ses annonces (0045)
+-- =====================================================================
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+insert into public.annonces (id, auteur_id, titre, corps, public) values
+  ('a0450000-0000-0000-0000-0000000000b1', 'a0420000-0000-0000-0000-000000000005', 'Brouillon', 'En preparation', 'tous');
+select pg_temp.check('0045 : une annonce part en brouillon par defaut, sans destinataires',
+  (select etat = 'brouillon' and publiee_at is null from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1')
+  and not exists (select 1 from public.annonce_destinataires where annonce_id = 'a0450000-0000-0000-0000-0000000000b1'));
+reset role;
+
+-- Un utilisateur ne voit pas le brouillon.
+set role authenticated;
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+select pg_temp.check('0045 : un brouillon est invisible pour les utilisateurs',
+  not exists (select 1 from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1'));
+do $$
+begin
+  update public.annonces set titre = 'Pirate' where id = 'a0420000-0000-0000-0000-0000000000a2';
+  if exists (select 1 from public.annonces where titre = 'Pirate') then
+    raise exception 'ECHEC 0045 : un client modifie une annonce';
+  end if;
+  raise notice 'OK    0045 : un client ne modifie pas une annonce';
+end $$;
+reset role;
+
+-- Un inscrit APRÈS la création du brouillon mais AVANT sa publication la reçoit.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0450000-0000-0000-0000-00000000000e', 'e0045@test.gn', '{"role":"client","full_name":"Client E45","phone":"620004501"}');
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+update public.annonces set etat = 'publiee' where id = 'a0450000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0045 : publier fige les destinataires au moment de la publication',
+  (select publiee_at is not null from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1')
+  and exists (select 1 from public.annonce_destinataires
+               where annonce_id = 'a0450000-0000-0000-0000-0000000000b1' and auth_user_id = 'a0450000-0000-0000-0000-00000000000e'));
+
+-- Modifier une annonce publiée : signée, datée, sans changer de public.
+update public.annonces set corps = 'Texte corrige' where id = 'a0450000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0045 : une modification est datee et signee',
+  (select modifiee_at is not null and modifiee_par = 'a0420000-0000-0000-0000-000000000005'
+     from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1'));
+do $$
+begin
+  update public.annonces set public = 'clients' where id = 'a0450000-0000-0000-0000-0000000000b1';
+  raise exception 'ECHEC 0045 : une annonce publiee change de public';
+exception when raise_exception then
+  raise notice 'OK    0045 : une annonce publiee garde son public';
+end $$;
+do $$
+begin
+  update public.annonces set etat = 'brouillon' where id = 'a0450000-0000-0000-0000-0000000000b1';
+  raise exception 'ECHEC 0045 : une annonce publiee redevient un brouillon';
+exception when raise_exception then
+  raise notice 'OK    0045 : une annonce publiee ne redevient pas un brouillon';
+end $$;
+do $$
+begin
+  update public.annonces set auteur_id = '33333333-3333-3333-3333-333333333333' where id = 'a0450000-0000-0000-0000-0000000000b1';
+  if (select auteur_id from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1') <> 'a0420000-0000-0000-0000-000000000005' then
+    raise exception 'ECHEC 0045 : l''auteur d''une annonce se reecrit';
+  end if;
+  raise notice 'OK    0045 : l''auteur d''une annonce ne se reecrit pas';
+end $$;
+
+-- Une annonce publiée ne se supprime pas : elle se retire.
+delete from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0045 : une annonce publiee ne se supprime pas',
+  exists (select 1 from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1'));
+update public.annonces set etat = 'retiree' where id = 'a0450000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0045 : un retrait est date et signe',
+  (select retiree_at is not null and retiree_par = 'a0420000-0000-0000-0000-000000000005'
+     from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1'));
+do $$
+begin
+  update public.annonces set etat = 'publiee' where id = 'a0450000-0000-0000-0000-0000000000b1';
+  raise exception 'ECHEC 0045 : une annonce retiree se republie';
+exception when raise_exception then
+  raise notice 'OK    0045 : une annonce retiree ne se modifie plus';
+end $$;
+reset role;
+set role authenticated;
+select pg_temp.login('a0450000-0000-0000-0000-00000000000e');
+select pg_temp.check('0045 : une annonce retiree disparait chez ses destinataires',
+  not exists (select 1 from public.annonces where id = 'a0450000-0000-0000-0000-0000000000b1'));
+reset role;
+
+-- Programmer : pas pour aujourd'hui ; publiée par le passage du matin.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+do $$
+begin
+  insert into public.annonces (auteur_id, titre, corps, public, etat, programmee_pour)
+  values ('a0420000-0000-0000-0000-000000000005', 'Hier', 'Trop tard', 'tous', 'programmee', current_date);
+  raise exception 'ECHEC 0045 : une annonce se programme pour aujourd''hui';
+exception when raise_exception then
+  raise notice 'OK    0045 : une annonce se programme a partir de demain';
+end $$;
+insert into public.annonces (id, auteur_id, titre, corps, public, etat, programmee_pour) values
+  ('a0450000-0000-0000-0000-0000000000c1', 'a0420000-0000-0000-0000-000000000005', 'Demain', 'Bonjour demain', 'clients', 'programmee', current_date + 1);
+select pg_temp.check('0045 : publier_annonces_programmees est fermee a l''equipe',
+  not has_function_privilege('authenticated', 'public.publier_annonces_programmees()', 'execute'));
+reset role;
+-- Le lendemain : on simule le passage du matin en avançant la date prévue.
+alter table public.annonces disable trigger annonces_tenir_le_cycle;
+update public.annonces set programmee_pour = current_date where id = 'a0450000-0000-0000-0000-0000000000c1';
+alter table public.annonces enable trigger annonces_tenir_le_cycle;
+-- Publier, puis vérifier : une même instruction ne verrait pas son propre changement.
+create temp table publiees_ce_matin as select * from public.publier_annonces_programmees() as id;
+select pg_temp.check('0045 : le passage du matin publie ce qui est programme pour le jour',
+  (select count(*) from publiees_ce_matin where id = 'a0450000-0000-0000-0000-0000000000c1') = 1
+  and (select etat = 'publiee' and publiee_at is not null from public.annonces where id = 'a0450000-0000-0000-0000-0000000000c1')
+  and exists (select 1 from public.annonce_destinataires where annonce_id = 'a0450000-0000-0000-0000-0000000000c1'));
+
+-- Qui l'a lue : pour l'équipe seulement.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0045 : l''equipe voit qui a recu l''annonce',
+  (select count(*) from public.lecteurs_annonce('a0450000-0000-0000-0000-0000000000c1')) > 0);
+select pg_temp.login('33333333-3333-3333-3333-333333333333');
+select pg_temp.check('0045 : un client ne voit pas les lecteurs',
+  (select count(*) from public.lecteurs_annonce('a0450000-0000-0000-0000-0000000000c1')) = 0);
+reset role;
+
+-- Un brouillon se supprime.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+insert into public.annonces (id, auteur_id, titre, corps, public) values
+  ('a0450000-0000-0000-0000-0000000000d1', 'a0420000-0000-0000-0000-000000000005', 'A jeter', 'Brouillon', 'tous');
+delete from public.annonces where id = 'a0450000-0000-0000-0000-0000000000d1';
+select pg_temp.check('0045 : un brouillon se supprime',
+  not exists (select 1 from public.annonces where id = 'a0450000-0000-0000-0000-0000000000d1'));
+reset role;
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

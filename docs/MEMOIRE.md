@@ -91,6 +91,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Visiteurs uniques et impressions : non mesurés, à décider.** Les
   visiteurs uniques exigent un identifiant anonyme par navigateur, ce
   que la politique de confidentialité exclut aujourd'hui (`0024`).
+- **Annonces gérées sur `/admin/annonces`** (`0045`, 2026-11-06) :
+  brouillon, programmée (part le matin du jour choisi, cron de 7 h),
+  publiée, modifiée (mention « Modifiée », sans notification), retirée
+  (jamais supprimée une fois publiée) ; qui l'a lue. Tout membre de
+  l'équipe peut tout faire, la base signe.
 - **Par notification, jamais par email** (confirmé le 2026-11-05) :
   l'équipe est prévenue quand on lui écrit (au plus une fois par fil
   tous les quarts d'heure), la personne quand l'équipe répond ou
@@ -455,10 +460,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-374 commits, du plus récent au plus ancien.
+375 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `ccc434a` Espace /admin : la réponse de l'équipe s'affiche tout de suite dans le fil
 - `5c68bdf` Discussion avec l'équipe : le message envoyé s'affiche tout de suite, sans recharger
 - `ebbd729` Équipe Filloo : une seule discussion par espace, quel que soit le chemin pris pour écrire
 

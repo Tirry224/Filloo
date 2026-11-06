@@ -122,7 +122,7 @@ export async function monNomDansLEquipe(supabase: SupabaseClient<Database>, auth
 
 /** Une ligne d'Équipe Filloo : une annonce, ou LA discussion avec l'équipe. */
 export type NotificationEquipe =
-  | { type: "annonce"; id: string; titre: string; texte: string; quand: string; nonLue: boolean }
+  | { type: "annonce"; id: string; titre: string; texte: string; quand: string; nonLue: boolean; modifiee: boolean }
   | {
       type: "discussion";
       /** Le dernier message, et qui l'a écrit. */
@@ -148,10 +148,11 @@ export async function lireNotificationsEquipe(
   const [annonces, dernier, nonLues] = await Promise.all([
     supabase
       .from("annonces")
-      .select("id, titre, corps, created_at, annonce_destinataires(lue_at, auth_user_id)")
+      .select("id, titre, corps, publiee_at, created_at, modifiee_at, annonce_destinataires(lue_at, auth_user_id)")
       .in("public", [...PUBLICS_DE[espace]])
+      .eq("etat", "publiee")
       .eq("annonce_destinataires.auth_user_id", authUserId)
-      .order("created_at", { ascending: false }),
+      .order("publiee_at", { ascending: false }),
     supabase
       .from("fil_equipe")
       .select("corps, de_l_equipe, created_at")
@@ -187,8 +188,10 @@ export async function lireNotificationsEquipe(
       id: a.id,
       titre: a.titre,
       texte: a.corps,
-      quand: a.created_at,
+      // La date de publication : une annonce programmée a été créée avant.
+      quand: a.publiee_at ?? a.created_at,
       nonLue: a.annonce_destinataires.some((d) => d.lue_at === null),
+      modifiee: a.modifiee_at !== null,
     });
   }
   return elements;
@@ -199,15 +202,18 @@ export async function lireAnnonceEquipe(
   supabase: SupabaseClient<Database>,
   id: string,
   espace: EspaceEquipe,
-): Promise<{ titre: string; texte: string; quand: string } | null> {
+): Promise<{ titre: string; texte: string; quand: string; modifieeAt: string | null } | null> {
   const { data, error } = await supabase
     .from("annonces")
-    .select("titre, corps, created_at")
+    .select("titre, corps, created_at, publiee_at, modifiee_at")
     .eq("id", id)
+    .eq("etat", "publiee")
     .in("public", [...PUBLICS_DE[espace]])
     .maybeSingle();
   if (error) throw error;
-  return data ? { titre: data.titre, texte: data.corps, quand: data.created_at } : null;
+  return data
+    ? { titre: data.titre, texte: data.corps, quand: data.publiee_at ?? data.created_at, modifieeAt: data.modifiee_at }
+    : null;
 }
 
 export type MessageEchange = { id: string; deLEquipe: boolean; texte: string; quand: string };
@@ -226,4 +232,99 @@ export async function lireDiscussionEquipe(
     .order("created_at");
   if (error) throw error;
   return data.map((m) => ({ id: m.id, deLEquipe: m.de_l_equipe, texte: m.corps, quand: m.created_at }));
+}
+
+/** Une annonce telle que l'équipe la gère (0045). */
+export type AnnonceAdmin = {
+  id: string;
+  titre: string;
+  corps: string;
+  public: Database["public"]["Enums"]["public_annonce"];
+  etat: Database["public"]["Enums"]["etat_annonce"];
+  creeeAt: string;
+  programmeePour: string | null;
+  publieeAt: string | null;
+  modifieeAt: string | null;
+  retireeAt: string | null;
+  auteur: string | null;
+  modifieePar: string | null;
+  retireePar: string | null;
+  destinataires: number;
+  lues: number;
+};
+
+const COLONNES_ANNONCE =
+  "id, titre, corps, public, etat, created_at, programmee_pour, publiee_at, modifiee_at, retiree_at, auteur_id, modifiee_par, retiree_par, annonce_destinataires(lue_at)";
+
+type LigneAnnonce = {
+  id: string;
+  titre: string;
+  corps: string;
+  public: Database["public"]["Enums"]["public_annonce"];
+  etat: Database["public"]["Enums"]["etat_annonce"];
+  created_at: string;
+  programmee_pour: string | null;
+  publiee_at: string | null;
+  modifiee_at: string | null;
+  retiree_at: string | null;
+  auteur_id: string | null;
+  modifiee_par: string | null;
+  retiree_par: string | null;
+  annonce_destinataires: { lue_at: string | null }[];
+};
+
+async function nomsDeLEquipe(supabase: SupabaseClient<Database>): Promise<Map<string, string>> {
+  const { data } = await supabase.from("equipe").select("auth_user_id, nom");
+  return new Map((data ?? []).map((m) => [m.auth_user_id, m.nom]));
+}
+
+function versAnnonceAdmin(a: LigneAnnonce, noms: Map<string, string>): AnnonceAdmin {
+  const nom = (id: string | null) => (id ? (noms.get(id) ?? "Ancien membre") : null);
+  return {
+    id: a.id,
+    titre: a.titre,
+    corps: a.corps,
+    public: a.public,
+    etat: a.etat,
+    creeeAt: a.created_at,
+    programmeePour: a.programmee_pour,
+    publieeAt: a.publiee_at,
+    modifieeAt: a.modifiee_at,
+    retireeAt: a.retiree_at,
+    auteur: nom(a.auteur_id),
+    modifieePar: nom(a.modifiee_par),
+    retireePar: nom(a.retiree_par),
+    destinataires: a.annonce_destinataires.length,
+    lues: a.annonce_destinataires.filter((d) => d.lue_at).length,
+  };
+}
+
+/** Toutes les annonces, pour l'équipe : la plus récemment créée d'abord. */
+export async function lireAnnoncesAdmin(supabase: SupabaseClient<Database>): Promise<AnnonceAdmin[]> {
+  const [{ data, error }, noms] = await Promise.all([
+    supabase.from("annonces").select(COLONNES_ANNONCE).order("created_at", { ascending: false }).returns<LigneAnnonce[]>(),
+    nomsDeLEquipe(supabase),
+  ]);
+  if (error) throw error;
+  return data.map((a) => versAnnonceAdmin(a, noms));
+}
+
+export type Lecteur = { id: string; nom: string; lueAt: string | null };
+
+/** Une annonce et ses destinataires (lus ou non), pour l'équipe. */
+export async function lireAnnonceAdmin(
+  supabase: SupabaseClient<Database>,
+  id: string,
+): Promise<{ annonce: AnnonceAdmin; lecteurs: Lecteur[] } | null> {
+  const [{ data, error }, noms, lecteurs] = await Promise.all([
+    supabase.from("annonces").select(COLONNES_ANNONCE).eq("id", id).returns<LigneAnnonce[]>().maybeSingle(),
+    nomsDeLEquipe(supabase),
+    supabase.rpc("lecteurs_annonce", { p_annonce: id }),
+  ]);
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    annonce: versAnnonceAdmin(data, noms),
+    lecteurs: (lecteurs.data ?? []).map((l) => ({ id: l.auth_user_id, nom: l.nom, lueAt: (l.lue_at as string | null) ?? null })),
+  };
 }

@@ -1,21 +1,11 @@
 import { AnnoncesVue } from "@/components/admin/AnnoncesVue";
+import { lireAnnoncesAdmin } from "@/lib/data/equipe";
 import { createClient } from "@/lib/supabase/server";
 
-/** Les 20 dernières suffisent à suivre ce qui est parti ; le reste est au tableau de bord. */
-const DERNIERES = 20;
-
-/**
- * Publier une annonce, et voir qui l'a lue. Seules les personnes inscrites
- * au moment de la publication la reçoivent (décision du 2026-11-05).
- */
+/** Les annonces de l'équipe (0045) : brouillons, programmées, publiées, retirées. */
 export default async function AnnoncesPage({ searchParams }: { searchParams: Promise<{ erreur?: string; info?: string }> }) {
   const { erreur, info } = await searchParams;
   const supabase = await createClient();
-  const { data: annonces, error } = await supabase
-    .from("annonces")
-    .select("id, titre, corps, public, created_at, annonce_destinataires(lue_at)")
-    .order("created_at", { ascending: false })
-    .limit(DERNIERES);
-  if (error) throw error;
+  const annonces = await lireAnnoncesAdmin(supabase);
   return <AnnoncesVue annonces={annonces} erreur={erreur} info={info} />;
 }

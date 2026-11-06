@@ -79,7 +79,9 @@ export function EquipeVue({ espace, notifications }: { espace: Espace; notificat
                       <time className="shrink-0 text-2xs text-ink-soft">{formatMessageTime(n.quand)}</time>
                     </div>
                     {n.type === "annonce" ? (
-                      <span className="text-2xs font-semibold text-accent-hover">Annonce</span>
+                      <span className="text-2xs font-semibold text-accent-hover">
+                        Annonce{n.modifiee ? " · modifiée" : ""}
+                      </span>
                     ) : n.deLEquipe ? (
                       <Badge tone="success">L&apos;équipe a répondu</Badge>
                     ) : (

@@ -132,3 +132,16 @@ export async function annoncerAuxDestinataires(annonceId: string): Promise<void>
     console.error(`[equipe] annonce ${annonceId} non envoyée :`, cause);
   }
 }
+
+/**
+ * Le passage du matin (`/api/quotidien`, 7 h à Conakry) : publier les
+ * annonces programmées pour aujourd'hui (0045), puis prévenir leurs
+ * destinataires. Rend le nombre d'annonces publiées.
+ */
+export async function publierAnnoncesProgrammees(): Promise<number> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("publier_annonces_programmees");
+  if (error) throw error;
+  for (const id of data ?? []) await annoncerAuxDestinataires(id);
+  return data?.length ?? 0;
+}

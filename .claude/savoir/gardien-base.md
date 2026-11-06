@@ -78,6 +78,16 @@ source, constaté ou supposé.
   OK en local. Piège : une policy dépend de sa fonction, la remplacer
   AVANT de supprimer l'ancienne ; et le RLS refuse avant NOT NULL.
 
+- **`0045` écrite le 2026-11-06, PAS appliquée** : `annonces.etat`
+  (brouillon, programmée, publiée, retirée), cycle tenu par un trigger
+  (`annonce_tenir_le_cycle`, `security definer` : il lit `auth.uid()`
+  pour signer), destinataires figés à la PUBLICATION, retrait au lieu de
+  suppression, `publier_annonces_programmees()` (service_role, cron 7 h),
+  `lecteurs_annonce()`. 252 contrôles OK en local. Piège : le stub local
+  ne donne pas `auth` à `authenticated` ; une fonction `security invoker`
+  qui lit `auth.uid()` y échoue. Piège de test : une instruction ne voit
+  pas son propre changement (publier puis vérifier = deux instructions).
+
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
 - **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par

@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { drainNotifications } from "@/lib/notifications-decisions";
 import { nettoyerPhotosOrphelines } from "@/lib/menage";
 import { refusCron } from "@/lib/cron";
+import { publierAnnoncesProgrammees } from "@/lib/notifications-equipe";
 
 /**
- * Le passage du matin de Vercel Cron (`vercel.json`) : annoncer les
- * décisions d'administration, puis effacer les photos orphelines.
+ * Le passage du matin de Vercel Cron (`vercel.json`, 7 h UTC = 7 h à
+ * Conakry) : annoncer les décisions d'administration, effacer les photos
+ * orphelines, et publier les annonces programmées pour aujourd'hui (0045).
  *
  * UNE route pour les deux, et donc un seul cron : la documentation
  * Vercel ne dit pas combien de crons l'offre gratuite autorise, et un
@@ -18,7 +20,13 @@ export async function GET(request: Request) {
   const refus = refusCron(request, "quotidien");
   if (refus) return refus;
 
-  const [notifications, menage] = await Promise.allSettled([drainNotifications(), nettoyerPhotosOrphelines()]);
+  const [notifications, menage, annonces] = await Promise.allSettled([
+    drainNotifications(),
+    nettoyerPhotosOrphelines(),
+    publierAnnoncesProgrammees(),
+  ]);
+  if (annonces.status === "rejected") console.error("[quotidien] annonces programmées :", annonces.reason);
+  else if (annonces.value > 0) console.log(`[annonces] ${annonces.value} annonce(s) programmée(s) publiée(s).`);
 
   if (notifications.status === "rejected") console.error("[quotidien] notifications :", notifications.reason);
   if (menage.status === "rejected") console.error("[quotidien] ménage :", menage.reason);
@@ -29,7 +37,8 @@ export async function GET(request: Request) {
   const rapport = {
     notifications: notifications.status === "fulfilled" ? notifications.value : { erreur: "échec" },
     menage: menage.status === "fulfilled" ? menage.value : { erreur: "échec" },
+    annonces: annonces.status === "fulfilled" ? { publiees: annonces.value } : { erreur: "échec" },
   };
-  const toutEchoue = notifications.status === "rejected" && menage.status === "rejected";
+  const toutEchoue = [notifications, menage, annonces].every((t) => t.status === "rejected");
   return NextResponse.json(rapport, { status: toutEchoue ? 500 : 200 });
 }

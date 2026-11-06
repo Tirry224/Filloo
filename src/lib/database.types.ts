@@ -95,24 +95,45 @@ export type Database = {
           auteur_id: string | null
           corps: string
           created_at: string
+          etat: Database["public"]["Enums"]["etat_annonce"]
           id: string
+          modifiee_at: string | null
+          modifiee_par: string | null
+          programmee_pour: string | null
           public: Database["public"]["Enums"]["public_annonce"]
+          publiee_at: string | null
+          retiree_at: string | null
+          retiree_par: string | null
           titre: string
         }
         Insert: {
           auteur_id?: string | null
           corps: string
           created_at?: string
+          etat?: Database["public"]["Enums"]["etat_annonce"]
           id?: string
+          modifiee_at?: string | null
+          modifiee_par?: string | null
+          programmee_pour?: string | null
           public: Database["public"]["Enums"]["public_annonce"]
+          publiee_at?: string | null
+          retiree_at?: string | null
+          retiree_par?: string | null
           titre: string
         }
         Update: {
           auteur_id?: string | null
           corps?: string
           created_at?: string
+          etat?: Database["public"]["Enums"]["etat_annonce"]
           id?: string
+          modifiee_at?: string | null
+          modifiee_par?: string | null
+          programmee_pour?: string | null
           public?: Database["public"]["Enums"]["public_annonce"]
+          publiee_at?: string | null
+          retiree_at?: string | null
+          retiree_par?: string | null
           titre?: string
         }
         Relationships: []
@@ -690,6 +711,14 @@ export type Database = {
         Returns: boolean
       }
       je_suis_de_l_equipe: { Args: never; Returns: boolean }
+      lecteurs_annonce: {
+        Args: { p_annonce: string }
+        Returns: {
+          auth_user_id: string
+          lue_at: string
+          nom: string
+        }[]
+      }
       marquer_annonces_lues: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
         Returns: undefined
@@ -729,6 +758,7 @@ export type Database = {
         Args: { age?: unknown; limite?: number }
         Returns: string[]
       }
+      publier_annonces_programmees: { Args: never; Returns: string[] }
       purger_mesures: { Args: never; Returns: number }
       search_products: {
         Args: {
@@ -761,6 +791,7 @@ export type Database = {
       suivi_chiffres: { Args: { depuis: string }; Returns: Json }
     }
     Enums: {
+      etat_annonce: "brouillon" | "programmee" | "publiee" | "retiree"
       merchant_status: "pending" | "approved" | "rejected"
       notification_kind:
         | "merchant_approved"
@@ -897,6 +928,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      etat_annonce: ["brouillon", "programmee", "publiee", "retiree"],
       merchant_status: ["pending", "approved", "rejected"],
       notification_kind: [
         "merchant_approved",

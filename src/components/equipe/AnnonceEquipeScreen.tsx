@@ -18,7 +18,19 @@ export async function AnnonceEquipeScreen({ espace, params }: { espace: Espace; 
   return <AnnonceEquipeVue espace={espace} {...annonce} />;
 }
 
-export function AnnonceEquipeVue({ espace, titre, texte, quand }: { espace: Espace; titre: string; texte: string; quand: string }) {
+export function AnnonceEquipeVue({
+  espace,
+  titre,
+  texte,
+  quand,
+  modifieeAt = null,
+}: {
+  espace: Espace;
+  titre: string;
+  texte: string;
+  quand: string;
+  modifieeAt?: string | null;
+}) {
   return (
     <Screen largeur="rangees">
       <TopBar title="Annonce" backHref={CHEMINS_EQUIPE[espace]} />
@@ -28,6 +40,7 @@ export function AnnonceEquipeVue({ espace, titre, texte, quand }: { espace: Espa
             <span className="flex items-center gap-2 text-xs font-semibold text-accent-hover">
               <Megaphone size={15} strokeWidth={2} aria-hidden />
               Équipe Filloo · {formatMessageTime(quand)}
+              {modifieeAt ? ` · modifiée ${formatMessageTime(modifieeAt)}` : ""}
             </span>
             <h2 className="text-xl font-bold">{titre}</h2>
             <p className="text-base leading-relaxed whitespace-pre-wrap">{texte}</p>
