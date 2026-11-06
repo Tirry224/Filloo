@@ -24,6 +24,16 @@ export default async function SuspendedPage() {
      comme `SwitchSpaceCard`, pas une redirection subie. */
   const stillActive = profiles.find((p) => !p.isSuspended && !p.isDeleted);
 
+  /* Le motif écrit par l'équipe (0046, obligatoire depuis le 2026-11-06).
+     Lu à part : `getMyProfiles` sert toutes les pages, celle-ci seule en a
+     besoin. Une suspension antérieure n'en a pas : on se tait plutôt que
+     d'inventer. */
+  const { data: motif } = await supabase
+    .from("profiles")
+    .select("suspension_reason")
+    .eq("id", suspended.id)
+    .maybeSingle();
+
   return (
     <Screen>
       <TopBar title={<Wordmark />} />
@@ -41,6 +51,14 @@ export default async function SuspendedPage() {
             Voir les produits
           </Button>
         </EmptyState>
+        {motif?.suspension_reason ? (
+          <Section className="pt-0">
+            <div className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-3.5 py-3">
+              <span className="text-sm font-semibold text-ink-soft">Motif donné par l&apos;équipe Filloo</span>
+              <p className="text-base leading-normal whitespace-pre-wrap">{motif.suspension_reason}</p>
+            </div>
+          </Section>
+        ) : null}
         {stillActive ? (
           <Section className="pt-0">
             <SwitchSpaceCard

@@ -481,10 +481,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-377 commits, du plus récent au plus ancien.
+378 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `a07b320` Modération : 0046 écrite, PAS appliquée — suspension avec motif, masquage par l'équipe, historique
 - `2c0a9f9` 0045 appliquée : l'équipe gère ses annonces
 - `628bdb1` Annonces de l'équipe : brouillons, programmation, modification, retrait, lecteurs (0045 écrite, PAS appliquée)
 - `ccc434a` Espace /admin : la réponse de l'équipe s'affiche tout de suite dans le fil
