@@ -515,10 +515,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-386 commits, du plus récent au plus ancien.
+387 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `23a97f6` Fiche produit : le logo WhatsApp remplace le libellé « WA »
 - `fbf6d30` Merge branch 'claude/festive-babbage-egch2j' into dev
 - `2b064d5` Mémoire : Supabase est en Pro ; seules les photos restent sans sauvegarde
 - `2bf210a` 0047 appliquée ; une migration écrite s'applique désormais aussitôt testée

@@ -22,6 +22,12 @@ ajouterait serait effacée à la prochaine commande.
 - **Si l'environnement en impose une** — une session qui ouvre d'office
   une branche `claude/…` — y travailler, puis la ramener dans `dev` (pas
   `main`) et le dire dans le compte rendu.
+- **Exception autorisée le 2026-11-06 : `monetisation`.** Le travail sur
+  les prix, abonnements, crédits et paiements (document
+  `Filloo_Document_Reference_Monetisation_Strategie.docx`) vit sur cette
+  branche, partie de `dev`. **Elle ne se fusionne PAS dans `dev`** tant
+  que le porteur du projet ne le demande pas : il veut la travailler,
+  puis la publier plus tard. Le reste du travail continue sur `dev`.
 - **Aucune branche ne se supprime ni ne se fusionne** sans autorisation
   explicite, y compris celles qui paraissent mortes : trois d'entre elles
   portaient encore, au 2026-09-19, 61 commits absents de `main`.
