@@ -513,10 +513,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-381 commits, du plus récent au plus ancien.
+382 commits, du plus récent au plus ancien.
 
 ### 2026-11-06
 
+- `d6a4e7d` Publicité : 0047 écrite, PAS appliquée — campagnes demandées par le commerçant, validées par l'équipe
 - `b87d488` Savoir du gardien-base : 0046 notée appliquée
 - `6152d1d` 0046 appliquée : l'équipe modère et garde l'historique
 - `ba23bee` Espace /admin : onglet Modération, page d'un signalement, historique, motif sur /compte/suspendu

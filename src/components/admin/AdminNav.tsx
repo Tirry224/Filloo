@@ -1,9 +1,9 @@
 "use client";
 
-import { BarChart3, Megaphone, MessageCircle, ShieldAlert } from "lucide-react";
+import { BarChart3, Megaphone, MessageCircle, ShieldAlert, TrendingUp } from "lucide-react";
 import { NavBar, type NavTab } from "@/components/nav/NavBar";
 
-/* Les quatre `match` sont DISJOINTS, comme pour les autres espaces : deux
+/* Les cinq `match` sont DISJOINTS, comme pour les autres espaces : deux
    onglets allumés à la fois font mentir la barre. « Messages » porte la
    pastille des non lus (`NavBar` la pose sur ce libellé). */
 const TABS: readonly NavTab[] = [
@@ -24,6 +24,12 @@ const TABS: readonly NavTab[] = [
     href: "/admin/moderation",
     icon: ShieldAlert,
     match: (p: string) => p.startsWith("/admin/moderation") || p.startsWith("/admin/signalement"),
+  },
+  {
+    label: "Publicité",
+    href: "/admin/publicite",
+    icon: TrendingUp,
+    match: (p: string) => p.startsWith("/admin/publicite"),
   },
   {
     label: "Statistiques",

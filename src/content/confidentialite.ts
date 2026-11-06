@@ -3,7 +3,7 @@
  * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "7 octobre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "6 novembre 2026";
 
 export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
@@ -75,6 +75,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
         "de données de profilage publicitaire, et Filloo ne vend aucune donnée à personne.",
       ],
       "Vos recherches récentes sont enregistrées DANS VOTRE NAVIGATEUR, sur votre appareil uniquement. Elles ne sont jamais envoyées à Filloo, et vider les données de votre navigateur les efface.",
+      "Pour vous montrer d’abord ce qui vous intéresse, votre navigateur retient aussi, dans un cookie, les catégories et les boutiques que vous regardez le plus souvent. Ce cookie ne contient aucun identifiant ni aucune donnée personnelle ; Filloo le lit pour ordonner les produits affichés et ne l’enregistre jamais. Il ne sert pas à choisir les produits sponsorisés, qui sont les mêmes pour tout le monde. Vider les données de votre navigateur l’efface.",
     ],
   },
   {

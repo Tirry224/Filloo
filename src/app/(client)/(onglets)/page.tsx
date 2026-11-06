@@ -20,6 +20,18 @@ import { PushBell } from "@/components/push/PushBell";
 import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
+import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
+import { categoriesParGouts, melanger } from "@/lib/melange";
+import { RetenirGout } from "@/components/product/RetenirGout";
+import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
+import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
+
+/** Les trois ordres de l'accueil. « Pour vous », le mélange, est celui par défaut (2026-11-06). */
+const TRIS = [
+  { valeur: "pour-vous", libelle: "Pour vous" },
+  { valeur: "recent", libelle: "Récents" },
+  { valeur: "populaire", libelle: "Populaires" },
+] as const;
 
 /** L'accueil filtré (`?categorie=…`) n'est qu'une variante de l'accueil. */
 export async function generateMetadata({
@@ -42,7 +54,7 @@ export default async function HomePage({
   // Même lecture prudente que `/recherche` : un paramètre peut être répété.
   const brut = await searchParams;
   const categorie = premier(brut.categorie) ?? "Tout";
-  const tri = premier(brut.tri) ?? "recent";
+  const tri = TRIS.find((t) => t.valeur === premier(brut.tri))?.valeur ?? "pour-vous";
   const supabase = await createClient();
 
   const landing = await landingForSession(supabase);
@@ -54,16 +66,42 @@ export default async function HomePage({
      client de Conakry voit aussi ce qui se vend à Koya. Seule la boutique
      porte une ville, affichée sur chaque carte. Un ancien lien
      `?ville=…` est simplement ignoré. */
-  const categories = await categoriesEnCache();
+  const gouts = await goutsDeLaRequete();
+  // Les catégories regardées souvent viennent d'abord ; l'ordre des autres ne bouge pas, pour s'y retrouver.
+  const categories = categoriesParGouts(await categoriesEnCache(), gouts);
 
   const sort = tri === "populaire" ? "popular" : "recent";
   const tous = await rechercheEnCache({ sort, limit: 50 });
-  const visible = categorie === "Tout" ? tous : tous.filter((p) => p.category === categorie);
+  const filtres = categorie === "Tout" ? tous : tous.filter((p) => p.category === categorie);
+  /* Le mélange se fait APRÈS le cache, à chaque affichage : la liste
+     partagée reste lue une fois par minute, l'ordre change à chaque visite. */
+  const visible = tri === "pour-vous" ? melanger(filtres, gouts) : filtres;
+
+  /* La publicité (0047) : au plus deux produits sponsorisés de cet
+     emplacement, et les boutiques mises en avant sur l'accueil complet. */
+  const idCategorie = categories.find((c) => c.name === categorie)?.id ?? null;
+  const [sponsorises, boutiquesEnAvant] = await Promise.all([
+    produitsSponsorises({ categoryId: idCategorie, limit: 2 }),
+    categorie === "Tout" ? boutiquesMisesEnAvant() : Promise.resolve([]),
+  ]);
+  await compterAffichages([...sponsorises, ...boutiquesEnAvant].map((x) => x.campagneId));
+  const idsSponsorises = new Set(sponsorises.map((p) => p.id));
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 
   const triHref = (valeur: string) =>
     `/?categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
-  const gridItems = featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible;
+  // Un produit sponsorisé n'apparaît pas une seconde fois plus bas.
+  const ordinaires = (featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible).filter(
+    (p) => !idsSponsorises.has(p.id),
+  );
+  /* Le premier en tête, le second après quatre produits ordinaires : visibles
+     sans former un bloc d'annonces. */
+  const gridItems = [
+    ...sponsorises.slice(0, 1).map((p) => ({ p, s: p.campagneId })),
+    ...ordinaires.slice(0, 4).map((p) => ({ p, s: null })),
+    ...sponsorises.slice(1).map((p) => ({ p, s: p.campagneId })),
+    ...ordinaires.slice(4).map((p) => ({ p, s: null })),
+  ];
 
   await compter("visite", {});
 
@@ -73,6 +111,7 @@ export default async function HomePage({
       <TopBar title={<Wordmark size="lg" />} right={<PushBell connecte={connecte} />} />
 
       <ScreenBody>
+        {categorie !== "Tout" ? <RetenirGout categorie={categorie} /> : null}
         <Section className="gap-3 pb-1">
           <ChipRow>
             <Link href="/?categorie=Tout">
@@ -109,6 +148,7 @@ export default async function HomePage({
           </EmptyState>
         ) : (
           <>
+        <BoutiquesADecouvrir boutiques={boutiquesEnAvant} />
         {featuredHere ? (
           <Section className="gap-2 pt-2 pb-0">
             <SectionLabel>À la une</SectionLabel>
@@ -133,25 +173,20 @@ export default async function HomePage({
         ) : null}
 
         <Section className="gap-2 pt-3.5">
-          <div className="flex items-baseline justify-between">
-            {sort === "popular" ? (
-              <Link href={triHref("recent")} className="text-sm font-semibold text-accent">
-                Récents
-              </Link>
-            ) : (
-              <SectionLabel>Récents</SectionLabel>
-            )}
-            {sort === "popular" ? (
-              <SectionLabel>Populaires</SectionLabel>
-            ) : (
-              <Link href={triHref("populaire")} className="text-sm font-semibold text-accent">
-                Populaires
-              </Link>
+          <div className="flex items-baseline gap-4">
+            {TRIS.map((t) =>
+              t.valeur === tri ? (
+                <SectionLabel key={t.valeur}>{t.libelle}</SectionLabel>
+              ) : (
+                <Link key={t.valeur} href={triHref(t.valeur)} className="text-sm font-semibold text-accent">
+                  {t.libelle}
+                </Link>
+              ),
             )}
           </div>
           <ProductGrid>
-            {gridItems.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {gridItems.map(({ p, s }) => (
+              <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} />
             ))}
           </ProductGrid>
         </Section>

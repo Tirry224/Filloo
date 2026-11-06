@@ -34,7 +34,10 @@ export type NomEvenement =
   | "message_envoye"
   | "inscription"
   | "boutique_creee"
-  | "produit_cree";
+  | "produit_cree"
+  /* La publicité (0047) : un affichage et un clic, rattachés à la campagne. */
+  | "pub_vue"
+  | "pub_clic";
 
 export type ContexteEvenement = {
   /** Ce qu'était celui qui a agi, jamais qui il est. */
@@ -45,6 +48,7 @@ export type ContexteEvenement = {
   cityId?: number | null;
   query?: string | null;
   resultCount?: number | null;
+  campagneId?: string | null;
 };
 
 /** La borne de la colonne `search_query` (0024). Tronquer ici plutôt que
@@ -82,6 +86,7 @@ export async function compter(nom: NomEvenement, contexte: ContexteEvenement = {
         city_id: contexte.cityId ?? null,
         search_query: normaliserRequete(contexte.query),
         result_count: contexte.resultCount ?? null,
+        campagne_id: contexte.campagneId ?? null,
       });
       if (error) console.error(`[mesure] ${nom} non enregistré :`, error.message);
     } catch (cause) {

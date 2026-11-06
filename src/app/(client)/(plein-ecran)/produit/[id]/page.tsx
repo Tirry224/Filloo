@@ -11,7 +11,13 @@ import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { ShareButton } from "@/components/product/ShareButton";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
-import { produitEnCache } from "@/lib/data/catalogue-public";
+import { produitEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
+import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
+import { suggestions } from "@/lib/melange";
+import { ProductCard } from "@/components/product/ProductCard";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { RetenirGout } from "@/components/product/RetenirGout";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { formatGnf } from "@/lib/format";
 import Link from "next/link";
@@ -101,6 +107,10 @@ export default async function ProductPage({
 
   await compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
+  // « Vous aimerez aussi » : la même catégorie surtout, un peu d'ailleurs, ordonné par les goûts de l'appareil.
+  const [catalogue, gouts] = await Promise.all([rechercheEnCache({ sort: "recent", limit: 50 }), goutsDeLaRequete()]);
+  const aimerezAussi = suggestions(catalogue, product, gouts);
+
   /* Les données structurées que Google lit pour afficher le prix et la
      disponibilité dans ses résultats (schema.org `Product`). Le `<`
      échappé empêche un titre de commerçant de fermer la balise. */
@@ -183,6 +193,17 @@ export default async function ProductPage({
             Signaler ce produit
           </Link>
         </Section>
+        {aimerezAussi.length ? (
+          <Section className="gap-2 pt-0">
+            <SectionLabel>Vous aimerez aussi</SectionLabel>
+            <ProductGrid>
+              {aimerezAussi.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </ProductGrid>
+          </Section>
+        ) : null}
+        <RetenirGout categorie={product.category} boutique={product.merchant.id} />
       </ScreenBody>
 
       <ScreenFooter className="flex gap-2.5">

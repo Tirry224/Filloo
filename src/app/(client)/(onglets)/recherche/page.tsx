@@ -14,6 +14,9 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
+import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
+import { melanger } from "@/lib/melange";
+import { compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 import { premier } from "@/lib/next-param";
 
 
@@ -46,7 +49,8 @@ export default async function SearchPage({
      filtrait rien. Constaté le 2026-09-25. */
   const brut = await searchParams;
   const q = premier(brut.q) ?? "";
-  const tri = premier(brut.tri) ?? "recent";
+  // « Pour vous » (le mélange de `melange.ts`) par défaut, comme l'accueil (2026-11-06).
+  const tri = ["recent", "populaire"].includes(premier(brut.tri) ?? "") ? premier(brut.tri)! : "pour-vous";
 
   const categories = await categoriesEnCache();
 
@@ -58,12 +62,19 @@ export default async function SearchPage({
   const category = categorie !== "Tout" ? categories.find((c) => c.name === categorie) : undefined;
   const sort = tri === "populaire" ? "popular" : "recent";
 
-  const results = await rechercheEnCache({
+  const trouves = await rechercheEnCache({
     query: q,
     categoryId: category?.id ?? null,
     sort,
     limit: 50,
   });
+  const results = tri === "pour-vous" ? melanger(trouves, await goutsDeLaRequete()) : trouves;
+
+  /* Au plus deux produits sponsorisés, PERTINENTS pour cette recherche ou
+     cette catégorie (0047), en tête et marqués. Rien sur l'écran de repos. */
+  const sponsorises = q || category ? await produitsSponsorises({ query: q, categoryId: category?.id ?? null, limit: 2 }) : [];
+  await compterAffichages(sponsorises.map((p) => p.campagneId));
+  const idsSponsorises = new Set(sponsorises.map((p) => p.id));
 
   if (q || category) {
     await compter("recherche", {
@@ -156,10 +167,11 @@ export default async function SearchPage({
               />
               <FilterChip
                 title="Trier par"
-                label={tri === "populaire" ? "Populaires" : "Récents"}
+                label={tri === "populaire" ? "Populaires" : tri === "recent" ? "Récents" : "Pour vous"}
                 icon={ArrowUpDown}
                 options={[
-                  { label: "Récents", href: lien({ tri: "recent" }), selected: tri !== "populaire" },
+                  { label: "Pour vous", href: lien({ tri: "pour-vous" }), selected: tri === "pour-vous" },
+                  { label: "Récents", href: lien({ tri: "recent" }), selected: tri === "recent" },
                   { label: "Populaires", href: lien({ tri: "populaire" }), selected: tri === "populaire" },
                 ]}
               />
@@ -177,9 +189,14 @@ export default async function SearchPage({
               </EmptyState>
             ) : (
               <ProductGrid>
-                {results.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+                {sponsorises.map((p) => (
+                  <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} />
                 ))}
+                {results
+                  .filter((p) => !idsSponsorises.has(p.id))
+                  .map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
               </ProductGrid>
             )}
           </Section>

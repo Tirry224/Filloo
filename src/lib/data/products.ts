@@ -6,7 +6,7 @@ import { estUuid } from "@/lib/saisie";
 
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
 
-function mapRow(row: SearchRow): Product {
+export function mapRow(row: SearchRow): Product {
   return {
     id: row.product_id,
     merchant: {
