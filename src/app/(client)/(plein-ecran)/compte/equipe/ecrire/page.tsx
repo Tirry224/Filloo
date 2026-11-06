@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { EcrireEquipeScreen } from "@/components/equipe/EcrireEquipeScreen";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Écrire à l'équipe", robots: { index: false, follow: false } };
-
-export default function ClientEquipeEcrirePage() {
-  return <EcrireEquipeScreen espace="client" />;
+/** Ancienne adresse (notifications déjà reçues, 2026-11-05) : tout vit désormais dans la discussion. */
+export default function AncienneAdresse() {
+  redirect("/compte/equipe/discussion");
 }

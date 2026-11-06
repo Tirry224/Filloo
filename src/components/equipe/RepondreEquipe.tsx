@@ -7,11 +7,11 @@ import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
 
 /**
- * Répondre à l'équipe, sous sa réponse : le champ de la messagerie du
- * site. Le message va dans le même fil ; un refus ou une coupure réseau
- * rend le texte au champ.
+ * Écrire dans la discussion avec l'équipe : le champ de la messagerie du
+ * site. Un refus ou une coupure réseau rend le texte au champ. `focus` :
+ * venu du bouton « Écrire », le clavier s'ouvre tout de suite.
  */
-export function RepondreEquipe({ espace, reponseA }: { espace: Espace; reponseA: string }) {
+export function RepondreEquipe({ espace, focus = false }: { espace: Espace; focus?: boolean }) {
   const brouillon = useRef("");
   const champ = useRef<HTMLInputElement>(null);
   const { state, formAction, onSubmit, pending } = useFormulaire(ecrireALEquipeAction, {
@@ -30,15 +30,15 @@ export function RepondreEquipe({ espace, reponseA }: { espace: Espace; reponseA:
       {state?.error ? <p className="text-center text-xs text-danger">{state.error}</p> : null}
       <form action={formAction} onSubmit={onSubmit} className="flex items-center gap-2.5">
         <input type="hidden" name="espace" value={espace} />
-        <input type="hidden" name="reponseA" value={reponseA} />
         <input
           ref={champ}
           name="corps"
           maxLength={2000}
           required
           autoComplete="off"
-          aria-label="Votre réponse"
-          placeholder="Répondre à l'équipe"
+          aria-label="Votre message"
+          placeholder="Écrire à l'équipe"
+          autoFocus={focus}
           disabled={pending}
           className="h-tap flex-1 rounded-full border border-line bg-surface px-4 text-base disabled:opacity-50"
         />

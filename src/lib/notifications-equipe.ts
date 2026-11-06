@@ -86,13 +86,13 @@ export async function prevenirLEquipe(messageId: string): Promise<void> {
 }
 
 /** L'équipe vient de répondre : la personne est prévenue (navigateur abonné et téléphone). */
-export async function prevenirDeLaReponse(filDe: string, espace: "client" | "merchant", reponseId: string): Promise<void> {
+export async function prevenirDeLaReponse(filDe: string, espace: "client" | "merchant"): Promise<void> {
   try {
     await sendPushToUser(filDe, {
       titre: "Équipe Filloo",
       corps: espace === "merchant" ? "L'équipe a répondu à votre boutique." : "L'équipe vous a répondu.",
-      // La notification ouvre la réponse elle-même, avec la question et le champ pour répondre.
-      url: `${CHEMIN_EQUIPE[espace]}/reponse/${reponseId}`,
+      // La notification ouvre la discussion, où la réponse est en bas.
+      url: `${CHEMIN_EQUIPE[espace]}/discussion`,
       tag: `equipe-${espace}`,
     });
   } catch (cause) {

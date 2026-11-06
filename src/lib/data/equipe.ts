@@ -120,25 +120,32 @@ export async function monNomDansLEquipe(supabase: SupabaseClient<Database>, auth
   return data?.nom ?? null;
 }
 
-/** Une ligne de l'onglet « Notifications » : ce que Filloo m'a envoyé (décision du 2026-11-05). */
+/** Une ligne d'Équipe Filloo : une annonce, ou LA discussion avec l'équipe. */
 export type NotificationEquipe =
   | { type: "annonce"; id: string; titre: string; texte: string; quand: string; nonLue: boolean }
-  | { type: "reponse"; id: string; texte: string; quand: string; nonLue: boolean }
-  /** Un message que J'AI envoyé ; `reponseId` : la réponse de l'équipe qui l'a suivi, s'il y en a une. */
-  | { type: "envoye"; id: string; texte: string; quand: string; nonLue: false; reponseId: string | null };
+  | {
+      type: "discussion";
+      /** Le dernier message, et qui l'a écrit. */
+      texte: string;
+      deLEquipe: boolean;
+      quand: string;
+      /** Une réponse de l'équipe que je n'ai pas lue. */
+      nonLue: boolean;
+    };
 
 /**
- * Les annonces de cet espace, chaque réponse de l'équipe et chaque message
- * que j'ai envoyé (avec son état : en attente ou répondu ; décision du
- * 2026-11-05), le plus récent d'abord. Rien de nouveau en base. Les
- * messages entre clients et boutiques n'y sont pas : ils ont leur onglet.
+ * Ce qu'affiche Équipe Filloo (décision du 2026-11-05) : la discussion
+ * avec l'équipe — UNE par espace, tous les messages ensemble, qu'ils
+ * viennent du bouton « Écrire » ou d'une réponse —, puis les annonces de
+ * cet espace, la plus récente d'abord. Les messages entre clients et
+ * boutiques n'y sont pas : ils ont leur onglet.
  */
 export async function lireNotificationsEquipe(
   supabase: SupabaseClient<Database>,
   authUserId: string,
   espace: EspaceEquipe,
 ): Promise<NotificationEquipe[]> {
-  const [annonces, reponses] = await Promise.all([
+  const [annonces, dernier, nonLues] = await Promise.all([
     supabase
       .from("annonces")
       .select("id, titre, corps, created_at, annonce_destinataires(lue_at, auth_user_id)")
@@ -147,39 +154,44 @@ export async function lireNotificationsEquipe(
       .order("created_at", { ascending: false }),
     supabase
       .from("fil_equipe")
-      .select("id, de_l_equipe, corps, created_at, lu_at")
+      .select("corps, de_l_equipe, created_at")
       .eq("fil_de", authUserId)
       .eq("espace", espace)
-      .order("created_at"),
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("fil_equipe")
+      .select("id", { count: "exact", head: true })
+      .eq("fil_de", authUserId)
+      .eq("espace", espace)
+      .eq("de_l_equipe", true)
+      .is("lu_at", null),
   ]);
   if (annonces.error) throw annonces.error;
-  if (reponses.error) throw reponses.error;
+  if (dernier.error) throw dernier.error;
 
-  const elements: NotificationEquipe[] = [
-    ...annonces.data.map((a) => ({
-      type: "annonce" as const,
+  const elements: NotificationEquipe[] = [];
+  if (dernier.data) {
+    elements.push({
+      type: "discussion",
+      texte: dernier.data.corps,
+      deLEquipe: dernier.data.de_l_equipe,
+      quand: dernier.data.created_at,
+      nonLue: (nonLues.count ?? 0) > 0,
+    });
+  }
+  for (const a of annonces.data) {
+    elements.push({
+      type: "annonce",
       id: a.id,
       titre: a.titre,
       texte: a.corps,
       quand: a.created_at,
       nonLue: a.annonce_destinataires.some((d) => d.lue_at === null),
-    })),
-    // Le fil, du plus ancien au plus récent : un message envoyé est
-    // « répondu » par la première réponse de l'équipe qui le suit.
-    ...reponses.data.map((r, i, fil) =>
-      r.de_l_equipe
-        ? { type: "reponse" as const, id: r.id, texte: r.corps, quand: r.created_at, nonLue: r.lu_at === null }
-        : {
-            type: "envoye" as const,
-            id: r.id,
-            texte: r.corps,
-            quand: r.created_at,
-            nonLue: false as const,
-            reponseId: fil.slice(i + 1).find((s) => s.de_l_equipe)?.id ?? null,
-          },
-    ),
-  ];
-  return elements.sort((a, b) => b.quand.localeCompare(a.quand));
+    });
+  }
+  return elements;
 }
 
 /** Une annonce de cet espace, à lire (le RLS ne rend que les miennes). */
@@ -200,19 +212,12 @@ export async function lireAnnonceEquipe(
 
 export type MessageEchange = { id: string; deLEquipe: boolean; texte: string; quand: string };
 
-/**
- * Une réponse de l'équipe, avec ce qui l'entoure dans le même fil
- * (décision du 2026-11-05) : la QUESTION (mes messages depuis la réponse
- * précédente de l'équipe), la RÉPONSE, puis la SUITE (ce que j'ai écrit
- * après, jusqu'à la réponse suivante de l'équipe, qui a sa propre page).
- * `null` si ce n'est pas une réponse de l'équipe dans mon fil de cet espace.
- */
-export async function lireEchangeEquipe(
+/** Toute la discussion avec l'équipe pour cet espace, du plus ancien au plus récent. */
+export async function lireDiscussionEquipe(
   supabase: SupabaseClient<Database>,
   authUserId: string,
   espace: EspaceEquipe,
-  reponseId: string,
-): Promise<{ question: MessageEchange[]; reponse: MessageEchange; suite: MessageEchange[] } | null> {
+): Promise<MessageEchange[]> {
   const { data, error } = await supabase
     .from("fil_equipe")
     .select("id, de_l_equipe, corps, created_at")
@@ -220,37 +225,5 @@ export async function lireEchangeEquipe(
     .eq("espace", espace)
     .order("created_at");
   if (error) throw error;
-  const fil = data.map((m) => ({ id: m.id, deLEquipe: m.de_l_equipe, texte: m.corps, quand: m.created_at }));
-  const i = fil.findIndex((m) => m.id === reponseId);
-  const reponse = fil[i];
-  if (!reponse || !reponse.deLEquipe) return null;
-
-  let debut = i;
-  while (debut > 0 && !fil[debut - 1]!.deLEquipe) debut--;
-  let fin = i + 1;
-  while (fin < fil.length && !fil[fin]!.deLEquipe) fin++;
-  return { question: fil.slice(debut, i), reponse, suite: fil.slice(i + 1, fin) };
-}
-
-/** Un message que j'ai envoyé, encore sans réponse (sinon : la page de la réponse). */
-export async function lireMonMessageEquipe(
-  supabase: SupabaseClient<Database>,
-  authUserId: string,
-  espace: EspaceEquipe,
-  id: string,
-): Promise<{ message: MessageEchange; reponseId: string | null } | null> {
-  const { data, error } = await supabase
-    .from("fil_equipe")
-    .select("id, de_l_equipe, corps, created_at")
-    .eq("fil_de", authUserId)
-    .eq("espace", espace)
-    .order("created_at");
-  if (error) throw error;
-  const i = data.findIndex((m) => m.id === id);
-  const m = data[i];
-  if (!m || m.de_l_equipe) return null;
-  return {
-    message: { id: m.id, deLEquipe: false, texte: m.corps, quand: m.created_at },
-    reponseId: data.slice(i + 1).find((s) => s.de_l_equipe)?.id ?? null,
-  };
+  return data.map((m) => ({ id: m.id, deLEquipe: m.de_l_equipe, texte: m.corps, quand: m.created_at }));
 }

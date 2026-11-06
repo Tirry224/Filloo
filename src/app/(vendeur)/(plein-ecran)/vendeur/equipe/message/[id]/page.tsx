@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { MessageEquipeScreen } from "@/components/equipe/MessageEquipeScreen";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Votre message", robots: { index: false, follow: false } };
-
-export default function MerchantEquipeMessagePage({ params }: { params: Promise<{ id: string }> }) {
-  return <MessageEquipeScreen espace="merchant" params={params} />;
+/** Ancienne adresse (notifications déjà reçues, 2026-11-05) : tout vit désormais dans la discussion. */
+export default function AncienneAdresse() {
+  redirect("/vendeur/equipe/discussion");
 }

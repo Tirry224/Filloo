@@ -48,7 +48,7 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
     .single();
   if (error || !data) retour(chemin, error ? messagePourErreur(error, "réponse") : "Réponse non envoyée.");
 
-  after(() => prevenirDeLaReponse(filDe, espace, data.id));
+  after(() => prevenirDeLaReponse(filDe, espace));
   retour(chemin);
 }
 
@@ -93,8 +93,6 @@ export async function publierAnnonceAction(formData: FormData): Promise<void> {
 export async function ecrireALEquipeAction(_etat: ActionState | null, formData: FormData): Promise<ActionState> {
   const espace = lireEspace(formData.get("espace"));
   const chemin = CHEMINS_EQUIPE[espace];
-  // Depuis la page d'une réponse de l'équipe : on y revient après l'envoi.
-  const reponseA = formData.get("reponseA");
   const corps = texteNettoye(formData.get("corps"));
   if (!corps) return { error: "Écrivez un message avant d'envoyer." };
   if (longueur(corps) > CORPS_MAX) return { error: `${CORPS_MAX} caractères au plus.` };
@@ -128,9 +126,8 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
   }
 
   after(() => prevenirLEquipe(data.id));
-  /* `replace` et non `push` (le défaut d'une action) : l'écran d'écriture
-     cède sa place dans l'historique, et le retour du téléphone mène au fil,
-     pas à un formulaire vide (constaté par le porteur du projet le
-     2026-11-05). */
-  redirect(estUuid(reponseA) ? `${chemin}/reponse/${reponseA}` : `${chemin}?envoye=1`, RedirectType.replace);
+  /* Une seule discussion par espace (décision du 2026-11-05) : on y reste,
+     et le message s'ajoute en bas. `replace` : renvoyer le formulaire ne
+     crée pas une page de plus dans l'historique. */
+  redirect(`${chemin}/discussion`, RedirectType.replace);
 }

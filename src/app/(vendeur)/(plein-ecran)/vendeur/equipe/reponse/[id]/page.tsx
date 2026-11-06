@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { ReponseEquipeScreen } from "@/components/equipe/ReponseEquipeScreen";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Réponse de l'équipe", robots: { index: false, follow: false } };
-
-export default function MerchantEquipeReponsePage({ params }: { params: Promise<{ id: string }> }) {
-  return <ReponseEquipeScreen espace="merchant" params={params} />;
+/** Ancienne adresse (notifications déjà reçues, 2026-11-05) : tout vit désormais dans la discussion. */
+export default function AncienneAdresse() {
+  redirect("/vendeur/equipe/discussion");
 }

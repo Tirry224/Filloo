@@ -455,10 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-371 commits, du plus récent au plus ancien.
+372 commits, du plus récent au plus ancien.
 
 ### 2026-11-05
 
+- `74929db` Équipe Filloo : les messages envoyés apparaissent dans la liste, avec leur état
 - `9a3ce0c` Équipe Filloo : une seule liste et le bouton « Écrire », sans onglets
 - `92143a5` Équipe Filloo : deux onglets, Notifications et Conversation
 - `19eab09` 0044 appliquée : un fil avec l'équipe par espace
