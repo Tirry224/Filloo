@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { SendHorizontal } from "lucide-react";
+import { useAnnoncerEnvoi } from "@/components/chat/EnvoiEnCours";
 import { ecrireALEquipeAction } from "@/lib/actions/equipe";
 import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
@@ -14,13 +15,22 @@ import { useFormulaire } from "@/lib/use-formulaire";
 export function RepondreEquipe({ espace, focus = false }: { espace: Espace; focus?: boolean }) {
   const brouillon = useRef("");
   const champ = useRef<HTMLInputElement>(null);
+  const annoncer = useAnnoncerEnvoi();
   const { state, formAction, onSubmit, pending } = useFormulaire(ecrireALEquipeAction, {
     avantEnvoi: () => {
       if (!champ.current) return;
       brouillon.current = champ.current.value;
       champ.current.value = "";
+      // La bulle apparaît tout de suite, en « Envoi en cours » (comme la messagerie du site).
+      annoncer(brouillon.current.trim() || null);
     },
   });
+  /* La bulle provisoire s'efface quand l'action rend la main : la page
+     rendue à nouveau porte alors la vraie bulle ; en cas d'erreur, le
+     texte revient dans le champ. */
+  useEffect(() => {
+    if (!pending) annoncer(null);
+  }, [pending, annoncer]);
   useEffect(() => {
     if (state?.error && champ.current && !champ.current.value) champ.current.value = brouillon.current;
   }, [state]);

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { RedirectType, redirect } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -129,5 +130,9 @@ export async function ecrireALEquipeAction(_etat: ActionState | null, formData: 
   /* Une seule discussion par espace (décision du 2026-11-05) : on y reste,
      et le message s'ajoute en bas. `replace` : renvoyer le formulaire ne
      crée pas une page de plus dans l'historique. */
+  /* Sans ce `revalidatePath`, le routeur rendait la discussion de son
+     cache (`staleTimes.dynamic` : 30 s, next.config.ts) : le message
+     n'apparaissait qu'en rechargeant la page (constaté le 2026-11-06). */
+  revalidatePath(`${chemin}/discussion`);
   redirect(`${chemin}/discussion`, RedirectType.replace);
 }

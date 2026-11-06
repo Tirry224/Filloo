@@ -455,7 +455,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-372 commits, du plus récent au plus ancien.
+373 commits, du plus récent au plus ancien.
+
+### 2026-11-06
+
+- `ebbd729` Équipe Filloo : une seule discussion par espace, quel que soit le chemin pris pour écrire
 
 ### 2026-11-05
 
