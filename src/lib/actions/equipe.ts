@@ -50,6 +50,11 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
   if (error || !data) retour(chemin, error ? messagePourErreur(error, "réponse") : "Réponse non envoyée.");
 
   after(() => prevenirDeLaReponse(filDe, espace));
+  /* Même piège que la discussion côté utilisateur : sans ceci, le routeur
+     rendait le fil de son cache et la réponse n'apparaissait qu'en
+     rechargeant (2026-11-06). La boîte aussi, pour « À répondre ». */
+  revalidatePath(`/admin/fil/${filDe}`);
+  revalidatePath("/admin");
   retour(chemin);
 }
 
