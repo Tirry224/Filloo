@@ -68,6 +68,13 @@ export const ACTIONS_JOURNAL = {
   reactiver: "a réactivé un compte",
   masquer_produit: "a masqué un produit",
   classer_signalement: "a traité un signalement",
+  demasquer_produit: "a démasqué un produit",
+  ajouter_membre: "a ajouté un membre à l'équipe",
+  retirer_membre: "a retiré un membre de l'équipe",
+  fixer_categorie: "a créé ou modifié une catégorie",
+  retirer_categorie: "a retiré une catégorie",
+  fixer_ville: "a créé ou modifié une ville",
+  retirer_ville: "a retiré une ville",
 } as const satisfies Record<string, string>;
 
 export const DECISIONS = {

@@ -545,10 +545,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-398 commits, du plus récent au plus ancien.
+399 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `c310858` Base : 0063-0066 écrites (gestion depuis /admin) ; 0063 et 0064 appliquées, 0065 et 0066 en attente
 - `06d125e` Statistiques : les visiteurs uniques s'affichent dans /admin/statistiques
 - `55c8b9f` Mesure : un cookie anonyme compte les visiteurs uniques ; politique de confidentialité mise à jour
 - `e9aed58` Modération : les personnes signalées par 5 personnes ou plus passent en tête
