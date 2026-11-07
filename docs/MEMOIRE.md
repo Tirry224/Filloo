@@ -170,9 +170,10 @@ mis à jour et raccourci ; l'ancienne version se relit par
   l'équipe vérifie (`/admin/publicite`), valide ou refuse, note le
   remboursement ; elle peut aussi créer une campagne (espèces, mobile,
   offerte). Revenus par mois sur la même page.
-- **Prix** : `/admin/publicite/tarifs`. Pré-remplis par des HYPOTHÈSES
-  (produit 7 000 à 45 000 GNF, catégorie 5 000 à 32 000, boutique 10 000
-  à 60 000, de 3 à 30 jours), à décider par le porteur du projet.
+- **Prix décidés par le porteur du projet (2026-11-07)** : produit 7 000 /
+  15 000 / 25 000 / 45 000 GNF, catégorie 5 000 / 10 000 / 18 000 /
+  32 000, boutique 10 000 / 20 000 / 35 000 / 60 000, pour 3 / 7 / 14 /
+  30 jours. Inscrits dans `0048`, modifiables dans `/admin/publicite/tarifs`.
 - **Avant publication** : saisir les vrais numéros Orange Money et MTN
   (aucun au départ : sans eux, personne ne peut payer).
 - **Pas fait** : crédits, abonnements, badges, remboursement partiel,
@@ -534,10 +535,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-390 commits, du plus récent au plus ancien.
+391 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `86184e2` Mémoire : la publicité payante, sur monetisation seulement
 - `fd4c046` 0048 écrite, PAS appliquée : prix de la publicité et paiement manuel Orange Money / MTN
 - `7236797` Publicité payante, côté site (EN COURS : ne compile pas sans 0048)
 

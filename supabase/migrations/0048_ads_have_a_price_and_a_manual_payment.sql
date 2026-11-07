@@ -84,7 +84,7 @@ create policy "tarifs_publicite: tout le monde lit les prix"
   to anon, authenticated
   using (true);
 
--- Hypothèses du document de monétisation, à ajuster par `fixer_tarif`.
+-- Prix acceptés par le porteur du projet le 2026-11-07 ; modifiables par `fixer_tarif`.
 insert into public.tarifs_publicite (type, duree_jours, prix_gnf) values
   ('produit',    3,  7000), ('produit',    7, 15000), ('produit',   14, 25000), ('produit',   30, 45000),
   ('categorie',  3,  5000), ('categorie',  7, 10000), ('categorie', 14, 18000), ('categorie', 30, 32000),
