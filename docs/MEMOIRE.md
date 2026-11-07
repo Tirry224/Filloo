@@ -162,10 +162,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
   « Gestion » — comptes et boutiques (chercher, suspendre, réactiver ;
   `0063`), produits (chercher, masquer, démasquer — le produit démasqué
   reste masqué, le commerçant republie ; `0064`), équipe (ajouter, retirer
-  un membre ; `0065`), catégories et villes (`0066`). `0063` et `0064`
-  appliquées ; **`0065` et `0066` PAS ENCORE** : la confirmation de
-  Supabase n'a pas pu être donnée depuis la session ; à coller dans le SQL
-  Editor. D'ici là, les pages Équipe et Catégories et villes échouent.
+  un membre ; `0065`), catégories et villes (`0066`). `0063` à `0066`
+  appliquées le 2026-11-07 (`0065` et `0066` collées au SQL Editor par le
+  porteur du projet, la confirmation de Supabase ne lui parvenant pas
+  depuis la session ; inscrites à la main dans `schema_migrations`).
+  Constaté : fonctions fermées à `anon`, contraintes du journal à jour,
+  9 catégories et 12 villes intactes.
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
   `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0066.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
@@ -545,10 +547,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-399 commits, du plus récent au plus ancien.
+400 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `1c1492d` Admin : onglet Gestion — comptes, produits, équipe, catégories et villes
 - `c310858` Base : 0063-0066 écrites (gestion depuis /admin) ; 0063 et 0064 appliquées, 0065 et 0066 en attente
 - `06d125e` Statistiques : les visiteurs uniques s'affichent dans /admin/statistiques
 - `55c8b9f` Mesure : un cookie anonyme compte les visiteurs uniques ; politique de confidentialité mise à jour
