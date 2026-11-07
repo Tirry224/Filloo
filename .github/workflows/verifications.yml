@@ -1,0 +1,96 @@
+# Les vérifications du site et de la base, à CHAQUE push sur `dev` et sur
+# `main` (décision du porteur du projet le 2026-11-07).
+#
+# Rien ici ne touche la production : la base testée est un PostgreSQL
+# jetable, monté par GitHub pour la durée du test, où l'on rejoue toutes
+# les migrations puis `supabase/tests/security_test.sql`. Le build lit les
+# valeurs PUBLIQUES de `.env` ; aucun secret n'est utilisé.
+#
+# Un rouge ici veut dire : ce commit casse quelque chose. Il ne bloque pas
+# le push (le code est déjà sur GitHub), il le signale — à corriger avant
+# de ramener `dev` dans `main`.
+
+name: Vérifications
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verifications-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    name: Site (types, tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Types
+        run: npm run -s typecheck
+
+      - name: Tests
+        run: npm run -s tests
+
+      - name: Règles du code (classes, espaces, gardes)
+        run: |
+          npm run -s classes
+          npm run -s espaces
+          npm run -s gardes
+
+      - name: Build
+        run: npm run -s build
+
+      - name: Poids de l'application
+        run: npm run -s poids
+
+  base:
+    name: Base (tests de sécurité)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: filloo_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: filloo_test
+    steps:
+      - uses: actions/checkout@v5
+
+      # Même procédure que supabase/tests/README.md.
+      - name: Rejouer toutes les migrations
+        run: |
+          psql -q -v ON_ERROR_STOP=1 -f supabase/tests/_supabase_stub.sql
+          for f in supabase/migrations/*.sql; do
+            echo "::group::$f"
+            psql -q -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Tests de sécurité
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security_test.sql
