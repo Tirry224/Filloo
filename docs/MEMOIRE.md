@@ -178,8 +178,14 @@ mis à jour et raccourci ; l'ancienne version se relit par
   comprises) ; l'ordre des catégories et villes se renumérote 1..n après
   un retrait ; recherche dans Messages et Publicité ; l'équipe écrit en
   premier (fil vide ouvert par `?profil=`, le RLS de 0042 le permettait).
-  *À constater* : `0067` appliquée en production (l'envoi depuis la session
-  est resté sans réponse le 2026-11-07). Ouvert : un compte supprimé garde
+  `0067` appliquée le 2026-11-07, collée au SQL Editor par le porteur du
+  projet (l'envoi depuis la session restait sans réponse ; inscrite à la
+  main dans `schema_migrations` sous la version `0067`). Constaté juste
+  après : Tirry seul propriétaire (3 membres), catégories 1..8 et villes
+  1..7, contrainte du journal à jour, nouvelles fonctions fermées à
+  `anon`, internes fermées à `authenticated`, aucun droit d'écriture sur
+  `equipe`. Piège : coller la migration ET l'`insert` déjà fait dans le
+  même envoi annule tout (doublon de clé). Ouvert : un compte supprimé garde
   ~1 h de jeton valide, pendant laquelle la policy « je cree mon second
   compte » laisserait peut-être recréer un profil (non testé) ; l'app des
   stores (`main`) n'a pas d'écran équipe, un premier message de l'équipe
@@ -569,10 +575,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-404 commits, du plus récent au plus ancien.
+405 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `11e12be` Admin : vendeurs et acheteurs séparés, fiche complète, suppression, écrire en premier
 - `751660c` Admin : une barre de recherche dans Messages et Publicité
 - `4f9eaa2` Publicité : les demandes des commerçants sont fermées pour l'instant (« Bientôt disponible »)
 - `4da158f` 3G : les premières photos d'une liste partent en premier, les listes ne préchargent plus les fiches
