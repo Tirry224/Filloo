@@ -515,10 +515,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-390 commits, du plus récent au plus ancien.
+391 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `897e78f` Base : 0052, 0053, 0054 appliquées (audit de sécurité du 2026-11-07)
 - `ed9a31a` Sécurité : un abonnement aux notifications ne vise qu'un service de push connu
 - `9c80554` Sécurité : le site ne s'affiche plus dans un autre site
 
