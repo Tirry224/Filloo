@@ -18,7 +18,7 @@ export function BlocPaiement({
   montant: number | null;
   moyens: MoyenDePaiement[];
   action: (formData: FormData) => Promise<void>;
-  champ: "campagne" | "abonnement";
+  champ: "campagne" | "abonnement" | "achat";
   id: string;
 }) {
   const actifs = moyens.filter((m) => m.actif);

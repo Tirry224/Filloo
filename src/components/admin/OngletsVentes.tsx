@@ -2,13 +2,14 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 /** Les deux choses que Filloo vend, sous le même onglet « Ventes ». */
-export function OngletsVentes({ actif }: { actif: "publicite" | "abonnements" }) {
+export function OngletsVentes({ actif }: { actif: "publicite" | "abonnements" | "credits" }) {
   const onglets = [
     { cle: "publicite", libelle: "Publicité", href: "/admin/publicite" },
     { cle: "abonnements", libelle: "Abonnements", href: "/admin/abonnements" },
+    { cle: "credits", libelle: "Crédits", href: "/admin/credits" },
   ] as const;
   return (
-    <nav aria-label="Ventes" className="grid grid-cols-2 gap-1 rounded-lg bg-paper p-1">
+    <nav aria-label="Ventes" className="grid grid-cols-3 gap-1 rounded-lg bg-paper p-1">
       {onglets.map((o) => (
         <Link
           key={o.cle}

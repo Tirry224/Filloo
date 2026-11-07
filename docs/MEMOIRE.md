@@ -544,10 +544,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-393 commits, du plus récent au plus ancien.
+394 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `9abbbf5` 0049 écrite, PAS appliquée : abonnements Pro et Business, Gratuit limité à 10 produits
 - `d32987f` Abonnements Pro et Business, côté site (EN COURS : ne compile pas sans 0049)
 - `a6465a8` Prix de la publicité acceptés par le porteur du projet
 - `86184e2` Mémoire : la publicité payante, sur monetisation seulement

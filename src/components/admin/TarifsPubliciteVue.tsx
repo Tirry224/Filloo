@@ -6,6 +6,7 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { fixerTarifsAbonnementAction } from "@/lib/actions/abonnements";
+import { fixerCreditsInclusAction } from "@/lib/actions/credits";
 import { fixerMoyenPaiementAction, fixerTarifsAction } from "@/lib/actions/publicite";
 import { FORMULES, FORMULES_PAYANTES, type TarifsAbonnement } from "@/lib/data/abonnements";
 import {
@@ -30,12 +31,14 @@ const BOUTON =
 export function TarifsPubliciteVue({
   tarifs,
   tarifsAbonnement,
+  creditsInclus,
   moyens,
   erreur,
   info,
 }: {
   tarifs: Tarifs;
   tarifsAbonnement: TarifsAbonnement;
+  creditsInclus: Partial<Record<"pro" | "business", number>>;
   moyens: MoyenDePaiement[];
   erreur?: string;
   info?: string;
@@ -64,6 +67,24 @@ export function TarifsPubliciteVue({
                 <PendingSubmit className={BOUTON}>Enregistrer</PendingSubmit>
               </form>
             </Card>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <SectionLabel>Crédits de publicité inclus, par mois</SectionLabel>
+            <p className="text-sm text-ink-soft">Perdus à la fin de la période d&apos;abonnement. 1 crédit = 1 000 GNF.</p>
+            {FORMULES_PAYANTES.map((f) => (
+              <Card key={f} padded>
+                <form action={fixerCreditsInclusAction} className="flex items-end gap-3">
+                  <input type="hidden" name="formule" value={f} />
+                  <Field label={FORMULES[f].libelle} htmlFor={`inclus-${f}`} className="flex-1">
+                    <Input id={`inclus-${f}`} name="credits" inputMode="numeric" defaultValue={creditsInclus[f] ?? 0} />
+                  </Field>
+                  <PendingSubmit className="h-control shrink-0 cursor-pointer rounded-lg border border-line bg-surface px-4 text-sm font-semibold">
+                    Enregistrer
+                  </PendingSubmit>
+                </form>
+              </Card>
+            ))}
           </div>
 
           <div className="flex flex-col gap-2.5">

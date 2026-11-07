@@ -11,7 +11,10 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { BlocPaiement } from "@/components/publicite/BlocPaiement";
 import { PrixIndicatifs } from "@/components/publicite/PrixIndicatifs";
+import { payerCampagneEnCreditsAction } from "@/lib/actions/credits";
 import { annulerCampagneAction, declarerPaiementAction, demanderCampagneAction } from "@/lib/actions/publicite";
+import { GNF_PAR_CREDIT, credits } from "@/lib/data/credits";
+import Link from "next/link";
 import {
   DUREES,
   MOYENS_PAIEMENT,
@@ -34,6 +37,7 @@ export function PubliciteVendeurVue({
   campagnes,
   tarifs,
   moyens,
+  solde,
   erreur,
   info,
 }: {
@@ -41,6 +45,7 @@ export function PubliciteVendeurVue({
   campagnes: CampagneCommercant[];
   tarifs: Tarifs;
   moyens: MoyenDePaiement[];
+  solde: number;
   erreur?: string;
   info?: string;
 }) {
@@ -51,6 +56,13 @@ export function PubliciteVendeurVue({
         <Section className="gap-5">
           {erreur ? <Notice>{erreur}</Notice> : null}
           {info ? <Notice tone="success">{info}</Notice> : null}
+
+          <Link href="/vendeur/credits" className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-3">
+            <span className="text-sm">
+              Mes crédits : <strong>{credits(solde)}</strong>
+            </span>
+            <span className="text-sm font-semibold text-accent">Acheter</span>
+          </Link>
 
           <ol className="flex list-decimal flex-col gap-1 rounded-lg bg-accent-soft py-3 pr-3.5 pl-8 text-sm leading-normal text-accent-hover">
             <li>Choisissez la publicité et sa durée.</li>
@@ -108,7 +120,7 @@ export function PubliciteVendeurVue({
             {campagnes.length === 0 ? (
               <EmptyState icon={TrendingUp} title="Aucune publicité" description="Vos demandes et leurs résultats apparaîtront ici." />
             ) : (
-              campagnes.map((c) => <LigneCampagne key={c.id} c={c} moyens={moyens} />)
+              campagnes.map((c) => <LigneCampagne key={c.id} c={c} moyens={moyens} solde={solde} />)
             )}
           </div>
         </Section>
@@ -117,7 +129,8 @@ export function PubliciteVendeurVue({
   );
 }
 
-function LigneCampagne({ c, moyens }: { c: CampagneCommercant; moyens: MoyenDePaiement[] }) {
+function LigneCampagne({ c, moyens, solde }: { c: CampagneCommercant; moyens: MoyenDePaiement[]; solde: number }) {
+  const cout = c.prixGnf ? Math.ceil(c.prixGnf / GNF_PAR_CREDIT) : 0;
   const enCours = c.etat === "a_payer" || c.etat === "en_attente" || c.etat === "active";
   return (
     <Card padded className="flex flex-col gap-2">
@@ -136,8 +149,24 @@ function LigneCampagne({ c, moyens }: { c: CampagneCommercant; moyens: MoyenDePa
           {c.offerteParLEquipe && !c.prixGnf ? "Offerte par Filloo" : c.prixGnf === 0 ? "Gratuite" : formatGnf(c.prixGnf)}
         </p>
       ) : null}
+      {c.etat === "a_payer" && cout > 0 ? (
+        <form action={payerCampagneEnCreditsAction} className="flex flex-col gap-1.5 border-t border-line pt-2.5">
+          <input type="hidden" name="campagne" value={c.id} />
+          <PendingSubmit
+            className="flex h-control w-full cursor-pointer items-center justify-center rounded-lg border border-accent bg-accent-soft text-base font-semibold text-accent-hover disabled:opacity-50"
+          >
+            Payer avec {credits(cout)}
+          </PendingSubmit>
+          <span className="text-2xs text-ink-soft">
+            {solde >= cout ? `Il vous en restera ${solde - cout}.` : `Vous en avez ${solde} : achetez-en, ou payez par mobile ci-dessous.`}
+          </span>
+        </form>
+      ) : null}
       {c.etat === "a_payer" ? (
         <BlocPaiement montant={c.prixGnf} moyens={moyens} action={declarerPaiementAction} champ="campagne" id={c.id} />
+      ) : null}
+      {c.etat === "en_attente" && c.paiementMoyen === "credits" ? (
+        <p className="text-sm text-ink-soft">Payée avec vos crédits : l&apos;équipe la vérifie. Refusée, vos crédits vous reviennent.</p>
       ) : null}
       {c.etat === "en_attente" && c.paiementReference ? (
         <p className="text-sm text-ink-soft">

@@ -95,7 +95,7 @@ export function AbonnementsAdminVue({
               </Field>
               <Field label="Paiement" htmlFor="moyen" hint="« Offert » : rien n'est compté dans les revenus.">
                 <Select id="moyen" name="moyen" defaultValue="especes">
-                  {Object.entries(MOYENS_PAIEMENT).map(([cle, libelle]) => (
+                  {Object.entries(MOYENS_PAIEMENT).filter(([cle]) => cle !== "credits").map(([cle, libelle]) => (
                     <option key={cle} value={cle}>
                       {libelle}
                     </option>

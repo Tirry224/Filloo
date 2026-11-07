@@ -41,6 +41,7 @@ export const MOYENS_PAIEMENT = {
   mtn_momo: "MTN MoMo",
   especes: "Espèces",
   offert: "Offert",
+  credits: "Crédits",
 } as const;
 
 export type MoyenPaiement = keyof typeof MOYENS_PAIEMENT;
@@ -131,9 +132,11 @@ export function estARembourser(c: {
   paiement_confirme_at: string | null;
   debut_at: string | null;
   rembourse_at: string | null;
+  paiement_moyen?: string | null;
 }): boolean {
   const paye = !!(c.paiement_declare_at || c.paiement_confirme_at) && (c.prix_gnf ?? 0) > 0;
-  if (!paye || c.rembourse_at) return false;
+  // Payée en crédits : la base les rend toute seule (0050), rien à rembourser en argent.
+  if (!paye || c.rembourse_at || c.paiement_moyen === "credits") return false;
   return c.statut === "refusee" || (c.statut === "annulee" && !c.debut_at);
 }
 

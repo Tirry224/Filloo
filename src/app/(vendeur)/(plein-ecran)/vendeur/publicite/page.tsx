@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PubliciteVendeurVue } from "@/components/publicite/PubliciteVendeurVue";
 import { getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
+import { mesCredits } from "@/lib/data/credits";
 import { lireMoyensPaiement, lireTarifs, mesCampagnes } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,11 +11,12 @@ export default async function PublicitePage({ searchParams }: { searchParams: Pr
   const supabase = await createClient();
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/vendeur/boutique");
-  const [produits, campagnes, tarifs, moyens] = await Promise.all([
+  const [produits, campagnes, tarifs, moyens, solde] = await Promise.all([
     getMerchantProducts(supabase, merchant),
     mesCampagnes(supabase),
     lireTarifs(supabase),
     lireMoyensPaiement(supabase),
+    mesCredits(supabase),
   ]);
   return (
     <PubliciteVendeurVue
@@ -22,6 +24,7 @@ export default async function PublicitePage({ searchParams }: { searchParams: Pr
       campagnes={campagnes}
       tarifs={tarifs}
       moyens={moyens}
+      solde={solde.disponibles}
       erreur={erreur}
       info={info}
     />

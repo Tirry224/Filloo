@@ -30,7 +30,7 @@ const TABS: readonly NavTab[] = [
     label: "Ventes",
     href: "/admin/publicite",
     icon: Wallet,
-    match: (p: string) => p.startsWith("/admin/publicite") || p.startsWith("/admin/abonnements"),
+    match: (p: string) => p.startsWith("/admin/publicite") || p.startsWith("/admin/abonnements") || p.startsWith("/admin/credits"),
   },
   {
     label: "Statistiques",

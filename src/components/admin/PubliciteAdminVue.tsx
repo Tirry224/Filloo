@@ -156,7 +156,7 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
                 value="accepter"
                 className="flex h-tap cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent"
               >
-                {(c.prix_gnf ?? 0) > 0 ? "Paiement reçu, valider" : "Valider"}
+                {(c.prix_gnf ?? 0) > 0 && c.paiement_moyen !== "credits" ? "Paiement reçu, valider" : "Valider"}
               </button>
             ) : null}
             <button

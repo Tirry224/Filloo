@@ -25,7 +25,7 @@ export const FORMULES = {
   },
   business: {
     libelle: "Business",
-    avantages: ["Tout Pro", "Page Statistiques détaillée", "Tendances de Filloo : recherches et catégories", "Badge BUSINESS"],
+    avantages: ["Tout Pro", "Crédits de publicité offerts chaque mois", "Page Statistiques détaillée", "Tendances de Filloo : recherches et catégories", "Badge BUSINESS"],
   },
 } as const;
 
