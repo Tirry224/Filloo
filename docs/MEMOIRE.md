@@ -97,8 +97,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   dans `analytics_events.visiteur_id`, jamais relié à un compte ni à une
   IP (les IP des opérateurs guinéens sont partagées). Politique de
   confidentialité mise à jour (art. 4 et 9). `suivi_chiffres` rend
-  `par_jour[].visiteurs` et `visiteurs_uniques` ; pas encore affichés
-  dans `/admin/statistiques`. L'app mobile n'en envoie pas.
+  `par_jour[].visiteurs` et `visiteurs_uniques`, affichés dans
+  `/admin/statistiques` (tuile et colonne du détail jour par jour). L'app mobile n'en envoie pas.
   Impressions : toujours non mesurées.
 - **Annonces gérées sur `/admin/annonces`** (`0045`, 2026-11-06) :
   brouillon, programmée (part le matin du jour choisi, cron de 7 h),
@@ -534,10 +534,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-396 commits, du plus récent au plus ancien.
+397 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `55c8b9f` Mesure : un cookie anonyme compte les visiteurs uniques ; politique de confidentialité mise à jour
 - `e9aed58` Modération : les personnes signalées par 5 personnes ou plus passent en tête
 - `d48c2da` Base : 0055, 0056, 0057 appliquées (signalés par 5 personnes, bienvenue des boutiques, visiteurs uniques)
 - `43ce2d3` CI : les vérifications tournent à chaque push sur dev et sur main
