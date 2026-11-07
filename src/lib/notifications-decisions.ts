@@ -50,7 +50,7 @@ export async function drainNotifications(): Promise<DrainReport> {
 
   const rapport: DrainReport = { ...vide, lues: waiting?.length ?? 0 };
 
-  // En série : un lot de vingt reste petit, inutile de solliciter Expo en rafale.
+  // En série : un lot de vingt reste petit, inutile de solliciter les services de push en rafale.
   for (const ligne of waiting ?? []) {
     const composed = await composeFor(admin, ligne.kind, ligne.profile_id);
 
@@ -92,7 +92,7 @@ type Composition =
   | { kind: "abandon"; raison: string }
   | { kind: "echec"; raison: string };
 
-/** Un écran verrouillé se lit par-dessus l'épaule : le push dit qu'une décision attend, l'app dit laquelle. */
+/** Un écran verrouillé se lit par-dessus l'épaule : le push dit qu'une décision attend, le site dit laquelle. */
 const PUSH_SUSPENSION: ContenuPush = {
   titre: "Filloo",
   corps: "Une décision concernant votre compte vous attend.",

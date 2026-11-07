@@ -6,9 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 /**
- * L'adresse que portent les notifications de l'équipe (0042) : la même
- * que dans l'app mobile, qui a sa propre page `/equipe`. Sur le site,
- * elle renvoie vers la page de l'espace où la personne se trouve.
+ * L'adresse que portent les notifications de l'équipe (0042) : elle
+ * renvoie vers la page de l'espace où la personne se trouve.
  */
 export default async function EquipeAiguillage() {
   const supabase = await createClient();

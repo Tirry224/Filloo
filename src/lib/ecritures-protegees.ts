@@ -4,9 +4,8 @@ import { erreurChampsManquants, erreurNom, lireIdEntier, longueur, texteNettoye 
 
 /**
  * Les écritures protégées par le mot de passe : nom et téléphone d'une
- * connexion, informations d'une boutique. Partagées par les formulaires
- * du site (`actions/account.ts`, `actions/merchants.ts`) et les routes de
- * l'app (`/api/app/mes-informations`, `/api/app/ma-boutique`).
+ * connexion, informations d'une boutique, écrites par les formulaires
+ * du site (`actions/account.ts`, `actions/merchants.ts`).
  *
  * Depuis 0037, une session ne peut plus écrire ces colonnes : seul ce
  * fichier le fait, avec `service_role`, par les fonctions de 0036. Sans

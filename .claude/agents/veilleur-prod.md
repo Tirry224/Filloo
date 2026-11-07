@@ -23,7 +23,7 @@ panne a lieu avant qu'un utilisateur ne la signale.
 2. **Cron du matin** : `/api/quotidien` (07:00 UTC) a-t-il tourné et
    répondu 200 ? File `notifications` : lignes en attente de plus de
    24 h ?
-3. **Notifications** : `expo_push_tokens` et `push_subscriptions` —
+3. **Notifications** : `push_subscriptions` —
    `last_used_at` avance-t-il après des messages envoyés ?
 4. **Sécurité** : `get_advisors` (security puis performance) ;
    seulement les alertes NOUVELLES par rapport au savoir.

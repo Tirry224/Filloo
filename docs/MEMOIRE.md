@@ -34,8 +34,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
   notifications navigateur et app, application fermée.
-- **App mobile** dans `tirry224/filloo-mobile`, versions de test
-  seulement, rien sur les stores.
+- **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
+  le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
+  `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
+  rien ne la lit. Les applis de test déjà installées ne marchent plus
+  (connexion aux routes retirées, plus de notifications). Les mentions de
+  l'app plus bas dans ce fichier sont de l'histoire.
 
 ---
 
@@ -592,10 +596,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-408 commits, du plus récent au plus ancien.
+409 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `3726a9f` Suspendu ou supprimé : le catalogue public l'apprend aussitôt ; tests de navigateur de l'équipe
 - `80c91b2` Mémoire : 0068 appliquée et constatée en production
 - `f7bea3d` Compte supprimé ou suspendu : effectif immédiatement (0068 écrite)
 - `0a6be82` Mémoire : 0067 appliquée et constatée en production

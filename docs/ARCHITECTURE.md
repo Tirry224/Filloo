@@ -52,8 +52,7 @@ séparation tient ; ils sont faits pour échouer.
 | `src/app/**/page.tsx` | Lire l'URL, lire les données, composer l'écran. | Pas d'écriture. |
 | `src/lib/data/` | **Lecture seule.** Seul endroit qui connaît la forme de la base, traduite vers `src/lib/types.ts`. | `catalogue-public.ts` : lectures en cache (une minute), toujours par le client anonyme. |
 | `src/lib/actions/` | **Écritures** (actions serveur) : `auth`, `merchants`, `products`, `messages`, `account`, `push`. | Toute validation est refaite ici ; le navigateur n'est qu'un confort. |
-| `src/lib/ecritures-protegees.ts` | Écritures exigeant le mot de passe (nom, téléphone, boutique), faites par le serveur pour le site ET l'app. | `0036`, `0037`. |
-| `src/app/api/app/*` | API de l'app mobile. | **Compatible avec l'app déjà installée**, toujours. |
+| `src/lib/ecritures-protegees.ts` | Écritures exigeant le mot de passe (nom, téléphone, boutique), faites par le serveur. | `0036`, `0037`. |
 | `src/app/api/quotidien`, `api/notifications` | Cron du matin et envoi des notifications en attente. | `CRON_SECRET`. |
 | `src/components/` | `ui/` sans aucune connaissance de Filloo ; `product/`, `chat/`, `auth/`, `nav/`, `push/`, `legal/` pour le domaine. | Un composant n'y monte qu'à son **deuxième** usage. |
 

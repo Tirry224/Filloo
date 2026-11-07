@@ -7,8 +7,8 @@ type Admin = ReturnType<typeof createAdminClient>;
 type Role = "client" | "merchant";
 
 /**
- * Le cœur de « supprimer mon compte », partagé par le site
- * (`deleteAccountAction`) et l'app mobile (`/api/app/supprimer-compte`).
+ * Le cœur de « supprimer un compte » : par la personne elle-même
+ * (`deleteAccountAction`) ou par l'équipe (`supprimerCompteAction`).
  *
  * Hors de `src/lib/actions/` EXPRÈS : toute fonction exportée d'un fichier
  * `"use server"` devient une action appelable depuis n'importe quel
@@ -48,23 +48,6 @@ export async function supprimerProfil(userId: string, role: Role): Promise<{ con
   if (profiles.some((p) => p.role !== role && !p.is_deleted)) return { connexionFermee: false };
   await couperConnexion(admin, userId);
   return { connexionFermee: true };
-}
-
-/**
- * Supprime TOUS les comptes de la connexion et la ferme : ce que fait
- * l'app mobile installée, qui n'envoie pas de rôle. Gardée telle quelle
- * pour ne pas changer ce que ces téléphones déclenchent.
- */
-export async function anonymiserEtBannir(userId: string) {
-  const admin = createAdminClient();
-  const { data: profiles, error: profilesError } = await admin
-    .from("profiles")
-    .select("id, role")
-    .eq("auth_user_id", userId);
-  if (profilesError) throw profilesError;
-  for (const profile of profiles) await effacerProfil(admin, profile);
-  revalidateTag(CATALOGUE, { expire: 0 });
-  await couperConnexion(admin, userId);
 }
 
 /** Efface un profil : son identité, et pour une boutique ses produits,
@@ -157,12 +140,6 @@ async function couperConnexion(admin: Admin, userId: string) {
     .delete()
     .eq("auth_user_id", userId);
   if (pushError) throw pushError;
-  // Les téléphones de l'app mobile (0035), pour la même raison.
-  const { error: telephonesError } = await admin
-    .from("expo_push_tokens")
-    .delete()
-    .eq("auth_user_id", userId);
-  if (telephonesError) throw telephonesError;
 
   /* L'EMAIL est libéré en même temps que l'accès est coupé : la ligne
      `auth.users` survit (voir plus haut), et tant qu'elle portait

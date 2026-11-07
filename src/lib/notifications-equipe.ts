@@ -17,7 +17,7 @@ import { premiereAnnonce } from "@/lib/notifications-une-fois";
 const SILENCE_MS = 15 * 60 * 1000;
 
 /** L'adresse d'« Équipe Filloo » dans chaque espace (0044) : le site et
- *  l'app mobile ont les mêmes. `/equipe` aiguille vers l'espace où la
+ *  `/equipe` aiguille vers l'espace où la
  *  personne se trouve, pour une annonce « tous » qui vaut pour les deux. */
 const CHEMIN_EQUIPE = { client: "/compte/equipe", merchant: "/vendeur/equipe" } as const;
 const CHEMIN_DE_L_ANNONCE = { tous: "/equipe", clients: CHEMIN_EQUIPE.client, commercants: CHEMIN_EQUIPE.merchant } as const;
