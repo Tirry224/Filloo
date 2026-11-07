@@ -194,8 +194,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
   (`ma_connexion_est_fermee`, dont la recréation de profil) ; un commerçant
   suspendu n'envoie plus de photos. L'app (`filloo-mobile` `dev`,
   `08b5c6b`) revérifie au premier plan, à chaque notification et à chaque
-  refus ; il faut un BUILD (pas d'`expo-updates`). *À constater* : `0068`
-  appliquée en production.
+  refus ; il faut un BUILD (pas d'`expo-updates`). `0068` collée au SQL
+  Editor par le porteur du projet le 2026-11-07 ; constaté juste après :
+  `fermer_les_sessions` réservée à `service_role`, la recréation de profil
+  exige une connexion ouverte. *À constater* : la ligne `0068` de
+  `schema_migrations` (pas encore inscrite à ce moment).
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
   `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0067.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
@@ -581,10 +584,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-406 commits, du plus récent au plus ancien.
+407 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `f7bea3d` Compte supprimé ou suspendu : effectif immédiatement (0068 écrite)
 - `0a6be82` Mémoire : 0067 appliquée et constatée en production
 - `11e12be` Admin : vendeurs et acheteurs séparés, fiche complète, suppression, écrire en premier
 - `751660c` Admin : une barre de recherche dans Messages et Publicité
