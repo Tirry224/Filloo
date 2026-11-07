@@ -38,6 +38,7 @@ export type Database = {
           product_id: string | null
           result_count: number | null
           search_query: string | null
+          visiteur_id: string | null
         }
         Insert: {
           actor_role?: string | null
@@ -51,6 +52,7 @@ export type Database = {
           product_id?: string | null
           result_count?: number | null
           search_query?: string | null
+          visiteur_id?: string | null
         }
         Update: {
           actor_role?: string | null
@@ -64,6 +66,7 @@ export type Database = {
           product_id?: string | null
           result_count?: number | null
           search_query?: string | null
+          visiteur_id?: string | null
         }
         Relationships: [
           {
@@ -909,6 +912,16 @@ export type Database = {
           shop_name: string
           statut: string
           type: string
+        }[]
+      }
+      comptes_tres_signales: {
+        Args: never
+        Returns: {
+          dernier_signalement: string
+          nom: string
+          profile_id: string
+          role: string
+          signaleurs: number
         }[]
       }
       comptes_suspendus: {

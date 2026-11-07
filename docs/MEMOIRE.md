@@ -91,9 +91,15 @@ mis à jour et raccourci ; l'ancienne version se relit par
   sans aucun mot, jusqu'à 360 par heure la nuit, contre 118 fiches
   produit vues. Les chiffres d'avant le 2026-11-05 restent gonflés.
   L'agent utilisateur est lu, jamais enregistré.
-- **Visiteurs uniques et impressions : non mesurés, à décider.** Les
-  visiteurs uniques exigent un identifiant anonyme par navigateur, ce
-  que la politique de confidentialité exclut aujourd'hui (`0024`).
+- **Visiteurs uniques mesurés depuis le 2026-11-07** (décision du
+  porteur du projet, `0057` appliquée) : cookie `filloo_v` (uuid au
+  hasard, 13 mois, posé par `middleware.ts`, `lib/visiteur.ts`), écrit
+  dans `analytics_events.visiteur_id`, jamais relié à un compte ni à une
+  IP (les IP des opérateurs guinéens sont partagées). Politique de
+  confidentialité mise à jour (art. 4 et 9). `suivi_chiffres` rend
+  `par_jour[].visiteurs` et `visiteurs_uniques` ; pas encore affichés
+  dans `/admin/statistiques`. L'app mobile n'en envoie pas.
+  Impressions : toujours non mesurées.
 - **Annonces gérées sur `/admin/annonces`** (`0045`, 2026-11-06) :
   brouillon, programmée (part le matin du jour choisi, cron de 7 h),
   publiée, modifiée (mention « Modifiée », sans notification), retirée
@@ -143,6 +149,19 @@ mis à jour et raccourci ; l'ancienne version se relit par
   commerçant supprime et recrée le produit.
 - **Abonnements : plus tard**, après décision des prix et limites
   (`Filloo_Document_Reference_Monetisation_Strategie.docx`).
+- **Signalés par 5 personnes ou plus en tête de « Modération »**
+  (2026-11-07, `0055` appliquée, `comptes_tres_signales()`) : signaleurs
+  distincts parmi les signalements EN ATTENTE ; conversation → l'autre
+  participant ; comptes suspendus exclus.
+- **Message de bienvenue à chaque nouvelle boutique** (2026-11-07,
+  `0056` appliquée, trigger sur `merchants`) : dans le fil « boutique »
+  avec l'équipe, conseil de photos fidèles. Sans notification ; l'app
+  des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
+- **Pas de sous-catégories** (décision du 2026-11-07).
+- **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
+  pris 0052-0054 en même temps ; les nôtres sont devenues 0055-0057.
+  `monetisation` garde 0048-0051, non appliquées : à renuméroter (0058+)
+  à sa publication.
 
 ### Décidé par le porteur du projet (2026-11-06) : la publicité, sans paiement
 
@@ -515,10 +534,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-393 commits, du plus récent au plus ancien.
+394 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `43ce2d3` CI : les vérifications tournent à chaque push sur dev et sur main
 - `43bc92a` Sécurité : un message ne fait sonner le destinataire qu'une fois
 - `dd83383` Sécurité : 5 mots de passe ratés en 15 minutes bloquent la vérification du compte
 - `897e78f` Base : 0052, 0053, 0054 appliquées (audit de sécurité du 2026-11-07)

@@ -3751,5 +3751,244 @@ select pg_temp.check('0053 : supprimer le compte efface ses essais',
   not exists (select 1 from public.essais_mot_de_passe
                where auth_user_id = 'a0530000-0000-0000-0000-00000000000c'));
 
+-- =====================================================================
+-- Une personne signalée par cinq personnes passe en tête (0055)
+-- =====================================================================
+-- S (équipe, 0042). R1..R6 : clients signaleurs. V : boutique « Chez V55 »
+-- (5 produits). W : boutique « Chez W55 » (5 produits). K : client qui a un
+-- fil avec chacune des boutiques M1..M5.
+insert into auth.users (id, email, raw_user_meta_data)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'r' || i || '0055@test.gn',
+       jsonb_build_object('role', 'client', 'full_name', 'Signaleur R' || i, 'phone', '62005510' || i)
+  from generate_series(1, 6) i;
+insert into auth.users (id, email, raw_user_meta_data)
+select ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'm' || i || '0055@test.gn',
+       jsonb_build_object('role', 'merchant', 'full_name', 'Marchand M' || i, 'phone', '62005540' || i)
+  from generate_series(1, 5) i;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0550000-0000-0000-0000-0000000000a1', 'v0055@test.gn', '{"role":"merchant","full_name":"Marchand V","phone":"620005501"}'),
+  ('a0550000-0000-0000-0000-0000000000a2', 'w0055@test.gn', '{"role":"merchant","full_name":"Marchand W","phone":"620005502"}'),
+  ('a0550000-0000-0000-0000-0000000000c1', 'k0055@test.gn', '{"role":"client","full_name":"Client K55","phone":"620005503"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0550000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0550000-0000-0000-0000-0000000000b1', 'a0550000-0000-0000-0000-0000000000a1', 'Chez V55', 1),
+  ('a0550000-0000-0000-0000-0000000000b2', 'a0550000-0000-0000-0000-0000000000a2', 'Chez W55', 1);
+insert into public.merchants (id, profile_id, shop_name, city_id)
+select ('a0550000-0000-0000-0000-0000000005' || lpad(i::text, 2, '0'))::uuid,
+       ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'Chez M' || i || '55', 1
+  from generate_series(1, 5) i;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+select ('a0550000-0000-0000-0000-0000000002' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000b1', 1, 'Produit V' || i, 10000, 'draft'
+  from generate_series(1, 5) i;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+select ('a0550000-0000-0000-0000-0000000003' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000b2', 1, 'Produit W' || i, 10000, 'draft'
+  from generate_series(1, 5) i;
+insert into public.conversations (id, client_id, merchant_id)
+select ('a0550000-0000-0000-0000-0000000006' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000c1',
+       ('a0550000-0000-0000-0000-0000000005' || lpad(i::text, 2, '0'))::uuid
+  from generate_series(1, 5) i;
+
+select pg_temp.check('0055 : la fonction est fermee a anon, ouverte a authenticated',
+  not has_function_privilege('anon', 'public.comptes_tres_signales()', 'execute')
+  and has_function_privilege('authenticated', 'public.comptes_tres_signales()', 'execute'));
+
+-- Quatre signaleurs distincts sur un produit de V.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000201', 'Photo trompeuse'
+  from generate_series(1, 4) i;
+
+-- W : R1 signale ses 5 produits, R2..R4 un chacun : 8 signalements,
+-- 4 signaleurs. Un comptage de lignes la ferait passer.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select 'a0550000-0000-0000-0000-000000000101', 'product',
+       ('a0550000-0000-0000-0000-0000000003' || lpad(i::text, 2, '0'))::uuid, 'Contrefacon'
+  from generate_series(1, 5) i;
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000301', 'Contrefacon'
+  from generate_series(2, 4) i;
+
+-- K : chacune des 5 boutiques signale SON fil avec K.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'conversation',
+       ('a0550000-0000-0000-0000-0000000006' || lpad(i::text, 2, '0'))::uuid, 'Insultes'
+  from generate_series(1, 5) i;
+
+-- Hors équipe : refusé.
+set role authenticated;
+select pg_temp.login('a0550000-0000-0000-0000-000000000101');
+do $$
+begin
+  perform public.comptes_tres_signales();
+  raise exception 'ECHEC 0055 : un client lit les comptes tres signales';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0055 : un non-membre de l''equipe est refuse';
+end $$;
+
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : 4 signaleurs distincts ne suffisent pas',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+select pg_temp.check('0055 : 5 signalements d''un meme signaleur comptent pour 1 (W absente)',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a2'));
+select pg_temp.check('0055 : conversation, c''est l''autre participant qui est vise',
+  exists (select 1 from public.comptes_tres_signales()
+           where profile_id = 'a0550000-0000-0000-0000-0000000000c1'
+             and nom = 'Client K55' and role = 'client' and signaleurs = 5)
+  and not exists (select 1 from public.comptes_tres_signales()
+                   where profile_id::text like 'a0550000-0000-0000-0000-00000000040%'));
+reset role;
+
+-- Le cinquième signaleur vise la BOUTIQUE V, plus le produit.
+insert into public.reports (id, reporter_id, target_type, target_id, reason) values
+  ('a0550000-0000-0000-0000-0000000000d5', 'a0550000-0000-0000-0000-000000000105', 'merchant',
+   'a0550000-0000-0000-0000-0000000000b1', 'Boutique douteuse');
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : 5 signaleurs distincts (produit et boutique) : V present, nom de boutique, role',
+  exists (select 1 from public.comptes_tres_signales()
+           where profile_id = 'a0550000-0000-0000-0000-0000000000a1'
+             and nom = 'Chez V55' and role = 'merchant' and signaleurs = 5
+             and dernier_signalement = (select created_at from public.reports
+                                         where id = 'a0550000-0000-0000-0000-0000000000d5')));
+reset role;
+
+-- Un signalement traité ne compte plus.
+update public.reports set handled_at = now() where id = 'a0550000-0000-0000-0000-0000000000d5';
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : un signalement traite ne compte plus',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+reset role;
+
+-- R5 et R6 signalent un autre produit de V : 6 signaleurs, V passe devant K (5).
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000202', 'Photo trompeuse'
+  from generate_series(5, 6) i;
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : le plus signale d''abord',
+  (select array_agg(profile_id) from public.comptes_tres_signales())
+    = array['a0550000-0000-0000-0000-0000000000a1', 'a0550000-0000-0000-0000-0000000000c1']::uuid[]);
+reset role;
+
+-- Un compte déjà suspendu n'y figure plus (il est dans comptes_suspendus).
+update public.profiles set is_suspended = true, suspension_reason = 'Test 0055'
+ where id = 'a0550000-0000-0000-0000-0000000000a1';
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : un compte suspendu est exclu',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+reset role;
+
+
+-- =====================================================================
+-- Une boutique créée reçoit un mot de bienvenue de l'équipe (0056)
+-- =====================================================================
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0560000-0000-0000-0000-00000000000a', 'b0056@test.gn', '{"role":"merchant","full_name":"Marchande B","phone":"620005601"}'),
+  ('a0560000-0000-0000-0000-00000000000b', 'c0056@test.gn', '{"role":"merchant","full_name":"Marchande C","phone":"620005602"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0560000-%';
+
+select pg_temp.check('0056 : la fonction du declencheur n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.boutique_creee_recoit_la_bienvenue()', 'execute')
+  and not has_function_privilege('anon', 'public.boutique_creee_recoit_la_bienvenue()', 'execute'));
+
+-- La boutique se crée comme dans l'app : insert direct de la commerçante.
+set role authenticated;
+select pg_temp.login('a0560000-0000-0000-0000-00000000000a');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0560000-0000-0000-0000-0000000000b1', 'a0560000-0000-0000-0000-00000000000a', 'Chez Bienvenue', 1);
+select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, dans son fil boutique',
+  (select count(*) from public.fil_equipe) = 1
+  and (select de_l_equipe and auteur_id is null and lu_at is null and espace = 'merchant'
+              and fil_de = 'a0560000-0000-0000-0000-00000000000a'
+              and corps like 'Bienvenue sur Filloo, Chez Bienvenue !%'
+         from public.fil_equipe));
+reset role;
+select pg_temp.check('0056 : le texte est exactement celui decide',
+  (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
+  = 'Bienvenue sur Filloo, Chez Bienvenue ! Votre boutique est prête.' || E'\n'
+    || 'Un conseil important : publiez des photos qui montrent vraiment vos produits — vos propres photos, avec une bonne lumière. Un client qui reçoit un article différent de la photo sera déçu, et cela peut entraîner des litiges et des signalements contre votre boutique.' || E'\n'
+    || 'Des photos fidèles, ce sont des clients satisfaits qui reviennent. Une question ? Répondez-nous ici.' || E'\n'
+    || '— L''équipe Filloo');
+
+update public.merchants set description = 'Nouvelle description', shop_name = 'Chez Bienvenue 2'
+ where id = 'a0560000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0056 : modifier la boutique n''ajoute aucun message',
+  (select count(*) from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a') = 1);
+
+-- Jamais bloquant : un fil qui refuse tout n'empêche pas la boutique.
+begin;
+alter table public.fil_equipe add constraint t56_refuse_tout check (false) not valid;
+set role authenticated;
+select pg_temp.login('a0560000-0000-0000-0000-00000000000b');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0560000-0000-0000-0000-0000000000b2', 'a0560000-0000-0000-0000-00000000000b', 'Chez Panne', 1);
+reset role;
+select pg_temp.check('0056 : si le message echoue, la boutique se cree quand meme',
+  exists (select 1 from public.merchants where id = 'a0560000-0000-0000-0000-0000000000b2')
+  and not exists (select 1 from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000b'));
+rollback;
+
+
+-- =====================================================================
+-- Les visiteurs uniques se comptent sans savoir qui ils sont (0057)
+-- =====================================================================
+select pg_temp.check('0057 : visiteur_id est un uuid facultatif',
+  (select data_type = 'uuid' and is_nullable = 'YES' from information_schema.columns
+    where table_schema = 'public' and table_name = 'analytics_events' and column_name = 'visiteur_id'));
+select pg_temp.check('0057 : les mesures restent fermees a anon et authenticated',
+  not has_table_privilege('anon', 'public.analytics_events', 'select')
+  and not has_table_privilege('anon', 'public.analytics_events', 'insert')
+  and not has_table_privilege('authenticated', 'public.analytics_events', 'select')
+  and not has_table_privilege('authenticated', 'public.analytics_events', 'insert')
+  and not has_function_privilege('anon', 'public.suivi_chiffres(timestamptz)', 'execute')
+  and not has_function_privilege('authenticated', 'public.suivi_chiffres(timestamptz)', 'execute'));
+set role anon;
+do $$
+begin
+  insert into public.analytics_events (name, visiteur_id) values ('visite', gen_random_uuid());
+  raise exception 'ECHEC 0057 : un visiteur fabrique une mesure';
+exception when insufficient_privilege then
+  raise notice 'OK    0057 : un visiteur ne fabrique pas de mesure';
+end $$;
+reset role;
+
+-- v1 : deux visites le 1er, une le 2 ; v2 : une le 1er ; une mesure sans
+-- numéro (app) le 1er. Plus de 13 mois : la purge les emportera.
+insert into public.analytics_events (name, occurred_at, visiteur_id) values
+  ('visite',     '2000-01-01 08:00+00', 'a0570000-0000-0000-0000-0000000000a1'),
+  ('produit_vu', '2000-01-01 09:00+00', 'a0570000-0000-0000-0000-0000000000a1'),
+  ('visite',     '2000-01-01 10:00+00', 'a0570000-0000-0000-0000-0000000000a2'),
+  ('visite',     '2000-01-01 11:00+00', null),
+  ('visite',     '2000-01-02 08:00+00', 'a0570000-0000-0000-0000-0000000000a1');
+create temp table t57 as select public.suivi_chiffres('2000-01-01 00:00+00') as c;
+select pg_temp.check('0057 : visiteurs uniques sur la periode (null exclus)',
+  (select (c->>'visiteurs_uniques')::int = 2 from t57));
+select pg_temp.check('0057 : visiteurs distincts par jour',
+  (select (j->>'visiteurs')::int = 2 and (j->>'visites')::int = 3
+     from t57, jsonb_array_elements(c->'par_jour') j where j->>'jour' = '2000-01-01')
+  and (select (j->>'visiteurs')::int = 1
+     from t57, jsonb_array_elements(c->'par_jour') j where j->>'jour' = '2000-01-02'));
+select pg_temp.check('0057 : toutes les cles de 0034 sont encore la',
+  (select c ?& array['evenements', 'par_jour', 'recherches', 'recherches_vides', 'profils',
+                     'boutiques', 'produits', 'messagerie', 'signalements', 'notifications']
+          and (c->'par_jour'->0) ?& array['jour', 'visites', 'produits_vus', 'contacts', 'inscriptions', 'messages']
+     from t57));
+-- Deux instructions : une requête ne voit pas ce que sa propre purge efface.
+select pg_temp.check('0057 : la purge de 0028 retire les 5 vieilles mesures', public.purger_mesures() = 5);
+select pg_temp.check('0057 : la purge emporte aussi les numeros de visiteur',
+  not exists (select 1 from public.analytics_events where visiteur_id is not null));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
