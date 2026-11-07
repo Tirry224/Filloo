@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 423 vérifications (compte du 2026-11-07, migration 0048
+Les 531 vérifications (compte du 2026-11-07, migration 0049
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -32,6 +32,12 @@ client supprime bloque la recreation ». Ces cinq-là ont été vérifiés en om
 Pour `0048`, quatre gardes retirées une à une du fichier (propriétaire
 dans `declarer_paiement`, moyen actif, `a_payer` dans le plafond, équipe
 dans `revenus_publicite`) font chacune tomber le test qui les nomme.
+Pour `0049`, neuf gardes retirées une à une de la migration font tomber
+la suite : propriétaire dans `declarer_paiement_abonnement`, limite de 10
+(`>= 11`), équipe dans `revenus_abonnements`, badge sans la grâce, seuil
+de 3 des tendances, formule dans `statistiques_boutique`, renouvellement
+qui suit le précédent, et — par une erreur du trigger plutôt qu'un
+`ECHEC` — `masque_par_equipe` et la photo dans `restaurer_produits_masques`.
 
 ## Ce que ces tests protègent
 

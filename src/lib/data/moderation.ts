@@ -59,6 +59,20 @@ export const ACTIONS_JOURNAL = {
   reactiver: "a réactivé un compte",
   masquer_produit: "a masqué un produit",
   classer_signalement: "a traité un signalement",
+  // Publicité (0047, 0048) et abonnements (0049).
+  valider_campagne: "a validé une publicité",
+  refuser_campagne: "a refusé une publicité",
+  interrompre_campagne: "a interrompu une publicité",
+  creer_campagne: "a mis en ligne une publicité",
+  rembourser_campagne: "a remboursé une publicité",
+  fixer_tarif: "a changé un prix de publicité",
+  fixer_moyen_paiement: "a changé un numéro de paiement",
+  valider_abonnement: "a activé un abonnement",
+  refuser_abonnement: "a refusé un abonnement",
+  interrompre_abonnement: "a interrompu un abonnement",
+  creer_abonnement: "a activé un abonnement pour une boutique",
+  rembourser_abonnement: "a remboursé un abonnement",
+  fixer_tarif_abonnement: "a changé le prix d'un abonnement",
 } as const satisfies Record<string, string>;
 
 export const DECISIONS = {

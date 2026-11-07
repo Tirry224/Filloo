@@ -176,7 +176,16 @@ mis à jour et raccourci ; l'ancienne version se relit par
   30 jours. Inscrits dans `0048`, modifiables dans `/admin/publicite/tarifs`.
 - **Avant publication** : saisir les vrais numéros Orange Money et MTN
   (aucun au départ : sans eux, personne ne peut payer).
-- **Pas fait** : crédits, abonnements, badges, remboursement partiel,
+- **Abonnements (`0049`, écrite, PAS appliquée, part avec `0048`)** :
+  Pro 50 000 et Business 100 000 GNF par mois, Gratuit limité à 10
+  produits publiés ; 7 jours de grâce puis masquage nocturne (pg_cron)
+  des produits en trop, rendus au renouvellement ; badges PRO / BUSINESS
+  pendant la période payée ; statistiques sur l'accueil (Pro), onglet
+  « Stats » et tendances (Business). Équipe : onglet « Ventes ». Décidé
+  par le porteur du projet le 2026-11-07.
+- **À trancher** : un produit « vendu » ne compte pas dans les 10 ; un
+  commerçant Gratuit peut donc en garder plus d'affichés, grisés.
+- **Pas fait** : crédits, remboursement partiel,
   attribution des contacts à une campagne. App mobile : n'affiche pas la
   publicité, et n'utilise aucun objet touché par `0048`.
 
@@ -535,10 +544,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-392 commits, du plus récent au plus ancien.
+393 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `d32987f` Abonnements Pro et Business, côté site (EN COURS : ne compile pas sans 0049)
 - `a6465a8` Prix de la publicité acceptés par le porteur du projet
 - `86184e2` Mémoire : la publicité payante, sur monetisation seulement
 - `fd4c046` 0048 écrite, PAS appliquée : prix de la publicité et paiement manuel Orange Money / MTN

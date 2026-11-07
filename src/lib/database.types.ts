@@ -25,6 +25,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      abonnements: {
+        Row: {
+          created_at: string
+          creee_par_equipe: string | null
+          debut_at: string | null
+          decidee_at: string | null
+          decidee_par: string | null
+          fin_at: string | null
+          formule: string
+          id: string
+          merchant_id: string
+          motif: string | null
+          paiement_confirme_at: string | null
+          paiement_confirme_par: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number
+          rembourse_at: string | null
+          rembourse_par: string | null
+          statut: string
+        }
+        Insert: {
+          created_at?: string
+          creee_par_equipe?: string | null
+          debut_at?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          fin_at?: string | null
+          formule: string
+          id?: string
+          merchant_id: string
+          motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf: number
+          rembourse_at?: string | null
+          rembourse_par?: string | null
+          statut?: string
+        }
+        Update: {
+          created_at?: string
+          creee_par_equipe?: string | null
+          debut_at?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          fin_at?: string | null
+          formule?: string
+          id?: string
+          merchant_id?: string
+          motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf?: number
+          rembourse_at?: string | null
+          rembourse_par?: string | null
+          statut?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abonnements_creee_par_equipe_fkey"
+            columns: ["creee_par_equipe"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "abonnements_decidee_par_fkey"
+            columns: ["decidee_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "abonnements_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonnements_paiement_confirme_par_fkey"
+            columns: ["paiement_confirme_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "abonnements_rembourse_par_fkey"
+            columns: ["rembourse_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           actor_role: string | null
@@ -722,6 +827,7 @@ export type Database = {
           is_featured: boolean
           is_negotiable: boolean
           masque_par_equipe: boolean
+          masque_par_limite: boolean
           merchant_id: string
           price_gnf: number
           status: Database["public"]["Enums"]["product_status"]
@@ -737,6 +843,7 @@ export type Database = {
           is_featured?: boolean
           is_negotiable?: boolean
           masque_par_equipe?: boolean
+          masque_par_limite?: boolean
           merchant_id: string
           price_gnf: number
           status?: Database["public"]["Enums"]["product_status"]
@@ -752,6 +859,7 @@ export type Database = {
           is_featured?: boolean
           is_negotiable?: boolean
           masque_par_equipe?: boolean
+          masque_par_limite?: boolean
           merchant_id?: string
           price_gnf?: number
           status?: Database["public"]["Enums"]["product_status"]
@@ -912,6 +1020,38 @@ export type Database = {
           },
         ]
       }
+      tarifs_abonnement: {
+        Row: {
+          formule: string
+          id: string
+          modifie_at: string | null
+          modifie_par: string | null
+          prix_gnf: number
+        }
+        Insert: {
+          formule: string
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          prix_gnf: number
+        }
+        Update: {
+          formule?: string
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          prix_gnf?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarifs_abonnement_modifie_par_fkey"
+            columns: ["modifie_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
       tarifs_publicite: {
         Row: {
           duree_jours: number
@@ -952,6 +1092,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abonnements_equipe: {
+        Args: never
+        Returns: {
+          created_at: string
+          creee_par_equipe: string | null
+          debut_at: string | null
+          fin_at: string | null
+          formule: string
+          id: string
+          merchant_id: string
+          motif: string | null
+          paiement_confirme_at: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number
+          rembourse_at: string | null
+          shop_name: string
+          statut: string
+        }[]
+      }
       annonce_concerne: {
         Args: {
           p_espace: Database["public"]["Enums"]["user_role"]
@@ -959,7 +1121,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      annuler_abonnement: { Args: { p_id: string }; Returns: undefined }
       annuler_campagne: { Args: { p_id: string }; Returns: undefined }
+      appliquer_limites_abonnement: { Args: never; Returns: undefined }
+      badges_boutiques: {
+        Args: { p_merchants: string[] }
+        Returns: {
+          formule: string
+          merchant_id: string
+        }[]
+      }
       boite_equipe: {
         Args: never
         Returns: {
@@ -1021,6 +1192,15 @@ export type Database = {
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      creer_abonnement_equipe: {
+        Args: {
+          p_formule: string
+          p_merchant: string
+          p_moyen?: string
+          p_reference?: string
+        }
+        Returns: string
+      }
       creer_campagne_equipe: {
         Args: {
           p_category?: number
@@ -1032,6 +1212,14 @@ export type Database = {
           p_type: string
         }
         Returns: string
+      }
+      debut_prochaine_periode: {
+        Args: { p_formule: string; p_merchant: string }
+        Returns: string
+      }
+      decider_abonnement: {
+        Args: { p_accepter: boolean; p_id: string; p_motif?: string }
+        Returns: undefined
       }
       decider_campagne: {
         Args: { p_accepter: boolean; p_id: string; p_motif?: string }
@@ -1046,6 +1234,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      declarer_paiement_abonnement: {
+        Args: {
+          p_id: string
+          p_moyen: string
+          p_numero: string
+          p_reference: string
+        }
+        Returns: undefined
+      }
+      demander_abonnement: { Args: { p_formule: string }; Returns: string }
       demander_campagne: {
         Args: {
           p_category?: number
@@ -1072,7 +1270,16 @@ export type Database = {
         Args: { p_duree: number; p_prix: number; p_type: string }
         Returns: undefined
       }
+      fixer_tarif_abonnement: {
+        Args: { p_formule: string; p_prix: number }
+        Returns: undefined
+      }
+      formule_de: { Args: { p_merchant: string }; Returns: string }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
+      interrompre_abonnement: {
+        Args: { p_id: string; p_motif: string }
+        Returns: undefined
+      }
       interrompre_campagne: {
         Args: { p_id: string; p_motif: string }
         Returns: undefined
@@ -1090,6 +1297,19 @@ export type Database = {
           lue_at: string
           nom: string
         }[]
+      }
+      ma_formule: {
+        Args: never
+        Returns: {
+          en_grace: boolean
+          fin_at: string | null
+          formule: string
+          limite_produits: number | null
+        }[]
+      }
+      marquer_abonnement_rembourse: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       marquer_annonces_lues: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
@@ -1144,6 +1364,15 @@ export type Database = {
         Args: { age?: unknown; limite?: number }
         Returns: string[]
       }
+      produits_les_plus_vus: {
+        Args: { p_jours?: number }
+        Returns: {
+          contacts: number
+          product_id: string
+          titre: string
+          vues: number
+        }[]
+      }
       produits_sponsorises: {
         Args: { p_category_id?: number; p_limit?: number; p_query?: string }
         Returns: {
@@ -1172,12 +1401,25 @@ export type Database = {
         Args: { p_motif: string; p_profile: string }
         Returns: undefined
       }
+      restaurer_produits_masques: {
+        Args: { p_merchant: string }
+        Returns: undefined
+      }
       resultats_campagnes: {
         Args: never
         Returns: {
           campagne_id: string
           clics: number
           vues: number
+        }[]
+      }
+      revenus_abonnements: {
+        Args: never
+        Returns: {
+          abonnements: number
+          encaisse_gnf: number
+          mois: string
+          rembourse_gnf: number
         }[]
       }
       revenus_publicite: {
@@ -1237,10 +1479,28 @@ export type Database = {
           target_type: string
         }[]
       }
+      statistiques_boutique: {
+        Args: { p_jours?: number }
+        Returns: {
+          boutique_vues: number
+          contacts: number
+          jour: string
+          produits_vus: number
+          whatsapp: number
+        }[]
+      }
       suivi_chiffres: { Args: { depuis: string }; Returns: Json }
       suspendre_profil: {
         Args: { p_motif: string; p_profile: string }
         Returns: undefined
+      }
+      tendances_filloo: {
+        Args: { p_jours?: number }
+        Returns: {
+          genre: string
+          libelle: string
+          total: number
+        }[]
       }
       traiter_signalement: {
         Args: { p_decision: string; p_report: string }
