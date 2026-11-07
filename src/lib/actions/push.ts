@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { messagePourErreur } from "@/lib/erreurs";
+import { estAdressePush } from "@/lib/push-adresse";
 
 /**
  * Le client de SESSION, non `service_role` : contrairement à l'envoi
@@ -28,6 +29,10 @@ export async function savePushSubscriptionAction(
   const auth = abonnement?.keys?.auth ?? "";
   if (!endpoint || !p256dh || !auth) {
     return { error: "Abonnement incomplet. Réessayez." };
+  }
+  // Sinon le serveur enverrait ses requêtes à l'adresse de n'importe qui (voir `push-adresse.ts`).
+  if (!estAdressePush(endpoint)) {
+    return { error: "Ce navigateur ne peut pas recevoir les notifications de Filloo." };
   }
 
   const supabase = await createClient();

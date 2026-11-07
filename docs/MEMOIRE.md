@@ -515,7 +515,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-388 commits, du plus récent au plus ancien.
+389 commits, du plus récent au plus ancien.
+
+### 2026-11-07
+
+- `9c80554` Sécurité : le site ne s'affiche plus dans un autre site
 
 ### 2026-11-06
 
