@@ -3,21 +3,27 @@ import { PushBell } from "@/components/push/PushBell";
 import { Badge } from "@/components/ui/Badge";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
 import { signOutAction } from "@/lib/actions/auth";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * L'en-tête des onglets de l'équipe. La cloche y est INDISPENSABLE : un
  * compte de l'équipe n'a que `/admin` (0043), donc nulle part ailleurs où
  * activer les notifications qui l'avertissent d'un message. La
  * déconnexion aussi : c'est sa seule sortie.
+ *
+ * Le badge dit « Propriétaire » au propriétaire de Filloo (0067), « Équipe »
+ * aux autres : la base répond, pas le jeton. En cas d'échec, « Équipe ».
  */
-export function AdminTopBar() {
+export async function AdminTopBar() {
+  const supabase = await createClient();
+  const { data: proprietaire } = await supabase.rpc("je_suis_proprietaire");
   return (
     <TopBar
       title={
         <span className="flex items-center gap-2">
           <Wordmark />
           <Badge tone="accent" className="self-center">
-            Équipe
+            {proprietaire ? "Propriétaire" : "Équipe"}
           </Badge>
         </span>
       }

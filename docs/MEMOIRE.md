@@ -201,8 +201,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
   refus ; il faut un BUILD (pas d'`expo-updates`). `0068` collée au SQL
   Editor par le porteur du projet le 2026-11-07 ; constaté juste après :
   `fermer_les_sessions` réservée à `service_role`, la recréation de profil
-  exige une connexion ouverte. *À constater* : la ligne `0068` de
-  `schema_migrations` (pas encore inscrite à ce moment).
+  exige une connexion ouverte ; inscrite dans `schema_migrations` (`0068`),
+  constaté le 2026-11-07. Site seul en production le même jour (PR #8).
 - **Tests de navigateur de l'équipe** (`e2e/equipe.spec.ts`, 2026-11-07) :
   propriétaire, listes séparées, fiche et retour, suspension qui retire la
   fiche AUSSITÔT (le cache public est vidé par `revalidateTag(CATALOGUE)`
@@ -596,10 +596,14 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-409 commits, du plus récent au plus ancien.
+413 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `86f62bc` Politique de confidentialité réécrite de zéro
+- `4b9f4c5` Mémoire : 0068 inscrite, site seul en production
+- `812aa17` Merge pull request #8 from Tirry224/claude/admin-add-remove-permissions-3kd1m3
+- `dcee4a9` Le site seul : l'app mobile est abandonnée
 - `3726a9f` Suspendu ou supprimé : le catalogue public l'apprend aussitôt ; tests de navigateur de l'équipe
 - `80c91b2` Mémoire : 0068 appliquée et constatée en production
 - `f7bea3d` Compte supprimé ou suspendu : effectif immédiatement (0068 écrite)

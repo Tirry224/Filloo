@@ -78,6 +78,8 @@ test("mise en place : deux membres, une boutique avec un produit, un acheteur", 
 test("seul le propriétaire ajoute ou retire un membre", async ({ browser }) => {
   const p = await personne(browser);
   await connecter(p, PROPRIO.email, PROPRIO.mdp);
+  await p.goto("/admin");
+  await expect(p.locator("header").getByText("Propriétaire")).toBeVisible();
   await p.goto("/admin/gestion/equipe");
   await expect(p.getByText("Propriétaire").first()).toBeVisible();
   await expect(p.getByRole("heading", { name: "Ajouter un membre" })).toBeVisible();
@@ -85,6 +87,9 @@ test("seul le propriétaire ajoute ou retire un membre", async ({ browser }) => 
 
   const m = await personne(browser);
   await connecter(m, MEMBRE.email, MEMBRE.mdp);
+  await m.goto("/admin");
+  await expect(m.locator("header").getByText("Équipe", { exact: true })).toBeVisible();
+  await expect(m.locator("header").getByText("Propriétaire")).toHaveCount(0);
   await m.goto("/admin/gestion/equipe");
   await expect(m.getByText(/Seul le propriétaire/)).toBeVisible();
   await expect(m.getByRole("heading", { name: "Ajouter un membre" })).toHaveCount(0);
