@@ -3,7 +3,7 @@ import { achatsCreditsEquipe, revenusCredits, soldesEquipe } from "@/lib/data/cr
 import { boutiquesEnLigne } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
-/** Les achats de crédits, les soldes et les corrections de l'équipe (0050). */
+/** Les achats de crédits, les soldes et les corrections de l'équipe (0060). */
 export default async function CreditsAdminPage({ searchParams }: { searchParams: Promise<{ erreur?: string; info?: string }> }) {
   const { erreur, info } = await searchParams;
   const supabase = await createClient();

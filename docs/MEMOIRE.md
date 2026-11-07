@@ -91,9 +91,15 @@ mis à jour et raccourci ; l'ancienne version se relit par
   sans aucun mot, jusqu'à 360 par heure la nuit, contre 118 fiches
   produit vues. Les chiffres d'avant le 2026-11-05 restent gonflés.
   L'agent utilisateur est lu, jamais enregistré.
-- **Visiteurs uniques et impressions : non mesurés, à décider.** Les
-  visiteurs uniques exigent un identifiant anonyme par navigateur, ce
-  que la politique de confidentialité exclut aujourd'hui (`0024`).
+- **Visiteurs uniques mesurés depuis le 2026-11-07** (décision du
+  porteur du projet, `0057` appliquée) : cookie `filloo_v` (uuid au
+  hasard, 13 mois, posé par `middleware.ts`, `lib/visiteur.ts`), écrit
+  dans `analytics_events.visiteur_id`, jamais relié à un compte ni à une
+  IP (les IP des opérateurs guinéens sont partagées). Politique de
+  confidentialité mise à jour (art. 4 et 9). `suivi_chiffres` rend
+  `par_jour[].visiteurs` et `visiteurs_uniques`, affichés dans
+  `/admin/statistiques` (tuile et colonne du détail jour par jour). L'app mobile n'en envoie pas.
+  Impressions : toujours non mesurées.
 - **Annonces gérées sur `/admin/annonces`** (`0045`, 2026-11-06) :
   brouillon, programmée (part le matin du jour choisi, cron de 7 h),
   publiée, modifiée (mention « Modifiée », sans notification), retirée
@@ -143,6 +149,19 @@ mis à jour et raccourci ; l'ancienne version se relit par
   commerçant supprime et recrée le produit.
 - **Abonnements : plus tard**, après décision des prix et limites
   (`Filloo_Document_Reference_Monetisation_Strategie.docx`).
+- **Signalés par 5 personnes ou plus en tête de « Modération »**
+  (2026-11-07, `0055` appliquée, `comptes_tres_signales()`) : signaleurs
+  distincts parmi les signalements EN ATTENTE ; conversation → l'autre
+  participant ; comptes suspendus exclus.
+- **Message de bienvenue à chaque nouvelle boutique** (2026-11-07,
+  `0056` appliquée, trigger sur `merchants`) : dans le fil « boutique »
+  avec l'équipe, conseil de photos fidèles. Sans notification ; l'app
+  des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
+- **Pas de sous-catégories** (décision du 2026-11-07).
+- **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
+  pris 0052-0054 en même temps ; les nôtres sont devenues 0055-0057.
+  `monetisation` les suit en 0058-0061 (ex-0048-0051, renumérotées le
+  2026-11-07 à la fusion de `dev`), puis 0062, non appliquées.
 
 ### Décidé par le porteur du projet (2026-11-06) : la publicité, sans paiement
 
@@ -162,8 +181,8 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### Sur la branche `monetisation` seulement (2026-11-07) : la publicité payante
 
-- **Pas fusionnée dans `dev`, `0048` PAS appliquée** : décision du porteur
-  du projet. `0048` et le site partent ENSEMBLE, sinon une demande naît
+- **Pas fusionnée dans `dev`, `0058` PAS appliquée** : décision du porteur
+  du projet. `0058` et le site partent ENSEMBLE, sinon une demande naît
   « à payer » sur un site qui ne sait pas la payer.
 - **Parcours** : le commerçant voit les prix, demande, paie par Orange
   Money ou MTN MoMo au numéro de Filloo, recopie la référence du SMS ;
@@ -173,10 +192,10 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Prix décidés par le porteur du projet (2026-11-07)** : produit 7 000 /
   15 000 / 25 000 / 45 000 GNF, catégorie 5 000 / 10 000 / 18 000 /
   32 000, boutique 10 000 / 20 000 / 35 000 / 60 000, pour 3 / 7 / 14 /
-  30 jours. Inscrits dans `0048`, modifiables dans `/admin/publicite/tarifs`.
+  30 jours. Inscrits dans `0058`, modifiables dans `/admin/publicite/tarifs`.
 - **Avant publication** : saisir les vrais numéros Orange Money et MTN
   (aucun au départ : sans eux, personne ne peut payer).
-- **Abonnements (`0049`, écrite, PAS appliquée, part avec `0048`)** :
+- **Abonnements (`0059`, écrite, PAS appliquée, part avec `0058`)** :
   Pro 50 000 et Business 100 000 GNF par mois, Gratuit limité à 10
   produits publiés ; 7 jours de grâce puis masquage nocturne (pg_cron)
   des produits en trop, rendus au renouvellement ; badges PRO / BUSINESS
@@ -193,7 +212,7 @@ mis à jour et raccourci ; l'ancienne version se relit par
   MTN sont mis de côté pour l'instant (toujours bloquants pour publier).
 - **Visiteurs uniques : à mesurer** (porteur du projet, 2026-11-07),
   méthode en cours de choix ; change la politique de confidentialité.
-- **Crédits (`0050`, écrite, PAS appliquée, part avec `0048` et `0049`)** :
+- **Crédits (`0060`, écrite, PAS appliquée, part avec `0058` et `0059`)** :
   1 crédit = 1 000 GNF, packs 10 / 25 / 50 valables 12 mois ; Business
   reçoit 10 crédits par période (« 3 jours de pub offerte », réglable),
   perdus à sa fin ; une publicité se paie en crédits, rendus tout seuls
@@ -203,16 +222,20 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Emplacements (2026-11-07)** : accueil 5 produits sponsorisés
   intercalés (un en tête, puis un tous les 4) et 10 boutiques sous la
   première rangée ; recherche et catégorie 3. Place libre : encart
-  « Votre pub ici ». Plafond de la base porté à 6 par `0051` (écrite, PAS
-  appliquée, part avec `0048` à `0050`).
+  « Votre pub ici ». Plafond de la base porté à 6 par `0061` (écrite, PAS
+  appliquée, part avec `0058` à `0060`).
 - **Attribution décidée (2026-11-07)** : un contact compte pour une
   campagne s'il arrive dans les 5 jours APRÈS le clic sur la pub, depuis
-  le même navigateur (cookie `filloo_v`, sur `dev` depuis `0057`). Pas
-  encore codé : il faut d'abord le cookie sur cette branche.
-- **Numéros** : `dev` a pris 0052-0057 ; renuméroter 0048-0051 (0058+)
-  avant de publier cette branche.
+  le même navigateur (cookie `filloo_v`, `0057`). Compté par `0062`
+  (écrite, PAS appliquée) : colonne `contacts` de `resultats_campagnes`,
+  affichée « contacts en 5 jours » sur `/vendeur/publicite` et
+  `/admin/publicite`. Contacts : `contact_ouvert`, `whatsapp_ouvert`,
+  `message_envoye` du CLIENT (la réponse du commerçant ne compte pas).
+  `message_envoye` porte désormais boutique et produit.
+- **Numéros** : `dev` a pris 0052-0057 ; celles de cette branche sont
+  devenues 0058-0061 le 2026-11-07 (ex-0048-0051), puis 0062.
 - **Pas fait** : remboursement partiel (décision : total seulement). App mobile : n'affiche pas la
-  publicité, et n'utilise aucun objet touché par `0048`.
+  publicité, et n'utilise aucun objet touché par `0058`.
 
 ### Décidé par le porteur du projet (2026-11-06) : l'accueil mélangé
 
@@ -569,10 +592,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-400 commits, du plus récent au plus ancien.
+401 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `4736e08` Mémoire : un contact compte pour une pub dans les 5 jours après le clic
 - `5e90545` Gratuit : les produits en campagne sont masqués en dernier (0049, PAS appliquée) ; décisions du 2026-11-07 en mémoire
 - `ae438b2` 0051 écrite, PAS appliquée : jusqu'à 6 produits sponsorisés par emplacement
 - `2100373` Accueil : 5 produits sponsorisés et 10 boutiques sous la première rangée ; recherche et catégories : 3

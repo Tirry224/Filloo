@@ -20,7 +20,7 @@ const BOUTON =
   "flex h-control w-full cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent";
 
 /**
- * L'équipe met une publicité en ligne elle-même (0048) : un commerçant qui
+ * L'équipe met une publicité en ligne elle-même (0058) : un commerçant qui
  * a payé en main propre ou par téléphone, ou une publicité offerte. Elle
  * part en ligne tout de suite, et le commerçant reçoit un message.
  * Deux étapes : la boutique d'abord (pour proposer SES produits).

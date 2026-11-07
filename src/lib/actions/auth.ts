@@ -288,7 +288,7 @@ export async function changeMyPasswordAction(
   if (!user?.email) return { error: "Connectez-vous d'abord." };
 
   if (!currentPassword) return { error: "Entrez votre mot de passe actuel." };
-  const refus = await refusMotDePasse(user.email, currentPassword);
+  const refus = await refusMotDePasse({ id: user.id, email: user.email }, currentPassword);
   if (refus) return { error: refus.incorrect ? "Mot de passe actuel incorrect." : refus.message };
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });

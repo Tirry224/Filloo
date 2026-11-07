@@ -15,7 +15,7 @@ import type { Product } from "@/lib/types";
  * obligatoire, pour ne jamais faire passer une annonce payée pour un
  * résultat ordinaire.
  */
-/** `badge` : l'abonnement de la boutique (0049), lu par `badgesBoutiques` pour tout l'écran d'un coup. */
+/** `badge` : l'abonnement de la boutique (0059), lu par `badgesBoutiques` pour tout l'écran d'un coup. */
 export function ProductCard({
   product,
   sponsorise,

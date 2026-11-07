@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUser } from "@/lib/push";
+import { premiereAnnonce } from "@/lib/notifications-une-fois";
 
 /**
  * Les notifications du fil avec l'équipe (0042), par NOTIFICATION
@@ -66,6 +67,8 @@ export async function prevenirLEquipe(messageId: string): Promise<void> {
     // Côté boutique, l'équipe reconnaît la boutique plutôt que la personne.
     const nom = profils?.[0]?.merchants?.shop_name ?? profils?.[0]?.full_name ?? "Quelqu'un";
     const de = message.espace === "merchant" ? "la boutique" : "";
+    // Une seule sonnerie par message, quel que soit le nombre d'appels (voir `notifications-une-fois.ts`).
+    if (!(await premiereAnnonce(`equipe:${messageId}`))) return;
 
     await Promise.all(
       (membres ?? [])

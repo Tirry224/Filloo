@@ -1,15 +1,15 @@
 -- =====================================================================
--- 0050 : une boutique achète des crédits et paie sa publicité avec
+-- 0060 : une boutique achète des crédits et paie sa publicité avec
 -- =====================================================================
 -- Décisions du porteur du projet du 2026-11-07 : 1 crédit = 1 000 GNF ;
 -- packs de 10, 25 ou 50 crédits sans bonus ; un crédit acheté vaut 12
 -- mois ; Business en reçoit chaque mois (10 par défaut, réglable par
 -- l'équipe), PERDUS à la fin de la période ; les crédits paient la
 -- publicité (prix / 1 000). Tout le monde (Gratuit, Pro, Business) en
--- achète. Paiement à la main, EXACTEMENT comme 0048 et 0049 : mêmes
+-- achète. Paiement à la main, EXACTEMENT comme 0058 et 0059 : mêmes
 -- colonnes `paiement_*`, mêmes moyens actifs, même vérification.
 -- Branche `monetisation` : NE S'APPLIQUE PAS avant que le porteur du
--- projet publie cette branche, et JAMAIS sans 0048 et 0049.
+-- projet publie cette branche, et JAMAIS sans 0058 et 0059.
 --
 -- CE QUE LA BASE GARANTIT APRÈS
 -- 1. Un crédit vit dans un LOT (`lots_credits`) : un achat validé, une
@@ -76,14 +76,14 @@ alter table public.tarifs_abonnement
   add column credits_inclus int not null default 0 check (credits_inclus >= 0);
 
 comment on column public.tarifs_abonnement.credits_inclus is
-  'Crédits de publicité apportés par chaque période active (0050), perdus à sa fin. Écrit SEULEMENT par fixer_credits_inclus.';
+  'Crédits de publicité apportés par chaque période active (0060), perdus à sa fin. Écrit SEULEMENT par fixer_credits_inclus.';
 
 -- Décision du porteur du projet du 2026-11-07.
 update public.tarifs_abonnement set credits_inclus = 10 where formule = 'business';
 
 
 -- ---------------------------------------------------------------------
--- 2. Les achats de crédits (comme `abonnements`, 0049)
+-- 2. Les achats de crédits (comme `abonnements`, 0059)
 -- ---------------------------------------------------------------------
 create table public.achats_credits (
   id                    uuid primary key default gen_random_uuid(),
@@ -118,7 +118,7 @@ create table public.achats_credits (
 );
 
 comment on table public.achats_credits is
-  'Achats de crédits de publicité (0050). Écrits SEULEMENT par demander_credits, declarer_paiement_credits, annuler_achat_credits, decider_achat_credits, marquer_achat_credits_rembourse.';
+  'Achats de crédits de publicité (0060). Écrits SEULEMENT par demander_credits, declarer_paiement_credits, annuler_achat_credits, decider_achat_credits, marquer_achat_credits_rembourse.';
 
 create unique index achats_credits_une_demande_par_boutique
   on public.achats_credits (merchant_id) where statut in ('a_payer', 'en_attente');
@@ -166,7 +166,7 @@ create table public.lots_credits (
 );
 
 comment on table public.lots_credits is
-  'Crédits de publicité d''une boutique, par lot (0050). Dépensables si disponible_at <= now() < expire_at. Écrits SEULEMENT par les fonctions de 0050 et le trigger abonnements_donnent_leurs_credits.';
+  'Crédits de publicité d''une boutique, par lot (0060). Dépensables si disponible_at <= now() < expire_at. Écrits SEULEMENT par les fonctions de 0060 et le trigger abonnements_donnent_leurs_credits.';
 
 -- Un achat, une période : un lot au plus.
 create unique index lots_credits_un_par_achat on public.lots_credits (achat_id) where achat_id is not null;
@@ -196,7 +196,7 @@ create table public.consommations_credits (
 );
 
 comment on table public.consommations_credits is
-  'Crédits pris dans un lot pour payer une campagne (0050) ; rendu_at = revenus au lot (refus, annulation avant le début).';
+  'Crédits pris dans un lot pour payer une campagne (0060) ; rendu_at = revenus au lot (refus, annulation avant le début).';
 
 create index consommations_credits_par_campagne_idx on public.consommations_credits (campagne_id);
 create index consommations_credits_par_lot_idx on public.consommations_credits (lot_id);
@@ -217,7 +217,7 @@ create policy "consommations: la boutique lit les siennes, l'equipe tout"
 -- ---------------------------------------------------------------------
 -- 4. L'historique de l'équipe connaît les crédits
 -- ---------------------------------------------------------------------
--- Toutes les valeurs de 0049, plus celles des crédits.
+-- Toutes les valeurs de 0059, plus celles des crédits.
 alter table public.journal_equipe drop constraint journal_equipe_action_check;
 alter table public.journal_equipe add constraint journal_equipe_action_check
   check (action in ('suspendre', 'reactiver', 'masquer_produit', 'classer_signalement',
@@ -634,7 +634,7 @@ grant execute on function public.marquer_achat_credits_rembourse(uuid) to authen
 -- ---------------------------------------------------------------------
 -- Trigger plutôt qu'un appel dans `decider_abonnement` et
 -- `creer_abonnement_equipe` : tout chemin qui rend un abonnement actif
--- (présent ou futur) est couvert, sans réécrire les fonctions de 0049.
+-- (présent ou futur) est couvert, sans réécrire les fonctions de 0059.
 create or replace function public.abonnement_donne_ses_credits()
 returns trigger
 language plpgsql
@@ -672,15 +672,15 @@ create trigger abonnements_donnent_leurs_credits
 -- ---------------------------------------------------------------------
 -- 10. Payer une campagne en crédits
 -- ---------------------------------------------------------------------
--- Nom par défaut de la contrainte de colonne de 0048 (constaté sur la
--- base de test : 0048 n'est pas en production).
+-- Nom par défaut de la contrainte de colonne de 0058 (constaté sur la
+-- base de test : 0058 n'est pas en production).
 alter table public.campagnes drop constraint campagnes_paiement_moyen_check;
 alter table public.campagnes add constraint campagnes_paiement_moyen_check
   check (paiement_moyen is null
          or paiement_moyen in ('orange_money', 'mtn_momo', 'especes', 'offert', 'credits'));
 
 comment on table public.campagnes is
-  'Publicité (0047, prix et paiement 0048, crédits 0050). Écrite SEULEMENT par demander_campagne, declarer_paiement, payer_campagne_en_credits, annuler_campagne, decider_campagne, interrompre_campagne, creer_campagne_equipe, marquer_rembourse. « Terminée » = active et fin_at passée.';
+  'Publicité (0047, prix et paiement 0058, crédits 0060). Écrite SEULEMENT par demander_campagne, declarer_paiement, payer_campagne_en_credits, annuler_campagne, decider_campagne, interrompre_campagne, creer_campagne_equipe, marquer_rembourse. « Terminée » = active et fin_at passée.';
 
 
 create or replace function public.payer_campagne_en_credits(p_id uuid)
@@ -744,7 +744,7 @@ revoke execute on function public.payer_campagne_en_credits(uuid) from public, a
 grant execute on function public.payer_campagne_en_credits(uuid) to authenticated;
 
 
--- Même corps que 0048, plus le refus d'une campagne déjà payée en crédits.
+-- Même corps que 0058, plus le refus d'une campagne déjà payée en crédits.
 create or replace function public.declarer_paiement(
   p_id uuid, p_moyen text, p_reference text, p_numero text
 )
@@ -810,7 +810,7 @@ end;
 $$;
 
 
--- Même corps que 0048, plus le rendu des crédits avant le début.
+-- Même corps que 0058, plus le rendu des crédits avant le début.
 create or replace function public.annuler_campagne(p_id uuid)
 returns void
 language plpgsql
@@ -839,7 +839,7 @@ end;
 $$;
 
 
--- Même corps que 0048 ; une campagne payée en crédits est « déclarée »
+-- Même corps que 0058 ; une campagne payée en crédits est « déclarée »
 -- par son paiement, se valide comme les autres (paiement confirmé), et
 -- rend ses crédits si elle est refusée.
 create or replace function public.decider_campagne(p_id uuid, p_accepter boolean, p_motif text default null)
@@ -923,7 +923,7 @@ end;
 $$;
 
 
--- Même corps que 0048, plus le refus d'une campagne payée en crédits.
+-- Même corps que 0058, plus le refus d'une campagne payée en crédits.
 create or replace function public.marquer_rembourse(p_id uuid)
 returns void
 language plpgsql
@@ -968,7 +968,7 @@ end;
 $$;
 
 
--- Même corps que 0048 ; une campagne payée en crédits n'est pas de
+-- Même corps que 0058 ; une campagne payée en crédits n'est pas de
 -- l'argent encaissé (il l'a été à l'achat des crédits).
 create or replace function public.revenus_publicite()
 returns table (mois date, encaisse_gnf bigint, rembourse_gnf bigint, campagnes bigint)
@@ -1188,7 +1188,7 @@ revoke execute on function public.achats_credits_equipe() from public, anon;
 grant execute on function public.achats_credits_equipe() to authenticated;
 
 
--- Comme `revenus_abonnements` (0049) : encaissé au mois de la
+-- Comme `revenus_abonnements` (0059) : encaissé au mois de la
 -- VÉRIFICATION, remboursé au mois du REMBOURSEMENT, heure de Conakry.
 create or replace function public.revenus_credits()
 returns table (mois date, encaisse_gnf bigint, rembourse_gnf bigint, achats bigint)

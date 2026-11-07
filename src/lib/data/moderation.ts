@@ -33,6 +33,15 @@ export async function lireMessagesSignales(supabase: Client, reportId: string): 
   return [...(data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
+export type CompteTresSignale = Database["public"]["Functions"]["comptes_tres_signales"]["Returns"][number];
+
+/** Les personnes signalées par 5 personnes différentes ou plus (0055), à traiter en premier. */
+export async function lireComptesTresSignales(supabase: Client): Promise<CompteTresSignale[]> {
+  const { data, error } = await supabase.rpc("comptes_tres_signales");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export type CompteSuspendu = Database["public"]["Functions"]["comptes_suspendus"]["Returns"][number];
 
 export async function lireComptesSuspendus(supabase: Client): Promise<CompteSuspendu[]> {
@@ -59,7 +68,7 @@ export const ACTIONS_JOURNAL = {
   reactiver: "a réactivé un compte",
   masquer_produit: "a masqué un produit",
   classer_signalement: "a traité un signalement",
-  // Publicité (0047, 0048) et abonnements (0049).
+  // Publicité (0047, 0058) et abonnements (0059).
   valider_campagne: "a validé une publicité",
   refuser_campagne: "a refusé une publicité",
   interrompre_campagne: "a interrompu une publicité",
@@ -73,7 +82,7 @@ export const ACTIONS_JOURNAL = {
   creer_abonnement: "a activé un abonnement pour une boutique",
   rembourser_abonnement: "a remboursé un abonnement",
   fixer_tarif_abonnement: "a changé le prix d'un abonnement",
-  // Crédits (0050).
+  // Crédits (0060).
   fixer_credits_inclus: "a changé les crédits inclus d'une formule",
   valider_achat_credits: "a validé un achat de crédits",
   refuser_achat_credits: "a refusé un achat de crédits",

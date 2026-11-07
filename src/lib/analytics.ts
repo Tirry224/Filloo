@@ -1,7 +1,8 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { nEstPasUnePersonne } from "@/lib/robots-detecte";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { COOKIE_VISITEUR, lireVisiteur } from "@/lib/visiteur";
 
 /**
  * Les compteurs d'usage de Filloo — côté SERVEUR uniquement.
@@ -13,7 +14,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * CE QU'ON N'ÉCRIT JAMAIS : aucun identifiant de profil, aucune adresse
  * IP, aucun agent utilisateur, aucun contenu de message. `role` dit ce
- * qu'était celui qui a agi, pas qui il est. La politique de
+ * qu'était celui qui a agi, pas qui il est. Seule exception, décidée le
+ * 2026-11-07 : `visiteur_id`, le numéro ALÉATOIRE du cookie de mesure
+ * (`lib/visiteur.ts`), qui reconnaît un navigateur sans dire à qui il est. La politique de
  * confidentialité décrit exactement cela ; c'est elle qui fixe la limite
  * de ce fichier, et non l'inverse.
  *
@@ -69,8 +72,10 @@ function normaliserRequete(brut: string | null | undefined): string | null {
  * (`robots-detecte.ts`, depuis le 2026-11-05).
  */
 export async function compter(nom: NomEvenement, contexte: ContexteEvenement = {}): Promise<void> {
+  let visiteurId: string | null = null;
   try {
     if (nEstPasUnePersonne(await headers())) return;
+    visiteurId = lireVisiteur((await cookies()).get(COOKIE_VISITEUR)?.value);
   } catch {
     // Hors requête (script, test) : rien à décider, on compte.
   }
@@ -87,6 +92,7 @@ export async function compter(nom: NomEvenement, contexte: ContexteEvenement = {
         search_query: normaliserRequete(contexte.query),
         result_count: contexte.resultCount ?? null,
         campagne_id: contexte.campagneId ?? null,
+        visiteur_id: visiteurId,
       });
       if (error) console.error(`[mesure] ${nom} non enregistré :`, error.message);
     } catch (cause) {

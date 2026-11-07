@@ -4,7 +4,7 @@ import { lireMoyen, type MoyenPaiement } from "@/lib/data/publicite";
 import { createPublicClient } from "@/lib/supabase/public";
 
 /**
- * Les abonnements des boutiques (0049, décisions du porteur du projet du
+ * Les abonnements des boutiques (0059, décisions du porteur du projet du
  * 2026-11-07) : Gratuit (10 produits publiés), Pro et Business, au mois,
  * payés comme la publicité (Orange Money ou MTN MoMo, vérifiés par
  * l'équipe). Sept jours de grâce après la fin ; ensuite, retour en

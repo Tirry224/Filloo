@@ -37,7 +37,7 @@ const sectionDe = (a: AbonnementEquipe) => SECTIONS.find((s) => s.garde(a))!.tit
 const BOUTON = "flex h-tap w-full cursor-pointer items-center justify-center rounded-lg text-base font-semibold";
 
 /**
- * Les abonnements vus par l'équipe (0049) : vérifier un paiement déclaré,
+ * Les abonnements vus par l'équipe (0059) : vérifier un paiement déclaré,
  * activer, refuser, rembourser, interrompre, ou activer soi-même (payé en
  * main propre, ou offert). Chaque geste est signé dans l'historique, et le
  * commerçant reçoit un message.

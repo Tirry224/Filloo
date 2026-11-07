@@ -3,7 +3,7 @@ import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { boutiquesEnLigne, lireTarifs } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
-/** L'équipe crée une publicité pour une boutique (0048). Garde : `admin/layout.tsx`. */
+/** L'équipe crée une publicité pour une boutique (0058). Garde : `admin/layout.tsx`. */
 export default async function NouvelleCampagnePage({
   searchParams,
 }: {

@@ -141,8 +141,14 @@ export async function sendMessageAction(_prevState: ActionState | null, formData
   after(() => notifyNewMessage(inserted.id));
 
   /* Le CONTENU du message n'est jamais écrit dans la mesure (0024) : seul
-     compte qu'un message soit parti, et de quel côté. */
-  await compter("message_envoye", { role: context.iAmMerchant ? "merchant" : "client" });
+     compte qu'un message soit parti, et de quel côté. La boutique et le
+     produit cité servent à rattacher un message à une pub cliquée dans les
+     5 jours (0062). */
+  await compter("message_envoye", {
+    role: context.iAmMerchant ? "merchant" : "client",
+    merchantId: context.merchantId,
+    productId,
+  });
 
   backToThread(conversationId, context.iAmMerchant);
 }

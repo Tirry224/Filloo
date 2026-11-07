@@ -32,7 +32,7 @@ export const ETATS_ABONNEMENT: Record<EtatAbonnement, { libelle: string; ton: "n
 };
 
 /**
- * « Mon abonnement » (0049) : la formule actuelle, les trois formules, et
+ * « Mon abonnement » (0059) : la formule actuelle, les trois formules, et
  * le même parcours de paiement que la publicité. Un abonnement dure un
  * mois ; le renouveler avant la fin ajoute un mois à la suite.
  */

@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 const PERIODES = [7, 30, 90] as const;
 
 /**
- * La page « Statistiques », réservée à Business (0049, document de
+ * La page « Statistiques », réservée à Business (0059, document de
  * monétisation 2.1) : la boutique sur 7, 30 ou 90 jours, et les tendances
  * de tout Filloo. Un autre compte est renvoyé vers son abonnement.
  */

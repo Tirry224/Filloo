@@ -43,7 +43,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   if (!user?.email) {
     return { error: "Vérification impossible. Reconnectez-vous." };
   }
-  const refus = await refusMotDePasse(user.email, currentPassword);
+  const refus = await refusMotDePasse({ id: user.id, email: user.email }, currentPassword);
   if (refus) {
     return {
       error: refus.incorrect ? "Mot de passe incorrect. Rien n'est enregistré." : refus.message,
@@ -107,7 +107,7 @@ async function supprimerMonCompte(formData: FormData, role: "client" | "merchant
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const refus =
     user.email && currentPassword
-      ? await refusMotDePasse(user.email, currentPassword)
+      ? await refusMotDePasse({ id: user.id, email: user.email }, currentPassword)
       : { incorrect: true, trop: false, message: "" };
   if (refus) {
     const texte = refus.incorrect

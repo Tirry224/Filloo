@@ -242,6 +242,7 @@ export type Database = {
           product_id: string | null
           result_count: number | null
           search_query: string | null
+          visiteur_id: string | null
         }
         Insert: {
           actor_role?: string | null
@@ -255,6 +256,7 @@ export type Database = {
           product_id?: string | null
           result_count?: number | null
           search_query?: string | null
+          visiteur_id?: string | null
         }
         Update: {
           actor_role?: string | null
@@ -268,6 +270,7 @@ export type Database = {
           product_id?: string | null
           result_count?: number | null
           search_query?: string | null
+          visiteur_id?: string | null
         }
         Relationships: [
           {
@@ -626,6 +629,24 @@ export type Database = {
           auth_user_id?: string
           created_at?: string
           nom?: string
+        }
+        Relationships: []
+      }
+      essais_mot_de_passe: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          id: number
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          id?: never
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          id?: never
         }
         Relationships: []
       }
@@ -999,6 +1020,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications_envoyees: {
+        Row: {
+          cle: string
+          created_at: string
+        }
+        Insert: {
+          cle: string
+          created_at?: string
+        }
+        Update: {
+          cle?: string
+          created_at?: string
+        }
+        Relationships: []
       }
       product_images: {
         Row: {
@@ -1420,6 +1456,16 @@ export type Database = {
           type: string
         }[]
       }
+      comptes_tres_signales: {
+        Args: never
+        Returns: {
+          dernier_signalement: string
+          nom: string
+          profile_id: string
+          role: string
+          signaleurs: number
+        }[]
+      }
       comptes_suspendus: {
         Args: never
         Returns: {
@@ -1685,7 +1731,9 @@ export type Database = {
         }[]
       }
       publier_annonces_programmees: { Args: never; Returns: string[] }
+      purger_essais_mot_de_passe: { Args: never; Returns: number }
       purger_mesures: { Args: never; Returns: number }
+      purger_notifications_envoyees: { Args: never; Returns: number }
       reactiver_profil: {
         Args: { p_motif: string; p_profile: string }
         Returns: undefined
@@ -1700,6 +1748,7 @@ export type Database = {
         Returns: {
           campagne_id: string
           clics: number
+          contacts: number
           vues: number
         }[]
       }

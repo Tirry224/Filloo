@@ -1,14 +1,14 @@
 -- =====================================================================
--- 0049 : une boutique peut s'abonner (Pro, Business), Gratuit est limité
+-- 0059 : une boutique peut s'abonner (Pro, Business), Gratuit est limité
 -- =====================================================================
 -- Abonnements du document de monétisation, décidés par le porteur du
 -- projet le 2026-11-07 : Pro 50 000 GNF par mois, Business 100 000 GNF
 -- par mois, un mois à la fois ; Gratuit = 10 produits publiés au plus.
--- Paiement à la main, EXACTEMENT comme la publicité (0048) : mêmes
+-- Paiement à la main, EXACTEMENT comme la publicité (0058) : mêmes
 -- colonnes `paiement_*`, mêmes moyens (`moyens_paiement`, actifs
 -- seulement), même vérification par l'équipe. Branche `monetisation` :
 -- NE S'APPLIQUE PAS avant que le porteur du projet publie cette branche,
--- et JAMAIS sans 0048 (elle en lit `moyens_paiement`).
+-- et JAMAIS sans 0058 (elle en lit `moyens_paiement`).
 --
 -- CE QUE LA BASE GARANTIT APRÈS
 -- 1. Un abonnement ne s'écrit que par les fonctions ci-dessous ; la
@@ -83,7 +83,7 @@ create table public.tarifs_abonnement (
 );
 
 comment on table public.tarifs_abonnement is
-  'Prix d''un mois d''abonnement (0049), lu par tous. Écrit SEULEMENT par fixer_tarif_abonnement. `id` sert de cible dans journal_equipe.';
+  'Prix d''un mois d''abonnement (0059), lu par tous. Écrit SEULEMENT par fixer_tarif_abonnement. `id` sert de cible dans journal_equipe.';
 
 alter table public.tarifs_abonnement enable row level security;
 revoke all on public.tarifs_abonnement from anon, authenticated;
@@ -140,7 +140,7 @@ create table public.abonnements (
 );
 
 comment on table public.abonnements is
-  'Abonnements Pro / Business (0049). Écrits SEULEMENT par demander_abonnement, declarer_paiement_abonnement, annuler_abonnement, decider_abonnement, creer_abonnement_equipe, interrompre_abonnement, marquer_abonnement_rembourse. « Terminé » = active et fin_at passée.';
+  'Abonnements Pro / Business (0059). Écrits SEULEMENT par demander_abonnement, declarer_paiement_abonnement, annuler_abonnement, decider_abonnement, creer_abonnement_equipe, interrompre_abonnement, marquer_abonnement_rembourse. « Terminé » = active et fin_at passée.';
 
 -- Une seule demande ouverte par boutique, même sous deux appels simultanés.
 create unique index abonnements_une_demande_par_boutique
@@ -168,7 +168,7 @@ create policy "abonnements: la boutique lit les siens, l'equipe tout"
 -- ---------------------------------------------------------------------
 -- 3. L'historique de l'équipe connaît les abonnements
 -- ---------------------------------------------------------------------
--- Mêmes valeurs que 0048, plus celles des abonnements.
+-- Mêmes valeurs que 0058, plus celles des abonnements.
 alter table public.journal_equipe drop constraint journal_equipe_action_check;
 alter table public.journal_equipe add constraint journal_equipe_action_check
   check (action in ('suspendre', 'reactiver', 'masquer_produit', 'classer_signalement',
@@ -915,7 +915,7 @@ revoke execute on function public.abonnements_equipe() from public, anon;
 grant execute on function public.abonnements_equipe() to authenticated;
 
 
--- Comme `revenus_publicite` (0048) : encaissé au mois de la VÉRIFICATION,
+-- Comme `revenus_publicite` (0058) : encaissé au mois de la VÉRIFICATION,
 -- remboursé au mois du REMBOURSEMENT, heure de Conakry ; un offert n'est
 -- pas un revenu.
 create or replace function public.revenus_abonnements()

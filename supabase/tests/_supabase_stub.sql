@@ -6,6 +6,10 @@ do $$ begin
   create role authenticated nologin; exception when duplicate_object then null; end $$;
 do $$ begin
   create role service_role nologin;  exception when duplicate_object then null; end $$;
+-- Comme en production (constaté le 2026-11-07, `pg_roles`) : le serveur
+-- ignore le RLS. Sans cela, une table « RLS sans politique » (0053, 0054)
+-- serait fermée au serveur lui-même en local, et ouverte chez Supabase.
+alter role service_role bypassrls;
 
 create schema if not exists auth;
 create schema if not exists extensions;

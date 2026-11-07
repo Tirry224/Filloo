@@ -54,6 +54,31 @@ const nextConfig: NextConfig = {
       : [],
   },
 
+  /* En-têtes de sécurité, sur toutes les pages (audit du 2026-11-07).
+     - Jamais affiché DANS un autre site (`frame-ancestors 'none'`, et
+       `X-Frame-Options` pour les vieux navigateurs) : sinon une page
+       piégée pourrait poser Filloo, invisible, sous un faux bouton, et
+       faire cliquer « Supprimer mon compte » sans qu'on le voie.
+     - `nosniff` : un fichier est lu pour ce qu'il déclare être, jamais
+       deviné (une « image » ne s'exécute pas comme un script).
+     - `Referrer-Policy` : les sites ouverts depuis Filloo (WhatsApp)
+       reçoivent l'adresse du site, pas celle de la page ni ses paramètres.
+     Pas de CSP complète sur les scripts : elle casserait facilement les
+     photos Supabase et le temps réel, pour un gain faible ici. */
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
+
   experimental: {
     /* Une page déjà visitée reste dans le navigateur 30 s : revenir sur
        l'accueil ou sur « Compte » ne redemande plus rien au serveur

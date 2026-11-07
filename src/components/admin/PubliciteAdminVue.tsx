@@ -125,7 +125,7 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
       {c.motif ? <p className="text-sm text-ink-soft">Motif : {c.motif}</p> : null}
       {c.debut_at ? (
         <p className="text-sm text-ink-soft">
-          {c.vues} affichages · {c.clics} clics · {tauxDeClics(c.vues, c.clics)}
+          {c.vues} affichages · {c.clics} clics · {tauxDeClics(c.vues, c.clics)} · {c.contacts} contacts en 5 jours
         </p>
       ) : null}
 

@@ -14,7 +14,7 @@ import { estUuid, longueur, texteNettoye } from "@/lib/saisie";
 import { estTelephone, nettoyerTelephone } from "@/lib/telephone";
 
 /**
- * Les gestes des abonnements (0049). Écrits AVEC la session : la base
+ * Les gestes des abonnements (0059). Écrits AVEC la session : la base
  * vérifie la boutique, le paiement, et que seule l'équipe décide.
  */
 

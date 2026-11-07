@@ -1,12 +1,12 @@
 -- =====================================================================
--- 0051 : six produits sponsorisés au plus par appel (au lieu de 4)
+-- 0061 : six produits sponsorisés au plus par appel (au lieu de 4)
 -- =====================================================================
 -- Décision du porteur du projet du 2026-11-07 : l'accueil montre 5
 -- produits sponsorisés, la recherche et les catégories 3, « Boutiques à
 -- découvrir » 10 boutiques. `produits_sponsorises` (0047) plafonnait
 -- `p_limit` à 4 : l'accueil n'en aurait jamais eu 5.
 -- Branche `monetisation` : NE S'APPLIQUE PAS avant que le porteur du
--- projet publie cette branche, et s'applique APRÈS 0048, 0049, 0050.
+-- projet publie cette branche, et s'applique APRÈS 0058, 0059, 0060.
 --
 -- CE QUE LA BASE GARANTIT APRÈS
 -- 1. `produits_sponsorises` rend au plus 6 produits par appel, quel que
@@ -16,7 +16,7 @@
 --    boutique, tirage au sort, mêmes droits (anon, authenticated).
 --
 -- CHOIX
--- - Définition recopiée de 0047, la seule (0048, 0049, 0050 ne la
+-- - Définition recopiée de 0047, la seule (0058, 0059, 0060 ne la
 --   redéfinissent pas, vérifié le 2026-11-07) ; SEUL le `4` du `least`
 --   devient `6`.
 -- - `boutiques_mises_en_avant` plafonne déjà à 12 : 10 passent, non

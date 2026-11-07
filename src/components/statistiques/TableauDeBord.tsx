@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCheck, Eye, Info, MessageCircle, UserPlus } from "lucide-react";
+import { AlertTriangle, CheckCheck, Eye, Info, MessageCircle, UserPlus, Users } from "lucide-react";
 import { EnTeteOnglet, Tuile } from "@/components/admin/AdminTopBar";
 import { Card } from "@/components/ui/Card";
 import { ScreenBody, Section } from "@/components/ui/Screen";
@@ -82,11 +82,13 @@ export function TableauDeBordVue({
         <p className="flex items-start gap-2 rounded-lg bg-accent-soft px-3.5 py-2.5 text-xs text-accent-hover">
           <Info size={15} strokeWidth={2} className="mt-px shrink-0" aria-hidden />
           Robots et préchargements exclus depuis le 5 novembre 2026 : avant cette date, visites et recherches sont
-          gonflées. Comparez les périodes postérieures entre elles.
+          gonflées. Comparez les périodes postérieures entre elles. Visiteurs uniques comptés depuis le 7 novembre
+          2026 (navigateurs distincts, sur le site seulement).
         </p>
 
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-          <Tuile icone={Eye} valeur={ev("visite").total} libelle="visites de l'accueil" forte />
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5">
+          <Tuile icone={Users} valeur={c.visiteurs_uniques ?? 0} libelle="visiteurs uniques" forte />
+          <Tuile icone={Eye} valeur={ev("visite").total} libelle="visites de l'accueil" />
           <Tuile icone={Eye} valeur={ev("produit_vu").total} libelle="fiches produit vues" />
           <Tuile icone={MessageCircle} valeur={contacts} libelle="clics Contacter ou WhatsApp" />
           <Tuile icone={UserPlus} valeur={connexions.nouvelles} libelle="inscriptions" />
@@ -128,6 +130,7 @@ export function TableauDeBordVue({
               <thead>
                 <tr className="border-b border-line text-left text-xs text-ink-soft">
                   <th className="py-2 pr-2 font-medium">Jour</th>
+                  <th className="px-2 py-2 text-right font-medium">Visiteurs</th>
                   <th className="px-2 py-2 text-right font-medium">Visites</th>
                   <th className="px-2 py-2 text-right font-medium">Produits</th>
                   <th className="px-2 py-2 text-right font-medium">Contacts</th>
@@ -139,6 +142,7 @@ export function TableauDeBordVue({
                 {[...jours].reverse().map((j) => (
                   <tr key={j.jour} className="border-b border-line last:border-0">
                     <td className="py-2 pr-2">{jour(j.jour)}</td>
+                    <td className="px-2 py-2 text-right">{j.visiteurs ?? 0}</td>
                     <td className="px-2 py-2 text-right">{j.visites}</td>
                     <td className="px-2 py-2 text-right">{j.produits_vus}</td>
                     <td className="px-2 py-2 text-right">{j.contacts}</td>

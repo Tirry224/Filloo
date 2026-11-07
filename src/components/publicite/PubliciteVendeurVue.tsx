@@ -1,4 +1,4 @@
-import { Eye, MousePointerClick, TrendingUp } from "lucide-react";
+import { Eye, MessageCircle, MousePointerClick, TrendingUp } from "lucide-react";
 import { jour } from "@/components/admin/EtatAnnonce";
 import { EtatCampagne, tauxDeClics } from "@/components/publicite/EtatCampagne";
 import { Card } from "@/components/ui/Card";
@@ -27,7 +27,7 @@ import { formatGnf } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 /**
- * « Publicité et visibilité » (0047, 0048). Le commerçant choisit, voit le
+ * « Publicité et visibilité » (0047, 0058). Le commerçant choisit, voit le
  * prix, paie par Orange Money ou MTN MoMo au numéro de Filloo, puis
  * recopie la référence du SMS. L'équipe vérifie le paiement et met en
  * ligne ; sa décision arrive dans « Équipe Filloo ».
@@ -182,10 +182,11 @@ function LigneCampagne({ c, moyens, solde }: { c: CampagneCommercant; moyens: Mo
         <p className="text-sm text-danger">Motif : {c.motif}</p>
       ) : null}
       {c.debutAt ? (
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
           <Chiffre icone={Eye} valeur={c.vues} libelle="affichages" />
           <Chiffre icone={MousePointerClick} valeur={c.clics} libelle="clics" />
           <Chiffre icone={TrendingUp} valeur={tauxDeClics(c.vues, c.clics)} libelle="taux de clics" />
+          <Chiffre icone={MessageCircle} valeur={c.contacts} libelle="contacts en 5 jours" />
         </div>
       ) : null}
       {enCours ? (

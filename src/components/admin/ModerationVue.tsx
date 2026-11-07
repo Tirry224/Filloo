@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, History, MessageSquareWarning, Package, ShieldCheck, UserRoundX } from "lucide-react";
+import { ChevronRight, History, MessageSquareWarning, Package, ShieldCheck, Siren, UserRoundX } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet } from "@/components/admin/AdminTopBar";
 import { jourEtHeure } from "@/components/admin/EtatAnnonce";
 import { Badge } from "@/components/ui/Badge";
@@ -10,19 +10,23 @@ import { PendingSubmit } from "@/components/ui/PendingSubmit";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { reactiverCompteAction } from "@/lib/actions/moderation";
-import type { CompteSuspendu, Signalement } from "@/lib/data/moderation";
+import type { CompteSuspendu, CompteTresSignale, Signalement } from "@/lib/data/moderation";
 
 /**
- * L'onglet Modération de l'équipe (0046) : ce qui a été signalé et attend
+ * L'onglet Modération de l'équipe (0046) : en tête, les personnes que 5
+ * personnes différentes ou plus ont signalées (0055, décision du porteur
+ * du projet du 2026-11-07) ; puis ce qui a été signalé et attend
  * une suite, les comptes suspendus qu'on peut réactiver, et l'accès à
  * l'historique de ce que l'équipe a fait.
  */
 export function ModerationVue({
+  tresSignales,
   signalements,
   suspendus,
   erreur,
   info,
 }: {
+  tresSignales: CompteTresSignale[];
   signalements: Signalement[];
   suspendus: CompteSuspendu[];
   erreur?: string;
@@ -39,6 +43,15 @@ export function ModerationVue({
           />
           {erreur ? <Notice>{erreur}</Notice> : null}
           {info ? <Notice tone="success">{info}</Notice> : null}
+
+          {tresSignales.length > 0 ? (
+            <div className="flex flex-col gap-2.5">
+              <SectionLabel>Signalés par 5 personnes ou plus · {tresSignales.length}</SectionLabel>
+              {tresSignales.map((c) => (
+                <LigneTresSignale key={c.profile_id} c={c} />
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-2.5">
             <SectionLabel>À traiter · {signalements.length}</SectionLabel>
@@ -92,6 +105,22 @@ function LigneSignalement({ s }: { s: Signalement }) {
         <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
       </Card>
     </Link>
+  );
+}
+
+/** Une personne à regarder en premier : ses signalements sont dans la liste « À traiter ». */
+function LigneTresSignale({ c }: { c: CompteTresSignale }) {
+  return (
+    <Card className="flex items-center gap-3 border-danger p-3.5">
+      <Siren size={20} strokeWidth={1.9} className="shrink-0 text-danger" aria-hidden />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate text-base font-semibold">{c.nom}</span>
+        <span className="text-sm text-ink-soft">
+          {c.role === "merchant" ? "Boutique" : "Client"} · signalé par {c.signaleurs} personnes · dernier le{" "}
+          {jourEtHeure(c.dernier_signalement)}
+        </span>
+      </div>
+    </Card>
   );
 }
 

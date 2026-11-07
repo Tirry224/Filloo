@@ -57,7 +57,7 @@ export async function informerDeLaCampagne(
 export type CampagnePourMessage = { cible: string; finAt: string | null; prixGnf: number | null };
 
 /**
- * Un message de l'équipe à une boutique, à propos de son abonnement (0049).
+ * Un message de l'équipe à une boutique, à propos de son abonnement (0059).
  * Mêmes règles que pour une campagne : signé par le membre, jamais bloquant.
  */
 export async function informerDeLAbonnement(

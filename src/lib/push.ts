@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
+import { estAdressePush } from "@/lib/push-adresse";
 
 /**
  * `service_role` (`createAdminClient`) parce que les abonnements ne sont
@@ -177,6 +178,12 @@ async function envoyerPushWeb(authUserId: string, contenu: ContenuPush): Promise
 
     await Promise.all(
       abonnements.map(async (abonnement) => {
+        // Une ligne d'avant la vérification (`push-adresse.ts`) qui ne vise pas un service de push : retirée, jamais appelée.
+        if (!estAdressePush(abonnement.endpoint)) {
+          await admin.from("push_subscriptions").delete().eq("id", abonnement.id);
+          echecs.push("adresse d'abonnement inconnue, supprimée");
+          return;
+        }
         try {
           await webpush.sendNotification(
             {

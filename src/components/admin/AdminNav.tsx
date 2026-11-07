@@ -26,7 +26,7 @@ const TABS: readonly NavTab[] = [
     match: (p: string) => p.startsWith("/admin/moderation") || p.startsWith("/admin/signalement"),
   },
   {
-    // Publicité (0048) et abonnements (0049) : ce que Filloo vend.
+    // Publicité (0058) et abonnements (0059) : ce que Filloo vend.
     label: "Ventes",
     href: "/admin/publicite",
     icon: Wallet,

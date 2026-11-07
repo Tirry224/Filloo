@@ -11,7 +11,7 @@ import { estUuid, longueur, texteNettoye } from "@/lib/saisie";
 import { estTelephone, nettoyerTelephone } from "@/lib/telephone";
 
 /**
- * Les gestes des crédits de publicité (0050). La base tient le solde : le
+ * Les gestes des crédits de publicité (0060). La base tient le solde : le
  * site ne calcule jamais ce qu'il reste, il le demande.
  */
 

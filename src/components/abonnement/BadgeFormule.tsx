@@ -2,7 +2,7 @@ import { cn } from "@/lib/cn";
 import type { FormulePayante } from "@/lib/data/abonnements";
 
 /**
- * Le badge d'abonnement (0049) : il dit le NIVEAU d'abonnement, rien de
+ * Le badge d'abonnement (0059) : il dit le NIVEAU d'abonnement, rien de
  * plus. Ce n'est ni une certification de la boutique, ni « Sponsorisé »
  * (qui veut dire qu'un emplacement a été payé). Même forme pour les deux,
  * seules la couleur et l'inscription changent.

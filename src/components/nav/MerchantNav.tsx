@@ -32,7 +32,7 @@ const TABS: readonly NavTab[] = [
   },
 ] as const;
 
-/* Business seulement (0049) : l'onglet Statistiques, inséré avant « Boutique ». */
+/* Business seulement (0059) : l'onglet Statistiques, inséré avant « Boutique ». */
 const STATISTIQUES: NavTab = {
   label: "Stats",
   href: "/vendeur/statistiques",

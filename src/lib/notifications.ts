@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUser } from "@/lib/push";
+import { premiereAnnonce } from "@/lib/notifications-une-fois";
 import { messagesBase } from "@/lib/espace";
 
 /**
@@ -72,6 +73,8 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
        par-dessus l'épaule. */
     const nouvelleDemande = !senderIsMerchant && nombreDeMessages === 1;
     const produit = message.products?.title;
+    // Une seule sonnerie par message, quel que soit le nombre d'appels (voir `notifications-une-fois.ts`).
+    if (!(await premiereAnnonce(`message:${messageId}`))) return;
     await sendPushToUser(recipient.auth_user_id, {
       titre: nouvelleDemande ? `Nouvelle demande de ${senderName}` : senderName,
       corps: produit

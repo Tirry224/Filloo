@@ -35,6 +35,8 @@ export type Chiffres = {
     contacts: number;
     inscriptions: number;
     messages: number;
+    /** Navigateurs distincts ce jour-là (0057) ; 0 avant le 2026-11-07. */
+    visiteurs?: number;
   }[];
   recherches: { mots: string; fois: number; vides: number }[];
   recherches_vides: { mots: string; fois: number }[];
@@ -66,6 +68,8 @@ export type Chiffres = {
   };
   signalements: { a_traiter: number; nouveaux: number; produits: number; boutiques: number; conversations: number };
   notifications: { abonnements_push: number; en_attente: number; en_echec: number };
+  /** Navigateurs distincts sur la période (0057). Absent tant que 0057 n'est pas appliquée. */
+  visiteurs_uniques?: number;
 };
 
 export type Connexions = {

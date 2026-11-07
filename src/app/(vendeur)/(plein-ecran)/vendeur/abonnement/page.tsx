@@ -5,7 +5,7 @@ import { getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
 import { lireMoyensPaiement } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
-/** « Mon abonnement » du commerçant (0049). Garde héritée de `(vendeur)/layout.tsx`. */
+/** « Mon abonnement » du commerçant (0059). Garde héritée de `(vendeur)/layout.tsx`. */
 export default async function AbonnementPage({ searchParams }: { searchParams: Promise<{ erreur?: string; info?: string }> }) {
   const { erreur, info } = await searchParams;
   const supabase = await createClient();

@@ -8,7 +8,7 @@ import type { JourStat, ProduitVu, Tendance } from "@/lib/data/abonnements";
 const jourCourt = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
 
-/** Les quatre totaux de la période et le graphique des vues (formules Pro et Business, 0049). */
+/** Les quatre totaux de la période et le graphique des vues (formules Pro et Business, 0059). */
 export function ResumeStatistiques({ jours, titre }: { jours: JourStat[]; titre: string }) {
   const total = (k: keyof Omit<JourStat, "jour">) => jours.reduce((s, j) => s + j[k], 0);
   return (

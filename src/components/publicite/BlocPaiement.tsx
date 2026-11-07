@@ -5,8 +5,8 @@ import { formatGnf } from "@/lib/format";
 
 /**
  * Où envoyer l'argent, puis de quoi le retrouver : la référence du SMS et
- * le numéro qui a payé. Le même pour une publicité (0048) et un
- * abonnement (0049) : seul le geste final change.
+ * le numéro qui a payé. Le même pour une publicité (0058) et un
+ * abonnement (0059) : seul le geste final change.
  */
 export function BlocPaiement({
   montant,

@@ -1,5 +1,5 @@
 -- =====================================================================
--- 0048 : une publicité a un prix, payé à la main et vérifié par l'équipe
+-- 0058 : une publicité a un prix, payé à la main et vérifié par l'équipe
 -- =====================================================================
 -- Étape suivante du document de monétisation (section 7, « validation
 -- manuelle ») : le commerçant paie par Orange Money ou MTN MoMo sur le
@@ -73,7 +73,7 @@ create table public.tarifs_publicite (
 );
 
 comment on table public.tarifs_publicite is
-  'Prix d''une campagne (0048), lu par tous. Écrit SEULEMENT par fixer_tarif. `id` sert de cible dans journal_equipe.';
+  'Prix d''une campagne (0058), lu par tous. Écrit SEULEMENT par fixer_tarif. `id` sert de cible dans journal_equipe.';
 
 alter table public.tarifs_publicite enable row level security;
 revoke all on public.tarifs_publicite from anon, authenticated;
@@ -105,7 +105,7 @@ create table public.moyens_paiement (
 );
 
 comment on table public.moyens_paiement is
-  'Numéros Orange Money / MTN MoMo de Filloo (0048), lus par un compte connecté. Écrit SEULEMENT par fixer_moyen_paiement.';
+  'Numéros Orange Money / MTN MoMo de Filloo (0058), lus par un compte connecté. Écrit SEULEMENT par fixer_moyen_paiement.';
 
 alter table public.moyens_paiement enable row level security;
 revoke all on public.moyens_paiement from anon, authenticated;
@@ -148,7 +148,7 @@ alter table public.campagnes
     check (rembourse_at is null or prix_gnf > 0);
 
 comment on table public.campagnes is
-  'Publicité (0047, prix et paiement 0048). Écrite SEULEMENT par demander_campagne, declarer_paiement, annuler_campagne, decider_campagne, interrompre_campagne, creer_campagne_equipe, marquer_rembourse. « Terminée » = active et fin_at passée.';
+  'Publicité (0047, prix et paiement 0058). Écrite SEULEMENT par demander_campagne, declarer_paiement, annuler_campagne, decider_campagne, interrompre_campagne, creer_campagne_equipe, marquer_rembourse. « Terminée » = active et fin_at passée.';
 
 create index campagnes_paiement_confirme_idx on public.campagnes (paiement_confirme_at)
   where paiement_confirme_at is not null;

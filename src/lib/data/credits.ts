@@ -4,7 +4,7 @@ import { abonnementARembourser, etatAbonnement, type EtatAbonnement } from "@/li
 import { lireMoyen, type MoyenPaiement } from "@/lib/data/publicite";
 
 /**
- * Les crédits de publicité (0050, décisions du porteur du projet du
+ * Les crédits de publicité (0060, décisions du porteur du projet du
  * 2026-11-07) : 1 crédit = 1 000 GNF ; packs de 10, 25 ou 50, payés comme
  * le reste et valables 12 mois ; Business en reçoit chaque mois (10 par
  * défaut), perdus à la fin de la période. Ils paient une publicité ; si

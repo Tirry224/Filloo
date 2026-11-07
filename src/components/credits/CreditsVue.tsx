@@ -29,7 +29,7 @@ const ORIGINES: Record<LotCredits["origine"], string> = {
 };
 
 /**
- * « Mes crédits » (0050) : le solde, ce qui expire bientôt, l'achat d'un
+ * « Mes crédits » (0060) : le solde, ce qui expire bientôt, l'achat d'un
  * pack (même paiement que le reste), et d'où vient chaque crédit.
  */
 export function CreditsVue({

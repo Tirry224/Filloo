@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 639 vérifications (compte du 2026-11-07, migrations 0048 à 0051
+Les 706 vérifications (compte du 2026-11-07, migrations 0001 à 0062
 comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -28,11 +28,17 @@ elle tombe sur « une boutique creee approuvee a sa case cochee » ; sans
 « cocher la case remplit la file de notifications » ; sans `0022`, sur
 « client suspendu : le fil est ferme a l'ecriture » ; sans `0041`, sur
 « un compte supprime n'est plus « mon profil client » » puis « le compte
-client supprime bloque la recreation ». Ces cinq-là ont été vérifiés en omettant réellement la migration, pas supposés.
-Pour `0048`, quatre gardes retirées une à une du fichier (propriétaire
+client supprime bloque la recreation » ; sans `0052`, sur « un commercant
+ne cree pas son produit « a la une » ». Ces six-là ont été vérifiés en
+omettant réellement la migration, pas supposés. Pour `0053` et `0054`
+(le 2026-11-07), c'est leur `revoke all` qu'on a retiré : la suite tombe
+sur « anon et authenticated n'ont aucun droit sur les deux tables ». Sans
+`0055`, `0056` ou `0057`, la suite s'arrête à leur section (vérifié le
+2026-11-07 en omettant chacune).
+Pour `0058`, quatre gardes retirées une à une du fichier (propriétaire
 dans `declarer_paiement`, moyen actif, `a_payer` dans le plafond, équipe
 dans `revenus_publicite`) font chacune tomber le test qui les nomme.
-Pour `0049`, neuf gardes retirées une à une de la migration font tomber
+Pour `0059`, neuf gardes retirées une à une de la migration font tomber
 la suite : propriétaire dans `declarer_paiement_abonnement`, limite de 10
 (`>= 11`), équipe dans `revenus_abonnements`, badge sans la grâce, seuil
 de 3 des tendances, formule dans `statistiques_boutique`, renouvellement
@@ -42,6 +48,14 @@ Pour la passe de la nuit (`appliquer_limites_abonnement`), cinq mutations
 font chacune tomber le test qui les nomme : sans priorité aux campagnes,
 `a_payer` qui protège, sans `fin_at > now()`, sans `en_attente`, sans
 `active`.
+Pour `0062` (attribution des contacts), sans la migration la suite tombe
+sur « resultats_campagnes garde ses colonnes et ajoute contacts EN FIN »,
+et neuf mutations tombent chacune sur le test qui les nomme : fenêtre de
+6 jours, contact avant le clic, autre navigateur, `count` sans
+`distinct`, autre boutique, réponse du commerçant, borne de 5 jours
+exclue, clic d'une autre campagne, autre événement. `visiteur_id is not
+null` est redondant (l'égalité avec le clic exclut déjà null) : sa
+mutation survit, c'est attendu.
 
 ## Ce que ces tests protègent
 

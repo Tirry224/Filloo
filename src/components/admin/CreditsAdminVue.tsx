@@ -29,7 +29,7 @@ const sectionDe = (a: AchatCreditsEquipe) => SECTIONS.find((s) => s.garde(a))!.t
 const BOUTON = "flex h-tap w-full cursor-pointer items-center justify-center rounded-lg text-base font-semibold";
 
 /**
- * Les crédits vus par l'équipe (0050) : les achats à vérifier, les soldes
+ * Les crédits vus par l'équipe (0060) : les achats à vérifier, les soldes
  * des boutiques, et la correction à la main (offrir ou retirer, toujours
  * avec un motif signé dans l'historique).
  */

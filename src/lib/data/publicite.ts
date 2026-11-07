@@ -7,7 +7,7 @@ import { shopPhotoUrl } from "@/lib/storage";
 import type { Product } from "@/lib/types";
 
 /**
- * La publicité de Filloo (0047, puis 0048 pour les prix). Un commerçant
+ * La publicité de Filloo (0047, puis 0058 pour les prix). Un commerçant
  * DEMANDE une campagne au prix de la grille (`tarifs_publicite`, fixée par
  * l'équipe), paie par Orange Money ou MTN MoMo hors de Filloo et déclare
  * la référence ; l'équipe vérifie le paiement, puis accepte ou refuse.
@@ -135,14 +135,14 @@ export function estARembourser(c: {
   paiement_moyen?: string | null;
 }): boolean {
   const paye = !!(c.paiement_declare_at || c.paiement_confirme_at) && (c.prix_gnf ?? 0) > 0;
-  // Payée en crédits : la base les rend toute seule (0050), rien à rembourser en argent.
+  // Payée en crédits : la base les rend toute seule (0060), rien à rembourser en argent.
   if (!paye || c.rembourse_at || c.paiement_moyen === "credits") return false;
   return c.statut === "refusee" || (c.statut === "annulee" && !c.debut_at);
 }
 
 export type Tarifs = Record<TypeCampagne, Partial<Record<(typeof DUREES)[number], number>>>;
 
-/** La grille des prix, lisible par tous (0048). Une case vide : l'offre n'a pas encore de prix. */
+/** La grille des prix, lisible par tous (0058). Une case vide : l'offre n'a pas encore de prix. */
 export async function lireTarifs(supabase: Client): Promise<Tarifs> {
   const { data, error } = await supabase.from("tarifs_publicite").select("type, duree_jours, prix_gnf");
   if (error) throw error;
@@ -158,7 +158,7 @@ export async function lireTarifs(supabase: Client): Promise<Tarifs> {
 
 export type MoyenDePaiement = { moyen: MoyenMobile; numero: string; titulaire: string; actif: boolean };
 
-/** Les numéros officiels où le commerçant envoie son paiement (0048). */
+/** Les numéros officiels où le commerçant envoie son paiement (0058). */
 export async function lireMoyensPaiement(supabase: Client): Promise<MoyenDePaiement[]> {
   const { data, error } = await supabase.from("moyens_paiement").select("moyen, numero, titulaire, actif").order("moyen");
   if (error) throw error;
@@ -178,6 +178,8 @@ export type CampagneCommercant = {
   categorie: string | null;
   vues: number;
   clics: number;
+  /** Navigateurs qui ont contacté la boutique dans les 5 jours après un clic (0062). */
+  contacts: number;
   prixGnf: number | null;
   paiementMoyen: MoyenPaiement | null;
   paiementReference: string | null;
@@ -215,6 +217,7 @@ export async function mesCampagnes(supabase: Client): Promise<CampagneCommercant
     categorie: c.categories?.name ?? null,
     vues: Number(parCampagne.get(c.id)?.vues ?? 0),
     clics: Number(parCampagne.get(c.id)?.clics ?? 0),
+    contacts: Number(parCampagne.get(c.id)?.contacts ?? 0),
     prixGnf: c.prix_gnf,
     paiementMoyen: lireMoyen(c.paiement_moyen),
     paiementReference: c.paiement_reference,
@@ -230,6 +233,8 @@ export type CampagneEquipe = Database["public"]["Functions"]["campagnes_equipe"]
   etat: EtatCampagne;
   vues: number;
   clics: number;
+  /** Navigateurs qui ont contacté la boutique dans les 5 jours après un clic (0062). */
+  contacts: number;
   aRembourser: boolean;
 };
 
@@ -246,13 +251,14 @@ export async function campagnesEquipe(supabase: Client): Promise<CampagneEquipe[
     etat: etatCampagne(c),
     vues: Number(parCampagne.get(c.id)?.vues ?? 0),
     clics: Number(parCampagne.get(c.id)?.clics ?? 0),
+    contacts: Number(parCampagne.get(c.id)?.contacts ?? 0),
     aRembourser: estARembourser(c),
   }));
 }
 
 export type RevenuDuMois = { mois: string; encaisse: number; rembourse: number; campagnes: number };
 
-/** Ce que la publicité a rapporté, mois par mois (0048, équipe seulement). */
+/** Ce que la publicité a rapporté, mois par mois (0058, équipe seulement). */
 export async function revenusPublicite(supabase: Client): Promise<RevenuDuMois[]> {
   const { data, error } = await supabase.rpc("revenus_publicite");
   if (error) throw error;

@@ -16,11 +16,11 @@ set client_min_messages = notice;
 -- les clés étrangères jusqu'aux messages, ce qui vérifie au passage que le
 -- chaînage est correct.
 -- `truncate … cascade` suit AUSSI `tarifs_publicite.modifie_par` (vers
--- `equipe`, 0048) et viderait les tarifs : on les garde avant, et la
--- section 0048 les remet.
+-- `equipe`, 0058) et viderait les tarifs : on les garde avant, et la
+-- section 0058 les remet.
 create temp table tarifs_origine as select type, duree_jours, prix_gnf from public.tarifs_publicite;
--- Même chose pour `tarifs_abonnement` (0049), remis dans la section 0049.
--- `credits_inclus` (0050) aussi, remis dans la section 0050.
+-- Même chose pour `tarifs_abonnement` (0059), remis dans la section 0059.
+-- `credits_inclus` (0060) aussi, remis dans la section 0060.
 create temp table tarifs_abo_origine as select formule, prix_gnf, credits_inclus from public.tarifs_abonnement;
 truncate auth.users cascade;
 
@@ -3116,9 +3116,9 @@ update public.products set status = 'active'
  where id in ('a0470000-0000-0000-0000-0000000000f1', 'a0470000-0000-0000-0000-0000000000f2',
               'a0470000-0000-0000-0000-0000000000e1', 'a0470000-0000-0000-0000-0000000000e2');
 
--- Depuis 0048, les campagnes ont un prix : cette section rejoue le chemin
+-- Depuis 0058, les campagnes ont un prix : cette section rejoue le chemin
 -- GRATUIT de 0047 (tarifs à 0). Les tarifs d'origine, gardés en tête
--- de fichier, sont remis dans la section 0048.
+-- de fichier, sont remis dans la section 0058.
 insert into public.tarifs_publicite (type, duree_jours, prix_gnf) select type, duree_jours, 0 from tarifs_origine;
 
 -- Les droits.
@@ -3571,7 +3571,439 @@ select pg_temp.check('0047 : l''equipe lit les resultats de toutes les campagnes
 reset role;
 
 -- =====================================================================
--- Une publicité a un prix, payé à la main et vérifié par l'équipe (0048)
+-- Un commerçant crée un produit sans le mettre « à la une » (0052)
+-- =====================================================================
+-- Avant 0052, `authenticated` avait INSERT sur toute la table : la
+-- policy « je cree mes produits » acceptait la ligne (sa boutique, compte
+-- actif) avec is_featured, contact_count ou masque_par_equipe choisis.
+-- `pg_temp.refuse` : vrai si l'instruction est refusée par un DROIT
+-- (« permission denied »), pas par le RLS (même code 42501, autre texte).
+create or replace function pg_temp.refuse(q text) returns boolean
+language plpgsql as $$
+begin
+  execute q;
+  return false;
+exception when insufficient_privilege then
+  return sqlerrm like 'permission denied%';
+end $$;
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0520000-0000-0000-0000-00000000000a', 'm0052@test.gn', '{"role":"merchant","full_name":"Marchand M52","phone":"620005201"}');
+update public.profiles set id = auth_user_id where auth_user_id = 'a0520000-0000-0000-0000-00000000000a';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0520000-0000-0000-0000-0000000000a1', 'a0520000-0000-0000-0000-00000000000a', 'Chez M52', 1);
+
+set role authenticated;
+select pg_temp.login('a0520000-0000-0000-0000-00000000000a');
+-- Exactement l'insertion du site et de l'app.
+insert into public.products (id, merchant_id, category_id, title, description, price_gnf, is_negotiable, status)
+values ('a0520000-0000-0000-0000-0000000000f1', 'a0520000-0000-0000-0000-0000000000a1', 1,
+        'Riz de Kankan', null, 250000, true, 'draft');
+reset role;
+select pg_temp.check('0052 : l''insertion du site et de l''app passe, colonnes reservees a leur defaut',
+  (select not is_featured and contact_count = 0 and not masque_par_equipe
+          and created_at is not null and updated_at is not null and is_negotiable
+     from public.products where id = 'a0520000-0000-0000-0000-0000000000f1'));
+
+set role authenticated;
+select pg_temp.login('a0520000-0000-0000-0000-00000000000a');
+do $$
+begin
+  insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+  values ('a0520000-0000-0000-0000-0000000000f1', 'a0520000-0000-0000-0000-0000000000a1', 1, 'Riz de Kankan', 250000, 'draft');
+  raise exception 'ECHEC 0052 : un doublon d''identifiant est passe';
+exception when unique_violation then
+  raise notice 'OK    0052 : un doublon d''identifiant renvoie unique_violation, comme l''attendent le site et l''app';
+end $$;
+select pg_temp.check('0052 : un commercant ne cree pas son produit « a la une »',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, is_featured)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Mis a la une', 1000, true)$q$));
+select pg_temp.check('0052 : un commercant ne gonfle pas son compteur de contacts',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, contact_count)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Tres populaire', 1000, 999)$q$));
+select pg_temp.check('0052 : un commercant ne pose pas masque_par_equipe',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, status, masque_par_equipe)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Faux masque', 1000, 'hidden', true)$q$));
+select pg_temp.check('0052 : un commercant n''antidate ni ne postdate son produit',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, created_at)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Toujours nouveau', 1000, now() + interval '1 year')$q$)
+  and pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, updated_at)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Toujours frais', 1000, now() + interval '1 year')$q$));
+reset role;
+select pg_temp.check('0052 : aucun des refus n''a laisse de produit',
+  (select count(*) from public.products where merchant_id = 'a0520000-0000-0000-0000-0000000000a1') = 1);
+select pg_temp.check('0052 : anon n''a plus aucun droit d''insertion sur products',
+  not has_table_privilege('anon', 'public.products', 'insert')
+  and not has_any_column_privilege('anon', 'public.products', 'insert'));
+select pg_temp.check('0052 : authenticated insere exactement les huit colonnes envoyees',
+  not has_table_privilege('authenticated', 'public.products', 'insert')
+  and (select array_agg(attname::text order by attname::text)
+         from pg_attribute
+        where attrelid = 'public.products'::regclass and attnum > 0 and not attisdropped
+          and has_column_privilege('authenticated', 'public.products', attname, 'insert'))
+      = array['category_id', 'description', 'id', 'is_negotiable', 'merchant_id', 'price_gnf', 'status', 'title']);
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0052 : anon est refuse par le droit, avant meme le RLS',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Anonyme', 1000)$q$));
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+
+-- =====================================================================
+-- Tables du serveur seul : essais de mot de passe (0053), notifications
+-- déjà envoyées (0054)
+-- =====================================================================
+-- Aucune politique, aucun droit pour anon/authenticated : ni lecture, ni
+-- écriture, même connecté. Seul service_role (le site) y touche.
+select pg_temp.check('0053/0054 : RLS active sans aucune politique',
+  (select bool_and(relrowsecurity) from pg_class
+    where oid in ('public.essais_mot_de_passe'::regclass, 'public.notifications_envoyees'::regclass))
+  and not exists (select 1 from pg_policies where schemaname = 'public'
+                   and tablename in ('essais_mot_de_passe', 'notifications_envoyees')));
+select pg_temp.check('0053/0054 : anon et authenticated n''ont aucun droit sur les deux tables',
+  not exists (
+    select 1
+      from unnest(array['anon', 'authenticated']) r,
+           unnest(array['public.essais_mot_de_passe', 'public.notifications_envoyees']) t,
+           unnest(array['select', 'insert', 'update', 'delete', 'truncate', 'references', 'trigger']) p
+     where has_table_privilege(r, t, p)
+        or (p in ('select', 'insert', 'update', 'references') and has_any_column_privilege(r, t, p))));
+select pg_temp.check('0053 : anon et authenticated ne touchent pas au compteur des essais',
+  not has_sequence_privilege('anon', 'public.essais_mot_de_passe_id_seq', 'usage')
+  and not has_sequence_privilege('authenticated', 'public.essais_mot_de_passe_id_seq', 'usage'));
+select pg_temp.check('0053/0054 : seul le serveur lance les purges',
+  not has_function_privilege('anon', 'public.purger_essais_mot_de_passe()', 'execute')
+  and not has_function_privilege('authenticated', 'public.purger_essais_mot_de_passe()', 'execute')
+  and not has_function_privilege('anon', 'public.purger_notifications_envoyees()', 'execute')
+  and not has_function_privilege('authenticated', 'public.purger_notifications_envoyees()', 'execute')
+  and has_function_privilege('service_role', 'public.purger_essais_mot_de_passe()', 'execute')
+  and has_function_privilege('service_role', 'public.purger_notifications_envoyees()', 'execute'));
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0530000-0000-0000-0000-00000000000c', 'c0053@test.gn', '{"role":"client","full_name":"Client C53","phone":"620005301"}');
+-- Une ligne de chaque, écrite comme le fera le site, pour que les refus
+-- de lecture aient quelque chose à cacher.
+set role service_role;
+insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c');
+insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e1');
+reset role;
+
+set role authenticated;
+select pg_temp.login('a0530000-0000-0000-0000-00000000000c');
+select pg_temp.check('0053 : connecte, on ne lit pas ses propres essais',
+  pg_temp.refuse('select count(*) from public.essais_mot_de_passe'));
+select pg_temp.check('0053 : connecte, on n''ajoute ni n''efface d''essai',
+  pg_temp.refuse($q$insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c')$q$)
+  and pg_temp.refuse('delete from public.essais_mot_de_passe')
+  and pg_temp.refuse('update public.essais_mot_de_passe set created_at = now() - interval ''1 day'''));
+select pg_temp.check('0054 : connecte, on ne lit pas les notifications envoyees',
+  pg_temp.refuse('select count(*) from public.notifications_envoyees'));
+select pg_temp.check('0054 : connecte, on ne pose ni n''efface de cle (empecher ou rejouer une notification)',
+  pg_temp.refuse($q$insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e2')$q$)
+  and pg_temp.refuse('delete from public.notifications_envoyees')
+  and pg_temp.refuse('update public.notifications_envoyees set cle = ''x'''));
+select pg_temp.check('0053/0054 : connecte, purges refusees',
+  pg_temp.refuse('select public.purger_essais_mot_de_passe()')
+  and pg_temp.refuse('select public.purger_notifications_envoyees()'));
+reset role;
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0053 : anon ne lit ni n''ecrit les essais',
+  pg_temp.refuse('select count(*) from public.essais_mot_de_passe')
+  and pg_temp.refuse($q$insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c')$q$)
+  and pg_temp.refuse('delete from public.essais_mot_de_passe'));
+select pg_temp.check('0054 : anon ne lit ni n''ecrit les notifications envoyees',
+  pg_temp.refuse('select count(*) from public.notifications_envoyees')
+  and pg_temp.refuse($q$insert into public.notifications_envoyees (cle) values ('equipe:a0530000-0000-0000-0000-0000000000e3')$q$)
+  and pg_temp.refuse('delete from public.notifications_envoyees'));
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.check('0053/0054 : les refus n''ont rien ecrit ni efface',
+  (select count(*) from public.essais_mot_de_passe) = 1
+  and (select count(*) from public.notifications_envoyees) = 1);
+
+-- Le serveur : compter, dédoublonner, purger.
+set role service_role;
+select pg_temp.check('0053 : le serveur compte les echecs recents d''un compte',
+  (select count(*) from public.essais_mot_de_passe
+    where auth_user_id = 'a0530000-0000-0000-0000-00000000000c'
+      and created_at > now() - interval '15 minutes') = 1);
+do $$
+declare n int;
+begin
+  insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e1')
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  if n = 0 then raise notice 'OK    0054 : la meme cle ne se pose pas deux fois (le rappel ne sonne pas)';
+  else raise exception 'ECHEC 0054 : une cle deja posee a ete reposee';
+  end if;
+  insert into public.notifications_envoyees (cle) values ('equipe:a0530000-0000-0000-0000-0000000000e1')
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  if n = 1 then raise notice 'OK    0054 : une cle nouvelle se pose (la premiere fois sonne)';
+  else raise exception 'ECHEC 0054 : une cle nouvelle n''a pas ete posee';
+  end if;
+end $$;
+insert into public.essais_mot_de_passe (auth_user_id, created_at)
+values ('a0530000-0000-0000-0000-00000000000c', now() - interval '25 hours');
+insert into public.notifications_envoyees (cle, created_at)
+values ('message:a0530000-0000-0000-0000-0000000000e9', now() - interval '25 hours');
+select pg_temp.check('0053 : la purge efface les essais de plus d''un jour, garde les recents',
+  public.purger_essais_mot_de_passe() = 1);
+select pg_temp.check('0054 : la purge efface les cles de plus d''un jour, garde les recentes',
+  public.purger_notifications_envoyees() = 1);
+select pg_temp.check('0053/0054 : apres purge, il reste les lignes recentes',
+  (select count(*) from public.essais_mot_de_passe) = 1
+  and (select count(*) from public.notifications_envoyees) = 2);
+reset role;
+
+delete from auth.users where id = 'a0530000-0000-0000-0000-00000000000c';
+select pg_temp.check('0053 : supprimer le compte efface ses essais',
+  not exists (select 1 from public.essais_mot_de_passe
+               where auth_user_id = 'a0530000-0000-0000-0000-00000000000c'));
+
+-- =====================================================================
+-- Une personne signalée par cinq personnes passe en tête (0055)
+-- =====================================================================
+-- S (équipe, 0042). R1..R6 : clients signaleurs. V : boutique « Chez V55 »
+-- (5 produits). W : boutique « Chez W55 » (5 produits). K : client qui a un
+-- fil avec chacune des boutiques M1..M5.
+insert into auth.users (id, email, raw_user_meta_data)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'r' || i || '0055@test.gn',
+       jsonb_build_object('role', 'client', 'full_name', 'Signaleur R' || i, 'phone', '62005510' || i)
+  from generate_series(1, 6) i;
+insert into auth.users (id, email, raw_user_meta_data)
+select ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'm' || i || '0055@test.gn',
+       jsonb_build_object('role', 'merchant', 'full_name', 'Marchand M' || i, 'phone', '62005540' || i)
+  from generate_series(1, 5) i;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0550000-0000-0000-0000-0000000000a1', 'v0055@test.gn', '{"role":"merchant","full_name":"Marchand V","phone":"620005501"}'),
+  ('a0550000-0000-0000-0000-0000000000a2', 'w0055@test.gn', '{"role":"merchant","full_name":"Marchand W","phone":"620005502"}'),
+  ('a0550000-0000-0000-0000-0000000000c1', 'k0055@test.gn', '{"role":"client","full_name":"Client K55","phone":"620005503"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0550000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0550000-0000-0000-0000-0000000000b1', 'a0550000-0000-0000-0000-0000000000a1', 'Chez V55', 1),
+  ('a0550000-0000-0000-0000-0000000000b2', 'a0550000-0000-0000-0000-0000000000a2', 'Chez W55', 1);
+insert into public.merchants (id, profile_id, shop_name, city_id)
+select ('a0550000-0000-0000-0000-0000000005' || lpad(i::text, 2, '0'))::uuid,
+       ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'Chez M' || i || '55', 1
+  from generate_series(1, 5) i;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+select ('a0550000-0000-0000-0000-0000000002' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000b1', 1, 'Produit V' || i, 10000, 'draft'
+  from generate_series(1, 5) i;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+select ('a0550000-0000-0000-0000-0000000003' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000b2', 1, 'Produit W' || i, 10000, 'draft'
+  from generate_series(1, 5) i;
+insert into public.conversations (id, client_id, merchant_id)
+select ('a0550000-0000-0000-0000-0000000006' || lpad(i::text, 2, '0'))::uuid,
+       'a0550000-0000-0000-0000-0000000000c1',
+       ('a0550000-0000-0000-0000-0000000005' || lpad(i::text, 2, '0'))::uuid
+  from generate_series(1, 5) i;
+
+select pg_temp.check('0055 : la fonction est fermee a anon, ouverte a authenticated',
+  not has_function_privilege('anon', 'public.comptes_tres_signales()', 'execute')
+  and has_function_privilege('authenticated', 'public.comptes_tres_signales()', 'execute'));
+
+-- Quatre signaleurs distincts sur un produit de V.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000201', 'Photo trompeuse'
+  from generate_series(1, 4) i;
+
+-- W : R1 signale ses 5 produits, R2..R4 un chacun : 8 signalements,
+-- 4 signaleurs. Un comptage de lignes la ferait passer.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select 'a0550000-0000-0000-0000-000000000101', 'product',
+       ('a0550000-0000-0000-0000-0000000003' || lpad(i::text, 2, '0'))::uuid, 'Contrefacon'
+  from generate_series(1, 5) i;
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000301', 'Contrefacon'
+  from generate_series(2, 4) i;
+
+-- K : chacune des 5 boutiques signale SON fil avec K.
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'conversation',
+       ('a0550000-0000-0000-0000-0000000006' || lpad(i::text, 2, '0'))::uuid, 'Insultes'
+  from generate_series(1, 5) i;
+
+-- Hors équipe : refusé.
+set role authenticated;
+select pg_temp.login('a0550000-0000-0000-0000-000000000101');
+do $$
+begin
+  perform public.comptes_tres_signales();
+  raise exception 'ECHEC 0055 : un client lit les comptes tres signales';
+exception when raise_exception then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  raise notice 'OK    0055 : un non-membre de l''equipe est refuse';
+end $$;
+
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : 4 signaleurs distincts ne suffisent pas',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+select pg_temp.check('0055 : 5 signalements d''un meme signaleur comptent pour 1 (W absente)',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a2'));
+select pg_temp.check('0055 : conversation, c''est l''autre participant qui est vise',
+  exists (select 1 from public.comptes_tres_signales()
+           where profile_id = 'a0550000-0000-0000-0000-0000000000c1'
+             and nom = 'Client K55' and role = 'client' and signaleurs = 5)
+  and not exists (select 1 from public.comptes_tres_signales()
+                   where profile_id::text like 'a0550000-0000-0000-0000-00000000040%'));
+reset role;
+
+-- Le cinquième signaleur vise la BOUTIQUE V, plus le produit.
+insert into public.reports (id, reporter_id, target_type, target_id, reason) values
+  ('a0550000-0000-0000-0000-0000000000d5', 'a0550000-0000-0000-0000-000000000105', 'merchant',
+   'a0550000-0000-0000-0000-0000000000b1', 'Boutique douteuse');
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : 5 signaleurs distincts (produit et boutique) : V present, nom de boutique, role',
+  exists (select 1 from public.comptes_tres_signales()
+           where profile_id = 'a0550000-0000-0000-0000-0000000000a1'
+             and nom = 'Chez V55' and role = 'merchant' and signaleurs = 5
+             and dernier_signalement = (select created_at from public.reports
+                                         where id = 'a0550000-0000-0000-0000-0000000000d5')));
+reset role;
+
+-- Un signalement traité ne compte plus.
+update public.reports set handled_at = now() where id = 'a0550000-0000-0000-0000-0000000000d5';
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : un signalement traite ne compte plus',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+reset role;
+
+-- R5 et R6 signalent un autre produit de V : 6 signaleurs, V passe devant K (5).
+insert into public.reports (reporter_id, target_type, target_id, reason)
+select ('a0550000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'product',
+       'a0550000-0000-0000-0000-000000000202', 'Photo trompeuse'
+  from generate_series(5, 6) i;
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : le plus signale d''abord',
+  (select array_agg(profile_id) from public.comptes_tres_signales())
+    = array['a0550000-0000-0000-0000-0000000000a1', 'a0550000-0000-0000-0000-0000000000c1']::uuid[]);
+reset role;
+
+-- Un compte déjà suspendu n'y figure plus (il est dans comptes_suspendus).
+update public.profiles set is_suspended = true, suspension_reason = 'Test 0055'
+ where id = 'a0550000-0000-0000-0000-0000000000a1';
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.check('0055 : un compte suspendu est exclu',
+  not exists (select 1 from public.comptes_tres_signales()
+               where profile_id = 'a0550000-0000-0000-0000-0000000000a1'));
+reset role;
+
+
+-- =====================================================================
+-- Une boutique créée reçoit un mot de bienvenue de l'équipe (0056)
+-- =====================================================================
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0560000-0000-0000-0000-00000000000a', 'b0056@test.gn', '{"role":"merchant","full_name":"Marchande B","phone":"620005601"}'),
+  ('a0560000-0000-0000-0000-00000000000b', 'c0056@test.gn', '{"role":"merchant","full_name":"Marchande C","phone":"620005602"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0560000-%';
+
+select pg_temp.check('0056 : la fonction du declencheur n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.boutique_creee_recoit_la_bienvenue()', 'execute')
+  and not has_function_privilege('anon', 'public.boutique_creee_recoit_la_bienvenue()', 'execute'));
+
+-- La boutique se crée comme dans l'app : insert direct de la commerçante.
+set role authenticated;
+select pg_temp.login('a0560000-0000-0000-0000-00000000000a');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0560000-0000-0000-0000-0000000000b1', 'a0560000-0000-0000-0000-00000000000a', 'Chez Bienvenue', 1);
+select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, dans son fil boutique',
+  (select count(*) from public.fil_equipe) = 1
+  and (select de_l_equipe and auteur_id is null and lu_at is null and espace = 'merchant'
+              and fil_de = 'a0560000-0000-0000-0000-00000000000a'
+              and corps like 'Bienvenue sur Filloo, Chez Bienvenue !%'
+         from public.fil_equipe));
+reset role;
+select pg_temp.check('0056 : le texte est exactement celui decide',
+  (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
+  = 'Bienvenue sur Filloo, Chez Bienvenue ! Votre boutique est prête.' || E'\n'
+    || 'Un conseil important : publiez des photos qui montrent vraiment vos produits — vos propres photos, avec une bonne lumière. Un client qui reçoit un article différent de la photo sera déçu, et cela peut entraîner des litiges et des signalements contre votre boutique.' || E'\n'
+    || 'Des photos fidèles, ce sont des clients satisfaits qui reviennent. Une question ? Répondez-nous ici.' || E'\n'
+    || '— L''équipe Filloo');
+
+update public.merchants set description = 'Nouvelle description', shop_name = 'Chez Bienvenue 2'
+ where id = 'a0560000-0000-0000-0000-0000000000b1';
+select pg_temp.check('0056 : modifier la boutique n''ajoute aucun message',
+  (select count(*) from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a') = 1);
+
+-- Jamais bloquant : un fil qui refuse tout n'empêche pas la boutique.
+begin;
+alter table public.fil_equipe add constraint t56_refuse_tout check (false) not valid;
+set role authenticated;
+select pg_temp.login('a0560000-0000-0000-0000-00000000000b');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0560000-0000-0000-0000-0000000000b2', 'a0560000-0000-0000-0000-00000000000b', 'Chez Panne', 1);
+reset role;
+select pg_temp.check('0056 : si le message echoue, la boutique se cree quand meme',
+  exists (select 1 from public.merchants where id = 'a0560000-0000-0000-0000-0000000000b2')
+  and not exists (select 1 from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000b'));
+rollback;
+
+
+-- =====================================================================
+-- Les visiteurs uniques se comptent sans savoir qui ils sont (0057)
+-- =====================================================================
+select pg_temp.check('0057 : visiteur_id est un uuid facultatif',
+  (select data_type = 'uuid' and is_nullable = 'YES' from information_schema.columns
+    where table_schema = 'public' and table_name = 'analytics_events' and column_name = 'visiteur_id'));
+select pg_temp.check('0057 : les mesures restent fermees a anon et authenticated',
+  not has_table_privilege('anon', 'public.analytics_events', 'select')
+  and not has_table_privilege('anon', 'public.analytics_events', 'insert')
+  and not has_table_privilege('authenticated', 'public.analytics_events', 'select')
+  and not has_table_privilege('authenticated', 'public.analytics_events', 'insert')
+  and not has_function_privilege('anon', 'public.suivi_chiffres(timestamptz)', 'execute')
+  and not has_function_privilege('authenticated', 'public.suivi_chiffres(timestamptz)', 'execute'));
+set role anon;
+do $$
+begin
+  insert into public.analytics_events (name, visiteur_id) values ('visite', gen_random_uuid());
+  raise exception 'ECHEC 0057 : un visiteur fabrique une mesure';
+exception when insufficient_privilege then
+  raise notice 'OK    0057 : un visiteur ne fabrique pas de mesure';
+end $$;
+reset role;
+
+-- v1 : deux visites le 1er, une le 2 ; v2 : une le 1er ; une mesure sans
+-- numéro (app) le 1er. Plus de 13 mois : la purge les emportera.
+insert into public.analytics_events (name, occurred_at, visiteur_id) values
+  ('visite',     '2000-01-01 08:00+00', 'a0570000-0000-0000-0000-0000000000a1'),
+  ('produit_vu', '2000-01-01 09:00+00', 'a0570000-0000-0000-0000-0000000000a1'),
+  ('visite',     '2000-01-01 10:00+00', 'a0570000-0000-0000-0000-0000000000a2'),
+  ('visite',     '2000-01-01 11:00+00', null),
+  ('visite',     '2000-01-02 08:00+00', 'a0570000-0000-0000-0000-0000000000a1');
+create temp table t57 as select public.suivi_chiffres('2000-01-01 00:00+00') as c;
+select pg_temp.check('0057 : visiteurs uniques sur la periode (null exclus)',
+  (select (c->>'visiteurs_uniques')::int = 2 from t57));
+select pg_temp.check('0057 : visiteurs distincts par jour',
+  (select (j->>'visiteurs')::int = 2 and (j->>'visites')::int = 3
+     from t57, jsonb_array_elements(c->'par_jour') j where j->>'jour' = '2000-01-01')
+  and (select (j->>'visiteurs')::int = 1
+     from t57, jsonb_array_elements(c->'par_jour') j where j->>'jour' = '2000-01-02'));
+select pg_temp.check('0057 : toutes les cles de 0034 sont encore la',
+  (select c ?& array['evenements', 'par_jour', 'recherches', 'recherches_vides', 'profils',
+                     'boutiques', 'produits', 'messagerie', 'signalements', 'notifications']
+          and (c->'par_jour'->0) ?& array['jour', 'visites', 'produits_vus', 'contacts', 'inscriptions', 'messages']
+     from t57));
+-- Deux instructions : une requête ne voit pas ce que sa propre purge efface.
+select pg_temp.check('0057 : la purge de 0028 retire les 5 vieilles mesures', public.purger_mesures() = 5);
+select pg_temp.check('0057 : la purge emporte aussi les numeros de visiteur',
+  not exists (select 1 from public.analytics_events where visiteur_id is not null));
+
+-- =====================================================================
+-- Une publicité a un prix, payé à la main et vérifié par l'équipe (0058)
 -- =====================================================================
 -- Mêmes personnes que 0047 : G (a047…0a, boutique a1, produits f1 cat. 1
 -- et f2 cat. 2), H (a047…0b, produits e1 et e2 masqués par l'équipe),
@@ -3591,24 +4023,24 @@ exception when raise_exception or insufficient_privilege or check_violation then
   raise notice 'OK    %', label;
 end $$;
 
-create temp table t48 (nom text primary key, id uuid);
-grant all on t48 to authenticated, anon;
+create temp table t58 (nom text primary key, id uuid);
+grant all on t58 to authenticated, anon;
 
 -- Les tarifs d'origine reviennent (0047 les avait mis à 0).
 update public.tarifs_publicite t set prix_gnf = o.prix_gnf
   from tarifs_origine o where o.type = t.type and o.duree_jours = t.duree_jours;
-select pg_temp.check('0048 : douze tarifs pre-remplis, aux prix du document',
+select pg_temp.check('0058 : douze tarifs pre-remplis, aux prix du document',
   (select count(*) from public.tarifs_publicite) = 12
   and (select string_agg(type || duree_jours || '=' || prix_gnf, ',' order by type, duree_jours)
          from public.tarifs_publicite)
       = 'boutique3=10000,boutique7=20000,boutique14=35000,boutique30=60000,'
         'categorie3=5000,categorie7=10000,categorie14=18000,categorie30=32000,'
         'produit3=7000,produit7=15000,produit14=25000,produit30=45000');
-select pg_temp.check('0048 : aucun moyen de paiement au depart',
+select pg_temp.check('0058 : aucun moyen de paiement au depart',
   not exists (select 1 from public.moyens_paiement));
 
 -- Les droits.
-select pg_temp.check('0048 : les fonctions de prix et de paiement sont fermees a anon, ouvertes a authenticated',
+select pg_temp.check('0058 : les fonctions de prix et de paiement sont fermees a anon, ouvertes a authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
                    and has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
@@ -3616,7 +4048,7 @@ select pg_temp.check('0048 : les fonctions de prix et de paiement sont fermees a
        'public.declarer_paiement(uuid, text, text, text)',
        'public.creer_campagne_equipe(uuid, text, uuid, int, int, text, text)',
        'public.marquer_rembourse(uuid)', 'public.revenus_publicite()', 'public.campagnes_equipe()']) as f));
-select pg_temp.check('0048 : personne n''ecrit un tarif ni un numero directement',
+select pg_temp.check('0058 : personne n''ecrit un tarif ni un numero directement',
   (select bool_and(not has_table_privilege(r, t, p))
      from unnest(array['anon', 'authenticated']) r,
           unnest(array['public.tarifs_publicite', 'public.moyens_paiement']) t,
@@ -3624,58 +4056,58 @@ select pg_temp.check('0048 : personne n''ecrit un tarif ni un numero directement
   and has_table_privilege('anon', 'public.tarifs_publicite', 'select')
   and not has_table_privilege('anon', 'public.moyens_paiement', 'select')
   and has_table_privilege('authenticated', 'public.moyens_paiement', 'select'));
-select pg_temp.refuse('0048 : une campagne a payer a un prix (contrainte)',
+select pg_temp.refuse('0058 : une campagne a payer a un prix (contrainte)',
   $q$insert into public.campagnes (merchant_id, type, duree_jours, statut, prix_gnf)
      values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 7, 'a_payer', 0)$q$);
-select pg_temp.refuse('0048 : une campagne offerte est gratuite (contrainte)',
+select pg_temp.refuse('0058 : une campagne offerte est gratuite (contrainte)',
   $q$insert into public.campagnes (merchant_id, type, duree_jours, prix_gnf, paiement_moyen)
      values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 7, 5000, 'offert')$q$);
 
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0048 : un visiteur lit les prix',
+select pg_temp.check('0058 : un visiteur lit les prix',
   (select count(*) from public.tarifs_publicite) = 12);
-select pg_temp.refuse('0048 : un visiteur ne lit pas les numeros de paiement',
+select pg_temp.refuse('0058 : un visiteur ne lit pas les numeros de paiement',
   'select 1 from public.moyens_paiement');
 reset role;
 
 -- Un non-membre ne fixe rien.
 set role authenticated;
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : un commercant ne fixe pas un tarif',
+select pg_temp.refuse('0058 : un commercant ne fixe pas un tarif',
   $q$select public.fixer_tarif('produit', 7, 1)$q$, 'équipe');
-select pg_temp.refuse('0048 : un commercant ne fixe pas un numero de paiement',
+select pg_temp.refuse('0058 : un commercant ne fixe pas un numero de paiement',
   $q$select public.fixer_moyen_paiement('orange_money', '620000000', 'Escroc', true)$q$, 'équipe');
-select pg_temp.refuse('0048 : un commercant n''ecrit pas un tarif directement',
+select pg_temp.refuse('0058 : un commercant n''ecrit pas un tarif directement',
   $q$update public.tarifs_publicite set prix_gnf = 1$q$);
-select pg_temp.refuse('0048 : un commercant n''ecrit pas un numero directement',
+select pg_temp.refuse('0058 : un commercant n''ecrit pas un numero directement',
   $q$insert into public.moyens_paiement (moyen, numero, titulaire, actif) values ('mtn_momo', '620000000', 'Escroc', true)$q$);
-select pg_temp.check('0048 : un compte connecte lit les numeros (aucun pour l''instant)',
+select pg_temp.check('0058 : un compte connecte lit les numeros (aucun pour l''instant)',
   not exists (select 1 from public.moyens_paiement));
 
 -- L'équipe fixe les prix et les numéros.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0048 : un prix au-dela de 100 000 000 est refuse',
+select pg_temp.refuse('0058 : un prix au-dela de 100 000 000 est refuse',
   $q$select public.fixer_tarif('produit', 7, 100000001)$q$, '100 000 000');
-select pg_temp.refuse('0048 : un prix negatif est refuse',
+select pg_temp.refuse('0058 : un prix negatif est refuse',
   $q$select public.fixer_tarif('produit', 7, -1)$q$, '100 000 000');
-select pg_temp.refuse('0048 : une duree de tarif hors liste est refusee',
+select pg_temp.refuse('0058 : une duree de tarif hors liste est refusee',
   $q$select public.fixer_tarif('produit', 5, 1000)$q$, 'Durée');
 select public.fixer_tarif('produit', 7, 20000);
-select pg_temp.refuse('0048 : un numero de paiement invalide est refuse',
+select pg_temp.refuse('0058 : un numero de paiement invalide est refuse',
   $q$select public.fixer_moyen_paiement('orange_money', '62a', 'Filloo', true)$q$, 'chiffres');
-select pg_temp.refuse('0048 : un moyen de paiement inconnu est refuse',
+select pg_temp.refuse('0058 : un moyen de paiement inconnu est refuse',
   $q$select public.fixer_moyen_paiement('especes', '620000000', 'Filloo', true)$q$);
 select public.fixer_moyen_paiement('orange_money', '+224 620 00-00.01', '  Filloo SARL ', true);
 select public.fixer_moyen_paiement('mtn_momo', '664000001', 'Filloo SARL', false);
 reset role;
-select pg_temp.check('0048 : fixer un tarif le change, le signe et l''inscrit dans l''historique',
+select pg_temp.check('0058 : fixer un tarif le change, le signe et l''inscrit dans l''historique',
   (select prix_gnf = 20000 and modifie_par = 'a0420000-0000-0000-0000-000000000005' and modifie_at is not null
      from public.tarifs_publicite where type = 'produit' and duree_jours = 7)
   and exists (select 1 from public.journal_equipe j join public.tarifs_publicite t on t.id = j.cible_id
                where j.action = 'fixer_tarif' and j.cible_type = 'tarif' and j.auteur_nom = 'S'
                  and t.type = 'produit' and t.duree_jours = 7 and j.motif like '%15000 → 20000%'));
-select pg_temp.check('0048 : fixer un numero le nettoie et l''inscrit dans l''historique',
+select pg_temp.check('0058 : fixer un numero le nettoie et l''inscrit dans l''historique',
   (select numero = '224620000001' and titulaire = 'Filloo SARL' and actif
      from public.moyens_paiement where moyen = 'orange_money')
   and (select count(*) from public.journal_equipe
@@ -3685,12 +4117,12 @@ select pg_temp.check('0048 : fixer un numero le nettoie et l''inscrit dans l''hi
 delete from public.tarifs_publicite where type = 'boutique' and duree_jours = 3;
 set role authenticated;
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : une offre sans prix ne se demande pas',
+select pg_temp.refuse('0058 : une offre sans prix ne se demande pas',
   $q$select public.demander_campagne('boutique', null, null, 3)$q$, 'pas encore de prix');
 
 -- G demande : le prix est figé, la campagne est à payer.
-insert into t48 select 'g_produit', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
-select pg_temp.refuse('0048 : le doublon compte une campagne a payer',
+insert into t58 select 'g_produit', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
+select pg_temp.refuse('0058 : le doublon compte une campagne a payer',
   $q$select public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 30)$q$, 'déjà');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select public.fixer_tarif('produit', 7, 25000);
@@ -3698,255 +4130,255 @@ select public.fixer_tarif('produit', 7, 25000);
 select public.fixer_tarif('boutique', 3, 10000);
 select public.fixer_tarif('categorie', 3, 0);
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.check('0048 : une campagne payante nait a payer, au prix du jour, fige',
+select pg_temp.check('0058 : une campagne payante nait a payer, au prix du jour, fige',
   (select statut = 'a_payer' and prix_gnf = 20000 and paiement_declare_at is null
-     from public.campagnes where id = (select id from t48 where nom = 'g_produit')));
-insert into t48 select 'g_gratuite', public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', 1, 3);
-select pg_temp.check('0048 : une offre a 0 GNF nait en attente',
+     from public.campagnes where id = (select id from t58 where nom = 'g_produit')));
+insert into t58 select 'g_gratuite', public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', 1, 3);
+select pg_temp.check('0058 : une offre a 0 GNF nait en attente',
   (select statut = 'en_attente' and prix_gnf = 0
-     from public.campagnes where id = (select id from t48 where nom = 'g_gratuite')));
-insert into t48 select 'g_boutique', public.demander_campagne('boutique', null, null, 7);
-select pg_temp.refuse('0048 : le plafond de 3 compte les campagnes a payer',
+     from public.campagnes where id = (select id from t58 where nom = 'g_gratuite')));
+insert into t58 select 'g_boutique', public.demander_campagne('boutique', null, null, 7);
+select pg_temp.refuse('0058 : le plafond de 3 compte les campagnes a payer',
   $q$select public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7)$q$, 'Trois');
 reset role;
 
 -- L'équipe ne valide pas avant la déclaration.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0048 : valider une campagne a payer est refuse',
-  format('select public.decider_campagne(%L, true, null)', (select id from t48 where nom = 'g_produit')),
+select pg_temp.refuse('0058 : valider une campagne a payer est refuse',
+  format('select public.decider_campagne(%L, true, null)', (select id from t58 where nom = 'g_produit')),
   'pas encore déclaré');
 
 -- Déclarer : le propriétaire seulement, par un moyen actif.
 select pg_temp.login('a0470000-0000-0000-0000-00000000000b');
-select pg_temp.refuse('0048 : un commercant ne declare pas le paiement de la campagne d''un autre',
+select pg_temp.refuse('0058 : un commercant ne declare pas le paiement de la campagne d''un autre',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'introuvable');
+         (select id from t58 where nom = 'g_produit')), 'introuvable');
 select pg_temp.login('a0470000-0000-0000-0000-00000000000c');
-select pg_temp.refuse('0048 : un client ne declare pas de paiement',
+select pg_temp.refuse('0058 : un client ne declare pas de paiement',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'boutiques en ligne');
+         (select id from t58 where nom = 'g_produit')), 'boutiques en ligne');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0048 : l''equipe ne declare pas a la place du commercant',
+select pg_temp.refuse('0058 : l''equipe ne declare pas a la place du commercant',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')));
+         (select id from t58 where nom = 'g_produit')));
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : un moyen inactif est refuse',
+select pg_temp.refuse('0058 : un moyen inactif est refuse',
   format($q$select public.declarer_paiement(%L, 'mtn_momo', 'MP123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'pas ouvert');
-select pg_temp.refuse('0048 : le commercant ne declare pas des especes',
+         (select id from t58 where nom = 'g_produit')), 'pas ouvert');
+select pg_temp.refuse('0058 : le commercant ne declare pas des especes',
   format($q$select public.declarer_paiement(%L, 'especes', 'ES123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'Orange Money');
-select pg_temp.refuse('0048 : une reference de moins de 3 caracteres est refusee',
+         (select id from t58 where nom = 'g_produit')), 'Orange Money');
+select pg_temp.refuse('0058 : une reference de moins de 3 caracteres est refusee',
   format($q$select public.declarer_paiement(%L, 'orange_money', ' ab ', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'référence');
-select pg_temp.refuse('0048 : un numero payeur invalide est refuse',
+         (select id from t58 where nom = 'g_produit')), 'référence');
+select pg_temp.refuse('0058 : un numero payeur invalide est refuse',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '6201')$q$,
-         (select id from t48 where nom = 'g_produit')), 'chiffres');
-select pg_temp.refuse('0048 : une campagne gratuite n''attend pas de paiement',
+         (select id from t58 where nom = 'g_produit')), 'chiffres');
+select pg_temp.refuse('0058 : une campagne gratuite n''attend pas de paiement',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
-         (select id from t48 where nom = 'g_gratuite')), 'n''attend pas');
-select pg_temp.refuse('0048 : le commercant n''ecrit pas son paiement directement',
+         (select id from t58 where nom = 'g_gratuite')), 'n''attend pas');
+select pg_temp.refuse('0058 : le commercant n''ecrit pas son paiement directement',
   $q$update public.campagnes set paiement_confirme_at = now()$q$);
-select public.declarer_paiement((select id from t48 where nom = 'g_produit'), 'orange_money', 'OM123456', '620 11 22 33');
-select public.declarer_paiement((select id from t48 where nom = 'g_produit'), 'orange_money', ' OM999999 ', '620112233');
-select pg_temp.check('0048 : declarer passe en attente, et se corrige tant qu''on attend',
+select public.declarer_paiement((select id from t58 where nom = 'g_produit'), 'orange_money', 'OM123456', '620 11 22 33');
+select public.declarer_paiement((select id from t58 where nom = 'g_produit'), 'orange_money', ' OM999999 ', '620112233');
+select pg_temp.check('0058 : declarer passe en attente, et se corrige tant qu''on attend',
   (select statut = 'en_attente' and paiement_moyen = 'orange_money' and paiement_reference = 'OM999999'
           and paiement_numero = '620112233' and paiement_declare_at is not null and paiement_confirme_at is null
-     from public.campagnes where id = (select id from t48 where nom = 'g_produit')));
+     from public.campagnes where id = (select id from t58 where nom = 'g_produit')));
 
 -- L'équipe vérifie et valide ; refuse depuis « a_payer ».
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_campagne((select id from t48 where nom = 'g_produit'), true, null);
-select public.decider_campagne((select id from t48 where nom = 'g_gratuite'), true, null);
-select public.decider_campagne((select id from t48 where nom = 'g_boutique'), false, 'Pas de paiement recu');
+select public.decider_campagne((select id from t58 where nom = 'g_produit'), true, null);
+select public.decider_campagne((select id from t58 where nom = 'g_gratuite'), true, null);
+select public.decider_campagne((select id from t58 where nom = 'g_boutique'), false, 'Pas de paiement recu');
 reset role;
-select pg_temp.check('0048 : valider une campagne payante confirme le paiement et l''historique le dit',
+select pg_temp.check('0058 : valider une campagne payante confirme le paiement et l''historique le dit',
   (select statut = 'active' and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005'
           and paiement_confirme_at is not null
-     from public.campagnes where id = (select id from t48 where nom = 'g_produit'))
+     from public.campagnes where id = (select id from t58 where nom = 'g_produit'))
   and exists (select 1 from public.journal_equipe
-               where action = 'valider_campagne' and cible_id = (select id from t48 where nom = 'g_produit')
+               where action = 'valider_campagne' and cible_id = (select id from t58 where nom = 'g_produit')
                  and motif like 'Paiement vérifié : 20000 GNF, orange_money OM999999'));
-select pg_temp.check('0048 : valider une campagne gratuite ne confirme aucun paiement',
+select pg_temp.check('0058 : valider une campagne gratuite ne confirme aucun paiement',
   (select statut = 'active' and paiement_confirme_at is null and paiement_confirme_par is null
-     from public.campagnes where id = (select id from t48 where nom = 'g_gratuite')));
-select pg_temp.check('0048 : une campagne a payer se refuse',
+     from public.campagnes where id = (select id from t58 where nom = 'g_gratuite')));
+select pg_temp.check('0058 : une campagne a payer se refuse',
   (select statut = 'refusee' and motif = 'Pas de paiement recu'
-     from public.campagnes where id = (select id from t48 where nom = 'g_boutique')));
+     from public.campagnes where id = (select id from t58 where nom = 'g_boutique')));
 set role authenticated;
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : on ne declare plus une campagne validee',
+select pg_temp.refuse('0058 : on ne declare plus une campagne validee',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM000000', '620112233')$q$,
-         (select id from t48 where nom = 'g_produit')), 'n''attend pas');
+         (select id from t58 where nom = 'g_produit')), 'n''attend pas');
 -- Annuler une campagne à payer.
-insert into t48 select 'g_boutique_2', public.demander_campagne('boutique', null, null, 7);
-select public.annuler_campagne((select id from t48 where nom = 'g_boutique_2'));
-select pg_temp.check('0048 : une campagne a payer s''annule',
-  (select statut from public.campagnes where id = (select id from t48 where nom = 'g_boutique_2')) = 'annulee');
+insert into t58 select 'g_boutique_2', public.demander_campagne('boutique', null, null, 7);
+select public.annuler_campagne((select id from t58 where nom = 'g_boutique_2'));
+select pg_temp.check('0058 : une campagne a payer s''annule',
+  (select statut from public.campagnes where id = (select id from t58 where nom = 'g_boutique_2')) = 'annulee');
 -- G retient une place : boutique à payer (3 en cours avec les deux actives).
-insert into t48 select 'g_boutique_3', public.demander_campagne('boutique', null, null, 7);
+insert into t58 select 'g_boutique_3', public.demander_campagne('boutique', null, null, 7);
 
 -- Rembourser : l'équipe, une fois, ce qui a été payé puis arrêté.
-select pg_temp.refuse('0048 : un commercant ne se note pas rembourse',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'équipe');
+select pg_temp.refuse('0058 : un commercant ne se note pas rembourse',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'g_produit')), 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0048 : une campagne en cours ne se rembourse pas',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'refusée, annulée ou interrompue');
-select pg_temp.refuse('0048 : une campagne jamais payee ne se rembourse pas',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_boutique')), 'Rien n''a été payé');
-select pg_temp.refuse('0048 : une campagne gratuite ne se rembourse pas',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_gratuite')), 'Rien n''a été payé');
+select pg_temp.refuse('0058 : une campagne en cours ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'g_produit')), 'refusée, annulée ou interrompue');
+select pg_temp.refuse('0058 : une campagne jamais payee ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'g_boutique')), 'Rien n''a été payé');
+select pg_temp.refuse('0058 : une campagne gratuite ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'g_gratuite')), 'Rien n''a été payé');
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select public.annuler_campagne((select id from t48 where nom = 'g_produit'));
+select public.annuler_campagne((select id from t58 where nom = 'g_produit'));
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.marquer_rembourse((select id from t48 where nom = 'g_produit'));
-select pg_temp.refuse('0048 : un remboursement ne se note qu''une fois',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'déjà remboursée');
+select public.marquer_rembourse((select id from t58 where nom = 'g_produit'));
+select pg_temp.refuse('0058 : un remboursement ne se note qu''une fois',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'g_produit')), 'déjà remboursée');
 reset role;
-select pg_temp.check('0048 : le remboursement est signe et dans l''historique',
+select pg_temp.check('0058 : le remboursement est signe et dans l''historique',
   (select rembourse_par = 'a0420000-0000-0000-0000-000000000005' and rembourse_at is not null
-     from public.campagnes where id = (select id from t48 where nom = 'g_produit'))
+     from public.campagnes where id = (select id from t58 where nom = 'g_produit'))
   and exists (select 1 from public.journal_equipe
                where action = 'rembourser_campagne' and cible_type = 'campagne'
-                 and cible_id = (select id from t48 where nom = 'g_produit') and motif like '20000 GNF%'));
+                 and cible_id = (select id from t58 where nom = 'g_produit') and motif like '20000 GNF%'));
 
 -- L'équipe crée une campagne payée ou offerte.
 set role authenticated;
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : un commercant ne cree pas de campagne d''equipe',
+select pg_temp.refuse('0058 : un commercant ne cree pas de campagne d''equipe',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'boutique', null, null, 7, 'offert')$q$, 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0048 : creer sans moyen est refuse',
+select pg_temp.refuse('0058 : creer sans moyen est refuse',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7)$q$, 'Moyen');
-select pg_temp.refuse('0048 : creer avec un moyen inconnu est refuse',
+select pg_temp.refuse('0058 : creer avec un moyen inconnu est refuse',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7, 'carte')$q$, 'Moyen');
-select pg_temp.refuse('0048 : l''equipe ne sponsorise pas un produit masque',
+select pg_temp.refuse('0058 : l''equipe ne sponsorise pas un produit masque',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000b1', 'produit', 'a0470000-0000-0000-0000-0000000000e1', null, 7, 'especes')$q$, 'pas publié');
-select pg_temp.refuse('0048 : l''equipe ne vise pas le produit d''une autre boutique',
+select pg_temp.refuse('0058 : l''equipe ne vise pas le produit d''une autre boutique',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000b1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7, 'especes')$q$, 'pas publié');
-select pg_temp.refuse('0048 : l''equipe respecte le doublon (boutique deja a payer)',
+select pg_temp.refuse('0058 : l''equipe respecte le doublon (boutique deja a payer)',
   $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'boutique', null, null, 14, 'especes')$q$, 'déjà');
 -- G a 2 campagnes en cours ou à payer : la 2e création de l'équipe est sa 4e (plafond ignoré).
-insert into t48 select 'e_categorie', public.creer_campagne_equipe(
+insert into t58 select 'e_categorie', public.creer_campagne_equipe(
   'a0470000-0000-0000-0000-0000000000a1', 'categorie', 'a0470000-0000-0000-0000-0000000000f2', 2, 7, 'mtn_momo', ' MP777777 ');
-insert into t48 select 'e_offerte', public.creer_campagne_equipe(
+insert into t58 select 'e_offerte', public.creer_campagne_equipe(
   p_merchant => 'a0470000-0000-0000-0000-0000000000a1', p_type => 'produit',
   p_product => 'a0470000-0000-0000-0000-0000000000f1', p_duree => 3, p_moyen => 'offert');
-select pg_temp.refuse('0048 : une campagne d''equipe en cours ne se rembourse pas',
-  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'e_categorie')), 'refusée, annulée ou interrompue');
+select pg_temp.refuse('0058 : une campagne d''equipe en cours ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t58 where nom = 'e_categorie')), 'refusée, annulée ou interrompue');
 reset role;
-select pg_temp.check('0048 : une campagne d''equipe est en cours, au tarif, payee et signee',
+select pg_temp.check('0058 : une campagne d''equipe est en cours, au tarif, payee et signee',
   (select statut = 'active' and prix_gnf = 10000 and fin_at - debut_at = interval '7 days'
           and paiement_moyen = 'mtn_momo' and paiement_reference = 'MP777777'
           and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005' and paiement_confirme_at is not null
           and creee_par_equipe = 'a0420000-0000-0000-0000-000000000005'
           and decidee_par = 'a0420000-0000-0000-0000-000000000005'
-     from public.campagnes where id = (select id from t48 where nom = 'e_categorie')));
-select pg_temp.check('0048 : une campagne offerte coute 0 et passe le plafond de 3',
+     from public.campagnes where id = (select id from t58 where nom = 'e_categorie')));
+select pg_temp.check('0058 : une campagne offerte coute 0 et passe le plafond de 3',
   (select statut = 'active' and prix_gnf = 0 and paiement_moyen = 'offert'
-     from public.campagnes where id = (select id from t48 where nom = 'e_offerte'))
+     from public.campagnes where id = (select id from t58 where nom = 'e_offerte'))
   and (select count(*) from public.campagnes
         where merchant_id = 'a0470000-0000-0000-0000-0000000000a1'
           and (statut in ('a_payer', 'en_attente') or (statut = 'active' and fin_at > now()))) = 4);
-select pg_temp.check('0048 : creer une campagne est dans l''historique',
+select pg_temp.check('0058 : creer une campagne est dans l''historique',
   (select count(*) from public.journal_equipe
     where action = 'creer_campagne' and cible_type = 'campagne'
-      and cible_id in (select id from t48 where nom like 'e_%')) = 2);
+      and cible_id in (select id from t58 where nom like 'e_%')) = 2);
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0048 : une campagne d''equipe est montree dans sa categorie',
+select pg_temp.check('0058 : une campagne d''equipe est montree dans sa categorie',
   exists (select 1 from public.produits_sponsorises(null, 2, 4)
-           where campagne_id = (select id from t48 where nom = 'e_categorie')));
+           where campagne_id = (select id from t58 where nom = 'e_categorie')));
 reset role;
 
 -- L'interrompre la rend remboursable ; le remboursement daté du mois dernier.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.interrompre_campagne((select id from t48 where nom = 'e_categorie'), 'Produit en rupture');
-select public.marquer_rembourse((select id from t48 where nom = 'e_categorie'));
+select public.interrompre_campagne((select id from t58 where nom = 'e_categorie'), 'Produit en rupture');
+select public.marquer_rembourse((select id from t58 where nom = 'e_categorie'));
 reset role;
 update public.campagnes set rembourse_at = now() - interval '40 days'
- where id = (select id from t48 where nom = 'e_categorie');
+ where id = (select id from t58 where nom = 'e_categorie');
 
 -- La file de l'équipe montre le paiement.
 set role authenticated;
-select pg_temp.check('0048 : la file de l''equipe montre prix, paiement et remboursement',
+select pg_temp.check('0058 : la file de l''equipe montre prix, paiement et remboursement',
   exists (select 1 from public.campagnes_equipe() ce
-           where ce.id = (select id from t48 where nom = 'g_produit')
+           where ce.id = (select id from t58 where nom = 'g_produit')
              and ce.prix_gnf = 20000 and ce.paiement_moyen = 'orange_money'
              and ce.paiement_reference = 'OM999999' and ce.paiement_numero = '620112233'
              and ce.paiement_declare_at is not null and ce.paiement_confirme_at is not null
              and ce.rembourse_at is not null and ce.creee_par_equipe is null)
   and exists (select 1 from public.campagnes_equipe() ce
-               where ce.id = (select id from t48 where nom = 'e_offerte')
+               where ce.id = (select id from t58 where nom = 'e_offerte')
                  and ce.creee_par_equipe = 'a0420000-0000-0000-0000-000000000005'));
 
 -- Les revenus : encaissé au mois de la vérification, remboursé au mois du remboursement.
-select pg_temp.check('0048 : les revenus du mois (offert exclu)',
+select pg_temp.check('0058 : les revenus du mois (offert exclu)',
   (select encaisse_gnf = 30000 and rembourse_gnf = 20000 and campagnes = 2
      from public.revenus_publicite()
     where mois = date_trunc('month', now() at time zone 'Africa/Conakry')::date));
-select pg_temp.check('0048 : un remboursement compte au mois ou il a ete fait',
+select pg_temp.check('0058 : un remboursement compte au mois ou il a ete fait',
   (select encaisse_gnf = 0 and rembourse_gnf = 10000 and campagnes = 0
      from public.revenus_publicite()
     where mois = date_trunc('month', (now() - interval '40 days') at time zone 'Africa/Conakry')::date)
   and (select count(*) from public.revenus_publicite()) = 2);
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0048 : un commercant ne lit pas les revenus',
+select pg_temp.refuse('0058 : un commercant ne lit pas les revenus',
   'select * from public.revenus_publicite()', 'équipe');
-select pg_temp.refuse('0048 : un commercant ne lit pas la file de l''equipe',
+select pg_temp.refuse('0058 : un commercant ne lit pas la file de l''equipe',
   'select * from public.campagnes_equipe()', 'équipe');
 reset role;
 
 -- =====================================================================
--- Une boutique peut s'abonner, Gratuit est limité à 10 produits (0049)
+-- Une boutique peut s'abonner, Gratuit est limité à 10 produits (0059)
 -- =====================================================================
--- P : commerçant « Chez P49 », produits p15 (le plus ancien), p01 … p14
+-- P : commerçant « Chez P59 », produits p15 (le plus ancien), p01 … p14
 -- (le plus récent), tous avec photo sauf p14 au départ. Q : commerçant
--- « Chez Q49 », produit q1 publié. R : client. S : équipe (0042).
--- Le moyen « orange_money » est actif et « mtn_momo » inactif (section 0048).
+-- « Chez Q59 », produit q1 publié. R : client. S : équipe (0042).
+-- Le moyen « orange_money » est actif et « mtn_momo » inactif (section 0058).
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('a0490000-0000-0000-0000-00000000000a', 'p0049@test.gn', '{"role":"merchant","full_name":"Marchand P","phone":"620004901"}'),
-  ('a0490000-0000-0000-0000-00000000000b', 'q0049@test.gn', '{"role":"merchant","full_name":"Marchand Q","phone":"620004902"}'),
-  ('a0490000-0000-0000-0000-00000000000c', 'r0049@test.gn', '{"role":"client","full_name":"Client R49","phone":"620004903"}');
+  ('a0590000-0000-0000-0000-00000000000a', 'p0059@test.gn', '{"role":"merchant","full_name":"Marchand P","phone":"620004901"}'),
+  ('a0590000-0000-0000-0000-00000000000b', 'q0059@test.gn', '{"role":"merchant","full_name":"Marchand Q","phone":"620004902"}'),
+  ('a0590000-0000-0000-0000-00000000000c', 'r0059@test.gn', '{"role":"client","full_name":"Client R59","phone":"620004903"}');
 update public.profiles set id = auth_user_id
- where auth_user_id in ('a0490000-0000-0000-0000-00000000000a', 'a0490000-0000-0000-0000-00000000000b',
-                        'a0490000-0000-0000-0000-00000000000c');
+ where auth_user_id in ('a0590000-0000-0000-0000-00000000000a', 'a0590000-0000-0000-0000-00000000000b',
+                        'a0590000-0000-0000-0000-00000000000c');
 insert into public.merchants (id, profile_id, shop_name, city_id) values
-  ('a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-00000000000a', 'Chez P49', 1),
-  ('a0490000-0000-0000-0000-0000000000b1', 'a0490000-0000-0000-0000-00000000000b', 'Chez Q49', 1);
+  ('a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-00000000000a', 'Chez P59', 1),
+  ('a0590000-0000-0000-0000-0000000000b1', 'a0590000-0000-0000-0000-00000000000b', 'Chez Q59', 1);
 
-create or replace function pg_temp.p49(n int) returns uuid
-language sql immutable as $$ select ('a0490000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
+create or replace function pg_temp.p59(n int) returns uuid
+language sql immutable as $$ select ('a0590000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
 
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status, created_at)
-select pg_temp.p49(n), 'a0490000-0000-0000-0000-0000000000a1', 1, 'Produit P' || lpad(n::text, 2, '0'),
+select pg_temp.p59(n), 'a0590000-0000-0000-0000-0000000000a1', 1, 'Produit P' || lpad(n::text, 2, '0'),
        1000 * n, 'draft', now() - make_interval(days => 20 - n)
   from generate_series(1, 13) n;
 insert into public.product_images (product_id, storage_path, position)
-select pg_temp.p49(n), 'a0490000/p' || n || '/0.webp', 0 from generate_series(1, 13) n;
+select pg_temp.p59(n), 'a0590000/p' || n || '/0.webp', 0 from generate_series(1, 13) n;
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status, created_at) values
-  (pg_temp.p49(15), 'a0490000-0000-0000-0000-0000000000a1', 1, 'Produit P15', 15000, 'draft', now() - interval '25 days');
-insert into public.product_images (product_id, storage_path, position) values (pg_temp.p49(15), 'a0490000/p15/0.webp', 0);
+  (pg_temp.p59(15), 'a0590000-0000-0000-0000-0000000000a1', 1, 'Produit P15', 15000, 'draft', now() - interval '25 days');
+insert into public.product_images (product_id, storage_path, position) values (pg_temp.p59(15), 'a0590000/p15/0.webp', 0);
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
-  ('a0490000-0000-0000-0000-000000000201', 'a0490000-0000-0000-0000-0000000000b1', 1, 'Produit Q1', 5000, 'draft');
+  ('a0590000-0000-0000-0000-000000000201', 'a0590000-0000-0000-0000-0000000000b1', 1, 'Produit Q1', 5000, 'draft');
 insert into public.product_images (product_id, storage_path, position) values
-  ('a0490000-0000-0000-0000-000000000201', 'a0490000/q1/0.webp', 0);
-update public.products set status = 'active' where id = 'a0490000-0000-0000-0000-000000000201';
+  ('a0590000-0000-0000-0000-000000000201', 'a0590000/q1/0.webp', 0);
+update public.products set status = 'active' where id = 'a0590000-0000-0000-0000-000000000201';
 
-create temp table t49 (nom text primary key, id uuid);
-grant all on t49 to authenticated, anon;
+create temp table t59 (nom text primary key, id uuid);
+grant all on t59 to authenticated, anon;
 
 -- Les tarifs d'origine reviennent (le truncate de tête les a vidés).
 insert into public.tarifs_abonnement (formule, prix_gnf) select formule, prix_gnf from tarifs_abo_origine;
-select pg_temp.check('0049 : deux tarifs pre-remplis, Pro 50 000 et Business 100 000',
+select pg_temp.check('0059 : deux tarifs pre-remplis, Pro 50 000 et Business 100 000',
   (select string_agg(formule || '=' || prix_gnf, ',' order by formule) from public.tarifs_abonnement)
     = 'business=100000,pro=50000'
   and (select count(distinct id) from public.tarifs_abonnement) = 2);
 
 -- Les droits.
-select pg_temp.check('0049 : les fonctions d''abonnement sont fermees a anon, ouvertes a authenticated',
+select pg_temp.check('0059 : les fonctions d''abonnement sont fermees a anon, ouvertes a authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
                    and has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
@@ -3956,17 +4388,17 @@ select pg_temp.check('0049 : les fonctions d''abonnement sont fermees a anon, ou
        'public.interrompre_abonnement(uuid, text)', 'public.marquer_abonnement_rembourse(uuid)',
        'public.ma_formule()', 'public.statistiques_boutique(int)', 'public.produits_les_plus_vus(int)',
        'public.tendances_filloo(int)', 'public.abonnements_equipe()', 'public.revenus_abonnements()']) as f));
-select pg_temp.check('0049 : les fonctions internes ne s''appellent ni par anon ni par authenticated',
+select pg_temp.check('0059 : les fonctions internes ne s''appellent ni par anon ni par authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
                    and not has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
        'public.formule_de(uuid)', 'public.restaurer_produits_masques(uuid)',
        'public.appliquer_limites_abonnement()', 'public.debut_prochaine_periode(uuid, text)',
        'public.produit_respecte_la_formule()']) as f));
-select pg_temp.check('0049 : les badges sont ouverts a anon et authenticated',
+select pg_temp.check('0059 : les badges sont ouverts a anon et authenticated',
   has_function_privilege('anon', 'public.badges_boutiques(uuid[])', 'execute')
   and has_function_privilege('authenticated', 'public.badges_boutiques(uuid[])', 'execute'));
-select pg_temp.check('0049 : personne n''ecrit un abonnement ni un tarif directement',
+select pg_temp.check('0059 : personne n''ecrit un abonnement ni un tarif directement',
   (select bool_and(not has_table_privilege(r, t, p))
      from unnest(array['anon', 'authenticated']) r,
           unnest(array['public.abonnements', 'public.tarifs_abonnement']) t,
@@ -3974,100 +4406,106 @@ select pg_temp.check('0049 : personne n''ecrit un abonnement ni un tarif directe
   and not has_table_privilege('anon', 'public.abonnements', 'select')
   and has_table_privilege('anon', 'public.tarifs_abonnement', 'select')
   and not has_column_privilege('authenticated', 'public.products', 'masque_par_limite', 'update'));
-select pg_temp.refuse('0049 : un abonnement a payer a un prix (contrainte)',
+select pg_temp.refuse('0059 : un abonnement a payer a un prix (contrainte)',
   $q$insert into public.abonnements (merchant_id, formule, statut, prix_gnf)
-     values ('a0490000-0000-0000-0000-0000000000a1', 'pro', 'a_payer', 0)$q$);
-select pg_temp.refuse('0049 : un abonnement offert est gratuit (contrainte)',
+     values ('a0590000-0000-0000-0000-0000000000a1', 'pro', 'a_payer', 0)$q$);
+select pg_temp.refuse('0059 : un abonnement offert est gratuit (contrainte)',
   $q$insert into public.abonnements (merchant_id, formule, prix_gnf, paiement_moyen)
-     values ('a0490000-0000-0000-0000-0000000000a1', 'pro', 5000, 'offert')$q$);
-select pg_temp.refuse('0049 : un abonnement actif a une periode (contrainte)',
+     values ('a0590000-0000-0000-0000-0000000000a1', 'pro', 5000, 'offert')$q$);
+select pg_temp.refuse('0059 : un abonnement actif a une periode (contrainte)',
   $q$insert into public.abonnements (merchant_id, formule, prix_gnf, statut)
-     values ('a0490000-0000-0000-0000-0000000000a1', 'pro', 0, 'active')$q$);
-select pg_temp.refuse('0049 : seul un produit masque porte masque_par_limite (contrainte)',
-  $q$update public.products set masque_par_limite = true where id = 'a0490000-0000-0000-0000-000000000201'$q$);
-select pg_temp.check('0049 : une boutique sans abonnement est en Gratuit',
-  public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'gratuit');
+     values ('a0590000-0000-0000-0000-0000000000a1', 'pro', 0, 'active')$q$);
+select pg_temp.refuse('0059 : seul un produit masque porte masque_par_limite (contrainte)',
+  $q$update public.products set masque_par_limite = true where id = 'a0590000-0000-0000-0000-000000000201'$q$);
+select pg_temp.check('0059 : une boutique sans abonnement est en Gratuit',
+  public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'gratuit');
 
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0049 : un visiteur lit les prix',
+select pg_temp.check('0059 : un visiteur lit les prix',
   (select count(*) from public.tarifs_abonnement) = 2);
-select pg_temp.refuse('0049 : un visiteur ne lit pas les abonnements',
+select pg_temp.refuse('0059 : un visiteur ne lit pas les abonnements',
   'select 1 from public.abonnements');
-select pg_temp.refuse('0049 : un visiteur ne lit pas la formule d''une boutique',
-  $q$select public.formule_de('a0490000-0000-0000-0000-0000000000a1')$q$);
+select pg_temp.refuse('0059 : un visiteur ne lit pas la formule d''une boutique',
+  $q$select public.formule_de('a0590000-0000-0000-0000-0000000000a1')$q$);
 reset role;
 
 
 -- La limite de la formule Gratuite (P, sans abonnement).
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : une publication groupee de 11 produits ne passe pas en Gratuit',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : une publication groupee de 11 produits ne passe pas en Gratuit',
   $q$update public.products set status = 'active'
-      where id in (select pg_temp.p49(n) from generate_series(1, 11) n)$q$, 'Formule Gratuite : 10 produits');
-select pg_temp.check('0049 : la publication groupee refusee ne laisse rien publie',
+      where id in (select pg_temp.p59(n) from generate_series(1, 11) n)$q$, 'Formule Gratuite : 10 produits');
+select pg_temp.check('0059 : la publication groupee refusee ne laisse rien publie',
   not exists (select 1 from public.products
-               where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and status = 'active'));
-update public.products set status = 'active' where id in (select pg_temp.p49(n) from generate_series(1, 10) n);
-select pg_temp.check('0049 : 10 produits se publient en Gratuit',
+               where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and status = 'active'));
+update public.products set status = 'active' where id in (select pg_temp.p59(n) from generate_series(1, 10) n);
+select pg_temp.check('0059 : 10 produits se publient en Gratuit',
   (select count(*) from public.products
-    where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and status = 'active') = 10);
-select pg_temp.refuse('0049 : le 11e produit est refuse en Gratuit, avec le message pour le commercant',
-  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p49(11)),
+    where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and status = 'active') = 10);
+select pg_temp.refuse('0059 : le 11e produit est refuse en Gratuit, avec le message pour le commercant',
+  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p59(11)),
   'Formule Gratuite : 10 produits publiés au plus. Passez à Pro pour en publier davantage.');
-update public.products set status = 'sold' where id = pg_temp.p49(10);
-update public.products set status = 'active' where id = pg_temp.p49(11);
-select pg_temp.check('0049 : un vendu libere une place',
-  (select status from public.products where id = pg_temp.p49(11)) = 'active');
-select pg_temp.refuse('0049 : remettre en vente au-dela de 10 est refuse',
-  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p49(10)), 'Formule Gratuite');
-select pg_temp.refuse('0049 : le commercant n''ecrit pas masque_par_limite',
-  format($q$update public.products set masque_par_limite = true where id = %L$q$, pg_temp.p49(11)));
-insert into public.products (id, merchant_id, category_id, title, price_gnf, status, masque_par_limite)
-values (pg_temp.p49(14), 'a0490000-0000-0000-0000-0000000000a1', 1, 'Produit P14', 14000, 'hidden', true);
-select pg_temp.check('0049 : masque_par_limite ne s''ecrit pas a la creation',
-  (select not masque_par_limite from public.products where id = pg_temp.p49(14)));
+update public.products set status = 'sold' where id = pg_temp.p59(10);
+update public.products set status = 'active' where id = pg_temp.p59(11);
+select pg_temp.check('0059 : un vendu libere une place',
+  (select status from public.products where id = pg_temp.p59(11)) = 'active');
+select pg_temp.refuse('0059 : remettre en vente au-dela de 10 est refuse',
+  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p59(10)), 'Formule Gratuite');
+select pg_temp.refuse('0059 : le commercant n''ecrit pas masque_par_limite',
+  format($q$update public.products set masque_par_limite = true where id = %L$q$, pg_temp.p59(11)));
+-- Depuis 0052 (dev), la colonne n'est même pas insérable par le commerçant :
+-- le refus vient du droit, avant le trigger de 0059.
+select pg_temp.refuse('0059 : masque_par_limite ne s''ecrit pas a la creation (droit de 0052)',
+  format($q$insert into public.products (id, merchant_id, category_id, title, price_gnf, status, masque_par_limite)
+            values (%L, 'a0590000-0000-0000-0000-0000000000a1', 1, 'Produit P14', 14000, 'hidden', true)$q$, pg_temp.p59(14)),
+  'permission denied');
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+values (pg_temp.p59(14), 'a0590000-0000-0000-0000-0000000000a1', 1, 'Produit P14', 14000, 'hidden');
+select pg_temp.check('0059 : un produit cree n''est pas masque par la limite',
+  (select not masque_par_limite from public.products where id = pg_temp.p59(14)));
 -- p12 masqué par l'équipe : c'est le message de 0046 qui parle, pas celui de la limite.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.masquer_produit(pg_temp.p49(12), 'Photo trompeuse');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : un produit masque par l''equipe garde le message de l''equipe',
-  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p49(12)), 'masqué par l''équipe');
+select public.masquer_produit(pg_temp.p59(12), 'Photo trompeuse');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : un produit masque par l''equipe garde le message de l''equipe',
+  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p59(12)), 'masqué par l''équipe');
 reset role;
-insert into public.product_images (product_id, storage_path, position) values (pg_temp.p49(14), 'a0490000/p14/0.webp', 0);
-update public.products set created_at = now() - interval '1 hour' where id = pg_temp.p49(14);
+insert into public.product_images (product_id, storage_path, position) values (pg_temp.p59(14), 'a0590000/p14/0.webp', 0);
+update public.products set created_at = now() - interval '1 hour' where id = pg_temp.p59(14);
 
 
 -- Demander : une boutique en ligne, une formule connue, une demande à la fois.
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000c');
-select pg_temp.refuse('0049 : un client ne demande pas d''abonnement',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000c');
+select pg_temp.refuse('0059 : un client ne demande pas d''abonnement',
   $q$select public.demander_abonnement('pro')$q$, 'boutiques en ligne');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : une formule inconnue est refusee',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : une formule inconnue est refusee',
   $q$select public.demander_abonnement('gold')$q$, 'Formule inconnue');
-select pg_temp.refuse('0049 : le commercant ne fixe pas un tarif',
+select pg_temp.refuse('0059 : le commercant ne fixe pas un tarif',
   $q$select public.fixer_tarif_abonnement('pro', 1)$q$, 'équipe');
-select pg_temp.refuse('0049 : le commercant n''ecrit pas un tarif directement',
+select pg_temp.refuse('0059 : le commercant n''ecrit pas un tarif directement',
   $q$update public.tarifs_abonnement set prix_gnf = 1$q$);
-insert into t49 select 'p_pro', public.demander_abonnement('pro');
-select pg_temp.refuse('0049 : une seule demande ouverte a la fois',
+insert into t59 select 'p_pro', public.demander_abonnement('pro');
+select pg_temp.refuse('0059 : une seule demande ouverte a la fois',
   $q$select public.demander_abonnement('business')$q$, 'déjà en cours');
-select pg_temp.refuse('0049 : le commercant n''ecrit pas son abonnement directement',
+select pg_temp.refuse('0059 : le commercant n''ecrit pas son abonnement directement',
   $q$update public.abonnements set statut = 'active'$q$);
 
 -- L'équipe change le prix : la demande garde le sien.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : un prix de formule negatif est refuse',
+select pg_temp.refuse('0059 : un prix de formule negatif est refuse',
   $q$select public.fixer_tarif_abonnement('pro', -1)$q$, '100 000 000');
-select pg_temp.refuse('0049 : une formule de tarif inconnue est refusee',
+select pg_temp.refuse('0059 : une formule de tarif inconnue est refusee',
   $q$select public.fixer_tarif_abonnement('gratuit', 0)$q$, 'Formule inconnue');
 select public.fixer_tarif_abonnement('pro', 60000);
 reset role;
-select pg_temp.check('0049 : une demande payante nait a payer, au prix du jour, fige',
+select pg_temp.check('0059 : une demande payante nait a payer, au prix du jour, fige',
   (select statut = 'a_payer' and prix_gnf = 50000 and paiement_declare_at is null and debut_at is null
-     from public.abonnements where id = (select id from t49 where nom = 'p_pro')));
-select pg_temp.check('0049 : fixer un tarif d''abonnement le change, le signe et l''inscrit dans l''historique',
+     from public.abonnements where id = (select id from t59 where nom = 'p_pro')));
+select pg_temp.check('0059 : fixer un tarif d''abonnement le change, le signe et l''inscrit dans l''historique',
   (select prix_gnf = 60000 and modifie_par = 'a0420000-0000-0000-0000-000000000005'
      from public.tarifs_abonnement where formule = 'pro')
   and exists (select 1 from public.journal_equipe j join public.tarifs_abonnement t on t.id = j.cible_id
@@ -4077,249 +4515,249 @@ update public.tarifs_abonnement set prix_gnf = 50000 where formule = 'pro';
 
 -- Déclarer : le propriétaire, un moyen actif.
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000b');
-select pg_temp.refuse('0049 : un commercant ne declare pas le paiement de l''abonnement d''un autre',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000b');
+select pg_temp.refuse('0059 : un commercant ne declare pas le paiement de l''abonnement d''un autre',
   format($q$select public.declarer_paiement_abonnement(%L, 'orange_money', 'OM490001', '620112233')$q$,
-         (select id from t49 where nom = 'p_pro')), 'introuvable');
+         (select id from t59 where nom = 'p_pro')), 'introuvable');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : l''equipe ne declare pas a la place du commercant',
+select pg_temp.refuse('0059 : l''equipe ne declare pas a la place du commercant',
   format($q$select public.declarer_paiement_abonnement(%L, 'orange_money', 'OM490001', '620112233')$q$,
-         (select id from t49 where nom = 'p_pro')), 'boutiques en ligne');
-select pg_temp.refuse('0049 : l''equipe ne valide pas un abonnement a payer',
-  format('select public.decider_abonnement(%L, true)', (select id from t49 where nom = 'p_pro')),
+         (select id from t59 where nom = 'p_pro')), 'boutiques en ligne');
+select pg_temp.refuse('0059 : l''equipe ne valide pas un abonnement a payer',
+  format('select public.decider_abonnement(%L, true)', (select id from t59 where nom = 'p_pro')),
   'pas encore déclaré');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : un moyen inactif est refuse',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : un moyen inactif est refuse',
   format($q$select public.declarer_paiement_abonnement(%L, 'mtn_momo', 'MP490001', '620112233')$q$,
-         (select id from t49 where nom = 'p_pro')), 'pas ouvert');
-select pg_temp.refuse('0049 : le commercant ne declare pas des especes',
+         (select id from t59 where nom = 'p_pro')), 'pas ouvert');
+select pg_temp.refuse('0059 : le commercant ne declare pas des especes',
   format($q$select public.declarer_paiement_abonnement(%L, 'especes', 'ES490001', '620112233')$q$,
-         (select id from t49 where nom = 'p_pro')), 'Orange Money');
-select pg_temp.refuse('0049 : une reference trop courte est refusee',
+         (select id from t59 where nom = 'p_pro')), 'Orange Money');
+select pg_temp.refuse('0059 : une reference trop courte est refusee',
   format($q$select public.declarer_paiement_abonnement(%L, 'orange_money', 'ab', '620112233')$q$,
-         (select id from t49 where nom = 'p_pro')), 'référence');
-select pg_temp.refuse('0049 : un numero payeur invalide est refuse',
+         (select id from t59 where nom = 'p_pro')), 'référence');
+select pg_temp.refuse('0059 : un numero payeur invalide est refuse',
   format($q$select public.declarer_paiement_abonnement(%L, 'orange_money', 'OM490001', '62')$q$,
-         (select id from t49 where nom = 'p_pro')), 'chiffres');
-select public.declarer_paiement_abonnement((select id from t49 where nom = 'p_pro'), 'orange_money', ' OM490001 ', '620 11-22.33');
-select pg_temp.check('0049 : declarer passe en attente, nettoye',
+         (select id from t59 where nom = 'p_pro')), 'chiffres');
+select public.declarer_paiement_abonnement((select id from t59 where nom = 'p_pro'), 'orange_money', ' OM490001 ', '620 11-22.33');
+select pg_temp.check('0059 : declarer passe en attente, nettoye',
   (select statut = 'en_attente' and paiement_moyen = 'orange_money' and paiement_reference = 'OM490001'
           and paiement_numero = '620112233' and paiement_declare_at is not null
-     from public.abonnements where id = (select id from t49 where nom = 'p_pro')));
+     from public.abonnements where id = (select id from t59 where nom = 'p_pro')));
 
 -- Valider : seulement l'équipe ; la période commence maintenant, un mois.
-select pg_temp.refuse('0049 : un commercant ne valide pas son abonnement',
-  format('select public.decider_abonnement(%L, true)', (select id from t49 where nom = 'p_pro')), 'équipe');
+select pg_temp.refuse('0059 : un commercant ne valide pas son abonnement',
+  format('select public.decider_abonnement(%L, true)', (select id from t59 where nom = 'p_pro')), 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_abonnement((select id from t49 where nom = 'p_pro'), true);
-select pg_temp.refuse('0049 : un abonnement ne se decide qu''une fois',
-  format('select public.decider_abonnement(%L, false, %L)', (select id from t49 where nom = 'p_pro'), 'Trop tard'),
+select public.decider_abonnement((select id from t59 where nom = 'p_pro'), true);
+select pg_temp.refuse('0059 : un abonnement ne se decide qu''une fois',
+  format('select public.decider_abonnement(%L, false, %L)', (select id from t59 where nom = 'p_pro'), 'Trop tard'),
   'déjà été décidé');
 reset role;
-select pg_temp.check('0049 : valider ouvre un mois tout de suite et confirme le paiement',
+select pg_temp.check('0059 : valider ouvre un mois tout de suite et confirme le paiement',
   (select statut = 'active' and debut_at <= now() and debut_at > now() - interval '1 minute'
           and fin_at = debut_at + interval '1 month'
           and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005' and paiement_confirme_at is not null
           and decidee_par = 'a0420000-0000-0000-0000-000000000005'
-     from public.abonnements where id = (select id from t49 where nom = 'p_pro'))
+     from public.abonnements where id = (select id from t59 where nom = 'p_pro'))
   and exists (select 1 from public.journal_equipe
                where action = 'valider_abonnement' and cible_type = 'abonnement'
-                 and cible_id = (select id from t49 where nom = 'p_pro')
+                 and cible_id = (select id from t59 where nom = 'p_pro')
                  and motif = 'Paiement vérifié : 50000 GNF, orange_money OM490001'));
-select pg_temp.check('0049 : la boutique est en Pro',
-  public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'pro');
+select pg_temp.check('0059 : la boutique est en Pro',
+  public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'pro');
 
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.check('0049 : ma_formule dit Pro, sa fin, pas de grace, pas de limite',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.check('0059 : ma_formule dit Pro, sa fin, pas de grace, pas de limite',
   (select f.formule = 'pro' and not f.en_grace and f.limite_produits is null
-          and f.fin_at = (select fin_at from public.abonnements where id = (select id from t49 where nom = 'p_pro'))
+          and f.fin_at = (select fin_at from public.abonnements where id = (select id from t59 where nom = 'p_pro'))
      from public.ma_formule() f));
-update public.products set status = 'active' where id in (pg_temp.p49(10), pg_temp.p49(13), pg_temp.p49(14), pg_temp.p49(15));
-select pg_temp.check('0049 : en Pro, plus de 10 produits se publient',
+update public.products set status = 'active' where id in (pg_temp.p59(10), pg_temp.p59(13), pg_temp.p59(14), pg_temp.p59(15));
+select pg_temp.check('0059 : en Pro, plus de 10 produits se publient',
   (select count(*) from public.products
-    where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and status = 'active') = 14);
-select pg_temp.check('0049 : la boutique lit ses abonnements',
+    where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and status = 'active') = 14);
+select pg_temp.check('0059 : la boutique lit ses abonnements',
   (select count(*) from public.abonnements) = 1);
 
 -- Renouveler avant la fin : la période suit la précédente.
-insert into t49 select 'p_pro_2', public.demander_abonnement('pro');
-select public.declarer_paiement_abonnement((select id from t49 where nom = 'p_pro_2'), 'orange_money', 'OM490002', '620112233');
+insert into t59 select 'p_pro_2', public.demander_abonnement('pro');
+select public.declarer_paiement_abonnement((select id from t59 where nom = 'p_pro_2'), 'orange_money', 'OM490002', '620112233');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_abonnement((select id from t49 where nom = 'p_pro_2'), true);
+select public.decider_abonnement((select id from t59 where nom = 'p_pro_2'), true);
 reset role;
-select pg_temp.check('0049 : un renouvellement anticipe commence a la fin du precedent',
+select pg_temp.check('0059 : un renouvellement anticipe commence a la fin du precedent',
   (select b.debut_at = a.fin_at and b.fin_at = a.fin_at + interval '1 month'
      from public.abonnements a, public.abonnements b
-    where a.id = (select id from t49 where nom = 'p_pro') and b.id = (select id from t49 where nom = 'p_pro_2')));
+    where a.id = (select id from t59 where nom = 'p_pro') and b.id = (select id from t59 where nom = 'p_pro_2')));
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.check('0049 : ma_formule donne la fin la plus lointaine',
-  (select f.fin_at = (select fin_at from public.abonnements where id = (select id from t49 where nom = 'p_pro_2'))
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.check('0059 : ma_formule donne la fin la plus lointaine',
+  (select f.fin_at = (select fin_at from public.abonnements where id = (select id from t59 where nom = 'p_pro_2'))
      from public.ma_formule() f));
 
 -- L'équipe crée Business payé en espèces : il commence tout de suite.
-select pg_temp.refuse('0049 : un commercant ne cree pas d''abonnement d''equipe',
-  $q$select public.creer_abonnement_equipe('a0490000-0000-0000-0000-0000000000a1', 'business', 'offert')$q$, 'équipe');
+select pg_temp.refuse('0059 : un commercant ne cree pas d''abonnement d''equipe',
+  $q$select public.creer_abonnement_equipe('a0590000-0000-0000-0000-0000000000a1', 'business', 'offert')$q$, 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : creer sans moyen est refuse',
-  $q$select public.creer_abonnement_equipe('a0490000-0000-0000-0000-0000000000a1', 'business')$q$, 'Moyen');
-select pg_temp.refuse('0049 : creer avec un moyen inconnu est refuse',
-  $q$select public.creer_abonnement_equipe('a0490000-0000-0000-0000-0000000000a1', 'business', 'carte')$q$, 'Moyen');
-select pg_temp.refuse('0049 : creer pour une boutique inconnue est refuse',
-  $q$select public.creer_abonnement_equipe('a0490000-0000-0000-0000-0000000000ff', 'business', 'especes')$q$, 'pas en ligne');
-insert into t49 select 'p_business', public.creer_abonnement_equipe(
-  'a0490000-0000-0000-0000-0000000000a1', 'business', 'especes', ' ES-4901 ');
-insert into t49 select 'q_offert', public.creer_abonnement_equipe(
-  p_merchant => 'a0490000-0000-0000-0000-0000000000b1', p_formule => 'pro', p_moyen => 'offert');
+select pg_temp.refuse('0059 : creer sans moyen est refuse',
+  $q$select public.creer_abonnement_equipe('a0590000-0000-0000-0000-0000000000a1', 'business')$q$, 'Moyen');
+select pg_temp.refuse('0059 : creer avec un moyen inconnu est refuse',
+  $q$select public.creer_abonnement_equipe('a0590000-0000-0000-0000-0000000000a1', 'business', 'carte')$q$, 'Moyen');
+select pg_temp.refuse('0059 : creer pour une boutique inconnue est refuse',
+  $q$select public.creer_abonnement_equipe('a0590000-0000-0000-0000-0000000000ff', 'business', 'especes')$q$, 'pas en ligne');
+insert into t59 select 'p_business', public.creer_abonnement_equipe(
+  'a0590000-0000-0000-0000-0000000000a1', 'business', 'especes', ' ES-4901 ');
+insert into t59 select 'q_offert', public.creer_abonnement_equipe(
+  p_merchant => 'a0590000-0000-0000-0000-0000000000b1', p_formule => 'pro', p_moyen => 'offert');
 reset role;
-select pg_temp.check('0049 : Business cree par l''equipe commence maintenant, au tarif, paye et signe',
+select pg_temp.check('0059 : Business cree par l''equipe commence maintenant, au tarif, paye et signe',
   (select statut = 'active' and prix_gnf = 100000 and debut_at > now() - interval '1 minute'
           and fin_at = debut_at + interval '1 month'
           and paiement_moyen = 'especes' and paiement_reference = 'ES-4901'
           and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005'
           and creee_par_equipe = 'a0420000-0000-0000-0000-000000000005'
-     from public.abonnements where id = (select id from t49 where nom = 'p_business')));
-select pg_temp.check('0049 : la formule effective est la plus haute',
-  public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'business');
-select pg_temp.check('0049 : un abonnement offert coute 0',
+     from public.abonnements where id = (select id from t59 where nom = 'p_business')));
+select pg_temp.check('0059 : la formule effective est la plus haute',
+  public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'business');
+select pg_temp.check('0059 : un abonnement offert coute 0',
   (select statut = 'active' and prix_gnf = 0 and paiement_moyen = 'offert'
-     from public.abonnements where id = (select id from t49 where nom = 'q_offert')));
-select pg_temp.check('0049 : creer un abonnement est dans l''historique',
+     from public.abonnements where id = (select id from t59 where nom = 'q_offert')));
+select pg_temp.check('0059 : creer un abonnement est dans l''historique',
   (select count(*) from public.journal_equipe
     where action = 'creer_abonnement' and cible_type = 'abonnement'
-      and cible_id in (select id from t49 where nom in ('p_business', 'q_offert'))) = 2);
+      and cible_id in (select id from t59 where nom in ('p_business', 'q_offert'))) = 2);
 
 -- Les badges : boutiques en ligne, période payée, la plus haute formule.
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0049 : un visiteur voit les badges Business et Pro, pas Gratuit',
+select pg_temp.check('0059 : un visiteur voit les badges Business et Pro, pas Gratuit',
   (select string_agg(b.merchant_id::text || '=' || b.formule, ',' order by b.merchant_id)
-     from public.badges_boutiques(array['a0490000-0000-0000-0000-0000000000a1',
-                                        'a0490000-0000-0000-0000-0000000000b1',
+     from public.badges_boutiques(array['a0590000-0000-0000-0000-0000000000a1',
+                                        'a0590000-0000-0000-0000-0000000000b1',
                                         'a0470000-0000-0000-0000-0000000000a1']::uuid[]) b)
-    = 'a0490000-0000-0000-0000-0000000000a1=business,a0490000-0000-0000-0000-0000000000b1=pro');
-select pg_temp.check('0049 : badges d''une liste vide ou nulle : rien',
+    = 'a0590000-0000-0000-0000-0000000000a1=business,a0590000-0000-0000-0000-0000000000b1=pro');
+select pg_temp.check('0059 : badges d''une liste vide ou nulle : rien',
   not exists (select 1 from public.badges_boutiques(null))
   and not exists (select 1 from public.badges_boutiques('{}'::uuid[])));
 reset role;
-update public.profiles set is_suspended = true where id = 'a0490000-0000-0000-0000-00000000000b';
+update public.profiles set is_suspended = true where id = 'a0590000-0000-0000-0000-00000000000b';
 set role anon;
-select pg_temp.check('0049 : une boutique suspendue n''a pas de badge',
-  not exists (select 1 from public.badges_boutiques(array['a0490000-0000-0000-0000-0000000000b1']::uuid[])));
+select pg_temp.check('0059 : une boutique suspendue n''a pas de badge',
+  not exists (select 1 from public.badges_boutiques(array['a0590000-0000-0000-0000-0000000000b1']::uuid[])));
 reset role;
-update public.profiles set is_suspended = false where id = 'a0490000-0000-0000-0000-00000000000b';
+update public.profiles set is_suspended = false where id = 'a0590000-0000-0000-0000-00000000000b';
 
 -- Q : demander, ne pas payer, annuler ; redemander, se faire refuser.
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000b');
-insert into t49 select 'q_business', public.demander_abonnement('business');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : on n''annule pas l''abonnement d''un autre',
-  format('select public.annuler_abonnement(%L)', (select id from t49 where nom = 'q_business')), 'introuvable');
-select pg_temp.refuse('0049 : un abonnement en cours ne s''annule pas',
-  format('select public.annuler_abonnement(%L)', (select id from t49 where nom = 'p_pro')), 'ne peut plus');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000b');
-select pg_temp.check('0049 : une boutique ne lit que ses abonnements',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000b');
+insert into t59 select 'q_business', public.demander_abonnement('business');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : on n''annule pas l''abonnement d''un autre',
+  format('select public.annuler_abonnement(%L)', (select id from t59 where nom = 'q_business')), 'introuvable');
+select pg_temp.refuse('0059 : un abonnement en cours ne s''annule pas',
+  format('select public.annuler_abonnement(%L)', (select id from t59 where nom = 'p_pro')), 'ne peut plus');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000b');
+select pg_temp.check('0059 : une boutique ne lit que ses abonnements',
   (select count(*) from public.abonnements) = 2
-  and not exists (select 1 from public.abonnements where merchant_id = 'a0490000-0000-0000-0000-0000000000a1'));
-select public.annuler_abonnement((select id from t49 where nom = 'q_business'));
-insert into t49 select 'q_business_2', public.demander_abonnement('business');
-select public.declarer_paiement_abonnement((select id from t49 where nom = 'q_business_2'), 'orange_money', 'OM490003', '620445566');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000c');
-select pg_temp.check('0049 : un client ne lit aucun abonnement',
+  and not exists (select 1 from public.abonnements where merchant_id = 'a0590000-0000-0000-0000-0000000000a1'));
+select public.annuler_abonnement((select id from t59 where nom = 'q_business'));
+insert into t59 select 'q_business_2', public.demander_abonnement('business');
+select public.declarer_paiement_abonnement((select id from t59 where nom = 'q_business_2'), 'orange_money', 'OM490003', '620445566');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000c');
+select pg_temp.check('0059 : un client ne lit aucun abonnement',
   not exists (select 1 from public.abonnements));
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : refuser exige un motif',
-  format('select public.decider_abonnement(%L, false)', (select id from t49 where nom = 'q_business_2')), 'motif');
-select public.decider_abonnement((select id from t49 where nom = 'q_business_2'), false, 'Reference introuvable');
+select pg_temp.refuse('0059 : refuser exige un motif',
+  format('select public.decider_abonnement(%L, false)', (select id from t59 where nom = 'q_business_2')), 'motif');
+select public.decider_abonnement((select id from t59 where nom = 'q_business_2'), false, 'Reference introuvable');
 reset role;
-select pg_temp.check('0049 : annuler et refuser',
-  (select statut from public.abonnements where id = (select id from t49 where nom = 'q_business')) = 'annulee'
+select pg_temp.check('0059 : annuler et refuser',
+  (select statut from public.abonnements where id = (select id from t59 where nom = 'q_business')) = 'annulee'
   and (select statut = 'refusee' and motif = 'Reference introuvable'
-         from public.abonnements where id = (select id from t49 where nom = 'q_business_2'))
+         from public.abonnements where id = (select id from t59 where nom = 'q_business_2'))
   and exists (select 1 from public.journal_equipe
-               where action = 'refuser_abonnement' and cible_id = (select id from t49 where nom = 'q_business_2')));
+               where action = 'refuser_abonnement' and cible_id = (select id from t59 where nom = 'q_business_2')));
 
 -- Interrompre Business : P retombe en Pro, sans grâce.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : interrompre exige un motif',
-  format('select public.interrompre_abonnement(%L, %L)', (select id from t49 where nom = 'p_business'), ' '), 'motif');
-select public.interrompre_abonnement((select id from t49 where nom = 'p_business'), 'Paiement en especes contrefait');
-select pg_temp.refuse('0049 : on n''interrompt pas deux fois',
-  format('select public.interrompre_abonnement(%L, %L)', (select id from t49 where nom = 'p_business'), 'Encore'), 'en cours');
+select pg_temp.refuse('0059 : interrompre exige un motif',
+  format('select public.interrompre_abonnement(%L, %L)', (select id from t59 where nom = 'p_business'), ' '), 'motif');
+select public.interrompre_abonnement((select id from t59 where nom = 'p_business'), 'Paiement en especes contrefait');
+select pg_temp.refuse('0059 : on n''interrompt pas deux fois',
+  format('select public.interrompre_abonnement(%L, %L)', (select id from t59 where nom = 'p_business'), 'Encore'), 'en cours');
 reset role;
-select pg_temp.check('0049 : un abonnement interrompu s''arrete tout de suite, sans grace',
+select pg_temp.check('0059 : un abonnement interrompu s''arrete tout de suite, sans grace',
   (select statut = 'interrompue' and fin_at <= now() and fin_at > now() - interval '1 minute'
-     from public.abonnements where id = (select id from t49 where nom = 'p_business'))
-  and public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'pro'
+     from public.abonnements where id = (select id from t59 where nom = 'p_business'))
+  and public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'pro'
   and exists (select 1 from public.journal_equipe
-               where action = 'interrompre_abonnement' and cible_id = (select id from t49 where nom = 'p_business')));
+               where action = 'interrompre_abonnement' and cible_id = (select id from t59 where nom = 'p_business')));
 
 -- Rembourser : payé puis arrêté, une fois.
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : un commercant ne se note pas rembourse',
-  format('select public.marquer_abonnement_rembourse(%L)', (select id from t49 where nom = 'p_business')), 'équipe');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : un commercant ne se note pas rembourse',
+  format('select public.marquer_abonnement_rembourse(%L)', (select id from t59 where nom = 'p_business')), 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0049 : un abonnement en cours ne se rembourse pas',
-  format('select public.marquer_abonnement_rembourse(%L)', (select id from t49 where nom = 'p_pro')), 'refusé, annulé ou interrompu');
-select pg_temp.refuse('0049 : un abonnement offert ne se rembourse pas',
-  format('select public.marquer_abonnement_rembourse(%L)', (select id from t49 where nom = 'q_offert')), 'Rien n''a été payé');
-select pg_temp.refuse('0049 : un abonnement annule jamais paye ne se rembourse pas',
-  format('select public.marquer_abonnement_rembourse(%L)', (select id from t49 where nom = 'q_business')), 'Rien n''a été payé');
-select public.marquer_abonnement_rembourse((select id from t49 where nom = 'p_business'));
-select pg_temp.refuse('0049 : un remboursement ne se note qu''une fois',
-  format('select public.marquer_abonnement_rembourse(%L)', (select id from t49 where nom = 'p_business')), 'déjà remboursé');
+select pg_temp.refuse('0059 : un abonnement en cours ne se rembourse pas',
+  format('select public.marquer_abonnement_rembourse(%L)', (select id from t59 where nom = 'p_pro')), 'refusé, annulé ou interrompu');
+select pg_temp.refuse('0059 : un abonnement offert ne se rembourse pas',
+  format('select public.marquer_abonnement_rembourse(%L)', (select id from t59 where nom = 'q_offert')), 'Rien n''a été payé');
+select pg_temp.refuse('0059 : un abonnement annule jamais paye ne se rembourse pas',
+  format('select public.marquer_abonnement_rembourse(%L)', (select id from t59 where nom = 'q_business')), 'Rien n''a été payé');
+select public.marquer_abonnement_rembourse((select id from t59 where nom = 'p_business'));
+select pg_temp.refuse('0059 : un remboursement ne se note qu''une fois',
+  format('select public.marquer_abonnement_rembourse(%L)', (select id from t59 where nom = 'p_business')), 'déjà remboursé');
 reset role;
-select pg_temp.check('0049 : le remboursement est signe et dans l''historique',
+select pg_temp.check('0059 : le remboursement est signe et dans l''historique',
   (select rembourse_par = 'a0420000-0000-0000-0000-000000000005' and rembourse_at is not null
-     from public.abonnements where id = (select id from t49 where nom = 'p_business'))
+     from public.abonnements where id = (select id from t59 where nom = 'p_business'))
   and exists (select 1 from public.journal_equipe
                where action = 'rembourser_abonnement' and cible_type = 'abonnement'
-                 and cible_id = (select id from t49 where nom = 'p_business') and motif = '100000 GNF, especes ES-4901'));
+                 and cible_id = (select id from t59 where nom = 'p_business') and motif = '100000 GNF, especes ES-4901'));
 
 -- La file et les revenus de l'équipe.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.check('0049 : la file de l''equipe montre boutique, formule et paiement',
+select pg_temp.check('0059 : la file de l''equipe montre boutique, formule et paiement',
   exists (select 1 from public.abonnements_equipe() ae
-           where ae.id = (select id from t49 where nom = 'p_pro') and ae.shop_name = 'Chez P49'
-             and ae.merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and ae.formule = 'pro'
+           where ae.id = (select id from t59 where nom = 'p_pro') and ae.shop_name = 'Chez P59'
+             and ae.merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and ae.formule = 'pro'
              and ae.prix_gnf = 50000 and ae.paiement_moyen = 'orange_money' and ae.paiement_reference = 'OM490001'
              and ae.paiement_numero = '620112233' and ae.paiement_declare_at is not null
              and ae.paiement_confirme_at is not null and ae.rembourse_at is null and ae.creee_par_equipe is null)
   and exists (select 1 from public.abonnements_equipe() ae
-               where ae.id = (select id from t49 where nom = 'p_business')
+               where ae.id = (select id from t59 where nom = 'p_business')
                  and ae.rembourse_at is not null and ae.creee_par_equipe is not null)
   and (select count(*) from public.abonnements_equipe()) = 6);
-select pg_temp.check('0049 : les revenus du mois (offert exclu, remboursement compte)',
+select pg_temp.check('0059 : les revenus du mois (offert exclu, remboursement compte)',
   (select encaisse_gnf = 200000 and rembourse_gnf = 100000 and abonnements = 3
      from public.revenus_abonnements()
     where mois = date_trunc('month', now() at time zone 'Africa/Conakry')::date)
   and (select count(*) from public.revenus_abonnements()) = 1);
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : un commercant ne lit pas les revenus d''abonnement',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : un commercant ne lit pas les revenus d''abonnement',
   'select * from public.revenus_abonnements()', 'équipe');
-select pg_temp.refuse('0049 : un commercant ne lit pas la file des abonnements',
+select pg_temp.refuse('0059 : un commercant ne lit pas la file des abonnements',
   'select * from public.abonnements_equipe()', 'équipe');
 reset role;
 
 
 -- Les statistiques (P en Pro, Q en Pro offert).
 insert into public.analytics_events (name, occurred_at, merchant_id, product_id) values
-  ('boutique_vue',    now(),                       'a0490000-0000-0000-0000-0000000000a1', null),
-  ('boutique_vue',    now(),                       'a0490000-0000-0000-0000-0000000000a1', null),
-  ('produit_vu',      now() - interval '1 day',    'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000101'),
-  ('produit_vu',      now() - interval '1 day',    'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000101'),
-  ('produit_vu',      now() - interval '1 day',    'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000101'),
-  ('produit_vu',      now() - interval '2 days',   'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000102'),
-  ('contact_ouvert',  now() - interval '1 day',    'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000101'),
-  ('whatsapp_ouvert', now(),                       'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000102'),
-  ('produit_vu',      now() - interval '40 days',  'a0490000-0000-0000-0000-0000000000a1', 'a0490000-0000-0000-0000-000000000103'),
-  ('produit_vu',      now(),                       'a0490000-0000-0000-0000-0000000000b1', 'a0490000-0000-0000-0000-000000000201'),
-  ('boutique_vue',    now(),                       'a0490000-0000-0000-0000-0000000000b1', null);
+  ('boutique_vue',    now(),                       'a0590000-0000-0000-0000-0000000000a1', null),
+  ('boutique_vue',    now(),                       'a0590000-0000-0000-0000-0000000000a1', null),
+  ('produit_vu',      now() - interval '1 day',    'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000101'),
+  ('produit_vu',      now() - interval '1 day',    'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000101'),
+  ('produit_vu',      now() - interval '1 day',    'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000101'),
+  ('produit_vu',      now() - interval '2 days',   'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000102'),
+  ('contact_ouvert',  now() - interval '1 day',    'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000101'),
+  ('whatsapp_ouvert', now(),                       'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000102'),
+  ('produit_vu',      now() - interval '40 days',  'a0590000-0000-0000-0000-0000000000a1', 'a0590000-0000-0000-0000-000000000103'),
+  ('produit_vu',      now(),                       'a0590000-0000-0000-0000-0000000000b1', 'a0590000-0000-0000-0000-000000000201'),
+  ('boutique_vue',    now(),                       'a0590000-0000-0000-0000-0000000000b1', null);
 insert into public.analytics_events (name, search_query, result_count, category_id)
 select 'recherche', q, rc, cat from (values
   ('  Riz   LOCAL ', 4, null::int), ('riz local', 4, null), ('Riz Local', 4, 1),
@@ -4328,42 +4766,42 @@ select 'recherche', q, rc, cat from (values
   (null, 3, 2), (null, 3, 2), (null, 3, 2)) v(q, rc, cat);
 
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : une periode de moins de 7 jours est refusee',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0059 : une periode de moins de 7 jours est refusee',
   'select * from public.statistiques_boutique(6)', '7 à 90');
-select pg_temp.refuse('0049 : une periode de plus de 90 jours est refusee',
+select pg_temp.refuse('0059 : une periode de plus de 90 jours est refusee',
   'select * from public.produits_les_plus_vus(91)', '7 à 90');
-select pg_temp.check('0049 : statistiques : tous les jours de la periode, meme a zero',
+select pg_temp.check('0059 : statistiques : tous les jours de la periode, meme a zero',
   (select count(*) = 7 and min(jour) = (now() at time zone 'Africa/Conakry')::date - 6
           and max(jour) = (now() at time zone 'Africa/Conakry')::date
           and sum(boutique_vues) = 2 and sum(produits_vus) = 4 and sum(contacts) = 1 and sum(whatsapp) = 1
      from public.statistiques_boutique(7)));
-select pg_temp.check('0049 : statistiques : chaque mesure tombe sur son jour',
+select pg_temp.check('0059 : statistiques : chaque mesure tombe sur son jour',
   (select produits_vus = 3 and contacts = 1 and boutique_vues = 0
      from public.statistiques_boutique(7) where jour = (now() at time zone 'Africa/Conakry')::date - 1));
-select pg_temp.check('0049 : statistiques par defaut : 30 jours, sans la mesure de 40 jours',
+select pg_temp.check('0059 : statistiques par defaut : 30 jours, sans la mesure de 40 jours',
   (select count(*) = 30 and sum(produits_vus) = 4 from public.statistiques_boutique()));
-select pg_temp.check('0049 : les produits les plus vus de la boutique, et seulement les siens',
+select pg_temp.check('0059 : les produits les plus vus de la boutique, et seulement les siens',
   (select string_agg(titre || ':' || vues || '/' || contacts, ',' order by vues desc)
      from public.produits_les_plus_vus(30)) = 'Produit P01:3/1,Produit P02:1/0');
-select pg_temp.refuse('0049 : les tendances sont reservees a Business',
+select pg_temp.refuse('0059 : les tendances sont reservees a Business',
   'select * from public.tendances_filloo(30)', 'formule Business');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000b');
-select pg_temp.check('0049 : Q ne voit que ses propres statistiques',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000b');
+select pg_temp.check('0059 : Q ne voit que ses propres statistiques',
   (select sum(produits_vus) = 1 and sum(boutique_vues) = 1 from public.statistiques_boutique(7)));
 select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0049 : une boutique Gratuite ne lit pas de statistiques',
+select pg_temp.refuse('0059 : une boutique Gratuite ne lit pas de statistiques',
   'select * from public.statistiques_boutique(30)', 'Réservé aux formules Pro et Business.');
-select pg_temp.refuse('0049 : une boutique Gratuite ne lit pas ses produits les plus vus',
+select pg_temp.refuse('0059 : une boutique Gratuite ne lit pas ses produits les plus vus',
   'select * from public.produits_les_plus_vus(30)', 'Réservé aux formules Pro et Business.');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000c');
-select pg_temp.refuse('0049 : un client ne lit pas de statistiques',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000c');
+select pg_temp.refuse('0059 : un client ne lit pas de statistiques',
   'select * from public.statistiques_boutique(30)', 'Réservé aux formules Pro et Business.');
 -- Q passe en Business (offert) pour lire les tendances.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.creer_abonnement_equipe('a0490000-0000-0000-0000-0000000000b1', 'business', 'offert');
-select pg_temp.login('a0490000-0000-0000-0000-00000000000b');
-select pg_temp.check('0049 : tendances : recherches normalisees, seuil de 3, categories nommees',
+select public.creer_abonnement_equipe('a0590000-0000-0000-0000-0000000000b1', 'business', 'offert');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000b');
+select pg_temp.check('0059 : tendances : recherches normalisees, seuil de 3, categories nommees',
   (select string_agg(genre || '|' || libelle || '|' || total, ',' order by genre, total desc, libelle)
      from public.tendances_filloo(30))
     = 'categorie|' || (select name from public.categories where id = 2) || '|3,'
@@ -4375,91 +4813,91 @@ reset role;
 update public.abonnements
    set debut_at = now() - interval '2 months' - interval '3 days',
        fin_at   = now() - interval '1 month' - interval '3 days'
- where id = (select id from t49 where nom = 'p_pro');
+ where id = (select id from t59 where nom = 'p_pro');
 update public.abonnements
    set debut_at = now() - interval '1 month' - interval '3 days',
        fin_at   = now() - interval '3 days'
- where id = (select id from t49 where nom = 'p_pro_2');
+ where id = (select id from t59 where nom = 'p_pro_2');
 select public.appliquer_limites_abonnement();
-select pg_temp.check('0049 : pendant la grace, la formule reste Pro et rien n''est masque',
-  public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'pro'
+select pg_temp.check('0059 : pendant la grace, la formule reste Pro et rien n''est masque',
+  public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'pro'
   and (select count(*) from public.products
-        where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and status = 'active') = 14);
+        where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and status = 'active') = 14);
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.check('0049 : ma_formule dit la grace',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.check('0059 : ma_formule dit la grace',
   (select f.formule = 'pro' and f.en_grace and f.fin_at < now() and f.limite_produits is null
      from public.ma_formule() f));
-select pg_temp.check('0049 : les statistiques restent ouvertes pendant la grace',
+select pg_temp.check('0059 : les statistiques restent ouvertes pendant la grace',
   (select count(*) = 7 from public.statistiques_boutique(7)));
 reset role;
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0049 : pas de badge pendant la grace',
-  not exists (select 1 from public.badges_boutiques(array['a0490000-0000-0000-0000-0000000000a1']::uuid[])));
+select pg_temp.check('0059 : pas de badge pendant la grace',
+  not exists (select 1 from public.badges_boutiques(array['a0590000-0000-0000-0000-0000000000a1']::uuid[])));
 reset role;
 
 update public.abonnements set debut_at = debut_at - interval '5 days', fin_at = fin_at - interval '5 days'
- where id in (select id from t49 where nom in ('p_pro', 'p_pro_2'));
-select pg_temp.check('0049 : apres 7 jours de grace, la boutique est en Gratuit',
-  public.formule_de('a0490000-0000-0000-0000-0000000000a1') = 'gratuit');
+ where id in (select id from t59 where nom in ('p_pro', 'p_pro_2'));
+select pg_temp.check('0059 : apres 7 jours de grace, la boutique est en Gratuit',
+  public.formule_de('a0590000-0000-0000-0000-0000000000a1') = 'gratuit');
 select public.appliquer_limites_abonnement();
-select pg_temp.check('0049 : la passe de la nuit garde les 10 plus recents et masque les plus anciens',
+select pg_temp.check('0059 : la passe de la nuit garde les 10 plus recents et masque les plus anciens',
   (select count(*) from public.products
-    where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and status = 'active') = 10
+    where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and status = 'active') = 10
   and (select string_agg(title, ',' order by title) from public.products
-        where merchant_id = 'a0490000-0000-0000-0000-0000000000a1' and masque_par_limite and status = 'hidden')
+        where merchant_id = 'a0590000-0000-0000-0000-0000000000a1' and masque_par_limite and status = 'hidden')
       = 'Produit P01,Produit P02,Produit P03,Produit P15'
-  and exists (select 1 from public.products where id = pg_temp.p49(12) and status = 'hidden'
+  and exists (select 1 from public.products where id = pg_temp.p59(12) and status = 'hidden'
                                                and masque_par_equipe and not masque_par_limite)
-  and (select count(*) from public.products where id = 'a0490000-0000-0000-0000-000000000201' and status = 'active') = 1);
+  and (select count(*) from public.products where id = 'a0590000-0000-0000-0000-000000000201' and status = 'active') = 1);
 select public.appliquer_limites_abonnement();
-select pg_temp.check('0049 : la passe de la nuit se rejoue sans rien changer',
+select pg_temp.check('0059 : la passe de la nuit se rejoue sans rien changer',
   (select count(*) from public.products where masque_par_limite) = 4);
 
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-select pg_temp.check('0049 : ma_formule dit Gratuit et la limite',
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+select pg_temp.check('0059 : ma_formule dit Gratuit et la limite',
   (select f.formule = 'gratuit' and f.limite_produits = 10 and not f.en_grace and f.fin_at is null
      from public.ma_formule() f));
-select pg_temp.refuse('0049 : en Gratuit, un produit masque par la limite ne se republie pas a 10',
-  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p49(1)), 'Formule Gratuite');
-update public.products set status = 'hidden' where id = pg_temp.p49(4);
-update public.products set status = 'active' where id = pg_temp.p49(2);
-select pg_temp.check('0049 : republier un produit masque par la limite efface le drapeau',
-  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.p49(2)));
-select pg_temp.refuse('0049 : les statistiques se ferment en Gratuit',
+select pg_temp.refuse('0059 : en Gratuit, un produit masque par la limite ne se republie pas a 10',
+  format($q$update public.products set status = 'active' where id = %L$q$, pg_temp.p59(1)), 'Formule Gratuite');
+update public.products set status = 'hidden' where id = pg_temp.p59(4);
+update public.products set status = 'active' where id = pg_temp.p59(2);
+select pg_temp.check('0059 : republier un produit masque par la limite efface le drapeau',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.p59(2)));
+select pg_temp.refuse('0059 : les statistiques se ferment en Gratuit',
   'select * from public.statistiques_boutique(7)', 'Réservé aux formules Pro et Business.');
 reset role;
 
 -- Le retour : un abonnement activé republie les produits masqués par la
 -- limite (p15), pas ceux que l'équipe a masqués ensuite (p03), pas ceux du
 -- commerçant (p04), pas un sans photo (p01).
-delete from public.product_images where product_id = pg_temp.p49(1);
+delete from public.product_images where product_id = pg_temp.p59(1);
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.masquer_produit(pg_temp.p49(3), 'Contrefacon signalee');
+select public.masquer_produit(pg_temp.p59(3), 'Contrefacon signalee');
 reset role;
-select pg_temp.check('0049 : masquer par l''equipe un produit masque par la limite garde les deux drapeaux',
-  (select status = 'hidden' and masque_par_equipe and masque_par_limite from public.products where id = pg_temp.p49(3)));
+select pg_temp.check('0059 : masquer par l''equipe un produit masque par la limite garde les deux drapeaux',
+  (select status = 'hidden' and masque_par_equipe and masque_par_limite from public.products where id = pg_temp.p59(3)));
 set role authenticated;
-select pg_temp.login('a0490000-0000-0000-0000-00000000000a');
-insert into t49 select 'p_pro_3', public.demander_abonnement('pro');
-select public.declarer_paiement_abonnement((select id from t49 where nom = 'p_pro_3'), 'orange_money', 'OM490004', '620112233');
+select pg_temp.login('a0590000-0000-0000-0000-00000000000a');
+insert into t59 select 'p_pro_3', public.demander_abonnement('pro');
+select public.declarer_paiement_abonnement((select id from t59 where nom = 'p_pro_3'), 'orange_money', 'OM490004', '620112233');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_abonnement((select id from t49 where nom = 'p_pro_3'), true);
+select public.decider_abonnement((select id from t59 where nom = 'p_pro_3'), true);
 reset role;
-select pg_temp.check('0049 : apres expiration, le nouvel abonnement commence maintenant',
-  (select debut_at > now() - interval '1 minute' from public.abonnements where id = (select id from t49 where nom = 'p_pro_3')));
-select pg_temp.check('0049 : a l''activation, les produits masques par la limite reviennent',
-  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.p49(15)));
-select pg_temp.check('0049 : un produit masque par l''equipe ne revient pas',
-  (select status = 'hidden' and masque_par_equipe from public.products where id = pg_temp.p49(3))
-  and (select status = 'hidden' and masque_par_equipe from public.products where id = pg_temp.p49(12)));
-select pg_temp.check('0049 : un produit que le commercant a masque ne revient pas',
-  (select status = 'hidden' and not masque_par_limite from public.products where id = pg_temp.p49(4)));
-select pg_temp.check('0049 : un produit masque sans photo ne revient pas (et ne bloque pas l''activation)',
-  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.p49(1)));
+select pg_temp.check('0059 : apres expiration, le nouvel abonnement commence maintenant',
+  (select debut_at > now() - interval '1 minute' from public.abonnements where id = (select id from t59 where nom = 'p_pro_3')));
+select pg_temp.check('0059 : a l''activation, les produits masques par la limite reviennent',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.p59(15)));
+select pg_temp.check('0059 : un produit masque par l''equipe ne revient pas',
+  (select status = 'hidden' and masque_par_equipe from public.products where id = pg_temp.p59(3))
+  and (select status = 'hidden' and masque_par_equipe from public.products where id = pg_temp.p59(12)));
+select pg_temp.check('0059 : un produit que le commercant a masque ne revient pas',
+  (select status = 'hidden' and not masque_par_limite from public.products where id = pg_temp.p59(4)));
+select pg_temp.check('0059 : un produit masque sans photo ne revient pas (et ne bloque pas l''activation)',
+  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.p59(1)));
 
 -- Les campagnes en cours sont maintenues (décision du 2026-11-07) : G,
 -- revenue en Gratuit avec 12 produits publiés, g01 (le plus ancien) …
@@ -4468,18 +4906,18 @@ select pg_temp.check('0049 : un produit masque sans photo ne revient pas (et ne 
 -- Attendu : g01 et g02 gardés, g03 et g04 masqués (les deux plus anciens
 -- sans campagne en cours).
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('a0491000-0000-0000-0000-00000000000a', 'g0049@test.gn', '{"role":"merchant","full_name":"Marchand G","phone":"620004904"}');
+  ('a0491000-0000-0000-0000-00000000000a', 'g0059@test.gn', '{"role":"merchant","full_name":"Marchand G","phone":"620004904"}');
 update public.profiles set id = auth_user_id where auth_user_id = 'a0491000-0000-0000-0000-00000000000a';
 insert into public.merchants (id, profile_id, shop_name, city_id) values
-  ('a0491000-0000-0000-0000-0000000000a1', 'a0491000-0000-0000-0000-00000000000a', 'Chez G49', 1);
-create or replace function pg_temp.g49(n int) returns uuid
+  ('a0491000-0000-0000-0000-0000000000a1', 'a0491000-0000-0000-0000-00000000000a', 'Chez G59', 1);
+create or replace function pg_temp.g59(n int) returns uuid
 language sql immutable as $$ select ('a0491000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status, created_at)
-select pg_temp.g49(n), 'a0491000-0000-0000-0000-0000000000a1', 1, 'Produit G' || lpad(n::text, 2, '0'),
+select pg_temp.g59(n), 'a0491000-0000-0000-0000-0000000000a1', 1, 'Produit G' || lpad(n::text, 2, '0'),
        1000 * n, 'draft', now() - make_interval(days => 30 - n)
   from generate_series(1, 12) n;
 insert into public.product_images (product_id, storage_path, position)
-select pg_temp.g49(n), 'a0491000/g' || n || '/0.webp', 0 from generate_series(1, 12) n;
+select pg_temp.g59(n), 'a0491000/g' || n || '/0.webp', 0 from generate_series(1, 12) n;
 -- Publiés pendant un Pro offert, que l'on recule ensuite au-delà de la grâce.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
@@ -4490,24 +4928,24 @@ update public.abonnements
    set debut_at = now() - interval '2 months', fin_at = now() - interval '1 month'
  where merchant_id = 'a0491000-0000-0000-0000-0000000000a1';
 insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at) values
-  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(1), 7, 0, 'active', now() - interval '1 day', now() + interval '6 days'),
-  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(2), 7, 25000, 'en_attente', null, null),
-  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(3), 7, 25000, 'a_payer', null, null),
-  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(4), 7, 0, 'active', now() - interval '8 days', now() - interval '1 day');
-select pg_temp.check('0049 : G est en Gratuit avec 12 produits publies',
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g59(1), 7, 0, 'active', now() - interval '1 day', now() + interval '6 days'),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g59(2), 7, 25000, 'en_attente', null, null),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g59(3), 7, 25000, 'a_payer', null, null),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g59(4), 7, 0, 'active', now() - interval '8 days', now() - interval '1 day');
+select pg_temp.check('0059 : G est en Gratuit avec 12 produits publies',
   public.formule_de('a0491000-0000-0000-0000-0000000000a1') = 'gratuit'
   and (select count(*) from public.products
         where merchant_id = 'a0491000-0000-0000-0000-0000000000a1' and status = 'active') = 12);
 select public.appliquer_limites_abonnement();
-select pg_temp.check('0049 : la nuit garde le produit d''une campagne active, meme le plus ancien',
-  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g49(1)));
-select pg_temp.check('0049 : la nuit garde le produit d''une campagne payee en attente de validation',
-  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g49(2)));
-select pg_temp.check('0049 : une demande a_payer ne protege pas son produit',
-  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g49(3)));
-select pg_temp.check('0049 : une campagne terminee ne protege pas son produit',
-  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g49(4)));
-select pg_temp.check('0049 : avec des campagnes, G garde exactement 10 produits, les autres sont les plus recents',
+select pg_temp.check('0059 : la nuit garde le produit d''une campagne active, meme le plus ancien',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g59(1)));
+select pg_temp.check('0059 : la nuit garde le produit d''une campagne payee en attente de validation',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g59(2)));
+select pg_temp.check('0059 : une demande a_payer ne protege pas son produit',
+  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g59(3)));
+select pg_temp.check('0059 : une campagne terminee ne protege pas son produit',
+  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g59(4)));
+select pg_temp.check('0059 : avec des campagnes, G garde exactement 10 produits, les autres sont les plus recents',
   (select count(*) from public.products
     where merchant_id = 'a0491000-0000-0000-0000-0000000000a1' and status = 'active') = 10
   and (select string_agg(title, ',' order by title) from public.products
@@ -4520,41 +4958,41 @@ delete from public.campagnes where merchant_id = 'a0491000-0000-0000-0000-000000
 
 
 -- =====================================================================
--- Une boutique achète des crédits et paie sa publicité avec (0050)
+-- Une boutique achète des crédits et paie sa publicité avec (0060)
 -- =====================================================================
--- U : commerçant « Chez U50 », produits u1 … u4 publiés (cat. 1).
--- V : commerçant « Chez V50 », produit v1 publié. W : client. S : équipe.
--- Moyens : « orange_money » actif, « mtn_momo » inactif (section 0048).
--- Tarifs de publicité d'origine (section 0048) : produit 3 j = 7 000,
+-- U : commerçant « Chez U60 », produits u1 … u4 publiés (cat. 1).
+-- V : commerçant « Chez V60 », produit v1 publié. W : client. S : équipe.
+-- Moyens : « orange_money » actif, « mtn_momo » inactif (section 0058).
+-- Tarifs de publicité d'origine (section 0058) : produit 3 j = 7 000,
 -- produit 7 j = 15 000, boutique 30 j = 60 000.
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('a0500000-0000-0000-0000-00000000000a', 'u0050@test.gn', '{"role":"merchant","full_name":"Marchand U","phone":"620005001"}'),
-  ('a0500000-0000-0000-0000-00000000000b', 'v0050@test.gn', '{"role":"merchant","full_name":"Marchand V","phone":"620005002"}'),
-  ('a0500000-0000-0000-0000-00000000000c', 'w0050@test.gn', '{"role":"client","full_name":"Client W50","phone":"620005003"}');
+  ('a0600000-0000-0000-0000-00000000000a', 'u0060@test.gn', '{"role":"merchant","full_name":"Marchand U","phone":"620005001"}'),
+  ('a0600000-0000-0000-0000-00000000000b', 'v0060@test.gn', '{"role":"merchant","full_name":"Marchand V","phone":"620005002"}'),
+  ('a0600000-0000-0000-0000-00000000000c', 'w0060@test.gn', '{"role":"client","full_name":"Client W60","phone":"620005003"}');
 update public.profiles set id = auth_user_id
- where auth_user_id in ('a0500000-0000-0000-0000-00000000000a', 'a0500000-0000-0000-0000-00000000000b',
-                        'a0500000-0000-0000-0000-00000000000c');
+ where auth_user_id in ('a0600000-0000-0000-0000-00000000000a', 'a0600000-0000-0000-0000-00000000000b',
+                        'a0600000-0000-0000-0000-00000000000c');
 insert into public.merchants (id, profile_id, shop_name, city_id) values
-  ('a0500000-0000-0000-0000-0000000000a1', 'a0500000-0000-0000-0000-00000000000a', 'Chez U50', 1),
-  ('a0500000-0000-0000-0000-0000000000b1', 'a0500000-0000-0000-0000-00000000000b', 'Chez V50', 1);
+  ('a0600000-0000-0000-0000-0000000000a1', 'a0600000-0000-0000-0000-00000000000a', 'Chez U60', 1),
+  ('a0600000-0000-0000-0000-0000000000b1', 'a0600000-0000-0000-0000-00000000000b', 'Chez V60', 1);
 
-create or replace function pg_temp.u50(n int) returns uuid
-language sql immutable as $$ select ('a0500000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
+create or replace function pg_temp.u60(n int) returns uuid
+language sql immutable as $$ select ('a0600000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
 
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
-select pg_temp.u50(n), 'a0500000-0000-0000-0000-0000000000a1', 1, 'Produit U' || n, 1000 * n, 'draft'
+select pg_temp.u60(n), 'a0600000-0000-0000-0000-0000000000a1', 1, 'Produit U' || n, 1000 * n, 'draft'
   from generate_series(1, 4) n;
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
-  ('a0500000-0000-0000-0000-000000000201', 'a0500000-0000-0000-0000-0000000000b1', 1, 'Produit V1', 5000, 'draft');
+  ('a0600000-0000-0000-0000-000000000201', 'a0600000-0000-0000-0000-0000000000b1', 1, 'Produit V1', 5000, 'draft');
 insert into public.product_images (product_id, storage_path, position)
-select pg_temp.u50(n), 'a0500000/u' || n || '/0.webp', 0 from generate_series(1, 4) n;
+select pg_temp.u60(n), 'a0600000/u' || n || '/0.webp', 0 from generate_series(1, 4) n;
 insert into public.product_images (product_id, storage_path, position) values
-  ('a0500000-0000-0000-0000-000000000201', 'a0500000/v1/0.webp', 0);
-update public.products set status = 'active' where merchant_id in ('a0500000-0000-0000-0000-0000000000a1',
-                                                                    'a0500000-0000-0000-0000-0000000000b1');
+  ('a0600000-0000-0000-0000-000000000201', 'a0600000/v1/0.webp', 0);
+update public.products set status = 'active' where merchant_id in ('a0600000-0000-0000-0000-0000000000a1',
+                                                                    'a0600000-0000-0000-0000-0000000000b1');
 
-create temp table t50 (nom text primary key, id uuid, n bigint);
-grant all on t50 to authenticated, anon;
+create temp table t60 (nom text primary key, id uuid, n bigint);
+grant all on t60 to authenticated, anon;
 
 -- Le solde de U, lu comme le site le lit.
 create or replace function pg_temp.solde_u() returns int
@@ -4562,20 +5000,20 @@ language sql as $$
   select coalesce((select disponibles from public.mes_credits()), -1)
 $$;
 create or replace function pg_temp.lot(p_nom text) returns public.lots_credits
-language sql as $$ select l.* from public.lots_credits l where l.id = (select id from t50 where nom = p_nom) $$;
+language sql as $$ select l.* from public.lots_credits l where l.id = (select id from t60 where nom = p_nom) $$;
 
--- Les tarifs de publicité d'origine reviennent (la section 0048 en a changé).
+-- Les tarifs de publicité d'origine reviennent (la section 0058 en a changé).
 update public.tarifs_publicite t set prix_gnf = o.prix_gnf
   from tarifs_origine o where o.type = t.type and o.duree_jours = t.duree_jours;
--- Les crédits inclus d'origine reviennent (la section 0049 a remis les prix seuls).
+-- Les crédits inclus d'origine reviennent (la section 0059 a remis les prix seuls).
 update public.tarifs_abonnement t set credits_inclus = o.credits_inclus
   from tarifs_abo_origine o where o.formule = t.formule;
-select pg_temp.check('0050 : credits inclus pre-remplis, Business 10, Pro 0',
+select pg_temp.check('0060 : credits inclus pre-remplis, Business 10, Pro 0',
   (select string_agg(formule || '=' || credits_inclus, ',' order by formule) from public.tarifs_abonnement)
     = 'business=10,pro=0');
 
 -- Les droits.
-select pg_temp.check('0050 : les fonctions de credits sont fermees a anon, ouvertes a authenticated',
+select pg_temp.check('0060 : les fonctions de credits sont fermees a anon, ouvertes a authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
                    and has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
@@ -4585,13 +5023,13 @@ select pg_temp.check('0050 : les fonctions de credits sont fermees a anon, ouver
        'public.payer_campagne_en_credits(uuid)', 'public.corriger_credits(uuid, int, text)',
        'public.mes_credits()', 'public.credits_equipe()', 'public.achats_credits_equipe()',
        'public.revenus_credits()']) as f));
-select pg_temp.check('0050 : les fonctions internes ne s''appellent ni par anon ni par authenticated',
+select pg_temp.check('0060 : les fonctions internes ne s''appellent ni par anon ni par authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
                    and not has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
        'public.solde_credits(uuid)', 'public.prendre_credits(uuid, int, uuid)', 'public.rendre_credits(uuid)',
        'public.abonnement_donne_ses_credits()', 'public.campagne_supprimee_rend_ses_credits()']) as f));
-select pg_temp.check('0050 : personne n''ecrit un achat, un lot ni une consommation directement',
+select pg_temp.check('0060 : personne n''ecrit un achat, un lot ni une consommation directement',
   (select bool_and(not has_table_privilege(r, t, p))
      from unnest(array['anon', 'authenticated']) r,
           unnest(array['public.achats_credits', 'public.lots_credits', 'public.consommations_credits']) t,
@@ -4601,172 +5039,172 @@ select pg_temp.check('0050 : personne n''ecrit un achat, un lot ni une consommat
   and not has_column_privilege('authenticated', 'public.tarifs_abonnement', 'credits_inclus', 'update'));
 
 -- Les contraintes.
-select pg_temp.refuse('0050 : un lot ne garde pas plus que ce qu''il avait (contrainte)',
+select pg_temp.refuse('0060 : un lot ne garde pas plus que ce qu''il avait (contrainte)',
   $q$insert into public.lots_credits (merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at, motif)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'equipe', 5, 6, now(), now() + interval '1 day', 'Essai')$q$);
-select pg_temp.refuse('0050 : un lot ne descend pas sous zero (contrainte)',
+     values ('a0600000-0000-0000-0000-0000000000a1', 'equipe', 5, 6, now(), now() + interval '1 day', 'Essai')$q$);
+select pg_temp.refuse('0060 : un lot ne descend pas sous zero (contrainte)',
   $q$insert into public.lots_credits (merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at, motif)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'equipe', 5, -1, now(), now() + interval '1 day', 'Essai')$q$);
-select pg_temp.refuse('0050 : un lot d''achat porte son achat (contrainte)',
+     values ('a0600000-0000-0000-0000-0000000000a1', 'equipe', 5, -1, now(), now() + interval '1 day', 'Essai')$q$);
+select pg_temp.refuse('0060 : un lot d''achat porte son achat (contrainte)',
   $q$insert into public.lots_credits (merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'achat', 5, 5, now(), now() + interval '1 day')$q$);
-select pg_temp.refuse('0050 : un lot de l''equipe est motive (contrainte)',
+     values ('a0600000-0000-0000-0000-0000000000a1', 'achat', 5, 5, now(), now() + interval '1 day')$q$);
+select pg_temp.refuse('0060 : un lot de l''equipe est motive (contrainte)',
   $q$insert into public.lots_credits (merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'equipe', 5, 5, now(), now() + interval '1 day')$q$);
-select pg_temp.refuse('0050 : un achat hors pack est refuse (contrainte)',
-  $q$insert into public.achats_credits (merchant_id, credits, prix_gnf) values ('a0500000-0000-0000-0000-0000000000a1', 15, 15000)$q$);
-select pg_temp.refuse('0050 : un credit vaut 1 000 GNF (contrainte)',
-  $q$insert into public.achats_credits (merchant_id, credits, prix_gnf) values ('a0500000-0000-0000-0000-0000000000a1', 10, 9000)$q$);
-select pg_temp.refuse('0050 : une campagne ne se paie pas par un moyen inconnu (contrainte)',
+     values ('a0600000-0000-0000-0000-0000000000a1', 'equipe', 5, 5, now(), now() + interval '1 day')$q$);
+select pg_temp.refuse('0060 : un achat hors pack est refuse (contrainte)',
+  $q$insert into public.achats_credits (merchant_id, credits, prix_gnf) values ('a0600000-0000-0000-0000-0000000000a1', 15, 15000)$q$);
+select pg_temp.refuse('0060 : un credit vaut 1 000 GNF (contrainte)',
+  $q$insert into public.achats_credits (merchant_id, credits, prix_gnf) values ('a0600000-0000-0000-0000-0000000000a1', 10, 9000)$q$);
+select pg_temp.refuse('0060 : une campagne ne se paie pas par un moyen inconnu (contrainte)',
   $q$insert into public.campagnes (merchant_id, type, duree_jours, paiement_moyen)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'boutique', 3, 'bitcoin')$q$);
+     values ('a0600000-0000-0000-0000-0000000000a1', 'boutique', 3, 'bitcoin')$q$);
 
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.refuse('0050 : un visiteur ne lit pas les lots', 'select 1 from public.lots_credits');
-select pg_temp.refuse('0050 : un visiteur ne lit pas les achats', 'select 1 from public.achats_credits');
-select pg_temp.refuse('0050 : un visiteur ne lit pas son solde', 'select * from public.mes_credits()');
+select pg_temp.refuse('0060 : un visiteur ne lit pas les lots', 'select 1 from public.lots_credits');
+select pg_temp.refuse('0060 : un visiteur ne lit pas les achats', 'select 1 from public.achats_credits');
+select pg_temp.refuse('0060 : un visiteur ne lit pas son solde', 'select * from public.mes_credits()');
 reset role;
 
 
 -- Acheter : demander (U), déclarer, valider (S).
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000c');
-select pg_temp.refuse('0050 : un client n''achete pas de credits',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000c');
+select pg_temp.refuse('0060 : un client n''achete pas de credits',
   'select public.demander_credits(10)', 'boutiques en ligne');
-select pg_temp.check('0050 : un client n''a pas de solde (zero ligne)',
+select pg_temp.check('0060 : un client n''a pas de solde (zero ligne)',
   not exists (select 1 from public.mes_credits()));
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.check('0050 : une boutique sans credits a un solde de 0',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.check('0060 : une boutique sans credits a un solde de 0',
   (select disponibles = 0 and expirent_sous_30_jours = 0 and prochaine_expiration is null from public.mes_credits()));
-select pg_temp.refuse('0050 : un pack inconnu est refuse',
+select pg_temp.refuse('0060 : un pack inconnu est refuse',
   'select public.demander_credits(15)', 'pack de 10, 25 ou 50');
-select pg_temp.refuse('0050 : un pack nul est refuse',
+select pg_temp.refuse('0060 : un pack nul est refuse',
   'select public.demander_credits(null)', 'pack de 10, 25 ou 50');
-insert into t50 (nom, id) select 'u_10', public.demander_credits(10);
-select pg_temp.refuse('0050 : une seule demande de credits a la fois',
+insert into t60 (nom, id) select 'u_10', public.demander_credits(10);
+select pg_temp.refuse('0060 : une seule demande de credits a la fois',
   'select public.demander_credits(25)', 'déjà en cours');
-select pg_temp.refuse('0050 : le commercant n''ecrit pas son achat directement',
+select pg_temp.refuse('0060 : le commercant n''ecrit pas son achat directement',
   $q$update public.achats_credits set statut = 'active'$q$);
-select pg_temp.refuse('0050 : le commercant ne se cree pas de lot',
+select pg_temp.refuse('0060 : le commercant ne se cree pas de lot',
   $q$insert into public.lots_credits (merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at, motif)
-     values ('a0500000-0000-0000-0000-0000000000a1', 'equipe', 99, 99, now(), now() + interval '1 year', 'Triche')$q$);
+     values ('a0600000-0000-0000-0000-0000000000a1', 'equipe', 99, 99, now(), now() + interval '1 year', 'Triche')$q$);
 reset role;
-select pg_temp.check('0050 : une demande nait a payer, au prix du pack (10 x 1 000 GNF)',
+select pg_temp.check('0060 : une demande nait a payer, au prix du pack (10 x 1 000 GNF)',
   (select statut = 'a_payer' and credits = 10 and prix_gnf = 10000 and paiement_declare_at is null
-     from public.achats_credits where id = (select id from t50 where nom = 'u_10')));
+     from public.achats_credits where id = (select id from t60 where nom = 'u_10')));
 
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select pg_temp.refuse('0050 : un commercant ne declare pas le paiement de l''achat d''un autre',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select pg_temp.refuse('0060 : un commercant ne declare pas le paiement de l''achat d''un autre',
   format($q$select public.declarer_paiement_credits(%L, 'orange_money', 'OM500001', '620112233')$q$,
-         (select id from t50 where nom = 'u_10')), 'introuvable');
-select pg_temp.refuse('0050 : un commercant n''annule pas l''achat d''un autre',
-  format('select public.annuler_achat_credits(%L)', (select id from t50 where nom = 'u_10')), 'introuvable');
+         (select id from t60 where nom = 'u_10')), 'introuvable');
+select pg_temp.refuse('0060 : un commercant n''annule pas l''achat d''un autre',
+  format('select public.annuler_achat_credits(%L)', (select id from t60 where nom = 'u_10')), 'introuvable');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : l''equipe ne valide pas un achat a payer',
-  format('select public.decider_achat_credits(%L, true)', (select id from t50 where nom = 'u_10')), 'pas encore déclaré');
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0050 : un moyen inactif est refuse pour un achat',
+select pg_temp.refuse('0060 : l''equipe ne valide pas un achat a payer',
+  format('select public.decider_achat_credits(%L, true)', (select id from t60 where nom = 'u_10')), 'pas encore déclaré');
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0060 : un moyen inactif est refuse pour un achat',
   format($q$select public.declarer_paiement_credits(%L, 'mtn_momo', 'MP500001', '620112233')$q$,
-         (select id from t50 where nom = 'u_10')), 'pas ouvert');
-select pg_temp.refuse('0050 : le commercant ne declare pas des especes pour un achat',
+         (select id from t60 where nom = 'u_10')), 'pas ouvert');
+select pg_temp.refuse('0060 : le commercant ne declare pas des especes pour un achat',
   format($q$select public.declarer_paiement_credits(%L, 'especes', 'ES500001', '620112233')$q$,
-         (select id from t50 where nom = 'u_10')), 'Orange Money');
-select pg_temp.refuse('0050 : une reference d''achat trop courte est refusee',
+         (select id from t60 where nom = 'u_10')), 'Orange Money');
+select pg_temp.refuse('0060 : une reference d''achat trop courte est refusee',
   format($q$select public.declarer_paiement_credits(%L, 'orange_money', 'ab', '620112233')$q$,
-         (select id from t50 where nom = 'u_10')), 'référence');
-select pg_temp.refuse('0050 : un numero payeur d''achat invalide est refuse',
+         (select id from t60 where nom = 'u_10')), 'référence');
+select pg_temp.refuse('0060 : un numero payeur d''achat invalide est refuse',
   format($q$select public.declarer_paiement_credits(%L, 'orange_money', 'OM500001', '62')$q$,
-         (select id from t50 where nom = 'u_10')), 'chiffres');
-select public.declarer_paiement_credits((select id from t50 where nom = 'u_10'), 'orange_money', ' OM500001 ', '620 11-22.33');
-select pg_temp.refuse('0050 : un commercant ne valide pas son achat',
-  format('select public.decider_achat_credits(%L, true)', (select id from t50 where nom = 'u_10')), 'équipe');
-select pg_temp.check('0050 : declarer ne donne pas encore de credits',
+         (select id from t60 where nom = 'u_10')), 'chiffres');
+select public.declarer_paiement_credits((select id from t60 where nom = 'u_10'), 'orange_money', ' OM500001 ', '620 11-22.33');
+select pg_temp.refuse('0060 : un commercant ne valide pas son achat',
+  format('select public.decider_achat_credits(%L, true)', (select id from t60 where nom = 'u_10')), 'équipe');
+select pg_temp.check('0060 : declarer ne donne pas encore de credits',
   pg_temp.solde_u() = 0);
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_achat_credits((select id from t50 where nom = 'u_10'), true);
-select pg_temp.refuse('0050 : un achat ne se decide qu''une fois',
-  format('select public.decider_achat_credits(%L, false, %L)', (select id from t50 where nom = 'u_10'), 'Trop tard'),
+select public.decider_achat_credits((select id from t60 where nom = 'u_10'), true);
+select pg_temp.refuse('0060 : un achat ne se decide qu''une fois',
+  format('select public.decider_achat_credits(%L, false, %L)', (select id from t60 where nom = 'u_10'), 'Trop tard'),
   'déjà été décidé');
 reset role;
-insert into t50 (nom, id) select 'lot_achat', l.id from public.lots_credits l
- where l.achat_id = (select id from t50 where nom = 'u_10');
-select pg_temp.check('0050 : valider un achat confirme le paiement et cree un lot de 12 mois',
+insert into t60 (nom, id) select 'lot_achat', l.id from public.lots_credits l
+ where l.achat_id = (select id from t60 where nom = 'u_10');
+select pg_temp.check('0060 : valider un achat confirme le paiement et cree un lot de 12 mois',
   (select statut = 'active' and paiement_moyen = 'orange_money' and paiement_reference = 'OM500001'
           and paiement_numero = '620112233'
           and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005' and paiement_confirme_at is not null
           and decidee_par = 'a0420000-0000-0000-0000-000000000005'
-     from public.achats_credits where id = (select id from t50 where nom = 'u_10'))
+     from public.achats_credits where id = (select id from t60 where nom = 'u_10'))
   and (select l.origine = 'achat' and l.credits_initiaux = 10 and l.credits_restants = 10
-              and l.merchant_id = 'a0500000-0000-0000-0000-0000000000a1'
+              and l.merchant_id = 'a0600000-0000-0000-0000-0000000000a1'
               and l.disponible_at = a.decidee_at and l.expire_at = a.decidee_at + interval '12 months'
          from public.lots_credits l join public.achats_credits a on a.id = l.achat_id
-        where l.id = (select id from t50 where nom = 'lot_achat'))
+        where l.id = (select id from t60 where nom = 'lot_achat'))
   and exists (select 1 from public.journal_equipe
                where action = 'valider_achat_credits' and cible_type = 'achat_credits'
-                 and cible_id = (select id from t50 where nom = 'u_10')
+                 and cible_id = (select id from t60 where nom = 'u_10')
                  and motif = 'Paiement vérifié : 10 crédits, 10000 GNF, orange_money OM500001'));
 
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.check('0050 : la boutique a 10 credits, qui expirent dans 12 mois',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.check('0060 : la boutique a 10 credits, qui expirent dans 12 mois',
   (select m.disponibles = 10 and m.expirent_sous_30_jours = 0
           and m.prochaine_expiration = (pg_temp.lot('lot_achat')).expire_at
      from public.mes_credits() m));
-select pg_temp.refuse('0050 : un achat valide ne s''annule pas',
-  format('select public.annuler_achat_credits(%L)', (select id from t50 where nom = 'u_10')), 'ne peut plus');
+select pg_temp.refuse('0060 : un achat valide ne s''annule pas',
+  format('select public.annuler_achat_credits(%L)', (select id from t60 where nom = 'u_10')), 'ne peut plus');
 
 -- Refuser (motif), rembourser ; annuler sans payer.
-insert into t50 (nom, id) select 'u_25', public.demander_credits(25);
-select public.declarer_paiement_credits((select id from t50 where nom = 'u_25'), 'orange_money', 'OM500002', '620112233');
+insert into t60 (nom, id) select 'u_25', public.demander_credits(25);
+select public.declarer_paiement_credits((select id from t60 where nom = 'u_25'), 'orange_money', 'OM500002', '620112233');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : refuser un achat exige un motif',
-  format('select public.decider_achat_credits(%L, false)', (select id from t50 where nom = 'u_25')), 'motif');
-select public.decider_achat_credits((select id from t50 where nom = 'u_25'), false, 'Reference introuvable');
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'u_50', public.demander_credits(50);
-select public.annuler_achat_credits((select id from t50 where nom = 'u_50'));
-select pg_temp.check('0050 : refuser ou annuler un achat ne donne aucun credit',
+select pg_temp.refuse('0060 : refuser un achat exige un motif',
+  format('select public.decider_achat_credits(%L, false)', (select id from t60 where nom = 'u_25')), 'motif');
+select public.decider_achat_credits((select id from t60 where nom = 'u_25'), false, 'Reference introuvable');
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'u_60', public.demander_credits(50);
+select public.annuler_achat_credits((select id from t60 where nom = 'u_60'));
+select pg_temp.check('0060 : refuser ou annuler un achat ne donne aucun credit',
   pg_temp.solde_u() = 10
   and not exists (select 1 from public.lots_credits l
-                   where l.achat_id in (select id from t50 where nom in ('u_25', 'u_50'))));
-select pg_temp.refuse('0050 : un commercant ne se note pas rembourse',
-  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t50 where nom = 'u_25')), 'équipe');
+                   where l.achat_id in (select id from t60 where nom in ('u_25', 'u_60'))));
+select pg_temp.refuse('0060 : un commercant ne se note pas rembourse',
+  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t60 where nom = 'u_25')), 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : un achat valide ne se rembourse pas',
-  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t50 where nom = 'u_10')), 'refusé ou annulé');
-select pg_temp.refuse('0050 : un achat annule jamais paye ne se rembourse pas',
-  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t50 where nom = 'u_50')), 'Rien n''a été payé');
-select public.marquer_achat_credits_rembourse((select id from t50 where nom = 'u_25'));
-select pg_temp.refuse('0050 : un remboursement d''achat ne se note qu''une fois',
-  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t50 where nom = 'u_25')), 'déjà remboursé');
+select pg_temp.refuse('0060 : un achat valide ne se rembourse pas',
+  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t60 where nom = 'u_10')), 'refusé ou annulé');
+select pg_temp.refuse('0060 : un achat annule jamais paye ne se rembourse pas',
+  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t60 where nom = 'u_60')), 'Rien n''a été payé');
+select public.marquer_achat_credits_rembourse((select id from t60 where nom = 'u_25'));
+select pg_temp.refuse('0060 : un remboursement d''achat ne se note qu''une fois',
+  format('select public.marquer_achat_credits_rembourse(%L)', (select id from t60 where nom = 'u_25')), 'déjà remboursé');
 reset role;
-select pg_temp.check('0050 : refus et remboursement signes et dans l''historique',
+select pg_temp.check('0060 : refus et remboursement signes et dans l''historique',
   (select statut = 'refusee' and motif = 'Reference introuvable'
           and rembourse_par = 'a0420000-0000-0000-0000-000000000005' and rembourse_at is not null
-     from public.achats_credits where id = (select id from t50 where nom = 'u_25'))
-  and (select statut from public.achats_credits where id = (select id from t50 where nom = 'u_50')) = 'annulee'
+     from public.achats_credits where id = (select id from t60 where nom = 'u_25'))
+  and (select statut from public.achats_credits where id = (select id from t60 where nom = 'u_60')) = 'annulee'
   and exists (select 1 from public.journal_equipe
-               where action = 'refuser_achat_credits' and cible_id = (select id from t50 where nom = 'u_25'))
+               where action = 'refuser_achat_credits' and cible_id = (select id from t60 where nom = 'u_25'))
   and exists (select 1 from public.journal_equipe
                where action = 'rembourser_achat_credits' and cible_type = 'achat_credits'
-                 and cible_id = (select id from t50 where nom = 'u_25') and motif = '25000 GNF, orange_money OM500002'));
+                 and cible_id = (select id from t60 where nom = 'u_25') and motif = '25000 GNF, orange_money OM500002'));
 
 
 -- Les crédits inclus : réglage par l'équipe, lot à chaque période Business.
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0050 : le commercant ne regle pas les credits inclus',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0060 : le commercant ne regle pas les credits inclus',
   $q$select public.fixer_credits_inclus('business', 99)$q$, 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : credits inclus negatifs refuses',
+select pg_temp.refuse('0060 : credits inclus negatifs refuses',
   $q$select public.fixer_credits_inclus('business', -1)$q$, '0 à 1 000');
-select pg_temp.refuse('0050 : credits inclus d''une formule inconnue refuses',
+select pg_temp.refuse('0060 : credits inclus d''une formule inconnue refuses',
   $q$select public.fixer_credits_inclus('gratuit', 5)$q$, 'Formule inconnue');
 select public.fixer_credits_inclus('business', 12);
 reset role;
-select pg_temp.check('0050 : regler les credits inclus les change, signe, et l''inscrit dans l''historique',
+select pg_temp.check('0060 : regler les credits inclus les change, signe, et l''inscrit dans l''historique',
   (select credits_inclus = 12 and modifie_par = 'a0420000-0000-0000-0000-000000000005'
      from public.tarifs_abonnement where formule = 'business')
   and exists (select 1 from public.journal_equipe j join public.tarifs_abonnement t on t.id = j.cible_id
@@ -4777,309 +5215,309 @@ select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select public.fixer_credits_inclus('business', 10);
 
 -- V : Business créé par l'équipe, puis Pro offert (0 crédit inclus).
-insert into t50 (nom, id) select 'v_business', public.creer_abonnement_equipe(
-  'a0500000-0000-0000-0000-0000000000b1', 'business', 'especes');
-insert into t50 (nom, id) select 'v_pro', public.creer_abonnement_equipe(
-  'a0500000-0000-0000-0000-0000000000b1', 'pro', 'offert');
+insert into t60 (nom, id) select 'v_business', public.creer_abonnement_equipe(
+  'a0600000-0000-0000-0000-0000000000b1', 'business', 'especes');
+insert into t60 (nom, id) select 'v_pro', public.creer_abonnement_equipe(
+  'a0600000-0000-0000-0000-0000000000b1', 'pro', 'offert');
 reset role;
-insert into t50 (nom, id) select 'lot_v_business', l.id from public.lots_credits l
- where l.abonnement_id = (select id from t50 where nom = 'v_business');
-select pg_temp.check('0050 : un Business cree par l''equipe apporte 10 credits pour sa periode exacte',
+insert into t60 (nom, id) select 'lot_v_business', l.id from public.lots_credits l
+ where l.abonnement_id = (select id from t60 where nom = 'v_business');
+select pg_temp.check('0060 : un Business cree par l''equipe apporte 10 credits pour sa periode exacte',
   (select l.origine = 'abonnement' and l.credits_initiaux = 10 and l.credits_restants = 10
-          and l.merchant_id = 'a0500000-0000-0000-0000-0000000000b1'
+          and l.merchant_id = 'a0600000-0000-0000-0000-0000000000b1'
           and l.disponible_at = a.debut_at and l.expire_at = a.fin_at
      from public.lots_credits l join public.abonnements a on a.id = l.abonnement_id
-    where l.id = (select id from t50 where nom = 'lot_v_business')));
-select pg_temp.check('0050 : un Pro (0 credit inclus) n''apporte aucun lot',
-  not exists (select 1 from public.lots_credits where abonnement_id = (select id from t50 where nom = 'v_pro')));
+    where l.id = (select id from t60 where nom = 'lot_v_business')));
+select pg_temp.check('0060 : un Pro (0 credit inclus) n''apporte aucun lot',
+  not exists (select 1 from public.lots_credits where abonnement_id = (select id from t60 where nom = 'v_pro')));
 
 -- U : Business demandé, payé, validé ; puis renouvelé d'avance.
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'u_business', public.demander_abonnement('business');
-select public.declarer_paiement_abonnement((select id from t50 where nom = 'u_business'), 'orange_money', 'OM500003', '620112233');
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'u_business', public.demander_abonnement('business');
+select public.declarer_paiement_abonnement((select id from t60 where nom = 'u_business'), 'orange_money', 'OM500003', '620112233');
 reset role;
-select pg_temp.check('0050 : un abonnement en attente n''apporte pas de credits',
-  not exists (select 1 from public.lots_credits where abonnement_id = (select id from t50 where nom = 'u_business')));
+select pg_temp.check('0060 : un abonnement en attente n''apporte pas de credits',
+  not exists (select 1 from public.lots_credits where abonnement_id = (select id from t60 where nom = 'u_business')));
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_abonnement((select id from t50 where nom = 'u_business'), true);
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'u_business_2', public.demander_abonnement('business');
-select public.declarer_paiement_abonnement((select id from t50 where nom = 'u_business_2'), 'orange_money', 'OM500004', '620112233');
+select public.decider_abonnement((select id from t60 where nom = 'u_business'), true);
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'u_business_2', public.demander_abonnement('business');
+select public.declarer_paiement_abonnement((select id from t60 where nom = 'u_business_2'), 'orange_money', 'OM500004', '620112233');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_abonnement((select id from t50 where nom = 'u_business_2'), true);
+select public.decider_abonnement((select id from t60 where nom = 'u_business_2'), true);
 reset role;
-insert into t50 (nom, id) select 'lot_u_business', l.id from public.lots_credits l
- where l.abonnement_id = (select id from t50 where nom = 'u_business');
-insert into t50 (nom, id) select 'lot_u_business_2', l.id from public.lots_credits l
- where l.abonnement_id = (select id from t50 where nom = 'u_business_2');
-select pg_temp.check('0050 : un Business valide apporte ses credits pour sa periode',
+insert into t60 (nom, id) select 'lot_u_business', l.id from public.lots_credits l
+ where l.abonnement_id = (select id from t60 where nom = 'u_business');
+insert into t60 (nom, id) select 'lot_u_business_2', l.id from public.lots_credits l
+ where l.abonnement_id = (select id from t60 where nom = 'u_business_2');
+select pg_temp.check('0060 : un Business valide apporte ses credits pour sa periode',
   (select l.credits_restants = 10 and l.disponible_at = a.debut_at and l.expire_at = a.fin_at
      from public.lots_credits l join public.abonnements a on a.id = l.abonnement_id
-    where l.id = (select id from t50 where nom = 'lot_u_business')));
-select pg_temp.check('0050 : un renouvellement anticipe a un lot pas encore disponible',
+    where l.id = (select id from t60 where nom = 'lot_u_business')));
+select pg_temp.check('0060 : un renouvellement anticipe a un lot pas encore disponible',
   (select l.credits_restants = 10 and l.disponible_at = a.debut_at and l.disponible_at > now()
      from public.lots_credits l join public.abonnements a on a.id = l.abonnement_id
-    where l.id = (select id from t50 where nom = 'lot_u_business_2')));
+    where l.id = (select id from t60 where nom = 'lot_u_business_2')));
 -- Des crédits expirés, qui ne doivent jamais servir.
 insert into public.lots_credits (id, merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at, motif)
-values ('a0500000-0000-0000-0000-0000000003e1', 'a0500000-0000-0000-0000-0000000000a1', 'equipe', 100, 100,
+values ('a0600000-0000-0000-0000-0000000003e1', 'a0600000-0000-0000-0000-0000000000a1', 'equipe', 100, 100,
         now() - interval '13 months', now() - interval '1 month', 'Lot expire de test');
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.check('0050 : le solde compte achat + Business en cours, pas le lot futur ni l''expire',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.check('0060 : le solde compte achat + Business en cours, pas le lot futur ni l''expire',
   pg_temp.solde_u() = 20);
 
 
 -- Payer une campagne en crédits.
-insert into t50 (nom, id) select 'c1', public.demander_campagne('produit', pg_temp.u50(1), null, 7);
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select pg_temp.refuse('0050 : un commercant ne paie pas en credits la campagne d''un autre',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'c1')), 'introuvable');
+insert into t60 (nom, id) select 'c1', public.demander_campagne('produit', pg_temp.u60(1), null, 7);
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select pg_temp.refuse('0060 : un commercant ne paie pas en credits la campagne d''un autre',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'c1')), 'introuvable');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : l''equipe ne paie pas en credits a la place du commercant',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'c1')), 'boutiques en ligne');
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select public.payer_campagne_en_credits((select id from t50 where nom = 'c1'));
+select pg_temp.refuse('0060 : l''equipe ne paie pas en credits a la place du commercant',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'c1')), 'boutiques en ligne');
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select public.payer_campagne_en_credits((select id from t60 where nom = 'c1'));
 reset role;
-select pg_temp.check('0050 : payer en credits passe la campagne en attente, moyen credits, sans reference',
+select pg_temp.check('0060 : payer en credits passe la campagne en attente, moyen credits, sans reference',
   (select statut = 'en_attente' and paiement_moyen = 'credits' and paiement_declare_at is not null
           and paiement_reference is null and paiement_numero is null and paiement_confirme_at is null
-     from public.campagnes where id = (select id from t50 where nom = 'c1')));
-select pg_temp.check('0050 : 15 credits pris, l''expiration la plus proche d''abord (Business 10, puis achat 5)',
+     from public.campagnes where id = (select id from t60 where nom = 'c1')));
+select pg_temp.check('0060 : 15 credits pris, l''expiration la plus proche d''abord (Business 10, puis achat 5)',
   (pg_temp.lot('lot_u_business')).credits_restants = 0
   and (pg_temp.lot('lot_achat')).credits_restants = 5
   and (pg_temp.lot('lot_u_business_2')).credits_restants = 10
-  and (select credits_restants from public.lots_credits where id = 'a0500000-0000-0000-0000-0000000003e1') = 100
+  and (select credits_restants from public.lots_credits where id = 'a0600000-0000-0000-0000-0000000003e1') = 100
   and (select string_agg(c.credits::text, ',' order by l.expire_at)
          from public.consommations_credits c join public.lots_credits l on l.id = c.lot_id
-        where c.campagne_id = (select id from t50 where nom = 'c1') and c.rendu_at is null) = '10,5');
+        where c.campagne_id = (select id from t60 where nom = 'c1') and c.rendu_at is null) = '10,5');
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.check('0050 : apres paiement, il reste 5 credits',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.check('0060 : apres paiement, il reste 5 credits',
   pg_temp.solde_u() = 5);
-select pg_temp.refuse('0050 : une campagne ne se paie pas deux fois en credits',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'c1')), 'n''attend pas de paiement');
-select pg_temp.refuse('0050 : une campagne payee en credits ne se declare pas en argent ensuite',
+select pg_temp.refuse('0060 : une campagne ne se paie pas deux fois en credits',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'c1')), 'n''attend pas de paiement');
+select pg_temp.refuse('0060 : une campagne payee en credits ne se declare pas en argent ensuite',
   format($q$select public.declarer_paiement(%L, 'orange_money', 'OM500005', '620112233')$q$,
-         (select id from t50 where nom = 'c1')), 'déjà payée en crédits');
+         (select id from t60 where nom = 'c1')), 'déjà payée en crédits');
 -- Solde insuffisant : rien n'est pris (le lot expiré de 100 et le lot futur ne comptent pas).
-insert into t50 (nom, id) select 'c2', public.demander_campagne('boutique', null, null, 30);
-select pg_temp.refuse('0050 : solde insuffisant, avec ce qu''il faut et ce qu''on a',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'c2')),
+insert into t60 (nom, id) select 'c2', public.demander_campagne('boutique', null, null, 30);
+select pg_temp.refuse('0060 : solde insuffisant, avec ce qu''il faut et ce qu''on a',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'c2')),
   'Crédits insuffisants : il vous en faut 60, vous en avez 5.');
-select pg_temp.check('0050 : un paiement refuse ne prend rien',
+select pg_temp.check('0060 : un paiement refuse ne prend rien',
   pg_temp.solde_u() = 5
-  and (select statut from public.campagnes where id = (select id from t50 where nom = 'c2')) = 'a_payer'
-  and not exists (select 1 from public.consommations_credits where campagne_id = (select id from t50 where nom = 'c2')));
+  and (select statut from public.campagnes where id = (select id from t60 where nom = 'c2')) = 'a_payer'
+  and not exists (select 1 from public.consommations_credits where campagne_id = (select id from t60 where nom = 'c2')));
 -- Un prix qui n'est pas un multiple de 1 000 GNF.
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select public.fixer_tarif('categorie', 3, 5500);
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'c3', public.demander_campagne('categorie', pg_temp.u50(2), 1, 3);
-select pg_temp.refuse('0050 : un prix qui n''est pas un multiple de 1 000 GNF ne se paie pas en credits',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'c3')), '1 crédit = 1 000 GNF');
-select public.annuler_campagne((select id from t50 where nom = 'c2'));
-select public.annuler_campagne((select id from t50 where nom = 'c3'));
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'c3', public.demander_campagne('categorie', pg_temp.u60(2), 1, 3);
+select pg_temp.refuse('0060 : un prix qui n''est pas un multiple de 1 000 GNF ne se paie pas en credits',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'c3')), '1 crédit = 1 000 GNF');
+select public.annuler_campagne((select id from t60 where nom = 'c2'));
+select public.annuler_campagne((select id from t60 where nom = 'c3'));
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
 select public.fixer_tarif('categorie', 3, 5000);
 reset role;
-select pg_temp.check('0050 : annuler une campagne sans credits ne donne rien',
+select pg_temp.check('0060 : annuler une campagne sans credits ne donne rien',
   (pg_temp.lot('lot_achat')).credits_restants = 5);
 
 -- L'équipe valide une campagne payée en crédits : paiement confirmé, pas un revenu de publicité.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-insert into t50 (nom, n) select 'rev_pub_avant', coalesce(sum(encaisse_gnf), 0) from public.revenus_publicite();
-select public.decider_campagne((select id from t50 where nom = 'c1'), true);
-select pg_temp.check('0050 : revenus_publicite ne compte pas une campagne payee en credits',
+insert into t60 (nom, n) select 'rev_pub_avant', coalesce(sum(encaisse_gnf), 0) from public.revenus_publicite();
+select public.decider_campagne((select id from t60 where nom = 'c1'), true);
+select pg_temp.check('0060 : revenus_publicite ne compte pas une campagne payee en credits',
   (select coalesce(sum(encaisse_gnf), 0) from public.revenus_publicite())
-    = (select n from t50 where nom = 'rev_pub_avant'));
+    = (select n from t60 where nom = 'rev_pub_avant'));
 reset role;
-select pg_temp.check('0050 : valider une campagne payee en credits la met en ligne et confirme le paiement',
+select pg_temp.check('0060 : valider une campagne payee en credits la met en ligne et confirme le paiement',
   (select statut = 'active' and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005'
           and paiement_confirme_at is not null and fin_at = debut_at + interval '7 days'
-     from public.campagnes where id = (select id from t50 where nom = 'c1'))
+     from public.campagnes where id = (select id from t60 where nom = 'c1'))
   and exists (select 1 from public.journal_equipe
-               where action = 'valider_campagne' and cible_id = (select id from t50 where nom = 'c1')
+               where action = 'valider_campagne' and cible_id = (select id from t60 where nom = 'c1')
                  and motif = 'Payée en crédits : 15 crédits'));
 -- Interrompue en cours : rien ne revient, rien ne se rembourse en argent.
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.interrompre_campagne((select id from t50 where nom = 'c1'), 'Photo trompeuse');
-select pg_temp.refuse('0050 : une campagne payee en credits ne se rembourse pas en argent',
-  format('select public.marquer_rembourse(%L)', (select id from t50 where nom = 'c1')), 'rien à rembourser en argent');
+select public.interrompre_campagne((select id from t60 where nom = 'c1'), 'Photo trompeuse');
+select pg_temp.refuse('0060 : une campagne payee en credits ne se rembourse pas en argent',
+  format('select public.marquer_rembourse(%L)', (select id from t60 where nom = 'c1')), 'rien à rembourser en argent');
 reset role;
-select pg_temp.check('0050 : une campagne interrompue en cours ne rend pas ses credits',
+select pg_temp.check('0060 : une campagne interrompue en cours ne rend pas ses credits',
   (pg_temp.lot('lot_achat')).credits_restants = 5 and (pg_temp.lot('lot_u_business')).credits_restants = 0
   and not exists (select 1 from public.consommations_credits
-                   where campagne_id = (select id from t50 where nom = 'c1') and rendu_at is not null));
+                   where campagne_id = (select id from t60 where nom = 'c1') and rendu_at is not null));
 
 
 -- L'équipe corrige un solde.
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.refuse('0050 : un commercant ne corrige pas son solde',
-  $q$select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', 100, 'Cadeau a moi-meme')$q$, 'équipe');
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0060 : un commercant ne corrige pas son solde',
+  $q$select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', 100, 'Cadeau a moi-meme')$q$, 'équipe');
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.refuse('0050 : corriger exige un motif',
-  $q$select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', 20, ' ab ')$q$, 'motif');
-select pg_temp.refuse('0050 : corriger de 0 est refuse',
-  $q$select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', 0, 'Rien du tout')$q$, 'nombre de crédits');
-select pg_temp.refuse('0050 : corriger une boutique inconnue est refuse',
-  $q$select public.corriger_credits('a0500000-0000-0000-0000-0000000000ff', 20, 'Geste commercial')$q$, 'introuvable');
-select pg_temp.refuse('0050 : retirer plus que le solde est refuse',
-  $q$select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', -6, 'Erreur de saisie')$q$,
+select pg_temp.refuse('0060 : corriger exige un motif',
+  $q$select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', 20, ' ab ')$q$, 'motif');
+select pg_temp.refuse('0060 : corriger de 0 est refuse',
+  $q$select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', 0, 'Rien du tout')$q$, 'nombre de crédits');
+select pg_temp.refuse('0060 : corriger une boutique inconnue est refuse',
+  $q$select public.corriger_credits('a0600000-0000-0000-0000-0000000000ff', 20, 'Geste commercial')$q$, 'introuvable');
+select pg_temp.refuse('0060 : retirer plus que le solde est refuse',
+  $q$select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', -6, 'Erreur de saisie')$q$,
   'n''a que 5 crédits disponibles');
-select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', 20, 'Geste commercial');
+select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', 20, 'Geste commercial');
 reset role;
-insert into t50 (nom, id) select 'lot_equipe', l.id from public.lots_credits l
- where l.merchant_id = 'a0500000-0000-0000-0000-0000000000a1' and l.origine = 'equipe' and l.motif = 'Geste commercial';
-select pg_temp.check('0050 : offrir des credits cree un lot de 12 mois, signe, dans l''historique',
+insert into t60 (nom, id) select 'lot_equipe', l.id from public.lots_credits l
+ where l.merchant_id = 'a0600000-0000-0000-0000-0000000000a1' and l.origine = 'equipe' and l.motif = 'Geste commercial';
+select pg_temp.check('0060 : offrir des credits cree un lot de 12 mois, signe, dans l''historique',
   (select l.credits_initiaux = 20 and l.credits_restants = 20 and l.cree_par = 'a0420000-0000-0000-0000-000000000005'
           and l.disponible_at > now() - interval '1 minute' and l.expire_at = l.disponible_at + interval '12 months'
-     from public.lots_credits l where l.id = (select id from t50 where nom = 'lot_equipe'))
+     from public.lots_credits l where l.id = (select id from t60 where nom = 'lot_equipe'))
   and exists (select 1 from public.journal_equipe
                where action = 'corriger_credits' and cible_type = 'boutique'
-                 and cible_id = 'a0500000-0000-0000-0000-0000000000a1' and motif = '+20 crédits : Geste commercial'));
+                 and cible_id = 'a0600000-0000-0000-0000-0000000000a1' and motif = '+20 crédits : Geste commercial'));
 
 
 -- Les crédits reviennent : refus, annulation avant le début, produit supprimé.
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'c4', public.demander_campagne('produit', pg_temp.u50(2), null, 3);
-select public.payer_campagne_en_credits((select id from t50 where nom = 'c4'));
-select pg_temp.check('0050 : 7 credits pris (achat 5 puis equipe 2)',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'c4', public.demander_campagne('produit', pg_temp.u60(2), null, 3);
+select public.payer_campagne_en_credits((select id from t60 where nom = 'c4'));
+select pg_temp.check('0060 : 7 credits pris (achat 5 puis equipe 2)',
   pg_temp.solde_u() = 18 and (pg_temp.lot('lot_achat')).credits_restants = 0
   and (pg_temp.lot('lot_equipe')).credits_restants = 18);
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_campagne((select id from t50 where nom = 'c4'), false, 'Produit interdit');
+select public.decider_campagne((select id from t60 where nom = 'c4'), false, 'Produit interdit');
 reset role;
-select pg_temp.check('0050 : une campagne refusee rend ses credits a leurs lots, meme expiration',
+select pg_temp.check('0060 : une campagne refusee rend ses credits a leurs lots, meme expiration',
   (pg_temp.lot('lot_achat')).credits_restants = 5 and (pg_temp.lot('lot_equipe')).credits_restants = 20
   and (pg_temp.lot('lot_achat')).expire_at
-        = (select decidee_at + interval '12 months' from public.achats_credits where id = (select id from t50 where nom = 'u_10'))
+        = (select decidee_at + interval '12 months' from public.achats_credits where id = (select id from t60 where nom = 'u_10'))
   and (select count(*) = 2 and bool_and(rendu_at is not null)
-         from public.consommations_credits where campagne_id = (select id from t50 where nom = 'c4')));
+         from public.consommations_credits where campagne_id = (select id from t60 where nom = 'c4')));
 
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-insert into t50 (nom, id) select 'c5', public.demander_campagne('produit', pg_temp.u50(3), null, 3);
-select public.payer_campagne_en_credits((select id from t50 where nom = 'c5'));
-select public.annuler_campagne((select id from t50 where nom = 'c5'));
-select pg_temp.check('0050 : une campagne annulee avant son debut rend ses credits',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+insert into t60 (nom, id) select 'c5', public.demander_campagne('produit', pg_temp.u60(3), null, 3);
+select public.payer_campagne_en_credits((select id from t60 where nom = 'c5'));
+select public.annuler_campagne((select id from t60 where nom = 'c5'));
+select pg_temp.check('0060 : une campagne annulee avant son debut rend ses credits',
   pg_temp.solde_u() = 25
-  and (select statut from public.campagnes where id = (select id from t50 where nom = 'c5')) = 'annulee');
+  and (select statut from public.campagnes where id = (select id from t60 where nom = 'c5')) = 'annulee');
 
-insert into t50 (nom, id) select 'c6', public.demander_campagne('produit', pg_temp.u50(4), null, 3);
-select public.payer_campagne_en_credits((select id from t50 where nom = 'c6'));
+insert into t60 (nom, id) select 'c6', public.demander_campagne('produit', pg_temp.u60(4), null, 3);
+select public.payer_campagne_en_credits((select id from t60 where nom = 'c6'));
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.decider_campagne((select id from t50 where nom = 'c6'), true);
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select public.annuler_campagne((select id from t50 where nom = 'c6'));
-select pg_temp.check('0050 : une campagne annulee en cours ne rend pas ses credits',
+select public.decider_campagne((select id from t60 where nom = 'c6'), true);
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select public.annuler_campagne((select id from t60 where nom = 'c6'));
+select pg_temp.check('0060 : une campagne annulee en cours ne rend pas ses credits',
   pg_temp.solde_u() = 18
-  and (select statut from public.campagnes where id = (select id from t50 where nom = 'c6')) = 'annulee');
+  and (select statut from public.campagnes where id = (select id from t60 where nom = 'c6')) = 'annulee');
 
-insert into t50 (nom, id) select 'c7', public.demander_campagne('produit', pg_temp.u50(3), null, 3);
-select public.payer_campagne_en_credits((select id from t50 where nom = 'c7'));
-select pg_temp.check('0050 : avant suppression du produit, 7 credits pris',
+insert into t60 (nom, id) select 'c7', public.demander_campagne('produit', pg_temp.u60(3), null, 3);
+select public.payer_campagne_en_credits((select id from t60 where nom = 'c7'));
+select pg_temp.check('0060 : avant suppression du produit, 7 credits pris',
   pg_temp.solde_u() = 11);
-delete from public.products where id = pg_temp.u50(3);
-select pg_temp.check('0050 : supprimer le produit d''une campagne pas encore commencee rend ses credits',
+delete from public.products where id = pg_temp.u60(3);
+select pg_temp.check('0060 : supprimer le produit d''une campagne pas encore commencee rend ses credits',
   pg_temp.solde_u() = 18
-  and not exists (select 1 from public.campagnes where id = (select id from t50 where nom = 'c7')));
+  and not exists (select 1 from public.campagnes where id = (select id from t60 where nom = 'c7')));
 
 -- Retirer : l'expiration la plus proche d'abord (un lot de 3 qui expire dans 10 jours).
 reset role;
 insert into public.lots_credits (id, merchant_id, origine, credits_initiaux, credits_restants, disponible_at, expire_at, motif)
-values ('a0500000-0000-0000-0000-0000000003e2', 'a0500000-0000-0000-0000-0000000000a1', 'equipe', 3, 3,
+values ('a0600000-0000-0000-0000-0000000003e2', 'a0600000-0000-0000-0000-0000000000a1', 'equipe', 3, 3,
         now() - interval '1 day', now() + interval '10 days', 'Bientot expire');
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.corriger_credits('a0500000-0000-0000-0000-0000000000a1', -2, 'Erreur de saisie');
+select public.corriger_credits('a0600000-0000-0000-0000-0000000000a1', -2, 'Erreur de saisie');
 reset role;
-select pg_temp.check('0050 : retirer des credits prend l''expiration la plus proche d''abord',
-  (select credits_restants from public.lots_credits where id = 'a0500000-0000-0000-0000-0000000003e2') = 1
+select pg_temp.check('0060 : retirer des credits prend l''expiration la plus proche d''abord',
+  (select credits_restants from public.lots_credits where id = 'a0600000-0000-0000-0000-0000000003e2') = 1
   and (pg_temp.lot('lot_equipe')).credits_restants = 18
   and exists (select 1 from public.journal_equipe
-               where action = 'corriger_credits' and cible_id = 'a0500000-0000-0000-0000-0000000000a1'
+               where action = 'corriger_credits' and cible_id = 'a0600000-0000-0000-0000-0000000000a1'
                  and motif = '-2 crédits : Erreur de saisie'));
 
 
 -- L'interruption d'un abonnement fait expirer son lot à l'instant.
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select pg_temp.check('0050 : V a les 10 credits de son Business',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select pg_temp.check('0060 : V a les 10 credits de son Business',
   (select disponibles from public.mes_credits()) = 10);
-insert into t50 (nom, id) select 'cv', public.demander_campagne('produit', 'a0500000-0000-0000-0000-000000000201', null, 3);
+insert into t60 (nom, id) select 'cv', public.demander_campagne('produit', 'a0600000-0000-0000-0000-000000000201', null, 3);
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.interrompre_abonnement((select id from t50 where nom = 'v_business'), 'Paiement contrefait');
-select public.interrompre_abonnement((select id from t50 where nom = 'u_business_2'), 'Renouvellement par erreur');
+select public.interrompre_abonnement((select id from t60 where nom = 'v_business'), 'Paiement contrefait');
+select public.interrompre_abonnement((select id from t60 where nom = 'u_business_2'), 'Renouvellement par erreur');
 reset role;
-select pg_temp.check('0050 : un abonnement interrompu fait expirer son lot, restants inchanges',
+select pg_temp.check('0060 : un abonnement interrompu fait expirer son lot, restants inchanges',
   (select l.credits_restants = 10 and l.expire_at <= now() and l.expire_at > now() - interval '1 minute'
-     from public.lots_credits l where l.id = (select id from t50 where nom = 'lot_v_business'))
+     from public.lots_credits l where l.id = (select id from t60 where nom = 'lot_v_business'))
   and (select l.credits_restants = 10 and l.expire_at <= now() and l.disponible_at <= l.expire_at
-         from public.lots_credits l where l.id = (select id from t50 where nom = 'lot_u_business_2')));
+         from public.lots_credits l where l.id = (select id from t60 where nom = 'lot_u_business_2')));
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select pg_temp.refuse('0050 : des credits expires ne se depensent pas',
-  format('select public.payer_campagne_en_credits(%L)', (select id from t50 where nom = 'cv')),
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select pg_temp.refuse('0060 : des credits expires ne se depensent pas',
+  format('select public.payer_campagne_en_credits(%L)', (select id from t60 where nom = 'cv')),
   'il vous en faut 7, vous en avez 0.');
-select public.annuler_campagne((select id from t50 where nom = 'cv'));
+select public.annuler_campagne((select id from t60 where nom = 'cv'));
 
 
 -- Ce que chacun lit.
 reset role;
 set role authenticated;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000a');
-select pg_temp.check('0050 : mes_credits dit le solde, ce qui expire sous 30 jours, et quand',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000a');
+select pg_temp.check('0060 : mes_credits dit le solde, ce qui expire sous 30 jours, et quand',
   (select m.disponibles = 19 and m.expirent_sous_30_jours = 1
           and m.prochaine_expiration > now() + interval '9 days' and m.prochaine_expiration < now() + interval '11 days'
      from public.mes_credits() m));
-select pg_temp.check('0050 : la boutique ne lit que ses lots, achats et consommations',
+select pg_temp.check('0060 : la boutique ne lit que ses lots, achats et consommations',
   (select count(*) from public.lots_credits) = 6
-  and not exists (select 1 from public.lots_credits where merchant_id <> 'a0500000-0000-0000-0000-0000000000a1')
+  and not exists (select 1 from public.lots_credits where merchant_id <> 'a0600000-0000-0000-0000-0000000000a1')
   and (select count(*) from public.achats_credits) = 3
   and exists (select 1 from public.consommations_credits)
   and not exists (select 1 from public.consommations_credits c
                    where c.lot_id not in (select l.id from public.lots_credits l)));
-select pg_temp.refuse('0050 : un commercant ne lit pas les soldes de l''equipe',
+select pg_temp.refuse('0060 : un commercant ne lit pas les soldes de l''equipe',
   'select * from public.credits_equipe()', 'équipe');
-select pg_temp.refuse('0050 : un commercant ne lit pas la file des achats',
+select pg_temp.refuse('0060 : un commercant ne lit pas la file des achats',
   'select * from public.achats_credits_equipe()', 'équipe');
-select pg_temp.refuse('0050 : un commercant ne lit pas les revenus des credits',
+select pg_temp.refuse('0060 : un commercant ne lit pas les revenus des credits',
   'select * from public.revenus_credits()', 'équipe');
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select pg_temp.check('0050 : une autre boutique ne voit ni les lots, ni les achats, ni les consommations de U',
-  not exists (select 1 from public.lots_credits where merchant_id = 'a0500000-0000-0000-0000-0000000000a1')
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select pg_temp.check('0060 : une autre boutique ne voit ni les lots, ni les achats, ni les consommations de U',
+  not exists (select 1 from public.lots_credits where merchant_id = 'a0600000-0000-0000-0000-0000000000a1')
   and not exists (select 1 from public.achats_credits)
   and not exists (select 1 from public.consommations_credits));
-select pg_temp.login('a0500000-0000-0000-0000-00000000000c');
-select pg_temp.check('0050 : un client ne lit aucun lot, achat ni consommation',
+select pg_temp.login('a0600000-0000-0000-0000-00000000000c');
+select pg_temp.check('0060 : un client ne lit aucun lot, achat ni consommation',
   not exists (select 1 from public.lots_credits) and not exists (select 1 from public.achats_credits)
   and not exists (select 1 from public.consommations_credits));
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select pg_temp.check('0050 : l''equipe lit tous les lots et consommations',
-  (select count(*) from public.lots_credits where merchant_id = 'a0500000-0000-0000-0000-0000000000b1') = 1
+select pg_temp.check('0060 : l''equipe lit tous les lots et consommations',
+  (select count(*) from public.lots_credits where merchant_id = 'a0600000-0000-0000-0000-0000000000b1') = 1
   and (select count(*) from public.consommations_credits) = 6);
-select pg_temp.check('0050 : les soldes de l''equipe : boutiques avec solde ou achat seulement',
-  (select string_agg(c.shop_name || '=' || c.disponibles, ',') from public.credits_equipe() c) = 'Chez U50=19');
-select pg_temp.check('0050 : la file des achats montre boutique, pack et paiement',
+select pg_temp.check('0060 : les soldes de l''equipe : boutiques avec solde ou achat seulement',
+  (select string_agg(c.shop_name || '=' || c.disponibles, ',') from public.credits_equipe() c) = 'Chez U60=19');
+select pg_temp.check('0060 : la file des achats montre boutique, pack et paiement',
   exists (select 1 from public.achats_credits_equipe() ae
-           where ae.id = (select id from t50 where nom = 'u_10') and ae.shop_name = 'Chez U50'
-             and ae.merchant_id = 'a0500000-0000-0000-0000-0000000000a1' and ae.credits = 10
+           where ae.id = (select id from t60 where nom = 'u_10') and ae.shop_name = 'Chez U60'
+             and ae.merchant_id = 'a0600000-0000-0000-0000-0000000000a1' and ae.credits = 10
              and ae.prix_gnf = 10000 and ae.statut = 'active' and ae.paiement_moyen = 'orange_money'
              and ae.paiement_reference = 'OM500001' and ae.paiement_numero = '620112233'
              and ae.paiement_declare_at is not null and ae.paiement_confirme_at is not null
              and ae.rembourse_at is null and ae.creee_par_equipe is null)
   and exists (select 1 from public.achats_credits_equipe() ae
-               where ae.id = (select id from t50 where nom = 'u_25') and ae.motif = 'Reference introuvable'
+               where ae.id = (select id from t60 where nom = 'u_25') and ae.motif = 'Reference introuvable'
                  and ae.rembourse_at is not null)
   and (select count(*) from public.achats_credits_equipe()) = 3);
-select pg_temp.check('0050 : les revenus des credits du mois (encaisse a la verification, remboursement compte)',
+select pg_temp.check('0060 : les revenus des credits du mois (encaisse a la verification, remboursement compte)',
   (select encaisse_gnf = 10000 and rembourse_gnf = 25000 and achats = 1
      from public.revenus_credits()
     where mois = date_trunc('month', now() at time zone 'Africa/Conakry')::date)
@@ -5092,75 +5530,210 @@ reset role;
 -- clé étrangère du lot se revérifie (sans la garde, la suppression lève).
 set role authenticated;
 select pg_temp.login('a0420000-0000-0000-0000-000000000005');
-select public.corriger_credits('a0500000-0000-0000-0000-0000000000b1', 10, 'Avant suppression');
+select public.corriger_credits('a0600000-0000-0000-0000-0000000000b1', 10, 'Avant suppression');
 begin;
-select pg_temp.login('a0500000-0000-0000-0000-00000000000b');
-select public.payer_campagne_en_credits(public.demander_campagne('produit', 'a0500000-0000-0000-0000-000000000201', null, 3));
+select pg_temp.login('a0600000-0000-0000-0000-00000000000b');
+select public.payer_campagne_en_credits(public.demander_campagne('produit', 'a0600000-0000-0000-0000-000000000201', null, 3));
 reset role;
-delete from auth.users where id = 'a0500000-0000-0000-0000-00000000000b';
+delete from auth.users where id = 'a0600000-0000-0000-0000-00000000000b';
 commit;
-select pg_temp.check('0050 : supprimer une boutique qui a une campagne payee en credits en attente reussit',
-  not exists (select 1 from public.merchants where id = 'a0500000-0000-0000-0000-0000000000b1')
-  and not exists (select 1 from public.lots_credits where merchant_id = 'a0500000-0000-0000-0000-0000000000b1')
-  and not exists (select 1 from public.campagnes where merchant_id = 'a0500000-0000-0000-0000-0000000000b1'));
+select pg_temp.check('0060 : supprimer une boutique qui a une campagne payee en credits en attente reussit',
+  not exists (select 1 from public.merchants where id = 'a0600000-0000-0000-0000-0000000000b1')
+  and not exists (select 1 from public.lots_credits where merchant_id = 'a0600000-0000-0000-0000-0000000000b1')
+  and not exists (select 1 from public.campagnes where merchant_id = 'a0600000-0000-0000-0000-0000000000b1'));
 
 -- =====================================================================
--- 0051 : six produits sponsorisés au plus par appel
+-- 0061 : six produits sponsorisés au plus par appel
 -- =====================================================================
 -- Six boutiques X1 … X6 (puis X7), un produit publié chacune, une
 -- campagne produit active chacune. Écrites en `postgres` : ce qui se teste
 -- ici est le plafond de `produits_sponsorises`, pas le parcours de
--- paiement (testé en 0047 à 0050). D'autres campagnes actives des
+-- paiement (testé en 0047 à 0060). D'autres campagnes actives des
 -- sections précédentes peuvent rester : chaque contrôle tient quand même
 -- (au moins 6 boutiques éligibles, et le plafond borne tout).
-create or replace function pg_temp.x51(kind text, n int) returns uuid
+create or replace function pg_temp.x61(kind text, n int) returns uuid
 language sql immutable as $$
-  select ('a0510000-0000-0000-0000-' || kind || lpad(n::text, 10, '0'))::uuid
+  select ('a0610000-0000-0000-0000-' || kind || lpad(n::text, 10, '0'))::uuid
 $$;
 insert into auth.users (id, email, raw_user_meta_data)
-select pg_temp.x51('00', n), 'x' || n || '0051@test.gn',
+select pg_temp.x61('00', n), 'x' || n || '0061@test.gn',
        jsonb_build_object('role', 'merchant', 'full_name', 'Marchand X' || n, 'phone', '62005100' || n)
   from generate_series(1, 7) n;
 update public.profiles set id = auth_user_id
- where auth_user_id in (select pg_temp.x51('00', n) from generate_series(1, 7) n);
+ where auth_user_id in (select pg_temp.x61('00', n) from generate_series(1, 7) n);
 insert into public.merchants (id, profile_id, shop_name, city_id)
-select pg_temp.x51('a1', n), pg_temp.x51('00', n), 'Chez X' || n || '51', 1 from generate_series(1, 7) n;
+select pg_temp.x61('a1', n), pg_temp.x61('00', n), 'Chez X' || n || '51', 1 from generate_series(1, 7) n;
 insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
-select pg_temp.x51('c1', n), pg_temp.x51('a1', n), 1, 'Produit X' || n, 1000 * n, 'draft' from generate_series(1, 7) n;
+select pg_temp.x61('c1', n), pg_temp.x61('a1', n), 1, 'Produit X' || n, 1000 * n, 'draft' from generate_series(1, 7) n;
 insert into public.product_images (product_id, storage_path, position)
-select pg_temp.x51('c1', n), 'a0510000/x' || n || '/0.webp', 0 from generate_series(1, 7) n;
-update public.products set status = 'active' where id in (select pg_temp.x51('c1', n) from generate_series(1, 7) n);
+select pg_temp.x61('c1', n), 'a0610000/x' || n || '/0.webp', 0 from generate_series(1, 7) n;
+update public.products set status = 'active' where id in (select pg_temp.x61('c1', n) from generate_series(1, 7) n);
 insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at)
-select pg_temp.x51('a1', n), 'produit', pg_temp.x51('c1', n), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days'
+select pg_temp.x61('a1', n), 'produit', pg_temp.x61('c1', n), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days'
   from generate_series(1, 6) n;
 
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
-select pg_temp.check('0051 : six campagnes produit actives, p_limit => 5 en rend 5 (accueil)',
+select pg_temp.check('0061 : six campagnes produit actives, p_limit => 5 en rend 5 (accueil)',
   (select count(*) from public.produits_sponsorises(p_limit => 5)) = 5
   and (select count(distinct merchant_id) from public.produits_sponsorises(p_limit => 5)) = 5);
-select pg_temp.check('0051 : p_limit => 6 en rend 6',
+select pg_temp.check('0061 : p_limit => 6 en rend 6',
   (select count(*) from public.produits_sponsorises(p_limit => 6)) = 6);
-select pg_temp.check('0051 : p_limit => 50 n''en rend pas plus de 6',
+select pg_temp.check('0061 : p_limit => 50 n''en rend pas plus de 6',
   (select count(*) from public.produits_sponsorises(p_limit => 50)) <= 6);
-select pg_temp.check('0051 : la recherche et les categories demandent 3, en ont 3',
+select pg_temp.check('0061 : la recherche et les categories demandent 3, en ont 3',
   (select count(*) from public.produits_sponsorises(p_limit => 3)) = 3
   and (select count(*) from public.produits_sponsorises(null, 1, 3)) = 3);
 reset role;
 
 -- Une septième boutique éligible : le plafond tient encore à 6.
 insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at)
-values (pg_temp.x51('a1', 7), 'produit', pg_temp.x51('c1', 7), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days');
+values (pg_temp.x61('a1', 7), 'produit', pg_temp.x61('c1', 7), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days');
 set role anon;
-select pg_temp.check('0051 : sept boutiques eligibles, p_limit => 50 en rend exactement 6',
+select pg_temp.check('0061 : sept boutiques eligibles, p_limit => 50 en rend exactement 6',
   (select count(*) from public.produits_sponsorises(p_limit => 50)) = 6
   and (select count(*) from public.produits_sponsorises(null, null, 1000)) = 6);
 reset role;
-select pg_temp.check('0051 : signature et droits inchanges (text, int, int), anon et authenticated',
+select pg_temp.check('0061 : signature et droits inchanges (text, int, int), anon et authenticated',
   has_function_privilege('anon', 'public.produits_sponsorises(text, int, int)', 'execute')
   and has_function_privilege('authenticated', 'public.produits_sponsorises(text, int, int)', 'execute')
   and (select prosecdef and proconfig = array['search_path=""']
          from pg_proc where oid = 'public.produits_sponsorises(text, int, int)'::regprocedure));
+
+-- =====================================================================
+-- Un contact qui suit un clic sur une pub compte pour cette pub (0062)
+-- =====================================================================
+-- M (a062…0a, boutique a1, campagne « m ») et N (a062…0b, boutique b1,
+-- campagne « n ») ; K client (a062…0c) ; S équipe (a042…05). Chaque
+-- navigateur est `pg_temp.v62(i)`. Un clic à T = il y a 30 jours ; les
+-- contacts s'ajoutent cas par cas, et chaque contrôle relit le total.
+create or replace function pg_temp.v62(n int) returns uuid
+language sql immutable as $$
+  select ('a0620000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid
+$$;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0620000-0000-0000-0000-00000000000a', 'm0062@test.gn', '{"role":"merchant","full_name":"Marchand M62","phone":"620006201"}'),
+  ('a0620000-0000-0000-0000-00000000000b', 'n0062@test.gn', '{"role":"merchant","full_name":"Marchand N62","phone":"620006202"}'),
+  ('a0620000-0000-0000-0000-00000000000c', 'k0062@test.gn', '{"role":"client","full_name":"Client K62","phone":"620006203"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0620000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0620000-0000-0000-0000-0000000000a1', 'a0620000-0000-0000-0000-00000000000a', 'Chez M62', 1),
+  ('a0620000-0000-0000-0000-0000000000b1', 'a0620000-0000-0000-0000-00000000000b', 'Chez N62', 1);
+create temp table t62 (nom text primary key, id uuid, merchant uuid, t timestamptz);
+insert into t62 values
+  ('m', 'a0620000-0000-0000-0000-0000000000c1', 'a0620000-0000-0000-0000-0000000000a1', now() - interval '30 days'),
+  ('n', 'a0620000-0000-0000-0000-0000000000c2', 'a0620000-0000-0000-0000-0000000000b1', now() - interval '30 days');
+insert into public.campagnes (id, merchant_id, type, duree_jours, prix_gnf, statut, debut_at, fin_at)
+select id, merchant, 'boutique', 7, 0, 'active', t - interval '1 day', t + interval '6 days' from t62;
+
+-- Un clic sur la campagne `camp` depuis le navigateur `v`, `d` après T.
+create or replace function pg_temp.clic62(camp text, v uuid, d interval default '0') returns void
+language sql as $$
+  insert into public.analytics_events (name, occurred_at, campagne_id, merchant_id, visiteur_id)
+  select 'pub_clic', t62.t + d, t62.id, t62.merchant, v from t62 where nom = camp
+$$;
+-- Un contact vers la boutique de `camp`, `d` après T.
+create or replace function pg_temp.contact62(evt text, camp text, v uuid, d interval, qui text default 'client') returns void
+language sql as $$
+  insert into public.analytics_events (name, occurred_at, merchant_id, visiteur_id, actor_role)
+  select evt, t62.t + d, t62.merchant, v, qui from t62 where nom = camp
+$$;
+-- Les contacts de la campagne `camp`, lus par l'équipe.
+create or replace function pg_temp.contacts62(camp text) returns bigint
+language plpgsql as $$
+declare n bigint; cid uuid := (select id from t62 where nom = camp);
+begin
+  perform set_config('request.jwt.claim.sub', 'a0420000-0000-0000-0000-000000000005', false);
+  set local role authenticated;
+  select r.contacts into n from public.resultats_campagnes() r where r.campagne_id = cid;
+  reset role;
+  return n;
+end $$;
+
+select pg_temp.check('0062 : resultats_campagnes garde ses colonnes et ajoute contacts EN FIN',
+  pg_get_function_result('public.resultats_campagnes()'::regprocedure)
+    = 'TABLE(campagne_id uuid, vues bigint, clics bigint, contacts bigint)');
+select pg_temp.check('0062 : memes droits que 0047 (authenticated seul), security definer, search_path vide',
+  has_function_privilege('authenticated', 'public.resultats_campagnes()', 'execute')
+  and not has_function_privilege('anon', 'public.resultats_campagnes()', 'execute')
+  and (select prosecdef and proconfig = array['search_path=""']
+         from pg_proc where oid = 'public.resultats_campagnes()'::regprocedure));
+select pg_temp.check('0062 : une campagne sans mesure a 0 contact', pg_temp.contacts62('m') = 0);
+
+-- 1. Clic puis contact à J+4 : compte.
+select pg_temp.clic62('m', pg_temp.v62(1));
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(1), '4 days');
+begin;
+select pg_temp.check('0062 : un contact a J+4 du clic compte', pg_temp.contacts62('m') = 1);
+commit;
+-- 2. Clic puis contact à J+6 : hors fenêtre.
+select pg_temp.clic62('m', pg_temp.v62(2));
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(2), '6 days');
+begin;
+select pg_temp.check('0062 : un contact a J+6 du clic ne compte pas', pg_temp.contacts62('m') = 1);
+commit;
+-- 3. Contact AVANT le clic, rien après : ne compte pas.
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(3), '-1 hour');
+select pg_temp.clic62('m', pg_temp.v62(3));
+begin;
+select pg_temp.check('0062 : un contact avant le clic ne compte pas', pg_temp.contacts62('m') = 1);
+commit;
+-- 4. Le navigateur 4 clique, le 5 (qui n'a pas cliqué) contacte : ne compte pas.
+select pg_temp.clic62('m', pg_temp.v62(4));
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(5), '1 day');
+begin;
+select pg_temp.check('0062 : un contact depuis un autre navigateur que celui du clic ne compte pas',
+  pg_temp.contacts62('m') = 1);
+commit;
+-- 5. Deux contacts du même navigateur (WhatsApp puis message) : un seul.
+select pg_temp.clic62('m', pg_temp.v62(6));
+select pg_temp.contact62('whatsapp_ouvert', 'm', pg_temp.v62(6), '1 day');
+select pg_temp.contact62('message_envoye', 'm', pg_temp.v62(6), '2 days');
+begin;
+select pg_temp.check('0062 : deux contacts du meme navigateur comptent pour un', pg_temp.contacts62('m') = 2);
+commit;
+-- 6. Clic sur la pub de M, contact vers N : compte ni pour M, ni pour N.
+select pg_temp.clic62('m', pg_temp.v62(7));
+select pg_temp.contact62('contact_ouvert', 'n', pg_temp.v62(7), '1 day');
+begin;
+select pg_temp.check('0062 : un contact vers un autre commercant ne compte pas',
+  pg_temp.contacts62('m') = 2 and pg_temp.contacts62('n') = 0);
+commit;
+-- 7. Sans numéro de visiteur, réponse du commerçant, autre événement : rien.
+select pg_temp.clic62('m', null);
+select pg_temp.contact62('contact_ouvert', 'm', null, '1 day');
+select pg_temp.clic62('m', pg_temp.v62(8));
+select pg_temp.contact62('message_envoye', 'm', pg_temp.v62(8), '1 day', 'merchant');
+select pg_temp.contact62('produit_vu', 'm', pg_temp.v62(8), '1 day');
+begin;
+select pg_temp.check('0062 : ni mesure sans visiteur, ni reponse du commercant, ni simple vue ne comptent',
+  pg_temp.contacts62('m') = 2);
+commit;
+-- 8. La borne : à 5 jours pile, compte ; le clic d'une autre campagne ne prête rien.
+select pg_temp.clic62('m', pg_temp.v62(9));
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(9), '5 days');
+select pg_temp.clic62('n', pg_temp.v62(10));
+select pg_temp.contact62('contact_ouvert', 'm', pg_temp.v62(10), '1 day');
+begin;
+select pg_temp.check('0062 : 5 jours pile comptent ; un clic sur la pub d''une autre boutique ne compte pas',
+  pg_temp.contacts62('m') = 3 and pg_temp.contacts62('n') = 0);
+commit;
+
+-- Vues et clics inchangés ; chacun ses résultats.
+set role authenticated;
+select pg_temp.login('a0620000-0000-0000-0000-00000000000a');
+select pg_temp.check('0062 : la boutique lit ses clics et ses contacts, comme avant',
+  (select vues = 0 and clics = 9 and contacts = 3 from public.resultats_campagnes()
+    where campagne_id = 'a0620000-0000-0000-0000-0000000000c1'));
+select pg_temp.check('0062 : la boutique ne lit pas les resultats d''une autre',
+  not exists (select 1 from public.resultats_campagnes() where campagne_id = 'a0620000-0000-0000-0000-0000000000c2'));
+select pg_temp.login('a0620000-0000-0000-0000-00000000000c');
+select pg_temp.check('0062 : un client ne lit aucun resultat',
+  not exists (select 1 from public.resultats_campagnes()));
+reset role;
+set role anon;
+select pg_temp.check('0062 : anon n''appelle pas la fonction', pg_temp.refuse('select public.resultats_campagnes()'));
+reset role;
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

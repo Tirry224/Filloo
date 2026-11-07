@@ -24,7 +24,7 @@ const BOUTON =
 
 /**
  * Les prix de la publicité et les numéros où les commerçants paient
- * (0048). Un prix change pour les demandes À VENIR : celui d'une demande
+ * (0058). Un prix change pour les demandes À VENIR : celui d'une demande
  * déjà faite est figé dessus. Chaque changement s'inscrit dans
  * l'historique de l'équipe.
  */
