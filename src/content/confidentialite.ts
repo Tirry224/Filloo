@@ -3,7 +3,7 @@
  * vérifiable dans le dépôt. Sa date est ÉCRITE, jamais calculée.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "6 novembre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "7 novembre 2026";
 
 export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
@@ -76,6 +76,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
       ],
       "Vos recherches récentes sont enregistrées DANS VOTRE NAVIGATEUR, sur votre appareil uniquement. Elles ne sont jamais envoyées à Filloo, et vider les données de votre navigateur les efface.",
       "Pour vous montrer d’abord ce qui vous intéresse, votre navigateur retient aussi, dans un cookie, les catégories et les boutiques que vous regardez le plus souvent. Ce cookie ne contient aucun identifiant ni aucune donnée personnelle ; Filloo le lit pour ordonner les produits affichés et ne l’enregistre jamais. Il ne sert pas à choisir les produits sponsorisés, qui sont les mêmes pour tout le monde. Vider les données de votre navigateur l’efface.",
+      "Pour compter combien de personnes différentes visitent Filloo, et non seulement combien de pages sont vues, votre navigateur reçoit un cookie de mesure propre à Filloo. Il contient un numéro tiré au hasard, qui n’est relié ni à votre compte, ni à votre nom, ni à votre numéro de téléphone, ni à votre adresse IP. Il permet seulement de reconnaître qu’un même navigateur revient. Il n’est partagé avec personne et ne sert à aucune publicité. Il est conservé 13 mois au plus ; vider les données de votre navigateur l’efface, et vous comptez alors comme un nouveau visiteur.",
     ],
   },
   {
@@ -86,7 +87,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
         "faire fonctionner le service : votre compte, votre boutique, vos produits, vos conversations ;",
         "vous prévenir d’un nouveau message ou d’une décision concernant votre compte, par notification, si vous les avez activées ;",
         "faire respecter les règles : lutte contre le spam, traitement des signalements, suspension des comptes abusifs ;",
-        "comprendre l’usage du service, au moyen de compteurs qui ne contiennent aucun texte que vous avez écrit ni aucune donnée permettant de vous identifier.",
+        "comprendre l’usage du service, au moyen de compteurs qui ne contiennent aucun texte que vous avez écrit ni aucune donnée permettant de vous identifier — seulement, pour les visites, le numéro aléatoire du cookie de mesure décrit à l’article 4.",
       ],
     ],
   },
@@ -132,6 +133,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
       "Tant que votre compte existe, vos données sont conservées pour faire fonctionner le service.",
       "Les messages d’une conversation sont conservés tant que la conversation existe : ils appartiennent à deux personnes, et l’effacement par l’une priverait l’autre de ce qu’elle a reçu.",
       "Les photos d’un produit sont supprimées du stockage quand le produit est supprimé, ou quand elles sont retirées de sa fiche.",
+      "Les compteurs d’usage, y compris le numéro aléatoire du cookie de mesure, sont effacés au bout de 13 mois.",
     ],
   },
   {

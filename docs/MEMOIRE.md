@@ -534,10 +534,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-395 commits, du plus récent au plus ancien.
+396 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `e9aed58` Modération : les personnes signalées par 5 personnes ou plus passent en tête
 - `d48c2da` Base : 0055, 0056, 0057 appliquées (signalés par 5 personnes, bienvenue des boutiques, visiteurs uniques)
 - `43ce2d3` CI : les vérifications tournent à chaque push sur dev et sur main
 - `43bc92a` Sécurité : un message ne fait sonner le destinataire qu'une fois
