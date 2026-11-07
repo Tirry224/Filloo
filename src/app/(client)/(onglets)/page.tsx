@@ -25,6 +25,7 @@ import { categoriesParGouts, melanger } from "@/lib/melange";
 import { RetenirGout } from "@/components/product/RetenirGout";
 import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
 import { EncartPub } from "@/components/publicite/EncartPub";
+import { intercaler } from "@/lib/intercaler";
 import { badgesBoutiques } from "@/lib/data/abonnements";
 import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 
@@ -79,12 +80,13 @@ export default async function HomePage({
      partagée reste lue une fois par minute, l'ordre change à chaque visite. */
   const visible = tri === "pour-vous" ? melanger(filtres, gouts) : filtres;
 
-  /* La publicité (0047) : au plus deux produits sponsorisés de cet
-     emplacement, et les boutiques mises en avant sur l'accueil complet. */
+  /* La publicité (0047) : 5 produits sponsorisés sur l'accueil complet, 3
+     dans une catégorie, et 10 boutiques mises en avant sur l'accueil
+     complet (décision du porteur du projet, 2026-11-07). */
   const idCategorie = categories.find((c) => c.name === categorie)?.id ?? null;
   const [sponsorises, boutiquesEnAvant] = await Promise.all([
-    produitsSponsorises({ categoryId: idCategorie, limit: 2 }),
-    categorie === "Tout" ? boutiquesMisesEnAvant() : Promise.resolve([]),
+    produitsSponsorises({ categoryId: idCategorie, limit: categorie === "Tout" ? 5 : 3 }),
+    categorie === "Tout" ? boutiquesMisesEnAvant(10) : Promise.resolve([]),
   ]);
   await compterAffichages([...sponsorises, ...boutiquesEnAvant].map((x) => x.campagneId));
   const badges = await badgesBoutiques([...sponsorises, ...tous].map((p) => p.merchant.id));
@@ -97,14 +99,10 @@ export default async function HomePage({
   const ordinaires = (featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible).filter(
     (p) => !idsSponsorises.has(p.id),
   );
-  /* Le premier en tête, le second après quatre produits ordinaires : visibles
-     sans former un bloc d'annonces. */
-  const gridItems = [
-    ...sponsorises.slice(0, 1).map((p) => ({ p, s: p.campagneId })),
-    ...ordinaires.slice(0, 4).map((p) => ({ p, s: null })),
-    ...sponsorises.slice(1).map((p) => ({ p, s: p.campagneId })),
-    ...ordinaires.slice(4).map((p) => ({ p, s: null })),
-  ];
+  // Le premier en tête, puis un tous les quatre produits ordinaires.
+  const gridItems = intercaler(sponsorises, ordinaires).map((x) =>
+    "sponsorise" in x ? { p: x.sponsorise, s: x.sponsorise.campagneId } : { p: x.ordinaire, s: null },
+  );
 
   await compter("visite", {});
 
@@ -151,7 +149,6 @@ export default async function HomePage({
           </EmptyState>
         ) : (
           <>
-        <BoutiquesADecouvrir boutiques={boutiquesEnAvant} />
         {featuredHere ? (
           <Section className="gap-2 pt-2 pb-0">
             <SectionLabel>À la une</SectionLabel>
@@ -189,9 +186,17 @@ export default async function HomePage({
           </div>
           {sponsorises.length === 0 ? <EncartPub emplacement={idCategorie ? "categorie" : "accueil"} /> : null}
           <ProductGrid>
-            {gridItems.map(({ p, s }) => (
-              <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} badge={badges.get(p.merchant.id)} />
+            {/* `order` pair pour les cartes, impair pour la rangée des
+                boutiques : elle tombe sous la PREMIÈRE rangée quelle que
+                soit la largeur (2, 3 ou 4 colonnes, voir `ProductGrid`). */}
+            {gridItems.map(({ p, s }, i) => (
+              <div key={p.id} style={{ order: i * 2 }}>
+                <ProductCard product={p} sponsorise={s ? { campagneId: s } : undefined} badge={badges.get(p.merchant.id)} />
+              </div>
             ))}
+            {categorie === "Tout" ? (
+              <BoutiquesADecouvrir boutiques={boutiquesEnAvant} className="order-3 col-span-full sm:order-5 lg:order-7" />
+            ) : null}
           </ProductGrid>
         </Section>
           </>

@@ -1,22 +1,23 @@
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { Section } from "@/components/ui/Screen";
+import { cn } from "@/lib/cn";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { EncartPub } from "@/components/publicite/EncartPub";
 import { lienPub, type BoutiqueEnAvant } from "@/lib/data/publicite";
 
-/** La rangée « Boutiques à découvrir » de l'accueil : des boutiques mises en avant (0047), marquées comme telles. */
-export function BoutiquesADecouvrir({ boutiques }: { boutiques: BoutiqueEnAvant[] }) {
+/**
+ * La rangée « Boutiques à découvrir » de l'accueil : des boutiques mises en
+ * avant (0047), marquées comme telles. Posée dans la grille, sous la
+ * première rangée de produits (décision du 2026-11-07), d'où `className`
+ * et l'absence de `Section` : la grille donne déjà les marges.
+ */
+export function BoutiquesADecouvrir({ boutiques, className }: { boutiques: BoutiqueEnAvant[]; className?: string }) {
   // Place libre : l'encart la montre, sans fausse boutique (2026-11-07).
   if (!boutiques.length) {
-    return (
-      <Section className="pt-3 pb-0">
-        <EncartPub emplacement="boutique" />
-      </Section>
-    );
+    return <EncartPub emplacement="boutique" className={className} />;
   }
   return (
-    <Section className="gap-2 pt-3 pb-0">
+    <div className={cn("flex flex-col gap-2 py-1", className)}>
       <div className="flex items-baseline justify-between">
         <SectionLabel>Boutiques à découvrir</SectionLabel>
         <span className="text-2xs font-semibold tracking-wide text-ink-soft uppercase">Sponsorisé</span>
@@ -36,6 +37,6 @@ export function BoutiquesADecouvrir({ boutiques }: { boutiques: BoutiqueEnAvant[
           </Link>
         ))}
       </div>
-    </Section>
+    </div>
   );
 }

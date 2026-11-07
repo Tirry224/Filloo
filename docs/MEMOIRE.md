@@ -551,10 +551,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-396 commits, du plus récent au plus ancien.
+397 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `a7cdfa0` Emplacements publicitaires visibles même vides : encart « Votre pub ici »
 - `d2717da` 0050 écrite, PAS appliquée : crédits de publicité
 - `c12c942` Crédits de publicité, côté site (EN COURS : ne compile pas sans 0050)
 - `9abbbf5` 0049 écrite, PAS appliquée : abonnements Pro et Business, Gratuit limité à 10 produits

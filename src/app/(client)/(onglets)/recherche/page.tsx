@@ -9,6 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { EncartPub } from "@/components/publicite/EncartPub";
+import { intercaler } from "@/lib/intercaler";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -74,7 +75,7 @@ export default async function SearchPage({
 
   /* Au plus deux produits sponsorisés, PERTINENTS pour cette recherche ou
      cette catégorie (0047), en tête et marqués. Rien sur l'écran de repos. */
-  const sponsorises = q || category ? await produitsSponsorises({ query: q, categoryId: category?.id ?? null, limit: 2 }) : [];
+  const sponsorises = q || category ? await produitsSponsorises({ query: q, categoryId: category?.id ?? null, limit: 3 }) : [];
   await compterAffichages(sponsorises.map((p) => p.campagneId));
   const badges = await badgesBoutiques([...sponsorises, ...results].map((p) => p.merchant.id));
   const idsSponsorises = new Set(sponsorises.map((p) => p.id));
@@ -194,14 +195,22 @@ export default async function SearchPage({
               <>
                 {sponsorises.length === 0 && (q || category) ? <EncartPub emplacement={q ? "recherche" : "categorie"} /> : null}
                 <ProductGrid>
-                  {sponsorises.map((p) => (
-                    <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} badge={badges.get(p.merchant.id)} />
-                  ))}
-                  {results
-                    .filter((p) => !idsSponsorises.has(p.id))
-                    .map((p) => (
-                      <ProductCard key={p.id} product={p} badge={badges.get(p.merchant.id)} />
-                    ))}
+                  {/* 3 sponsorisés (2026-11-07) : un en tête, puis un tous les quatre résultats. */}
+                  {intercaler(
+                    sponsorises,
+                    results.filter((p) => !idsSponsorises.has(p.id)),
+                  ).map((x) =>
+                    "sponsorise" in x ? (
+                      <ProductCard
+                        key={`pub-${x.sponsorise.id}`}
+                        product={x.sponsorise}
+                        sponsorise={{ campagneId: x.sponsorise.campagneId }}
+                        badge={badges.get(x.sponsorise.merchant.id)}
+                      />
+                    ) : (
+                      <ProductCard key={x.ordinaire.id} product={x.ordinaire} badge={badges.get(x.ordinaire.merchant.id)} />
+                    ),
+                  )}
                 </ProductGrid>
               </>
             )}
