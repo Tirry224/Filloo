@@ -547,10 +547,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-400 commits, du plus récent au plus ancien.
+401 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `90e6b6e` Mémoire : 0065 et 0066 appliquées, la gestion depuis /admin est complète
 - `1c1492d` Admin : onglet Gestion — comptes, produits, équipe, catégories et villes
 - `c310858` Base : 0063-0066 écrites (gestion depuis /admin) ; 0063 et 0064 appliquées, 0065 et 0066 en attente
 - `06d125e` Statistiques : les visiteurs uniques s'affichent dans /admin/statistiques

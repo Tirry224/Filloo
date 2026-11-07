@@ -6,7 +6,7 @@ import { ChipRow } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
-import { ProductCard } from "@/components/product/ProductCard";
+import { CARTES_PRIORITAIRES, ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
@@ -189,13 +189,18 @@ export default async function SearchPage({
               </EmptyState>
             ) : (
               <ProductGrid>
-                {sponsorises.map((p) => (
-                  <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} />
+                {sponsorises.map((p, i) => (
+                  <ProductCard
+                    key={`pub-${p.id}`}
+                    product={p}
+                    sponsorise={{ campagneId: p.campagneId }}
+                    prioritaire={i < CARTES_PRIORITAIRES}
+                  />
                 ))}
                 {results
                   .filter((p) => !idsSponsorises.has(p.id))
-                  .map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                  .map((p, i) => (
+                    <ProductCard key={p.id} product={p} prioritaire={sponsorises.length + i < CARTES_PRIORITAIRES} />
                   ))}
               </ProductGrid>
             )}

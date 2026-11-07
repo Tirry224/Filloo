@@ -4,7 +4,7 @@ import { Chip, ChipRow } from "@/components/ui/Chip";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
-import { ProductCard } from "@/components/product/ProductCard";
+import { CARTES_PRIORITAIRES, ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { Card } from "@/components/ui/Card";
 import { Photo } from "@/components/ui/Photo";
@@ -185,8 +185,13 @@ export default async function HomePage({
             )}
           </div>
           <ProductGrid>
-            {gridItems.map(({ p, s }) => (
-              <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} />
+            {gridItems.map(({ p, s }, i) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                sponsorise={s ? { campagneId: s } : undefined}
+                prioritaire={i < CARTES_PRIORITAIRES}
+              />
             ))}
           </ProductGrid>
         </Section>

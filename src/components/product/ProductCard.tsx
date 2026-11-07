@@ -12,14 +12,33 @@ import type { Product } from "@/lib/types";
  * `/pub/[campagne]`, qui compte le clic ; la mention « Sponsorisé » est
  * obligatoire, pour ne jamais faire passer une annonce payée pour un
  * résultat ordinaire.
+ *
+ * `prioritaire` : la photo est visible dès l'ouverture (les premières
+ * cartes d'une liste) et se demande tout de suite, au lieu d'attendre le
+ * reste de la page. Mesuré le 2026-11-07 en 3G : c'était le contenu
+ * principal de l'accueil et des boutiques, affiché à 3,6 s (11 s en 3G
+ * lente) parce que chargé « plus tard » (docs/PERFORMANCE.md, R2 bis).
+ *
+ * `prefetch={false}` : appliquer enfin la règle R2 — une liste de 24
+ * produits ne précharge pas 24 fiches pour une seule ouverte.
  */
-export function ProductCard({ product, sponsorise }: { product: Product; sponsorise?: { campagneId: string } }) {
+export const CARTES_PRIORITAIRES = 4;
+
+export function ProductCard({
+  product,
+  sponsorise,
+  prioritaire = false,
+}: {
+  product: Product;
+  sponsorise?: { campagneId: string };
+  prioritaire?: boolean;
+}) {
   const sold = product.status === "sold";
 
   return (
-    <Link href={sponsorise ? `/pub/${sponsorise.campagneId}` : `/produit/${product.id}`} className="block">
+    <Link href={sponsorise ? `/pub/${sponsorise.campagneId}` : `/produit/${product.id}`} prefetch={false} className="block">
       <Card className={cn("flex h-full flex-col", sold && "opacity-60")}>
-        <Photo ratio="card" src={product.imageUrls[0]} alt={product.title} />
+        <Photo ratio="card" src={product.imageUrls[0]} alt={product.title} priority={prioritaire} />
         <div className="flex flex-col gap-1.5 px-3 pt-2.5 pb-3">
           {sponsorise ? <span className="text-2xs font-semibold tracking-wide text-ink-soft uppercase">Sponsorisé</span> : null}
           <h3 className="text-sm leading-snug font-semibold">{product.title}</h3>

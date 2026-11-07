@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
-import { ProductCard } from "@/components/product/ProductCard";
+import { CARTES_PRIORITAIRES, ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
@@ -88,8 +88,8 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
             {catalogue.length} produit{catalogue.length > 1 ? "s" : ""} en vente
           </SectionLabel>
           <ProductGrid>
-            {catalogue.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {catalogue.map((p, i) => (
+              <ProductCard key={p.id} product={p} prioritaire={i < CARTES_PRIORITAIRES} />
             ))}
           </ProductGrid>
         </Section>

@@ -41,8 +41,18 @@ Les numéros sont cités dans le code : ils ne se réattribuent pas.
 ### R2 — Ne pas précharger ce qui ne sera pas lu
 
 Next précharge les liens visibles : sur une liste de 24 produits, 24
-fiches pour une seule ouverte. **Règle écrite, jamais appliquée** (§ 4) :
-`prefetch={false}` sur les liens de liste, à poser ou à abandonner.
+fiches pour une seule ouverte. **Appliquée le 2026-11-07** :
+`prefetch={false}` sur `ProductCard` (accueil, recherche, boutique, « du
+même vendeur »). Mesuré avant : 9 préchargements dès l'ouverture de
+l'accueil, en concurrence avec les photos en 3G.
+
+### R2 bis — Les photos visibles à l'ouverture partent en premier
+
+Mesuré le 2026-11-07 (3G simulée, processeur ÷ 4) : le contenu principal
+de l'accueil et d'une boutique est la PREMIÈRE PHOTO de produit ; marquée
+`loading="lazy"`, elle n'était demandée qu'après le reste — 3,6 s en 3G,
+10 à 11 s en 3G lente, contre 1,5 s pour une fiche. Les
+`CARTES_PRIORITAIRES` (4) premières cartes d'une liste ont `priority`.
 
 ### R3 — Le JavaScript se juge au gramme
 
