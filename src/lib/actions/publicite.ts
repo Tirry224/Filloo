@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEMANDES_PUB_OUVERTES, DUREES, lireTypeCampagne } from "@/lib/data/publicite";
@@ -25,6 +26,8 @@ function retour(chemin: string, erreur?: string, info?: string): never {
 }
 
 function rafraichir(): void {
+  // Les publicités sont lues une minute en cache (`data/publicite.ts`) : une décision se voit aussitôt.
+  revalidateTag(CATALOGUE, { expire: 0 });
   revalidatePath(VENDEUR);
   revalidatePath(ADMIN);
   revalidatePath("/");
