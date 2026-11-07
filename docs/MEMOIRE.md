@@ -205,8 +205,13 @@ mis à jour et raccourci ; l'ancienne version se relit par
   première rangée ; recherche et catégorie 3. Place libre : encart
   « Votre pub ici ». Plafond de la base porté à 6 par `0051` (écrite, PAS
   appliquée, part avec `0048` à `0050`).
-- **Pas fait** : remboursement partiel,
-  attribution des contacts à une campagne. App mobile : n'affiche pas la
+- **Attribution décidée (2026-11-07)** : un contact compte pour une
+  campagne s'il arrive dans les 5 jours APRÈS le clic sur la pub, depuis
+  le même navigateur (cookie `filloo_v`, sur `dev` depuis `0057`). Pas
+  encore codé : il faut d'abord le cookie sur cette branche.
+- **Numéros** : `dev` a pris 0052-0057 ; renuméroter 0048-0051 (0058+)
+  avant de publier cette branche.
+- **Pas fait** : remboursement partiel (décision : total seulement). App mobile : n'affiche pas la
   publicité, et n'utilise aucun objet touché par `0048`.
 
 ### Décidé par le porteur du projet (2026-11-06) : l'accueil mélangé
@@ -564,10 +569,12 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-398 commits, du plus récent au plus ancien.
+400 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `5e90545` Gratuit : les produits en campagne sont masqués en dernier (0049, PAS appliquée) ; décisions du 2026-11-07 en mémoire
+- `ae438b2` 0051 écrite, PAS appliquée : jusqu'à 6 produits sponsorisés par emplacement
 - `2100373` Accueil : 5 produits sponsorisés et 10 boutiques sous la première rangée ; recherche et catégories : 3
 - `a7cdfa0` Emplacements publicitaires visibles même vides : encart « Votre pub ici »
 - `d2717da` 0050 écrite, PAS appliquée : crédits de publicité
