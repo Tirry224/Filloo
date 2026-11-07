@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
+import { Plus, Tags, TrendingUp } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet } from "@/components/admin/AdminTopBar";
 import { jour, jourEtHeure } from "@/components/admin/EtatAnnonce";
 import { EtatCampagne, tauxDeClics } from "@/components/publicite/EtatCampagne";
@@ -9,21 +9,46 @@ import { Notice } from "@/components/ui/Notice";
 import { PendingSubmit } from "@/components/ui/PendingSubmit";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { deciderCampagneAction, interrompreCampagneAction } from "@/lib/actions/publicite";
-import { TYPES_CAMPAGNE, type CampagneEquipe, type TypeCampagne } from "@/lib/data/publicite";
+import { deciderCampagneAction, interrompreCampagneAction, marquerRembourseAction } from "@/lib/actions/publicite";
+import {
+  MOYENS_PAIEMENT,
+  TYPES_CAMPAGNE,
+  lireMoyen,
+  type CampagneEquipe,
+  type RevenuDuMois,
+  type TypeCampagne,
+} from "@/lib/data/publicite";
+import { formatGnf } from "@/lib/format";
 
+/* Une campagne n'apparaît que dans UNE section : la première qui la garde. */
 const SECTIONS = [
-  { titre: "À valider", garde: (c: CampagneEquipe) => c.etat === "en_attente" },
+  { titre: "Paiement à vérifier", garde: (c: CampagneEquipe) => c.etat === "en_attente" },
+  { titre: "À rembourser", garde: (c: CampagneEquipe) => c.aRembourser },
+  { titre: "En attente du paiement", garde: (c: CampagneEquipe) => c.etat === "a_payer" },
   { titre: "En ligne", garde: (c: CampagneEquipe) => c.etat === "active" },
-  { titre: "Passées", garde: (c: CampagneEquipe) => c.etat !== "en_attente" && c.etat !== "active" },
+  { titre: "Passées", garde: () => true },
 ] as const;
+
+function sectionDe(c: CampagneEquipe): string {
+  return SECTIONS.find((s) => s.garde(c))!.titre;
+}
 
 /**
  * La publicité vue par l'équipe (0047) : chaque demande se valide ou se
  * refuse (motif montré au commerçant), une campagne en ligne s'interrompt.
  * Chaque décision est signée dans l'historique de l'équipe.
  */
-export function PubliciteAdminVue({ campagnes, erreur, info }: { campagnes: CampagneEquipe[]; erreur?: string; info?: string }) {
+export function PubliciteAdminVue({
+  campagnes,
+  revenus,
+  erreur,
+  info,
+}: {
+  campagnes: CampagneEquipe[];
+  revenus: RevenuDuMois[];
+  erreur?: string;
+  info?: string;
+}) {
   return (
     <TabScreen largeur="rangees">
       <AdminTopBar />
@@ -31,15 +56,24 @@ export function PubliciteAdminVue({ campagnes, erreur, info }: { campagnes: Camp
         <Section className="gap-5">
           <EnTeteOnglet
             titre="Publicité"
-            sousTitre="Les demandes des commerçants. Gratuites tant que le paiement n'est pas en place."
+            sousTitre="Le commerçant paie par Orange Money ou MTN MoMo, l'équipe vérifie avant la mise en ligne."
           />
           {erreur ? <Notice>{erreur}</Notice> : null}
           {info ? <Notice tone="success">{info}</Notice> : null}
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/admin/publicite/nouvelle" className="flex h-tap items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-semibold text-on-accent">
+              <Plus size={16} aria-hidden /> Nouvelle publicité
+            </Link>
+            <Link href="/admin/publicite/tarifs" className="flex h-tap items-center justify-center gap-1.5 rounded-lg border border-line bg-surface text-sm font-semibold">
+              <Tags size={16} aria-hidden /> Prix et paiement
+            </Link>
+          </div>
+          <Revenus revenus={revenus} />
           {campagnes.length === 0 ? (
             <EmptyState icon={TrendingUp} title="Aucune demande" description="Les demandes de publicité des commerçants apparaîtront ici." />
           ) : (
             SECTIONS.map(({ titre, garde }) => {
-              const liste = campagnes.filter(garde);
+              const liste = campagnes.filter((c) => garde(c) && sectionDe(c) === titre);
               if (!liste.length) return null;
               return (
                 <div key={titre} className="flex flex-col gap-2.5">
@@ -85,6 +119,7 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
         </p>
       ) : null}
       {c.etat === "active" && c.fin_at ? <p className="text-2xs text-ink-soft">Jusqu&apos;au {jour(c.fin_at)}</p> : null}
+      <Paiement c={c} />
       {c.motif ? <p className="text-sm text-ink-soft">Motif : {c.motif}</p> : null}
       {c.debut_at ? (
         <p className="text-sm text-ink-soft">
@@ -92,7 +127,16 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
         </p>
       ) : null}
 
-      {c.etat === "en_attente" ? (
+      {c.aRembourser ? (
+        <form action={marquerRembourseAction} className="border-t border-line pt-2.5">
+          <input type="hidden" name="campagne" value={c.id} />
+          <PendingSubmit className="flex h-tap w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-base font-semibold">
+            Remboursement fait
+          </PendingSubmit>
+        </form>
+      ) : null}
+
+      {c.etat === "en_attente" || c.etat === "a_payer" ? (
         <form action={deciderCampagneAction} className="flex flex-col gap-2 border-t border-line pt-2.5">
           <input type="hidden" name="campagne" value={c.id} />
           <input
@@ -102,15 +146,17 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
             placeholder="Motif du refus (obligatoire pour refuser)"
             className="h-tap rounded-lg border border-line bg-surface px-3.5 text-base"
           />
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="submit"
-              name="decision"
-              value="accepter"
-              className="flex h-tap cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent"
-            >
-              Valider
-            </button>
+          <div className={c.etat === "en_attente" ? "grid grid-cols-2 gap-2" : "grid grid-cols-1"}>
+            {c.etat === "en_attente" ? (
+              <button
+                type="submit"
+                name="decision"
+                value="accepter"
+                className="flex h-tap cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent"
+              >
+                {(c.prix_gnf ?? 0) > 0 ? "Paiement reçu, valider" : "Valider"}
+              </button>
+            ) : null}
             <button
               type="submit"
               name="decision"
@@ -144,5 +190,52 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
         </details>
       ) : null}
     </Card>
+  );
+}
+
+/** Ce qui a été payé, comment, et la référence à chercher dans le relevé Orange Money ou MTN. */
+function Paiement({ c }: { c: CampagneEquipe }) {
+  const moyen = lireMoyen(c.paiement_moyen);
+  if (c.prix_gnf === null) return null;
+  return (
+    <div className="flex flex-col gap-0.5 rounded-lg bg-paper px-3 py-2 text-sm">
+      <span className="font-semibold">
+        {c.prix_gnf === 0 ? "Gratuite" : formatGnf(c.prix_gnf)}
+        {c.creee_par_equipe ? " · créée par l'équipe" : ""}
+      </span>
+      {moyen ? (
+        <span>
+          {MOYENS_PAIEMENT[moyen]}
+          {c.paiement_numero ? ` · depuis le ${c.paiement_numero}` : ""}
+          {c.paiement_reference ? ` · réf. ${c.paiement_reference}` : ""}
+        </span>
+      ) : c.prix_gnf > 0 ? (
+        <span className="text-ink-soft">Paiement pas encore déclaré</span>
+      ) : null}
+      {c.paiement_declare_at && !c.paiement_confirme_at ? (
+        <span className="text-2xs text-ink-soft">Déclaré le {jourEtHeure(c.paiement_declare_at)}, à vérifier</span>
+      ) : null}
+      {c.paiement_confirme_at ? <span className="text-2xs text-ink-soft">Vérifié le {jourEtHeure(c.paiement_confirme_at)}</span> : null}
+      {c.rembourse_at ? <span className="text-2xs text-ink-soft">Remboursé le {jourEtHeure(c.rembourse_at)}</span> : null}
+    </div>
+  );
+}
+
+/** Le mois en cours et le total : ce qui est réellement entré (vérifié, moins les remboursements). */
+function Revenus({ revenus }: { revenus: RevenuDuMois[] }) {
+  const ceMois = new Date().toISOString().slice(0, 7);
+  const mois = revenus.find((r) => r.mois.slice(0, 7) === ceMois);
+  const total = revenus.reduce((s, r) => s + r.encaisse - r.rembourse, 0);
+  return (
+    <div className="grid grid-cols-2 gap-2 text-center">
+      <div className="flex flex-col rounded-lg border border-line bg-surface px-2 py-3">
+        <span className="text-base font-bold">{formatGnf((mois?.encaisse ?? 0) - (mois?.rembourse ?? 0))}</span>
+        <span className="text-2xs text-ink-soft">encaissé ce mois</span>
+      </div>
+      <div className="flex flex-col rounded-lg border border-line bg-surface px-2 py-3">
+        <span className="text-base font-bold">{formatGnf(total)}</span>
+        <span className="text-2xs text-ink-soft">depuis le début</span>
+      </div>
+    </div>
   );
 }

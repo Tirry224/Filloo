@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { PubliciteVendeurVue } from "@/components/publicite/PubliciteVendeurVue";
 import { getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
-import { mesCampagnes } from "@/lib/data/publicite";
+import { lireMoyensPaiement, lireTarifs, mesCampagnes } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
 /** « Publicité et visibilité » du commerçant (0047). Garde héritée de `(vendeur)/layout.tsx`. */
@@ -10,11 +10,18 @@ export default async function PublicitePage({ searchParams }: { searchParams: Pr
   const supabase = await createClient();
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/vendeur/boutique");
-  const [produits, campagnes] = await Promise.all([getMerchantProducts(supabase, merchant), mesCampagnes(supabase)]);
+  const [produits, campagnes, tarifs, moyens] = await Promise.all([
+    getMerchantProducts(supabase, merchant),
+    mesCampagnes(supabase),
+    lireTarifs(supabase),
+    lireMoyensPaiement(supabase),
+  ]);
   return (
     <PubliciteVendeurVue
       produits={produits.filter((p) => p.status === "active")}
       campagnes={campagnes}
+      tarifs={tarifs}
+      moyens={moyens}
       erreur={erreur}
       info={info}
     />

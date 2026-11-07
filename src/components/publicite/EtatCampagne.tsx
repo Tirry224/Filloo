@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/Badge";
 import type { EtatCampagne as Etat } from "@/lib/data/publicite";
 
 const ETATS: Record<Etat, { libelle: string; ton: "neutral" | "accent" | "success" | "warn" | "danger" }> = {
-  en_attente: { libelle: "En attente", ton: "warn" },
+  a_payer: { libelle: "À payer", ton: "warn" },
+  en_attente: { libelle: "En vérification", ton: "warn" },
   active: { libelle: "Active", ton: "success" },
   terminee: { libelle: "Terminée", ton: "neutral" },
   refusee: { libelle: "Refusée", ton: "danger" },
