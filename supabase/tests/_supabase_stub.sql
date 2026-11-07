@@ -20,7 +20,12 @@ create table auth.users (
   email text,
   raw_user_meta_data jsonb default '{}'::jsonb,
   -- Écrit par le serveur seul ; l'équipe y est marquée (0043).
-  raw_app_meta_data jsonb default '{}'::jsonb
+  raw_app_meta_data jsonb default '{}'::jsonb,
+  -- Lues par `ajouter_membre` (0065) ; mêmes noms et types qu'en
+  -- production (constaté le 2026-11-07, `information_schema.columns`).
+  email_confirmed_at timestamptz,
+  deleted_at timestamptz,
+  is_anonymous boolean not null default false
 );
 
 create or replace function auth.uid() returns uuid

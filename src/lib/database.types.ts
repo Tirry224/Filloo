@@ -924,6 +924,65 @@ export type Database = {
           signaleurs: number
         }[]
       }
+      ajouter_membre: { Args: { p_email: string; p_nom: string }; Returns: undefined }
+      demasquer_produit: {
+        Args: { p_motif: string; p_produit: string }
+        Returns: undefined
+      }
+      equipe_comptes: {
+        Args: { p_limite?: number; p_recherche?: string }
+        Returns: {
+          created_at: string
+          email: string
+          is_deleted: boolean
+          is_suspended: boolean
+          merchant_id: string
+          nom: string
+          produits: number
+          profile_id: string
+          role: string
+          shop_name: string
+          signalements_en_attente: number
+          suspension_reason: string
+          telephone: string
+          ville: string
+        }[]
+      }
+      equipe_membres: {
+        Args: never
+        Returns: {
+          auth_user_id: string
+          created_at: string
+          email: string
+          moi: boolean
+          nom: string
+        }[]
+      }
+      equipe_produits: {
+        Args: { p_limite?: number; p_recherche?: string; p_statut?: string }
+        Returns: {
+          categorie: string
+          created_at: string
+          masque_par_equipe: boolean
+          merchant_id: string
+          prix: number
+          product_id: string
+          shop_name: string
+          statut: string
+          titre: string
+        }[]
+      }
+      fixer_categorie: {
+        Args: { p_id?: number; p_nom?: string; p_position?: number }
+        Returns: number
+      }
+      fixer_ville: {
+        Args: { p_id?: number; p_nom?: string; p_position?: number }
+        Returns: number
+      }
+      retirer_categorie: { Args: { p_id: number }; Returns: undefined }
+      retirer_membre: { Args: { p_auth: string }; Returns: undefined }
+      retirer_ville: { Args: { p_id: number }; Returns: undefined }
       comptes_suspendus: {
         Args: never
         Returns: {

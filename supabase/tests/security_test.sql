@@ -3990,5 +3990,440 @@ select pg_temp.check('0057 : la purge de 0028 retire les 5 vieilles mesures', pu
 select pg_temp.check('0057 : la purge emporte aussi les numeros de visiteur',
   not exists (select 1 from public.analytics_events where visiteur_id is not null));
 
+
+
+-- =====================================================================
+-- L'équipe retrouve n'importe quel compte (0063)
+-- =====================================================================
+-- T : équipe. N : client hors équipe. M : commerçant « Mamadou Diallo »,
+-- boutique « Boutique Kaloum Électro » (2 produits). C1 « Aïssatou
+-- Barry ». C2 « barry », compte SUPPRIMÉ, le plus récent. C3 « Ami de
+-- Mamadou », plus récent que M.
+-- `pg_temp.erreur_de` : le message d'erreur d'une instruction, ou null.
+create or replace function pg_temp.erreur_de(q text) returns text
+language plpgsql as $$
+begin
+  execute q;
+  return null;
+exception when others then
+  return sqlerrm;
+end $$;
+
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0630000-0000-0000-0000-0000000000e1', 't0063@test.gn', '{"role":"client","full_name":"Equipier T63","phone":"620006301"}', now()),
+  ('a0630000-0000-0000-0000-0000000000c9', 'n0063@test.gn', '{"role":"client","full_name":"Curieux N63","phone":"620006309"}', now()),
+  ('a0630000-0000-0000-0000-0000000000a1', 'mamadou0063@test.gn', '{"role":"merchant","full_name":"Mamadou Diallo","phone":"+224621630001"}', now()),
+  ('a0630000-0000-0000-0000-0000000000c1', 'aissatou0063@test.gn', '{"role":"client","full_name":"Aïssatou Barry","phone":"621630002"}', now()),
+  ('a0630000-0000-0000-0000-0000000000c2', 'ancien0063@test.gn', '{"role":"client","full_name":"barry","phone":"621630003"}', now()),
+  ('a0630000-0000-0000-0000-0000000000c3', 'ami0063@test.gn', '{"role":"client","full_name":"Ami de Mamadou","phone":"621630004"}', now());
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0630000-%';
+update public.profiles set created_at = now() - interval '2 days' where id = 'a0630000-0000-0000-0000-0000000000a1';
+update public.profiles set created_at = now() - interval '1 day'
+ where id in ('a0630000-0000-0000-0000-0000000000e1', 'a0630000-0000-0000-0000-0000000000c9', 'a0630000-0000-0000-0000-0000000000c1');
+update public.profiles set created_at = now(), is_deleted = true, deleted_at = now()
+ where id = 'a0630000-0000-0000-0000-0000000000c2';
+update public.profiles set created_at = now() where id = 'a0630000-0000-0000-0000-0000000000c3';
+insert into public.equipe (auth_user_id, nom) values ('a0630000-0000-0000-0000-0000000000e1', 'T63');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0630000-0000-0000-0000-0000000000b1', 'a0630000-0000-0000-0000-0000000000a1', 'Boutique Kaloum Électro', 1);
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0630000-0000-0000-0000-0000000000f1', 'a0630000-0000-0000-0000-0000000000b1', 1, 'Télévision Samsung', 1500000, 'draft'),
+  ('a0630000-0000-0000-0000-0000000000f2', 'a0630000-0000-0000-0000-0000000000b1', 1, 'Radio Philips', 200000, 'draft');
+-- Deux signalements en attente visent M (un produit, la boutique), un
+-- troisième est déjà traité.
+insert into public.reports (reporter_id, target_type, target_id, reason, handled_at) values
+  ('a0630000-0000-0000-0000-0000000000c1', 'product',  'a0630000-0000-0000-0000-0000000000f1', 'Prix faux', null),
+  ('a0630000-0000-0000-0000-0000000000c9', 'merchant', 'a0630000-0000-0000-0000-0000000000b1', 'Boutique louche', null),
+  ('a0630000-0000-0000-0000-0000000000c3', 'product',  'a0630000-0000-0000-0000-0000000000f2', 'Deja vu', now());
+
+select pg_temp.check('0063 : equipe_comptes est fermee a anon, ouverte a authenticated',
+  not has_function_privilege('anon', 'public.equipe_comptes(text, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_comptes(text, int)', 'execute'));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0063 : un non-membre ne lit pas la liste des comptes',
+  pg_temp.erreur_de('select * from public.equipe_comptes()') = 'Réservé à l''équipe Filloo.');
+
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0063 : recherche sans accent ni casse (AISSATOU), email lu dans auth.users',
+  exists (select 1 from public.equipe_comptes('AISSATOU') x
+           where x.profile_id = 'a0630000-0000-0000-0000-0000000000c1' and x.email = 'aissatou0063@test.gn'
+             and x.telephone = '621630002' and x.role = 'client' and x.nom = 'Aïssatou Barry'));
+select pg_temp.check('0063 : recherche avec accent (aïssatou)',
+  exists (select 1 from public.equipe_comptes('aïssatou') x where x.profile_id = 'a0630000-0000-0000-0000-0000000000c1'));
+select pg_temp.check('0063 : la boutique se trouve sans accent, avec ville, produits et signalements en attente',
+  exists (select 1 from public.equipe_comptes('kaloum electro') x
+           where x.profile_id = 'a0630000-0000-0000-0000-0000000000a1'
+             and x.merchant_id = 'a0630000-0000-0000-0000-0000000000b1'
+             and x.shop_name = 'Boutique Kaloum Électro' and x.ville is not null
+             and x.produits = 2 and x.signalements_en_attente = 2));
+select pg_temp.check('0063 : un telephone tape avec des espaces se trouve',
+  exists (select 1 from public.equipe_comptes('621 63 00 01') x where x.profile_id = 'a0630000-0000-0000-0000-0000000000a1'));
+select pg_temp.check('0063 : l''email se trouve, en majuscules',
+  (select array_agg(x.profile_id) from public.equipe_comptes('MAMADOU0063@') x)
+  = array['a0630000-0000-0000-0000-0000000000a1']::uuid[]);
+select pg_temp.check('0063 : « % » est un caractere, pas un joker',
+  not exists (select 1 from public.equipe_comptes('%')));
+select pg_temp.check('0063 : un compte supprime vient en dernier, meme s''il correspond exactement',
+  (select array_agg(x.profile_id order by x.ordinality) from public.equipe_comptes('barry') with ordinality x)
+  = array['a0630000-0000-0000-0000-0000000000c1', 'a0630000-0000-0000-0000-0000000000c2']::uuid[]);
+select pg_temp.check('0063 : la correspondance passe avant la date (debut du nom avant le milieu)',
+  (select array_agg(x.profile_id order by x.ordinality) from public.equipe_comptes('mamadou') with ordinality x)
+  = array['a0630000-0000-0000-0000-0000000000a1', 'a0630000-0000-0000-0000-0000000000c3']::uuid[]);
+select pg_temp.check('0063 : sans recherche, le plus recent d''abord, et la limite est tenue',
+  (select x.profile_id from public.equipe_comptes(null, 1) x) = 'a0630000-0000-0000-0000-0000000000c3'
+  and (select count(*) from public.equipe_comptes(null, 2)) = 2);
+select pg_temp.check('0063 : sans recherche, aucun compte supprime ne precede un compte actif',
+  (with l as (select x.is_deleted, x.ordinality from public.equipe_comptes(null, 200) with ordinality x)
+   select not exists (select 1 from l a join l b on a.ordinality < b.ordinality where a.is_deleted and not b.is_deleted)
+          and exists (select 1 from l where l.is_deleted)));
+reset role;
+
+
+-- =====================================================================
+-- L'équipe retrouve n'importe quel produit et lève son masquage (0064)
+-- =====================================================================
+-- Produits de M (0063) : f1 brouillon, f2 masqué par M lui-même, f3
+-- (avec photo) masqué par l'équipe.
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0630000-0000-0000-0000-0000000000f3', 'a0630000-0000-0000-0000-0000000000b1', 1, 'Frigo LG', 900000, 'draft');
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0630000-0000-0000-0000-0000000000f3', 'a0630000/frigo.webp', 0);
+update public.products set status = 'hidden' where id = 'a0630000-0000-0000-0000-0000000000f2';
+
+select pg_temp.check('0064 : equipe_produits et demasquer_produit sont fermees a anon, ouvertes a authenticated',
+  not has_function_privilege('anon', 'public.equipe_produits(text, text, int)', 'execute')
+  and not has_function_privilege('anon', 'public.demasquer_produit(uuid, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_produits(text, text, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.demasquer_produit(uuid, text)', 'execute'));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.masquer_produit('a0630000-0000-0000-0000-0000000000f3', 'Photo trompeuse');
+
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0064 : un non-membre ne lit pas la liste des produits',
+  pg_temp.erreur_de('select * from public.equipe_produits()') = 'Réservé à l''équipe Filloo.');
+select pg_temp.login('a0630000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0064 : le commercant ne leve pas lui-meme le masquage de l''equipe',
+  pg_temp.erreur_de($q$select public.demasquer_produit('a0630000-0000-0000-0000-0000000000f3', 'Je conteste')$q$)
+    = 'Réservé à l''équipe Filloo.'
+  and (select masque_par_equipe from public.products where id = 'a0630000-0000-0000-0000-0000000000f3'));
+select pg_temp.check('0064 : masque par l''equipe, le commercant ne le republie pas',
+  pg_temp.erreur_de($q$update public.products set status = 'active' where id = 'a0630000-0000-0000-0000-0000000000f3'$q$)
+    like '%masqué par l''équipe%');
+
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0064 : filtre « masque_equipe » : seulement la case cochee',
+  (select array_agg(x.product_id) from public.equipe_produits('kaloum', 'masque_equipe') x)
+  = array['a0630000-0000-0000-0000-0000000000f3']::uuid[]);
+select pg_temp.check('0064 : filtre « hidden » : le statut tel quel, masques par l''equipe compris',
+  (select array_agg(x.product_id order by x.product_id) from public.equipe_produits('kaloum', 'hidden') x)
+  = array['a0630000-0000-0000-0000-0000000000f2', 'a0630000-0000-0000-0000-0000000000f3']::uuid[]);
+select pg_temp.check('0064 : filtre « draft »',
+  (select array_agg(x.product_id) from public.equipe_produits('kaloum', 'draft') x)
+  = array['a0630000-0000-0000-0000-0000000000f1']::uuid[]);
+select pg_temp.check('0064 : un filtre inconnu est refuse',
+  pg_temp.erreur_de($q$select * from public.equipe_produits(null, 'n_importe')$q$) = 'Filtre de produits inconnu.');
+select pg_temp.check('0064 : recherche sans accent (television), colonnes rendues',
+  exists (select 1 from public.equipe_produits('television') x
+           where x.product_id = 'a0630000-0000-0000-0000-0000000000f1' and x.titre = 'Télévision Samsung'
+             and x.statut = 'draft' and x.prix = 1500000 and x.merchant_id = 'a0630000-0000-0000-0000-0000000000b1'
+             and x.shop_name = 'Boutique Kaloum Électro' and x.categorie is not null
+             and not x.masque_par_equipe and x.created_at is not null));
+select pg_temp.check('0064 : un uuid de produit colle le retrouve',
+  (select array_agg(x.product_id) from public.equipe_produits('A0630000-0000-0000-0000-0000000000F2') x)
+  = array['a0630000-0000-0000-0000-0000000000f2']::uuid[]);
+select pg_temp.check('0064 : le demasquage exige un motif de 3 caracteres',
+  pg_temp.erreur_de($q$select public.demasquer_produit('a0630000-0000-0000-0000-0000000000f3', ' ab ')$q$)
+    = 'Le motif fait de 3 à 500 caractères.');
+select pg_temp.check('0064 : produit inconnu',
+  pg_temp.erreur_de($q$select public.demasquer_produit('a0630000-0000-0000-0000-00000000ffff', 'Motif')$q$)
+    = 'Produit introuvable.');
+select public.demasquer_produit('a0630000-0000-0000-0000-0000000000f3', 'Photo corrigee');
+select public.demasquer_produit('a0630000-0000-0000-0000-0000000000f3', 'Deuxieme essai');
+reset role;
+select pg_temp.check('0064 : demasque = case decochee, produit toujours « hidden »',
+  (select not masque_par_equipe and status = 'hidden' from public.products where id = 'a0630000-0000-0000-0000-0000000000f3'));
+select pg_temp.check('0064 : le demasquage est signe une seule fois au journal (le second appel ne fait rien)',
+  (select count(*) = 1 and bool_and(auteur = 'a0630000-0000-0000-0000-0000000000e1' and auteur_nom = 'T63'
+                                    and cible_type = 'produit' and motif = 'Photo corrigee')
+     from public.journal_equipe
+    where action = 'demasquer_produit' and cible_id = 'a0630000-0000-0000-0000-0000000000f3'));
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000a1');
+update public.products set status = 'active' where id = 'a0630000-0000-0000-0000-0000000000f3';
+reset role;
+select pg_temp.check('0064 : demasque, le commercant le republie par son geste habituel',
+  (select status = 'active' from public.products where id = 'a0630000-0000-0000-0000-0000000000f3'));
+
+
+-- =====================================================================
+-- L'équipe fait entrer et sortir ses membres (0065)
+-- =====================================================================
+-- T (0063) est de l'équipe. U : connexion confirmée. V : email non
+-- confirmé. W : connexion supprimée. N (0063) : client hors équipe.
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at, deleted_at) values
+  ('a0650000-0000-0000-0000-0000000000e2', 'u0065@test.gn', '{"role":"client","full_name":"Ursule U65","phone":"620006501"}', now(), null),
+  ('a0650000-0000-0000-0000-0000000000c1', 'v0065@test.gn', '{"role":"client","full_name":"Victor V65","phone":"620006502"}', null, null),
+  ('a0650000-0000-0000-0000-0000000000c2', 'w0065@test.gn', '{"role":"client","full_name":"Wanda W65","phone":"620006503"}', now(), now());
+
+select pg_temp.check('0065 : les trois fonctions sont fermees a anon, ouvertes a authenticated',
+  not has_function_privilege('anon', 'public.equipe_membres()', 'execute')
+  and not has_function_privilege('anon', 'public.ajouter_membre(text, text)', 'execute')
+  and not has_function_privilege('anon', 'public.retirer_membre(uuid)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_membres()', 'execute')
+  and has_function_privilege('authenticated', 'public.ajouter_membre(text, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.retirer_membre(uuid)', 'execute'));
+select pg_temp.check('0065 : aucun ecran n''ecrit equipe en direct (droits retires), la lecture reste',
+  not has_table_privilege('anon', 'public.equipe', 'insert')
+  and not has_table_privilege('anon', 'public.equipe', 'update')
+  and not has_table_privilege('anon', 'public.equipe', 'delete')
+  and not has_table_privilege('anon', 'public.equipe', 'truncate')
+  and not has_table_privilege('authenticated', 'public.equipe', 'insert')
+  and not has_table_privilege('authenticated', 'public.equipe', 'update')
+  and not has_table_privilege('authenticated', 'public.equipe', 'delete')
+  and not has_table_privilege('authenticated', 'public.equipe', 'truncate')
+  and has_table_privilege('authenticated', 'public.equipe', 'select'));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0065 : un non-membre ne lit pas l''equipe, ne s''y ajoute pas, n''en retire personne',
+  pg_temp.erreur_de('select * from public.equipe_membres()') = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select public.ajouter_membre('n0063@test.gn', 'Moi')$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select public.retirer_membre('a0630000-0000-0000-0000-0000000000e1')$q$) = 'Réservé à l''équipe Filloo.');
+reset role;
+select pg_temp.check('0065 : le non-membre n''est toujours pas de l''equipe',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0630000-0000-0000-0000-0000000000c9'));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0065 : email non confirme, connexion supprimee, adresse inconnue : refus explicite',
+  pg_temp.erreur_de($q$select public.ajouter_membre('v0065@test.gn', 'V')$q$)
+    = 'Aucun compte confirmé avec cette adresse : la personne doit d''abord s''inscrire sur Filloo.'
+  and pg_temp.erreur_de($q$select public.ajouter_membre('w0065@test.gn', 'W')$q$)
+    = 'Aucun compte confirmé avec cette adresse : la personne doit d''abord s''inscrire sur Filloo.'
+  and pg_temp.erreur_de($q$select public.ajouter_membre('personne0065@test.gn', 'X')$q$)
+    = 'Aucun compte confirmé avec cette adresse : la personne doit d''abord s''inscrire sur Filloo.');
+select pg_temp.check('0065 : un prenom vide est refuse',
+  pg_temp.erreur_de($q$select public.ajouter_membre('u0065@test.gn', '  ')$q$)
+    = 'Le prénom affiché aux collègues fait de 1 à 60 caractères.');
+select public.ajouter_membre('  U0065@Test.GN ', ' Ursule ');
+select pg_temp.check('0065 : un membre deja la est refuse',
+  pg_temp.erreur_de($q$select public.ajouter_membre('u0065@test.gn', 'Ursule')$q$)
+    = 'Cette personne fait déjà partie de l''équipe.');
+select pg_temp.check('0065 : equipe_membres rend l''email et « moi » pour l''appelant seul',
+  exists (select 1 from public.equipe_membres() x
+           where x.auth_user_id = 'a0650000-0000-0000-0000-0000000000e2' and x.nom = 'Ursule'
+             and x.email = 'u0065@test.gn' and not x.moi and x.created_at is not null)
+  and (select array_agg(x.auth_user_id) from public.equipe_membres() x where x.moi)
+      = array['a0630000-0000-0000-0000-0000000000e1']::uuid[]);
+reset role;
+select pg_temp.check('0065 : ajoute = dans equipe ET marque app_metadata.equipe (0043)',
+  exists (select 1 from public.equipe where auth_user_id = 'a0650000-0000-0000-0000-0000000000e2' and nom = 'Ursule')
+  and (select raw_app_meta_data -> 'equipe' = 'true'::jsonb from auth.users where id = 'a0650000-0000-0000-0000-0000000000e2'));
+select pg_temp.check('0065 : l''ajout est signe au journal',
+  (select count(*) = 1 from public.journal_equipe
+    where action = 'ajouter_membre' and cible_type = 'membre' and cible_id = 'a0650000-0000-0000-0000-0000000000e2'
+      and auteur = 'a0630000-0000-0000-0000-0000000000e1' and motif = 'Ursule <u0065@test.gn>'));
+
+-- U agit en membre : une ligne de journal et un message au fil.
+set role authenticated;
+select pg_temp.login('a0650000-0000-0000-0000-0000000000e2');
+select public.masquer_produit('a0630000-0000-0000-0000-0000000000f1', 'Masque par U');
+reset role;
+insert into public.fil_equipe (id, fil_de, espace, auteur_id, de_l_equipe, corps) values
+  ('a0650000-0000-0000-0000-0000000000d1', 'a0630000-0000-0000-0000-0000000000c1', 'client',
+   'a0650000-0000-0000-0000-0000000000e2', true, 'Bonjour de la part de U');
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0065 : on ne se retire pas soi-meme',
+  pg_temp.erreur_de($q$select public.retirer_membre('a0630000-0000-0000-0000-0000000000e1')$q$)
+    = 'Vous ne pouvez pas vous retirer vous-même de l''équipe.');
+select pg_temp.check('0065 : on ne retire pas quelqu''un qui n''est pas de l''equipe',
+  pg_temp.erreur_de($q$select public.retirer_membre('a0630000-0000-0000-0000-0000000000c9')$q$)
+    = 'Ce compte ne fait pas partie de l''équipe.');
+select public.retirer_membre('a0650000-0000-0000-0000-0000000000e2');
+reset role;
+select pg_temp.check('0065 : retire = hors d''equipe ET marque retiree',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0650000-0000-0000-0000-0000000000e2')
+  and (select not (coalesce(raw_app_meta_data, '{}') ? 'equipe') from auth.users where id = 'a0650000-0000-0000-0000-0000000000e2'));
+select pg_temp.check('0065 : le retrait est signe au journal',
+  (select count(*) = 1 from public.journal_equipe
+    where action = 'retirer_membre' and cible_type = 'membre' and cible_id = 'a0650000-0000-0000-0000-0000000000e2'
+      and auteur = 'a0630000-0000-0000-0000-0000000000e1' and motif = 'Ursule <u0065@test.gn>'));
+select pg_temp.check('0065 : le membre retire garde son nom au journal et son message au fil',
+  (select auteur is null and auteur_nom = 'Ursule' from public.journal_equipe
+    where action = 'masquer_produit' and cible_id = 'a0630000-0000-0000-0000-0000000000f1')
+  and (select auteur_id = 'a0650000-0000-0000-0000-0000000000e2' from public.fil_equipe
+        where id = 'a0650000-0000-0000-0000-0000000000d1'));
+set role authenticated;
+select pg_temp.login('a0650000-0000-0000-0000-0000000000e2');
+select pg_temp.check('0065 : retire, il est refuse aussitot (la base lit equipe, pas le jeton)',
+  not public.je_suis_de_l_equipe()
+  and pg_temp.erreur_de('select * from public.equipe_comptes()') = 'Réservé à l''équipe Filloo.');
+reset role;
+
+
+-- =====================================================================
+-- L'équipe tient les catégories et les villes (0066)
+-- =====================================================================
+select pg_temp.check('0066 : les quatre fonctions sont fermees a anon, ouvertes a authenticated',
+  not has_function_privilege('anon', 'public.fixer_categorie(int, text, int)', 'execute')
+  and not has_function_privilege('anon', 'public.retirer_categorie(int)', 'execute')
+  and not has_function_privilege('anon', 'public.fixer_ville(int, text, int)', 'execute')
+  and not has_function_privilege('anon', 'public.retirer_ville(int)', 'execute')
+  and has_function_privilege('authenticated', 'public.fixer_categorie(int, text, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.retirer_categorie(int)', 'execute')
+  and has_function_privilege('authenticated', 'public.fixer_ville(int, text, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.retirer_ville(int)', 'execute'));
+select pg_temp.check('0066 : les outils internes ne sont pas exposes',
+  not has_function_privilege('anon', 'public.cible_journal_entier(int)', 'execute')
+  and not has_function_privilege('authenticated', 'public.cible_journal_entier(int)', 'execute')
+  and not has_function_privilege('anon', 'public.nom_compare(text)', 'execute')
+  and not has_function_privilege('authenticated', 'public.nom_compare(text)', 'execute'));
+select pg_temp.check('0066 : catégories et villes restent en lecture seule pour tout ecran (truncate compris)',
+  not has_table_privilege('anon', 'public.categories', 'insert')
+  and not has_table_privilege('anon', 'public.categories', 'update')
+  and not has_table_privilege('anon', 'public.categories', 'delete')
+  and not has_table_privilege('anon', 'public.categories', 'truncate')
+  and not has_table_privilege('authenticated', 'public.categories', 'insert')
+  and not has_table_privilege('authenticated', 'public.categories', 'update')
+  and not has_table_privilege('authenticated', 'public.categories', 'delete')
+  and not has_table_privilege('authenticated', 'public.categories', 'truncate')
+  and not has_table_privilege('anon', 'public.cities', 'insert')
+  and not has_table_privilege('anon', 'public.cities', 'update')
+  and not has_table_privilege('anon', 'public.cities', 'delete')
+  and not has_table_privilege('anon', 'public.cities', 'truncate')
+  and not has_table_privilege('authenticated', 'public.cities', 'insert')
+  and not has_table_privilege('authenticated', 'public.cities', 'update')
+  and not has_table_privilege('authenticated', 'public.cities', 'delete')
+  and not has_table_privilege('authenticated', 'public.cities', 'truncate'));
+set role anon;
+select pg_temp.check('0066 : un visiteur lit toujours categories(id, name) et cities(id, name) (l''app installee)',
+  (select count(*) from (select id, name, slug, position from public.categories order by position) c) > 0
+  and (select count(*) from (select id, name, position from public.cities order by position) v) > 0);
+reset role;
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0066 : un non-membre ne cree, ne modifie ni ne retire rien',
+  pg_temp.erreur_de($q$select public.fixer_categorie(p_nom => 'Pirate')$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select public.fixer_categorie(1, 'Pirate', 1)$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de('select public.retirer_categorie(1)') = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select public.fixer_ville(p_nom => 'Pirate')$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de('select public.retirer_ville(1)') = 'Réservé à l''équipe Filloo.'
+  and pg_temp.refuse($q$insert into public.categories (slug, name) values ('pirate', 'Pirate')$q$)
+  and pg_temp.refuse($q$update public.cities set name = 'Pirate' where id = 1$q$));
+reset role;
+select pg_temp.check('0066 : rien n''a change sous le non-membre',
+  not exists (select 1 from public.categories where name = 'Pirate')
+  and not exists (select 1 from public.cities where name = 'Pirate'));
+
+-- Création sans p_id, comme le site (`p_id: id ?? undefined`).
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.fixer_categorie(p_nom => '  Électroménager &   Cuisine ', p_position => null) as cat66 \gset
+select public.fixer_categorie(p_nom => 'Électroménager / Cuisine', p_position => 50) as cat66b \gset
+reset role;
+select pg_temp.check('0066 : creation : slug sans accents, nom nettoye, en fin de liste',
+  (select slug = 'electromenager-cuisine' and name = 'Électroménager & Cuisine'
+          and position = (select max(c2.position) from public.categories c2 where c2.id not in (:cat66, :cat66b)) + 1
+     from public.categories where id = :cat66));
+select pg_temp.check('0066 : un slug deja pris recoit un suffixe',
+  (select slug = 'electromenager-cuisine-2' and position = 50 from public.categories where id = :cat66b));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0066 : un nom deja porte (casse et accents pres) est refuse',
+  pg_temp.erreur_de($q$select public.fixer_categorie(p_nom => 'electromenager & CUISINE')$q$)
+    = 'Une catégorie porte déjà ce nom.');
+select pg_temp.check('0066 : nom de 2 a 40 caracteres, position de 0 a 9999, id inconnu',
+  pg_temp.erreur_de($q$select public.fixer_categorie(p_nom => 'a')$q$) = 'Le nom fait de 2 à 40 caractères.'
+  and pg_temp.erreur_de($q$select public.fixer_categorie(p_nom => repeat('x', 41))$q$) = 'Le nom fait de 2 à 40 caractères.'
+  and pg_temp.erreur_de($q$select public.fixer_categorie(p_nom => 'Correct', p_position => -1)$q$) = 'La position va de 0 à 9999.'
+  and pg_temp.erreur_de($q$select public.fixer_categorie(999999, 'Correct', 1)$q$) = 'Catégorie introuvable.'
+  and pg_temp.erreur_de($q$select public.fixer_categorie(p_id => 1)$q$) = 'Le nom fait de 2 à 40 caractères.');
+select public.fixer_categorie(:cat66, 'Cuisine & Maison', 3);
+select public.fixer_categorie(:cat66, 'Cuisine & Maison', 3);
+select public.fixer_categorie(p_id => :cat66, p_nom => 'Cuisine & Maison');
+reset role;
+select pg_temp.check('0066 : renommer et deplacer ne change JAMAIS le slug',
+  (select slug = 'electromenager-cuisine' and name = 'Cuisine & Maison' and position = 3
+     from public.categories where id = :cat66));
+select pg_temp.check('0066 : creation et modification signees au journal, la modification sans effet n''ecrit rien',
+  (select count(*) = 2 from public.journal_equipe
+    where action = 'fixer_categorie' and cible_type = 'categorie'
+      and cible_id = public.cible_journal_entier(:cat66))
+  and exists (select 1 from public.journal_equipe
+               where action = 'fixer_categorie' and cible_id = public.cible_journal_entier(:cat66)
+                 and motif like 'Électroménager & Cuisine → Cuisine & Maison%'
+                 and auteur = 'a0630000-0000-0000-0000-0000000000e1'));
+select pg_temp.check('0066 : la cible du journal est deduite de l''id, distincte d''un id a l''autre',
+  public.cible_journal_entier(10) = '00000000-0000-0000-0000-00000000000a'
+  and public.cible_journal_entier(:cat66) <> public.cible_journal_entier(:cat66b));
+
+-- Une campagne vise cat66b (0047) : aucun produit ne l'utilise.
+insert into public.campagnes (id, merchant_id, type, product_id, category_id, duree_jours) values
+  ('a0660000-0000-0000-0000-0000000000a1', 'a0630000-0000-0000-0000-0000000000b1', 'categorie',
+   'a0630000-0000-0000-0000-0000000000f2', :cat66b, 7);
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0066 : une categorie utilisee par des produits ne se retire pas (le message dit combien)',
+  pg_temp.erreur_de('select public.retirer_categorie(1)') ~ '^Impossible de retirer « .* » : [1-9][0-9]* produit\(s\)');
+select pg_temp.check('0066 : une categorie visee par une campagne ne se retire pas',
+  pg_temp.erreur_de('select public.retirer_categorie(' || :cat66b || ')')
+    = 'Impossible de retirer « Électroménager / Cuisine » : 1 campagne(s) de publicité la visent.');
+select pg_temp.check('0066 : retirer une categorie inconnue',
+  pg_temp.erreur_de('select public.retirer_categorie(999999)') = 'Catégorie introuvable.');
+select public.retirer_categorie(:cat66);
+reset role;
+select pg_temp.check('0066 : une categorie libre se retire, signee au journal',
+  not exists (select 1 from public.categories where id = :cat66)
+  and exists (select 1 from public.categories where id = :cat66b)
+  and exists (select 1 from public.journal_equipe
+               where action = 'retirer_categorie' and cible_type = 'categorie'
+                 and cible_id = public.cible_journal_entier(:cat66) and motif = 'Cuisine & Maison (electromenager-cuisine)'));
+delete from public.campagnes where id = 'a0660000-0000-0000-0000-0000000000a1';
+
+-- Les villes.
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.fixer_ville(p_nom => 'Fria') as v66 \gset
+select pg_temp.check('0066 : une ville deja portee (casse et accents pres) est refusee',
+  pg_temp.erreur_de($q$select public.fixer_ville(p_nom => 'CONAKRY')$q$) = 'Une ville porte déjà ce nom.'
+  and pg_temp.erreur_de($q$select public.fixer_ville(p_nom => 'Nzerekore')$q$) = 'Une ville porte déjà ce nom.');
+select pg_temp.check('0066 : ville : nom borne, id inconnu',
+  pg_temp.erreur_de($q$select public.fixer_ville(p_nom => 'F')$q$) = 'Le nom fait de 2 à 40 caractères.'
+  and pg_temp.erreur_de($q$select public.fixer_ville(999999, 'Correct', 1)$q$) = 'Ville introuvable.'
+  and pg_temp.erreur_de('select public.retirer_ville(999999)') = 'Ville introuvable.');
+select public.fixer_ville(:v66, 'Fria Centre', 20);
+select pg_temp.check('0066 : une ville qui porte des boutiques ne se retire pas',
+  pg_temp.erreur_de('select public.retirer_ville(1)') ~ '^Impossible de retirer « .* » : [1-9][0-9]* boutique\(s\)');
+reset role;
+select pg_temp.check('0066 : la ville est creee en fin de liste, puis renommee et deplacee',
+  (select name = 'Fria Centre' and position = 20 from public.cities where id = :v66)
+  and (select count(*) = 2 from public.journal_equipe
+        where action = 'fixer_ville' and cible_type = 'ville' and cible_id = public.cible_journal_entier(:v66)));
+update public.profiles set city_id = :v66 where id = 'a0630000-0000-0000-0000-0000000000c1';
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0066 : une ville qu''un seul profil utilise ne se retire pas non plus',
+  pg_temp.erreur_de('select public.retirer_ville(' || :v66 || ')')
+    = 'Impossible de retirer « Fria Centre » : 0 boutique(s) et 1 profil(s) l''utilisent.');
+reset role;
+update public.profiles set city_id = null where id = 'a0630000-0000-0000-0000-0000000000c1';
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_ville(:v66);
+reset role;
+select pg_temp.check('0066 : une ville libre se retire, signee au journal',
+  not exists (select 1 from public.cities where id = :v66)
+  and exists (select 1 from public.journal_equipe
+               where action = 'retirer_ville' and cible_type = 'ville'
+                 and cible_id = public.cible_journal_entier(:v66) and motif = 'Fria Centre'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

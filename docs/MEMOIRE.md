@@ -158,6 +158,16 @@ mis à jour et raccourci ; l'ancienne version se relit par
   avec l'équipe, conseil de photos fidèles. Sans notification ; l'app
   des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
 - **Pas de sous-catégories** (décision du 2026-11-07).
+- **Tout s'administre depuis `/admin`** (décision du 2026-11-07) : onglet
+  « Gestion » — comptes et boutiques (chercher, suspendre, réactiver ;
+  `0063`), produits (chercher, masquer, démasquer — le produit démasqué
+  reste masqué, le commerçant republie ; `0064`), équipe (ajouter, retirer
+  un membre ; `0065`), catégories et villes (`0066`). `0063` et `0064`
+  appliquées ; **`0065` et `0066` PAS ENCORE** : la confirmation de
+  Supabase n'a pas pu être donnée depuis la session ; à coller dans le SQL
+  Editor. D'ici là, les pages Équipe et Catégories et villes échouent.
+- **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
+  `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0066.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
   pris 0052-0054 en même temps ; les nôtres sont devenues 0055-0057.
   `monetisation` garde 0048-0051, non appliquées : à renuméroter (0058+)
@@ -381,8 +391,9 @@ npm run memoire                # régénère l'historique de ce fichier
 - **Seule la boutique a une ville** (2026-10-22) ; aucun filtre de ville.
 - **Notifications proposées au moment utile** (publication, premier
   message), jamais à l'inscription ni au chargement (2026-10-23).
-- **Neuf catégories, douze villes** (2026-09-23) : rien ne bouge sans un
-  besoin constaté chez un commerçant.
+- **Catégories et villes gérées par l'équipe** depuis `/admin/gestion/catalogue`
+  (décision du 2026-11-07, `0066`) ; elles étaient neuf et douze au 2026-09-23.
+  Le slug d'une catégorie ne change jamais (adresses et app).
 - **Publication immédiate**, signalement, masquage par l'administrateur.
 - **Disponible ou vendu**, pas de stock ; un vendu se remet en vente.
 - **La suspension coupe l'écriture, jamais la lecture, dans les deux
@@ -534,10 +545,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-397 commits, du plus récent au plus ancien.
+398 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `06d125e` Statistiques : les visiteurs uniques s'affichent dans /admin/statistiques
 - `55c8b9f` Mesure : un cookie anonyme compte les visiteurs uniques ; politique de confidentialité mise à jour
 - `e9aed58` Modération : les personnes signalées par 5 personnes ou plus passent en tête
 - `d48c2da` Base : 0055, 0056, 0057 appliquées (signalés par 5 personnes, bienvenue des boutiques, visiteurs uniques)
