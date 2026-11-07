@@ -102,6 +102,23 @@ Règles :
 - **Un savoir ment s'il n'est pas corrigé** : quand une session constate
   qu'une entrée est fausse, elle la corrige, comme pour `docs/MEMOIRE.md`.
 
+# Notifications de session
+
+Demande du porteur du projet le 2026-11-07 : **toutes les sessions le
+préviennent par notification** (outil `PushNotification`), parce qu'il
+suit souvent le travail de loin, sur son téléphone.
+
+- **Quand notifier** : une tâche de plus de quelques minutes est finie,
+  un push ou une migration appliquée a eu lieu, ou la session est
+  bloquée sur une décision qui est la sienne.
+- **Quand ne pas notifier** : une réponse courte à une question qu'il
+  vient de poser, ou une étape intermédiaire.
+- **Le message** : une ligne, moins de 200 caractères, ce qu'il doit
+  savoir ou faire en premier (« Poussé sur dev : typecheck et build OK »).
+
+L'arrivée sur le téléphone dépend aussi des réglages de notification de
+l'app Claude sur l'appareil ; ce fichier ne peut pas les changer.
+
 # Comment me répondre
 
 Règle donnée par le porteur du projet le 2026-09-13, et qui ne se
