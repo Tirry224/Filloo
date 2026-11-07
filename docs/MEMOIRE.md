@@ -553,10 +553,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-402 commits, du plus récent au plus ancien.
+403 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `4f9eaa2` Publicité : les demandes des commerçants sont fermées pour l'instant (« Bientôt disponible »)
 - `4da158f` 3G : les premières photos d'une liste partent en premier, les listes ne préchargent plus les fiches
 - `90e6b6e` Mémoire : 0065 et 0066 appliquées, la gestion depuis /admin est complète
 - `1c1492d` Admin : onglet Gestion — comptes, produits, équipe, catégories et villes
