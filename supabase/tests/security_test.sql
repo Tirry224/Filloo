@@ -3558,5 +3558,198 @@ select pg_temp.check('0047 : l''equipe lit les resultats de toutes les campagnes
         where campagne_id = (select id from t47 where nom = 'h_1')));
 reset role;
 
+-- =====================================================================
+-- Un commerçant crée un produit sans le mettre « à la une » (0052)
+-- =====================================================================
+-- Avant 0052, `authenticated` avait INSERT sur toute la table : la
+-- policy « je cree mes produits » acceptait la ligne (sa boutique, compte
+-- actif) avec is_featured, contact_count ou masque_par_equipe choisis.
+-- `pg_temp.refuse` : vrai si l'instruction est refusée par un DROIT
+-- (« permission denied »), pas par le RLS (même code 42501, autre texte).
+create or replace function pg_temp.refuse(q text) returns boolean
+language plpgsql as $$
+begin
+  execute q;
+  return false;
+exception when insufficient_privilege then
+  return sqlerrm like 'permission denied%';
+end $$;
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0520000-0000-0000-0000-00000000000a', 'm0052@test.gn', '{"role":"merchant","full_name":"Marchand M52","phone":"620005201"}');
+update public.profiles set id = auth_user_id where auth_user_id = 'a0520000-0000-0000-0000-00000000000a';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0520000-0000-0000-0000-0000000000a1', 'a0520000-0000-0000-0000-00000000000a', 'Chez M52', 1);
+
+set role authenticated;
+select pg_temp.login('a0520000-0000-0000-0000-00000000000a');
+-- Exactement l'insertion du site et de l'app.
+insert into public.products (id, merchant_id, category_id, title, description, price_gnf, is_negotiable, status)
+values ('a0520000-0000-0000-0000-0000000000f1', 'a0520000-0000-0000-0000-0000000000a1', 1,
+        'Riz de Kankan', null, 250000, true, 'draft');
+reset role;
+select pg_temp.check('0052 : l''insertion du site et de l''app passe, colonnes reservees a leur defaut',
+  (select not is_featured and contact_count = 0 and not masque_par_equipe
+          and created_at is not null and updated_at is not null and is_negotiable
+     from public.products where id = 'a0520000-0000-0000-0000-0000000000f1'));
+
+set role authenticated;
+select pg_temp.login('a0520000-0000-0000-0000-00000000000a');
+do $$
+begin
+  insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+  values ('a0520000-0000-0000-0000-0000000000f1', 'a0520000-0000-0000-0000-0000000000a1', 1, 'Riz de Kankan', 250000, 'draft');
+  raise exception 'ECHEC 0052 : un doublon d''identifiant est passe';
+exception when unique_violation then
+  raise notice 'OK    0052 : un doublon d''identifiant renvoie unique_violation, comme l''attendent le site et l''app';
+end $$;
+select pg_temp.check('0052 : un commercant ne cree pas son produit « a la une »',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, is_featured)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Mis a la une', 1000, true)$q$));
+select pg_temp.check('0052 : un commercant ne gonfle pas son compteur de contacts',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, contact_count)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Tres populaire', 1000, 999)$q$));
+select pg_temp.check('0052 : un commercant ne pose pas masque_par_equipe',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, status, masque_par_equipe)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Faux masque', 1000, 'hidden', true)$q$));
+select pg_temp.check('0052 : un commercant n''antidate ni ne postdate son produit',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, created_at)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Toujours nouveau', 1000, now() + interval '1 year')$q$)
+  and pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf, updated_at)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Toujours frais', 1000, now() + interval '1 year')$q$));
+reset role;
+select pg_temp.check('0052 : aucun des refus n''a laisse de produit',
+  (select count(*) from public.products where merchant_id = 'a0520000-0000-0000-0000-0000000000a1') = 1);
+select pg_temp.check('0052 : anon n''a plus aucun droit d''insertion sur products',
+  not has_table_privilege('anon', 'public.products', 'insert')
+  and not has_any_column_privilege('anon', 'public.products', 'insert'));
+select pg_temp.check('0052 : authenticated insere exactement les huit colonnes envoyees',
+  not has_table_privilege('authenticated', 'public.products', 'insert')
+  and (select array_agg(attname::text order by attname::text)
+         from pg_attribute
+        where attrelid = 'public.products'::regclass and attnum > 0 and not attisdropped
+          and has_column_privilege('authenticated', 'public.products', attname, 'insert'))
+      = array['category_id', 'description', 'id', 'is_negotiable', 'merchant_id', 'price_gnf', 'status', 'title']);
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0052 : anon est refuse par le droit, avant meme le RLS',
+  pg_temp.refuse($q$insert into public.products (merchant_id, category_id, title, price_gnf)
+                    values ('a0520000-0000-0000-0000-0000000000a1', 1, 'Anonyme', 1000)$q$));
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+
+-- =====================================================================
+-- Tables du serveur seul : essais de mot de passe (0053), notifications
+-- déjà envoyées (0054)
+-- =====================================================================
+-- Aucune politique, aucun droit pour anon/authenticated : ni lecture, ni
+-- écriture, même connecté. Seul service_role (le site) y touche.
+select pg_temp.check('0053/0054 : RLS active sans aucune politique',
+  (select bool_and(relrowsecurity) from pg_class
+    where oid in ('public.essais_mot_de_passe'::regclass, 'public.notifications_envoyees'::regclass))
+  and not exists (select 1 from pg_policies where schemaname = 'public'
+                   and tablename in ('essais_mot_de_passe', 'notifications_envoyees')));
+select pg_temp.check('0053/0054 : anon et authenticated n''ont aucun droit sur les deux tables',
+  not exists (
+    select 1
+      from unnest(array['anon', 'authenticated']) r,
+           unnest(array['public.essais_mot_de_passe', 'public.notifications_envoyees']) t,
+           unnest(array['select', 'insert', 'update', 'delete', 'truncate', 'references', 'trigger']) p
+     where has_table_privilege(r, t, p)
+        or (p in ('select', 'insert', 'update', 'references') and has_any_column_privilege(r, t, p))));
+select pg_temp.check('0053 : anon et authenticated ne touchent pas au compteur des essais',
+  not has_sequence_privilege('anon', 'public.essais_mot_de_passe_id_seq', 'usage')
+  and not has_sequence_privilege('authenticated', 'public.essais_mot_de_passe_id_seq', 'usage'));
+select pg_temp.check('0053/0054 : seul le serveur lance les purges',
+  not has_function_privilege('anon', 'public.purger_essais_mot_de_passe()', 'execute')
+  and not has_function_privilege('authenticated', 'public.purger_essais_mot_de_passe()', 'execute')
+  and not has_function_privilege('anon', 'public.purger_notifications_envoyees()', 'execute')
+  and not has_function_privilege('authenticated', 'public.purger_notifications_envoyees()', 'execute')
+  and has_function_privilege('service_role', 'public.purger_essais_mot_de_passe()', 'execute')
+  and has_function_privilege('service_role', 'public.purger_notifications_envoyees()', 'execute'));
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0530000-0000-0000-0000-00000000000c', 'c0053@test.gn', '{"role":"client","full_name":"Client C53","phone":"620005301"}');
+-- Une ligne de chaque, écrite comme le fera le site, pour que les refus
+-- de lecture aient quelque chose à cacher.
+set role service_role;
+insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c');
+insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e1');
+reset role;
+
+set role authenticated;
+select pg_temp.login('a0530000-0000-0000-0000-00000000000c');
+select pg_temp.check('0053 : connecte, on ne lit pas ses propres essais',
+  pg_temp.refuse('select count(*) from public.essais_mot_de_passe'));
+select pg_temp.check('0053 : connecte, on n''ajoute ni n''efface d''essai',
+  pg_temp.refuse($q$insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c')$q$)
+  and pg_temp.refuse('delete from public.essais_mot_de_passe')
+  and pg_temp.refuse('update public.essais_mot_de_passe set created_at = now() - interval ''1 day'''));
+select pg_temp.check('0054 : connecte, on ne lit pas les notifications envoyees',
+  pg_temp.refuse('select count(*) from public.notifications_envoyees'));
+select pg_temp.check('0054 : connecte, on ne pose ni n''efface de cle (empecher ou rejouer une notification)',
+  pg_temp.refuse($q$insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e2')$q$)
+  and pg_temp.refuse('delete from public.notifications_envoyees')
+  and pg_temp.refuse('update public.notifications_envoyees set cle = ''x'''));
+select pg_temp.check('0053/0054 : connecte, purges refusees',
+  pg_temp.refuse('select public.purger_essais_mot_de_passe()')
+  and pg_temp.refuse('select public.purger_notifications_envoyees()'));
+reset role;
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0053 : anon ne lit ni n''ecrit les essais',
+  pg_temp.refuse('select count(*) from public.essais_mot_de_passe')
+  and pg_temp.refuse($q$insert into public.essais_mot_de_passe (auth_user_id) values ('a0530000-0000-0000-0000-00000000000c')$q$)
+  and pg_temp.refuse('delete from public.essais_mot_de_passe'));
+select pg_temp.check('0054 : anon ne lit ni n''ecrit les notifications envoyees',
+  pg_temp.refuse('select count(*) from public.notifications_envoyees')
+  and pg_temp.refuse($q$insert into public.notifications_envoyees (cle) values ('equipe:a0530000-0000-0000-0000-0000000000e3')$q$)
+  and pg_temp.refuse('delete from public.notifications_envoyees'));
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.check('0053/0054 : les refus n''ont rien ecrit ni efface',
+  (select count(*) from public.essais_mot_de_passe) = 1
+  and (select count(*) from public.notifications_envoyees) = 1);
+
+-- Le serveur : compter, dédoublonner, purger.
+set role service_role;
+select pg_temp.check('0053 : le serveur compte les echecs recents d''un compte',
+  (select count(*) from public.essais_mot_de_passe
+    where auth_user_id = 'a0530000-0000-0000-0000-00000000000c'
+      and created_at > now() - interval '15 minutes') = 1);
+do $$
+declare n int;
+begin
+  insert into public.notifications_envoyees (cle) values ('message:a0530000-0000-0000-0000-0000000000e1')
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  if n = 0 then raise notice 'OK    0054 : la meme cle ne se pose pas deux fois (le rappel ne sonne pas)';
+  else raise exception 'ECHEC 0054 : une cle deja posee a ete reposee';
+  end if;
+  insert into public.notifications_envoyees (cle) values ('equipe:a0530000-0000-0000-0000-0000000000e1')
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  if n = 1 then raise notice 'OK    0054 : une cle nouvelle se pose (la premiere fois sonne)';
+  else raise exception 'ECHEC 0054 : une cle nouvelle n''a pas ete posee';
+  end if;
+end $$;
+insert into public.essais_mot_de_passe (auth_user_id, created_at)
+values ('a0530000-0000-0000-0000-00000000000c', now() - interval '25 hours');
+insert into public.notifications_envoyees (cle, created_at)
+values ('message:a0530000-0000-0000-0000-0000000000e9', now() - interval '25 hours');
+select pg_temp.check('0053 : la purge efface les essais de plus d''un jour, garde les recents',
+  public.purger_essais_mot_de_passe() = 1);
+select pg_temp.check('0054 : la purge efface les cles de plus d''un jour, garde les recentes',
+  public.purger_notifications_envoyees() = 1);
+select pg_temp.check('0053/0054 : apres purge, il reste les lignes recentes',
+  (select count(*) from public.essais_mot_de_passe) = 1
+  and (select count(*) from public.notifications_envoyees) = 2);
+reset role;
+
+delete from auth.users where id = 'a0530000-0000-0000-0000-00000000000c';
+select pg_temp.check('0053 : supprimer le compte efface ses essais',
+  not exists (select 1 from public.essais_mot_de_passe
+               where auth_user_id = 'a0530000-0000-0000-0000-00000000000c'));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

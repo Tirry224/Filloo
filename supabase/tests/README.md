@@ -17,8 +17,8 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 301 vérifications (compte du 2026-11-06, migration 0046
-comprise) affichent `OK`. La première qui échoue interrompt tout
+Les 389 vérifications (compte du 2026-11-07, migrations 0052 à 0054
+comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les
@@ -28,7 +28,11 @@ elle tombe sur « une boutique creee approuvee a sa case cochee » ; sans
 « cocher la case remplit la file de notifications » ; sans `0022`, sur
 « client suspendu : le fil est ferme a l'ecriture » ; sans `0041`, sur
 « un compte supprime n'est plus « mon profil client » » puis « le compte
-client supprime bloque la recreation ». Ces cinq-là ont été vérifiés en omettant réellement la migration, pas supposés.
+client supprime bloque la recreation » ; sans `0052`, sur « un commercant
+ne cree pas son produit « a la une » ». Ces six-là ont été vérifiés en
+omettant réellement la migration, pas supposés. Pour `0053` et `0054`
+(le 2026-11-07), c'est leur `revoke all` qu'on a retiré : la suite tombe
+sur « anon et authenticated n'ont aucun droit sur les deux tables ».
 
 ## Ce que ces tests protègent
 
