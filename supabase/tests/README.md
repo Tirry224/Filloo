@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 301 vérifications (compte du 2026-11-06, migration 0046
+Les 423 vérifications (compte du 2026-11-07, migration 0048
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -29,6 +29,9 @@ elle tombe sur « une boutique creee approuvee a sa case cochee » ; sans
 « client suspendu : le fil est ferme a l'ecriture » ; sans `0041`, sur
 « un compte supprime n'est plus « mon profil client » » puis « le compte
 client supprime bloque la recreation ». Ces cinq-là ont été vérifiés en omettant réellement la migration, pas supposés.
+Pour `0048`, quatre gardes retirées une à une du fichier (propriétaire
+dans `declarer_paiement`, moyen actif, `a_payer` dans le plafond, équipe
+dans `revenus_publicite`) font chacune tomber le test qui les nomme.
 
 ## Ce que ces tests protègent
 

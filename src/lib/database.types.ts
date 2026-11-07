@@ -153,6 +153,7 @@ export type Database = {
         Row: {
           category_id: number | null
           created_at: string
+          creee_par_equipe: string | null
           debut_at: string | null
           decidee_at: string | null
           decidee_par: string | null
@@ -161,13 +162,23 @@ export type Database = {
           id: string
           merchant_id: string
           motif: string | null
+          paiement_confirme_at: string | null
+          paiement_confirme_par: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number | null
           product_id: string | null
+          rembourse_at: string | null
+          rembourse_par: string | null
           statut: string
           type: string
         }
         Insert: {
           category_id?: number | null
           created_at?: string
+          creee_par_equipe?: string | null
           debut_at?: string | null
           decidee_at?: string | null
           decidee_par?: string | null
@@ -176,13 +187,23 @@ export type Database = {
           id?: string
           merchant_id: string
           motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf?: number | null
           product_id?: string | null
+          rembourse_at?: string | null
+          rembourse_par?: string | null
           statut?: string
           type: string
         }
         Update: {
           category_id?: number | null
           created_at?: string
+          creee_par_equipe?: string | null
           debut_at?: string | null
           decidee_at?: string | null
           decidee_par?: string | null
@@ -191,7 +212,16 @@ export type Database = {
           id?: string
           merchant_id?: string
           motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf?: number | null
           product_id?: string | null
+          rembourse_at?: string | null
+          rembourse_par?: string | null
           statut?: string
           type?: string
         }
@@ -202,6 +232,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campagnes_creee_par_equipe_fkey"
+            columns: ["creee_par_equipe"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
           },
           {
             foreignKeyName: "campagnes_decidee_par_fkey"
@@ -218,11 +255,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campagnes_paiement_confirme_par_fkey"
+            columns: ["paiement_confirme_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
             foreignKeyName: "campagnes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campagnes_rembourse_par_fkey"
+            columns: ["rembourse_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
           },
         ]
       }
@@ -553,6 +604,44 @@ export type Database = {
           },
         ]
       }
+      moyens_paiement: {
+        Row: {
+          actif: boolean
+          id: string
+          modifie_at: string | null
+          modifie_par: string | null
+          moyen: string
+          numero: string
+          titulaire: string
+        }
+        Insert: {
+          actif?: boolean
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          moyen: string
+          numero: string
+          titulaire: string
+        }
+        Update: {
+          actif?: boolean
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          moyen?: string
+          numero?: string
+          titulaire?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moyens_paiement_modifie_par_fkey"
+            columns: ["modifie_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           attempts: number
@@ -823,6 +912,41 @@ export type Database = {
           },
         ]
       }
+      tarifs_publicite: {
+        Row: {
+          duree_jours: number
+          id: string
+          modifie_at: string | null
+          modifie_par: string | null
+          prix_gnf: number
+          type: string
+        }
+        Insert: {
+          duree_jours: number
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          prix_gnf: number
+          type: string
+        }
+        Update: {
+          duree_jours?: number
+          id?: string
+          modifie_at?: string | null
+          modifie_par?: string | null
+          prix_gnf?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarifs_publicite_modifie_par_fkey"
+            columns: ["modifie_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -865,14 +989,22 @@ export type Database = {
           category_id: number | null
           category_name: string | null
           created_at: string
+          creee_par_equipe: string | null
           debut_at: string | null
           duree_jours: number
           fin_at: string | null
           id: string
           merchant_id: string
           motif: string | null
+          paiement_confirme_at: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number | null
           product_id: string | null
           produit_titre: string | null
+          rembourse_at: string | null
           shop_name: string
           statut: string
           type: string
@@ -889,8 +1021,29 @@ export type Database = {
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      creer_campagne_equipe: {
+        Args: {
+          p_category?: number
+          p_duree?: number
+          p_merchant: string
+          p_moyen?: string
+          p_product?: string
+          p_reference?: string
+          p_type: string
+        }
+        Returns: string
+      }
       decider_campagne: {
         Args: { p_accepter: boolean; p_id: string; p_motif?: string }
+        Returns: undefined
+      }
+      declarer_paiement: {
+        Args: {
+          p_id: string
+          p_moyen: string
+          p_numero: string
+          p_reference: string
+        }
         Returns: undefined
       }
       demander_campagne: {
@@ -904,6 +1057,19 @@ export type Database = {
       }
       enregistrer_telephone: {
         Args: { p_plateforme: string; p_token: string }
+        Returns: undefined
+      }
+      fixer_moyen_paiement: {
+        Args: {
+          p_actif: boolean
+          p_moyen: string
+          p_numero: string
+          p_titulaire: string
+        }
+        Returns: undefined
+      }
+      fixer_tarif: {
+        Args: { p_duree: number; p_prix: number; p_type: string }
         Returns: undefined
       }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
@@ -937,6 +1103,7 @@ export type Database = {
         Args: { p_espace: Database["public"]["Enums"]["user_role"]; p_fil_de: string }
         Returns: undefined
       }
+      marquer_rembourse: { Args: { p_id: string }; Returns: undefined }
       masquer_produit: {
         Args: { p_motif: string; p_product: string }
         Returns: undefined
@@ -1011,6 +1178,15 @@ export type Database = {
           campagne_id: string
           clics: number
           vues: number
+        }[]
+      }
+      revenus_publicite: {
+        Args: never
+        Returns: {
+          campagnes: number
+          encaisse_gnf: number
+          mois: string
+          rembourse_gnf: number
         }[]
       }
       search_products: {

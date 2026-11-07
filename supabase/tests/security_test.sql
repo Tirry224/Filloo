@@ -15,6 +15,10 @@ set client_min_messages = notice;
 -- donc d'une table vide. `cascade` suffit : la suppression se propage par
 -- les clés étrangères jusqu'aux messages, ce qui vérifie au passage que le
 -- chaînage est correct.
+-- `truncate … cascade` suit AUSSI `tarifs_publicite.modifie_par` (vers
+-- `equipe`, 0048) et viderait les tarifs : on les garde avant, et la
+-- section 0048 les remet.
+create temp table tarifs_origine as select type, duree_jours, prix_gnf from public.tarifs_publicite;
 truncate auth.users cascade;
 
 create or replace function pg_temp.check(label text, condition boolean) returns void
@@ -3109,6 +3113,11 @@ update public.products set status = 'active'
  where id in ('a0470000-0000-0000-0000-0000000000f1', 'a0470000-0000-0000-0000-0000000000f2',
               'a0470000-0000-0000-0000-0000000000e1', 'a0470000-0000-0000-0000-0000000000e2');
 
+-- Depuis 0048, les campagnes ont un prix : cette section rejoue le chemin
+-- GRATUIT de 0047 (tarifs à 0). Les tarifs d'origine, gardés en tête
+-- de fichier, sont remis dans la section 0048.
+insert into public.tarifs_publicite (type, duree_jours, prix_gnf) select type, duree_jours, 0 from tarifs_origine;
+
 -- Les droits.
 select pg_temp.check('0047 : les fonctions de campagne sont fermees a anon, ouvertes a authenticated',
   (select bool_and(not has_function_privilege('anon', f, 'execute')
@@ -3556,6 +3565,335 @@ select pg_temp.check('0047 : l''equipe lit les resultats de toutes les campagnes
   (select count(*) from public.resultats_campagnes() r join t47 on t47.id = r.campagne_id) = 7
   and (select vues = 1 and clics = 0 from public.resultats_campagnes()
         where campagne_id = (select id from t47 where nom = 'h_1')));
+reset role;
+
+-- =====================================================================
+-- Une publicité a un prix, payé à la main et vérifié par l'équipe (0048)
+-- =====================================================================
+-- Mêmes personnes que 0047 : G (a047…0a, boutique a1, produits f1 cat. 1
+-- et f2 cat. 2), H (a047…0b, produits e1 et e2 masqués par l'équipe),
+-- K client (a047…0c), S équipe (a042…05).
+
+-- Refus attendu, avec un morceau du message quand il compte.
+create or replace function pg_temp.refuse(label text, q text, attendu text default null) returns void
+language plpgsql as $$
+begin
+  execute q;
+  raise exception 'ECHEC %', label;
+exception when raise_exception or insufficient_privilege or check_violation then
+  if sqlerrm like 'ECHEC%' then raise; end if;
+  if attendu is not null and position(attendu in sqlerrm) = 0 then
+    raise exception 'ECHEC % (message recu : %)', label, sqlerrm;
+  end if;
+  raise notice 'OK    %', label;
+end $$;
+
+create temp table t48 (nom text primary key, id uuid);
+grant all on t48 to authenticated, anon;
+
+-- Les tarifs d'origine reviennent (0047 les avait mis à 0).
+update public.tarifs_publicite t set prix_gnf = o.prix_gnf
+  from tarifs_origine o where o.type = t.type and o.duree_jours = t.duree_jours;
+select pg_temp.check('0048 : douze tarifs pre-remplis, aux prix du document',
+  (select count(*) from public.tarifs_publicite) = 12
+  and (select string_agg(type || duree_jours || '=' || prix_gnf, ',' order by type, duree_jours)
+         from public.tarifs_publicite)
+      = 'boutique3=10000,boutique7=20000,boutique14=35000,boutique30=60000,'
+        'categorie3=5000,categorie7=10000,categorie14=18000,categorie30=32000,'
+        'produit3=7000,produit7=15000,produit14=25000,produit30=45000');
+select pg_temp.check('0048 : aucun moyen de paiement au depart',
+  not exists (select 1 from public.moyens_paiement));
+
+-- Les droits.
+select pg_temp.check('0048 : les fonctions de prix et de paiement sont fermees a anon, ouvertes a authenticated',
+  (select bool_and(not has_function_privilege('anon', f, 'execute')
+                   and has_function_privilege('authenticated', f, 'execute'))
+     from unnest(array[
+       'public.fixer_tarif(text, int, int)', 'public.fixer_moyen_paiement(text, text, text, boolean)',
+       'public.declarer_paiement(uuid, text, text, text)',
+       'public.creer_campagne_equipe(uuid, text, uuid, int, int, text, text)',
+       'public.marquer_rembourse(uuid)', 'public.revenus_publicite()', 'public.campagnes_equipe()']) as f));
+select pg_temp.check('0048 : personne n''ecrit un tarif ni un numero directement',
+  (select bool_and(not has_table_privilege(r, t, p))
+     from unnest(array['anon', 'authenticated']) r,
+          unnest(array['public.tarifs_publicite', 'public.moyens_paiement']) t,
+          unnest(array['insert', 'update', 'delete', 'truncate']) p)
+  and has_table_privilege('anon', 'public.tarifs_publicite', 'select')
+  and not has_table_privilege('anon', 'public.moyens_paiement', 'select')
+  and has_table_privilege('authenticated', 'public.moyens_paiement', 'select'));
+select pg_temp.refuse('0048 : une campagne a payer a un prix (contrainte)',
+  $q$insert into public.campagnes (merchant_id, type, duree_jours, statut, prix_gnf)
+     values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 7, 'a_payer', 0)$q$);
+select pg_temp.refuse('0048 : une campagne offerte est gratuite (contrainte)',
+  $q$insert into public.campagnes (merchant_id, type, duree_jours, prix_gnf, paiement_moyen)
+     values ('a0470000-0000-0000-0000-0000000000a1', 'boutique', 7, 5000, 'offert')$q$);
+
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0048 : un visiteur lit les prix',
+  (select count(*) from public.tarifs_publicite) = 12);
+select pg_temp.refuse('0048 : un visiteur ne lit pas les numeros de paiement',
+  'select 1 from public.moyens_paiement');
+reset role;
+
+-- Un non-membre ne fixe rien.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : un commercant ne fixe pas un tarif',
+  $q$select public.fixer_tarif('produit', 7, 1)$q$, 'équipe');
+select pg_temp.refuse('0048 : un commercant ne fixe pas un numero de paiement',
+  $q$select public.fixer_moyen_paiement('orange_money', '620000000', 'Escroc', true)$q$, 'équipe');
+select pg_temp.refuse('0048 : un commercant n''ecrit pas un tarif directement',
+  $q$update public.tarifs_publicite set prix_gnf = 1$q$);
+select pg_temp.refuse('0048 : un commercant n''ecrit pas un numero directement',
+  $q$insert into public.moyens_paiement (moyen, numero, titulaire, actif) values ('mtn_momo', '620000000', 'Escroc', true)$q$);
+select pg_temp.check('0048 : un compte connecte lit les numeros (aucun pour l''instant)',
+  not exists (select 1 from public.moyens_paiement));
+
+-- L'équipe fixe les prix et les numéros.
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.refuse('0048 : un prix au-dela de 100 000 000 est refuse',
+  $q$select public.fixer_tarif('produit', 7, 100000001)$q$, '100 000 000');
+select pg_temp.refuse('0048 : un prix negatif est refuse',
+  $q$select public.fixer_tarif('produit', 7, -1)$q$, '100 000 000');
+select pg_temp.refuse('0048 : une duree de tarif hors liste est refusee',
+  $q$select public.fixer_tarif('produit', 5, 1000)$q$, 'Durée');
+select public.fixer_tarif('produit', 7, 20000);
+select pg_temp.refuse('0048 : un numero de paiement invalide est refuse',
+  $q$select public.fixer_moyen_paiement('orange_money', '62a', 'Filloo', true)$q$, 'chiffres');
+select pg_temp.refuse('0048 : un moyen de paiement inconnu est refuse',
+  $q$select public.fixer_moyen_paiement('especes', '620000000', 'Filloo', true)$q$);
+select public.fixer_moyen_paiement('orange_money', '+224 620 00-00.01', '  Filloo SARL ', true);
+select public.fixer_moyen_paiement('mtn_momo', '664000001', 'Filloo SARL', false);
+reset role;
+select pg_temp.check('0048 : fixer un tarif le change, le signe et l''inscrit dans l''historique',
+  (select prix_gnf = 20000 and modifie_par = 'a0420000-0000-0000-0000-000000000005' and modifie_at is not null
+     from public.tarifs_publicite where type = 'produit' and duree_jours = 7)
+  and exists (select 1 from public.journal_equipe j join public.tarifs_publicite t on t.id = j.cible_id
+               where j.action = 'fixer_tarif' and j.cible_type = 'tarif' and j.auteur_nom = 'S'
+                 and t.type = 'produit' and t.duree_jours = 7 and j.motif like '%15000 → 20000%'));
+select pg_temp.check('0048 : fixer un numero le nettoie et l''inscrit dans l''historique',
+  (select numero = '224620000001' and titulaire = 'Filloo SARL' and actif
+     from public.moyens_paiement where moyen = 'orange_money')
+  and (select count(*) from public.journal_equipe
+        where action = 'fixer_moyen_paiement' and cible_type = 'moyen_paiement') = 2);
+
+-- Une offre sans prix ne se demande pas (tarif retiré pour l'essai).
+delete from public.tarifs_publicite where type = 'boutique' and duree_jours = 3;
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : une offre sans prix ne se demande pas',
+  $q$select public.demander_campagne('boutique', null, null, 3)$q$, 'pas encore de prix');
+
+-- G demande : le prix est figé, la campagne est à payer.
+insert into t48 select 'g_produit', public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 7);
+select pg_temp.refuse('0048 : le doublon compte une campagne a payer',
+  $q$select public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f1', null, 30)$q$, 'déjà');
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.fixer_tarif('produit', 7, 25000);
+-- Le tarif retiré revient par fixer_tarif (insertion).
+select public.fixer_tarif('boutique', 3, 10000);
+select public.fixer_tarif('categorie', 3, 0);
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.check('0048 : une campagne payante nait a payer, au prix du jour, fige',
+  (select statut = 'a_payer' and prix_gnf = 20000 and paiement_declare_at is null
+     from public.campagnes where id = (select id from t48 where nom = 'g_produit')));
+insert into t48 select 'g_gratuite', public.demander_campagne('categorie', 'a0470000-0000-0000-0000-0000000000f1', 1, 3);
+select pg_temp.check('0048 : une offre a 0 GNF nait en attente',
+  (select statut = 'en_attente' and prix_gnf = 0
+     from public.campagnes where id = (select id from t48 where nom = 'g_gratuite')));
+insert into t48 select 'g_boutique', public.demander_campagne('boutique', null, null, 7);
+select pg_temp.refuse('0048 : le plafond de 3 compte les campagnes a payer',
+  $q$select public.demander_campagne('produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7)$q$, 'Trois');
+reset role;
+
+-- L'équipe ne valide pas avant la déclaration.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.refuse('0048 : valider une campagne a payer est refuse',
+  format('select public.decider_campagne(%L, true, null)', (select id from t48 where nom = 'g_produit')),
+  'pas encore déclaré');
+
+-- Déclarer : le propriétaire seulement, par un moyen actif.
+select pg_temp.login('a0470000-0000-0000-0000-00000000000b');
+select pg_temp.refuse('0048 : un commercant ne declare pas le paiement de la campagne d''un autre',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'introuvable');
+select pg_temp.login('a0470000-0000-0000-0000-00000000000c');
+select pg_temp.refuse('0048 : un client ne declare pas de paiement',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'boutiques en ligne');
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.refuse('0048 : l''equipe ne declare pas a la place du commercant',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')));
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : un moyen inactif est refuse',
+  format($q$select public.declarer_paiement(%L, 'mtn_momo', 'MP123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'pas ouvert');
+select pg_temp.refuse('0048 : le commercant ne declare pas des especes',
+  format($q$select public.declarer_paiement(%L, 'especes', 'ES123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'Orange Money');
+select pg_temp.refuse('0048 : une reference de moins de 3 caracteres est refusee',
+  format($q$select public.declarer_paiement(%L, 'orange_money', ' ab ', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'référence');
+select pg_temp.refuse('0048 : un numero payeur invalide est refuse',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '6201')$q$,
+         (select id from t48 where nom = 'g_produit')), 'chiffres');
+select pg_temp.refuse('0048 : une campagne gratuite n''attend pas de paiement',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM123456', '620112233')$q$,
+         (select id from t48 where nom = 'g_gratuite')), 'n''attend pas');
+select pg_temp.refuse('0048 : le commercant n''ecrit pas son paiement directement',
+  $q$update public.campagnes set paiement_confirme_at = now()$q$);
+select public.declarer_paiement((select id from t48 where nom = 'g_produit'), 'orange_money', 'OM123456', '620 11 22 33');
+select public.declarer_paiement((select id from t48 where nom = 'g_produit'), 'orange_money', ' OM999999 ', '620112233');
+select pg_temp.check('0048 : declarer passe en attente, et se corrige tant qu''on attend',
+  (select statut = 'en_attente' and paiement_moyen = 'orange_money' and paiement_reference = 'OM999999'
+          and paiement_numero = '620112233' and paiement_declare_at is not null and paiement_confirme_at is null
+     from public.campagnes where id = (select id from t48 where nom = 'g_produit')));
+
+-- L'équipe vérifie et valide ; refuse depuis « a_payer ».
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.decider_campagne((select id from t48 where nom = 'g_produit'), true, null);
+select public.decider_campagne((select id from t48 where nom = 'g_gratuite'), true, null);
+select public.decider_campagne((select id from t48 where nom = 'g_boutique'), false, 'Pas de paiement recu');
+reset role;
+select pg_temp.check('0048 : valider une campagne payante confirme le paiement et l''historique le dit',
+  (select statut = 'active' and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005'
+          and paiement_confirme_at is not null
+     from public.campagnes where id = (select id from t48 where nom = 'g_produit'))
+  and exists (select 1 from public.journal_equipe
+               where action = 'valider_campagne' and cible_id = (select id from t48 where nom = 'g_produit')
+                 and motif like 'Paiement vérifié : 20000 GNF, orange_money OM999999'));
+select pg_temp.check('0048 : valider une campagne gratuite ne confirme aucun paiement',
+  (select statut = 'active' and paiement_confirme_at is null and paiement_confirme_par is null
+     from public.campagnes where id = (select id from t48 where nom = 'g_gratuite')));
+select pg_temp.check('0048 : une campagne a payer se refuse',
+  (select statut = 'refusee' and motif = 'Pas de paiement recu'
+     from public.campagnes where id = (select id from t48 where nom = 'g_boutique')));
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : on ne declare plus une campagne validee',
+  format($q$select public.declarer_paiement(%L, 'orange_money', 'OM000000', '620112233')$q$,
+         (select id from t48 where nom = 'g_produit')), 'n''attend pas');
+-- Annuler une campagne à payer.
+insert into t48 select 'g_boutique_2', public.demander_campagne('boutique', null, null, 7);
+select public.annuler_campagne((select id from t48 where nom = 'g_boutique_2'));
+select pg_temp.check('0048 : une campagne a payer s''annule',
+  (select statut from public.campagnes where id = (select id from t48 where nom = 'g_boutique_2')) = 'annulee');
+-- G retient une place : boutique à payer (3 en cours avec les deux actives).
+insert into t48 select 'g_boutique_3', public.demander_campagne('boutique', null, null, 7);
+
+-- Rembourser : l'équipe, une fois, ce qui a été payé puis arrêté.
+select pg_temp.refuse('0048 : un commercant ne se note pas rembourse',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'équipe');
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.refuse('0048 : une campagne en cours ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'refusée, annulée ou interrompue');
+select pg_temp.refuse('0048 : une campagne jamais payee ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_boutique')), 'Rien n''a été payé');
+select pg_temp.refuse('0048 : une campagne gratuite ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_gratuite')), 'Rien n''a été payé');
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select public.annuler_campagne((select id from t48 where nom = 'g_produit'));
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.marquer_rembourse((select id from t48 where nom = 'g_produit'));
+select pg_temp.refuse('0048 : un remboursement ne se note qu''une fois',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'g_produit')), 'déjà remboursée');
+reset role;
+select pg_temp.check('0048 : le remboursement est signe et dans l''historique',
+  (select rembourse_par = 'a0420000-0000-0000-0000-000000000005' and rembourse_at is not null
+     from public.campagnes where id = (select id from t48 where nom = 'g_produit'))
+  and exists (select 1 from public.journal_equipe
+               where action = 'rembourser_campagne' and cible_type = 'campagne'
+                 and cible_id = (select id from t48 where nom = 'g_produit') and motif like '20000 GNF%'));
+
+-- L'équipe crée une campagne payée ou offerte.
+set role authenticated;
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : un commercant ne cree pas de campagne d''equipe',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'boutique', null, null, 7, 'offert')$q$, 'équipe');
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select pg_temp.refuse('0048 : creer sans moyen est refuse',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7)$q$, 'Moyen');
+select pg_temp.refuse('0048 : creer avec un moyen inconnu est refuse',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7, 'carte')$q$, 'Moyen');
+select pg_temp.refuse('0048 : l''equipe ne sponsorise pas un produit masque',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000b1', 'produit', 'a0470000-0000-0000-0000-0000000000e1', null, 7, 'especes')$q$, 'pas publié');
+select pg_temp.refuse('0048 : l''equipe ne vise pas le produit d''une autre boutique',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000b1', 'produit', 'a0470000-0000-0000-0000-0000000000f2', null, 7, 'especes')$q$, 'pas publié');
+select pg_temp.refuse('0048 : l''equipe respecte le doublon (boutique deja a payer)',
+  $q$select public.creer_campagne_equipe('a0470000-0000-0000-0000-0000000000a1', 'boutique', null, null, 14, 'especes')$q$, 'déjà');
+-- G a 2 campagnes en cours ou à payer : la 2e création de l'équipe est sa 4e (plafond ignoré).
+insert into t48 select 'e_categorie', public.creer_campagne_equipe(
+  'a0470000-0000-0000-0000-0000000000a1', 'categorie', 'a0470000-0000-0000-0000-0000000000f2', 2, 7, 'mtn_momo', ' MP777777 ');
+insert into t48 select 'e_offerte', public.creer_campagne_equipe(
+  p_merchant => 'a0470000-0000-0000-0000-0000000000a1', p_type => 'produit',
+  p_product => 'a0470000-0000-0000-0000-0000000000f1', p_duree => 3, p_moyen => 'offert');
+select pg_temp.refuse('0048 : une campagne d''equipe en cours ne se rembourse pas',
+  format('select public.marquer_rembourse(%L)', (select id from t48 where nom = 'e_categorie')), 'refusée, annulée ou interrompue');
+reset role;
+select pg_temp.check('0048 : une campagne d''equipe est en cours, au tarif, payee et signee',
+  (select statut = 'active' and prix_gnf = 10000 and fin_at - debut_at = interval '7 days'
+          and paiement_moyen = 'mtn_momo' and paiement_reference = 'MP777777'
+          and paiement_confirme_par = 'a0420000-0000-0000-0000-000000000005' and paiement_confirme_at is not null
+          and creee_par_equipe = 'a0420000-0000-0000-0000-000000000005'
+          and decidee_par = 'a0420000-0000-0000-0000-000000000005'
+     from public.campagnes where id = (select id from t48 where nom = 'e_categorie')));
+select pg_temp.check('0048 : une campagne offerte coute 0 et passe le plafond de 3',
+  (select statut = 'active' and prix_gnf = 0 and paiement_moyen = 'offert'
+     from public.campagnes where id = (select id from t48 where nom = 'e_offerte'))
+  and (select count(*) from public.campagnes
+        where merchant_id = 'a0470000-0000-0000-0000-0000000000a1'
+          and (statut in ('a_payer', 'en_attente') or (statut = 'active' and fin_at > now()))) = 4);
+select pg_temp.check('0048 : creer une campagne est dans l''historique',
+  (select count(*) from public.journal_equipe
+    where action = 'creer_campagne' and cible_type = 'campagne'
+      and cible_id in (select id from t48 where nom like 'e_%')) = 2);
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0048 : une campagne d''equipe est montree dans sa categorie',
+  exists (select 1 from public.produits_sponsorises(null, 2, 4)
+           where campagne_id = (select id from t48 where nom = 'e_categorie')));
+reset role;
+
+-- L'interrompre la rend remboursable ; le remboursement daté du mois dernier.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.interrompre_campagne((select id from t48 where nom = 'e_categorie'), 'Produit en rupture');
+select public.marquer_rembourse((select id from t48 where nom = 'e_categorie'));
+reset role;
+update public.campagnes set rembourse_at = now() - interval '40 days'
+ where id = (select id from t48 where nom = 'e_categorie');
+
+-- La file de l'équipe montre le paiement.
+set role authenticated;
+select pg_temp.check('0048 : la file de l''equipe montre prix, paiement et remboursement',
+  exists (select 1 from public.campagnes_equipe() ce
+           where ce.id = (select id from t48 where nom = 'g_produit')
+             and ce.prix_gnf = 20000 and ce.paiement_moyen = 'orange_money'
+             and ce.paiement_reference = 'OM999999' and ce.paiement_numero = '620112233'
+             and ce.paiement_declare_at is not null and ce.paiement_confirme_at is not null
+             and ce.rembourse_at is not null and ce.creee_par_equipe is null)
+  and exists (select 1 from public.campagnes_equipe() ce
+               where ce.id = (select id from t48 where nom = 'e_offerte')
+                 and ce.creee_par_equipe = 'a0420000-0000-0000-0000-000000000005'));
+
+-- Les revenus : encaissé au mois de la vérification, remboursé au mois du remboursement.
+select pg_temp.check('0048 : les revenus du mois (offert exclu)',
+  (select encaisse_gnf = 30000 and rembourse_gnf = 20000 and campagnes = 2
+     from public.revenus_publicite()
+    where mois = date_trunc('month', now() at time zone 'Africa/Conakry')::date));
+select pg_temp.check('0048 : un remboursement compte au mois ou il a ete fait',
+  (select encaisse_gnf = 0 and rembourse_gnf = 10000 and campagnes = 0
+     from public.revenus_publicite()
+    where mois = date_trunc('month', (now() - interval '40 days') at time zone 'Africa/Conakry')::date)
+  and (select count(*) from public.revenus_publicite()) = 2);
+select pg_temp.login('a0470000-0000-0000-0000-00000000000a');
+select pg_temp.refuse('0048 : un commercant ne lit pas les revenus',
+  'select * from public.revenus_publicite()', 'équipe');
+select pg_temp.refuse('0048 : un commercant ne lit pas la file de l''equipe',
+  'select * from public.campagnes_equipe()', 'équipe');
 reset role;
 
 \echo ''

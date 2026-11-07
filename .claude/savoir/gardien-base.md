@@ -6,17 +6,14 @@ source, constaté ou supposé.
 
 ## Faits de production
 
-- **Projet `bfmsruzyrgbndbueikcb`, Postgres 17, `eu-west-3` (Paris),
-  offre GRATUITE** (constaté 2026-10-14). `max_connections` = 60.
-  Limites *supposées* (de mémoire, à vérifier sur supabase.com/pricing) :
-  500 Mo de base, 1 Go de fichiers, 5 Go de trafic sortant par mois,
-  aucune sauvegarde, pause après 7 jours d'inactivité.
-- **Les 40 migrations du dépôt sont appliquées** (constaté 2026-10-23,
-  `schema_migrations` : 40 lignes). Ordre réel en fin de liste : `0035`,
-  `0040`, `0038`, `0036`, `0039` (SQL Editor, inscrite à la main le
-  2026-10-20, version `20261015000000`), `0037` (2026-10-20). Les noms
-  d'avant `0015` ne portent pas tous leur numéro : comparer avec
-  `npm run migrations`, pas à l'œil.
+- **Projet `bfmsruzyrgbndbueikcb`, Postgres 17, `eu-west-3` (Paris)**,
+  organisation passée en **Pro** (constaté 2026-11-06, `docs/MEMOIRE.md`) :
+  la base a une sauvegarde quotidienne (7 jours), PAS les fichiers du
+  stockage. `max_connections` = 60 (constaté 2026-10-14).
+- **Migrations appliquées : jusqu'à `0047` incluse** (constaté
+  2026-11-07, dernière version `20261106030837`). Ordre réel non
+  numérique autour de `0035`–`0040` ; les noms d'avant `0015` ne portent
+  pas tous leur numéro : comparer avec `npm run migrations`.
 - **Volume au 2026-10-22** : 5 boutiques, 2 produits, 6 photos, 17
   messages, base 15 Mo, fichiers 0,76 Mo (photo moyenne 95 Ko). Aucune
   mesure de performance faite sur ce volume ne prouve rien à l'échelle.
@@ -47,65 +44,34 @@ source, constaté ou supposé.
   2026-10-22, encore écrit par l'app. Ne retirer ni l'un ni l'autre sans
   relecture de compatibilité.
 
-- **`0042` appliquée le 2026-11-05** (constaté : 42 lignes dans
-  `schema_migrations`, 4 tables sous RLS, 7 policies ; types régénérés
-  identiques à ceux écrits à la main). Envoyée par `apply_migration` sans
-  les commentaires du fichier : les instructions sont les mêmes.
-  L'équipe est une table à part (`equipe`, écrite seulement en
-  `service_role`), pas une valeur de `user_role`. Membres au 2026-11-05 :
-  le porteur du projet (« Tirry »), Alpha Nouhou Diallo (« Alpha
-  Nouhou ») et Laouratou Barry (« Laouratou », ajoutée après
-  confirmation de son email), inscrits par la session sur sa demande.
-  Règle suivie : pas d'entrée dans l'équipe avant l'email confirmé.
-
-- **`0043` appliquée le 2026-11-05** sur accord du porteur du projet
-  (constaté : 43 migrations, trigger présent, Tirry et Alpha Nouhou
-  marqués, fonction fermée à `authenticated`) : trigger sur `equipe`
-  qui pose ou retire `app_metadata.equipe` dans `auth.users` (le site la
-  lit sans requête), et annonces qui ne partent plus vers l'équipe. 225
-  contrôles OK en local. Constaté le 2026-11-05 : `postgres` a `UPDATE`
-  sur `auth.users` (propriétaire `supabase_auth_admin`). Le stub local
-  porte désormais `raw_app_meta_data`.
-
-- **`0044` appliquée le 2026-11-05** sur accord du porteur du projet
-  (constaté : 44 migrations, `espace` obligatoire, anciennes fonctions
-  retirées, le fil existant rangé côté client) : `fil_equipe.espace`
-  (client ou commerçant), un fil par (personne, espace) ; fonctions de
-  « lu » et `boite_equipe` par espace, `je_peux_ecrire_a_l_equipe(espace)`
-  (suspension par compte), annonce à laquelle on répond seulement depuis
-  l'espace qu'elle concerne (`annonce_concerne`). Le seul fil existant
-  (2 messages, écrits côté client) est rangé côté client. 234 contrôles
-  OK en local. Piège : une policy dépend de sa fonction, la remplacer
-  AVANT de supprimer l'ancienne ; et le RLS refuse avant NOT NULL.
-
-- **`0045` appliquée le 2026-11-06** sur accord du porteur du projet
-  (constaté : 45 migrations, 2 triggers, 4 policies, cron seul à pouvoir
-  publier les programmées ; types régénérés identiques) : `annonces.etat`
-  (brouillon, programmée, publiée, retirée), cycle tenu par un trigger
-  (`annonce_tenir_le_cycle`, `security definer` : il lit `auth.uid()`
-  pour signer), destinataires figés à la PUBLICATION, retrait au lieu de
-  suppression, `publier_annonces_programmees()` (service_role, cron 7 h),
-  `lecteurs_annonce()`. 252 contrôles OK en local. Piège : le stub local
-  ne donne pas `auth` à `authenticated` ; une fonction `security invoker`
-  qui lit `auth.uid()` y échoue. Piège de test : une instruction ne voit
-  pas son propre changement (publier puis vérifier = deux instructions).
-
-- **`0046` APPLIQUÉE le 2026-11-06** (connecteur, accord du porteur du projet) : modération par
-  l'équipe (`suspendre_profil`, `reactiver_profil`, `masquer_produit`,
-  `traiter_signalement`, `signalements_a_traiter`, `messages_signales`,
-  `comptes_suspendus`), `journal_equipe`, `profiles.suspension_reason`,
-  `reports.handled_by`/`decision`, `products.masque_par_equipe`. 301
-  contrôles OK en local ; le test « commercant republie » tombe sans le
-  déclencheur (vérifié en le retirant).
-- **`0047` APPLIQUÉE le 2026-11-06** : publicité sans
-  paiement (`campagnes`, `demander/annuler/decider/interrompre_campagne`,
-  `produits_sponsorises`, `boutiques_mises_en_avant`,
-  `resultats_campagnes`, `campagnes_equipe`, `analytics_events.campagne_id`,
-  checks de `journal_equipe` élargis). 360 contrôles OK en local (59 pour
-  0047) ; le filtre « boutique suspendue » prouvé par mutation. Noms
-  constatés en production des checks de 0046 :
-  `journal_equipe_action_check`, `journal_equipe_cible_type_check`.
-  À corriger ici une fois appliquée.
+- **`0042`–`0046` appliquées les 2026-11-05/06** (constaté à chaque fois
+  dans `schema_migrations`). `0042` : l'équipe est une table à part
+  (`equipe`, écrite seulement en `service_role`), membres Tirry, Alpha
+  Nouhou, Laouratou ; pas d'entrée avant l'email confirmé. `0043` :
+  trigger qui pose `app_metadata.equipe` dans `auth.users` (`postgres` a
+  `UPDATE` dessus). `0044` : un fil par (personne, espace). `0045` :
+  cycle des annonces par trigger, cron 7 h. `0046` : modération,
+  `journal_equipe`, `products.masque_par_equipe`. Détails dans les
+  en-têtes de ces migrations.
+- **Pièges de cette série** : une policy dépend de sa fonction (remplacer
+  AVANT de supprimer) ; le RLS refuse avant NOT NULL ; le stub local ne
+  donne pas `auth` à `authenticated` (une fonction `security invoker` qui
+  lit `auth.uid()` y échoue) ; une instruction ne voit pas son propre
+  changement (publier puis vérifier = deux instructions).
+- **`0047` APPLIQUÉE le 2026-11-06** : publicité sans paiement
+  (`campagnes` et ses fonctions, `analytics_events.campagne_id`). 0
+  campagne en production au 2026-11-07 (constaté). Noms constatés des
+  checks : `journal_equipe_action_check`, `journal_equipe_cible_type_check`,
+  `campagnes_statut_check`. Les deux vitrines tirent déjà au sort
+  (`order by random()` après un choix par boutique) : rotation acquise.
+- **`0048` ÉCRITE, NON APPLIQUÉE** (2026-11-07, branche `monetisation`,
+  qui ne s'applique qu'à sa publication par le porteur du projet, en
+  exception à « appliquer aussitôt ») : `tarifs_publicite`,
+  `moyens_paiement`, statut `a_payer`, `declarer_paiement`,
+  `creer_campagne_equipe`, `marquer_rembourse`, `revenus_publicite`.
+  423 contrôles OK en local (63 pour 0048), 4 gardes prouvées par
+  mutation. Une fois appliquée sans le site de `monetisation`, une
+  demande naît `a_payer` et le site de `dev` ne sait pas la payer.
 - **`hidden` sert AUSSI au commerçant** (constaté 2026-11-06, site
   `hideProductAction`/`republishProductAction`) : il masque et republie
   lui-même. Un masquage de l'équipe ne peut donc pas être « status =
@@ -178,18 +144,33 @@ source, constaté ou supposé.
   `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : un dossier de données NEUF à chaque passe, pas de
   `rm -rf` dans un `su -c` (recette dans `.claude/savoir/testeur.md`).
-  194 contrôles OK le 2026-10-23 (avec `0041`), 183 sans.
+- **`truncate auth.users cascade` (tête de `security_test.sql`) vide
+  toute table qui pointe vers `equipe`**, même une table de référence
+  pré-remplie (`tarifs_publicite.modifie_par`, 0048) : la garder avant
+  le `truncate` (`tarifs_origine`). Une section ancienne rejoue après
+  TOUTES les migrations : la section 0047 remet les tarifs à 0 pour
+  tester son chemin gratuit.
+- **`journal_equipe.cible_id` est `uuid not null`** : une table cible
+  sans uuid (tarifs, moyens) reçoit une colonne `id uuid unique` plutôt
+  que rendre la colonne nullable (type lu par le site).
+- **Une mutation peut tomber sur une autre erreur que `ECHEC`** (clé
+  étrangère vers `equipe` quand un non-membre signe) : la suite s'arrête
+  quand même, mais pour une preuve nette, muter une garde sans écriture
+  signée (ex. `revenus_publicite`).
+- **Test aléatoire** : `produits_sponsorises` garde UN produit par
+  boutique, au hasard ; deux campagnes d'une même boutique dans le même
+  emplacement rendent un test instable.
 - Les pièges SQL généraux sont dans `docs/MEMOIRE.md`, « Pièges
   rencontrés — Sécurité et SQL » : les relire, pas les recopier.
 
 ## Décisions du porteur du projet
 
-- Aucune migration ne s'applique sans son accord explicite, en disant
-  qu'elle touchera la production (`CLAUDE.md`).
+- Une migration écrite s'applique aussitôt testée, par la session
+  principale (2026-11-06, `CLAUDE.md`) ; SAUF sur la branche
+  `monetisation`, appliquée seulement à sa publication. Le gardien
+  n'applique jamais.
 - `0006` : les deux policies de lecture de `profiles` restent séparées
   par lisibilité.
-- Au premier seuil de 50 % d'une limite gratuite, passage en Supabase
-  Pro (2026-10-23).
 - Un seul des deux comptes liés se supprime, et un compte supprimé peut
   être recréé sur la même connexion (2026-10-23, `0041`).
 
