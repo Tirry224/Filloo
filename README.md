@@ -5,8 +5,8 @@ Le commerçant publie ses produits, le client les parcourt librement et lui
 écrit par la messagerie interne. **Aucun paiement en ligne** : la vente se
 conclut hors de l'application.
 
-En ligne sur **https://filloo.net**. L'app mobile vit dans
-`tirry224/filloo-mobile`.
+En ligne sur **https://filloo.net**. L'app mobile a été abandonnée le
+2026-11-07 : le projet ne garde que le site.
 
 ## Où lire
 
@@ -71,7 +71,6 @@ Preview :
 | `CRON_SECRET` | Joint par Vercel aux appels du cron ; sans elle, `/api/quotidien` et `/api/notifications` refusent tout le monde. |
 | `OWNER_EMAIL` | Le compte (confirmé) du porteur du projet : il ne voit que `/admin`, où il est inscrit dans l'équipe à sa première visite. |
 | `SENTRY_DSN` | Erreurs du serveur, filtrées de tout identifiant. |
-| `EXPO_ACCESS_TOKEN` | Facultatif : seulement si la sécurité renforcée des notifications Expo est activée. |
 
 ## Réglages Supabase (tableau de bord, pas du code)
 
@@ -97,7 +96,6 @@ Preview :
   notifications d'un tap. La demande du navigateur arrive aussi à la
   publication d'un produit et au premier message envoyé. Sur iPhone, il
   faut d'abord ajouter Filloo à l'écran d'accueil.
-- **Téléphones de l'app** : Expo (`expo_push_tokens`, `0035`).
 - **Plus aucun email de notification** depuis le 2026-10-07 : sans
   notifications activées, on n'est prévenu de rien.
 - **Une notification ne recopie jamais le message** : elle s'affiche sur

@@ -6,6 +6,15 @@ import { getMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import type { Merchant } from "@/lib/types";
 
 /**
+ * L'étiquette de tout ce cache : une décision de l'équipe (suspendre,
+ * supprimer, masquer, catégories, villes) le vide AUSSITÔT par
+ * `revalidateTag(CATALOGUE, { expire: 0 })` — décision du 2026-11-07, « supprimé ou suspendu =
+ * immédiatement ». La minute ci-dessous ne vaut plus que pour ce que
+ * l'app écrit sans passer par le site.
+ */
+export const CATALOGUE = "catalogue";
+
+/**
  * Les lectures du catalogue que TOUT LE MONDE voit pareil, gardées en
  * cache côté serveur au lieu d'interroger la base à chaque visite : à
  * mille visiteurs sur l'accueil, la base répond une fois par minute au
@@ -27,12 +36,13 @@ import type { Merchant } from "@/lib/types";
  */
 export const categoriesEnCache = unstable_cache(() => getCategories(createPublicClient()), ["categories"], {
   revalidate: 3600,
+  tags: [CATALOGUE],
 });
 
 export const rechercheEnCache = unstable_cache(
   (opts: Parameters<typeof searchProducts>[1]) => searchProducts(createPublicClient(), opts),
   ["recherche"],
-  { revalidate: 60 },
+  { revalidate: 60, tags: [CATALOGUE] },
 );
 
 /**
@@ -43,14 +53,16 @@ export const rechercheEnCache = unstable_cache(
  */
 export const produitEnCache = unstable_cache((id: string) => getProduct(createPublicClient(), id), ["produit"], {
   revalidate: 60,
+  tags: [CATALOGUE],
 });
 
 export const boutiqueEnCache = unstable_cache((id: string) => getMerchant(createPublicClient(), id), ["boutique"], {
   revalidate: 60,
+  tags: [CATALOGUE],
 });
 
 export const produitsBoutiqueEnCache = unstable_cache(
   (boutique: Merchant) => getMerchantProducts(createPublicClient(), boutique),
   ["produits-boutique"],
-  { revalidate: 60 },
+  { revalidate: 60, tags: [CATALOGUE] },
 );

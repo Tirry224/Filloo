@@ -25,8 +25,32 @@ create table auth.users (
   -- production (constaté le 2026-11-07, `information_schema.columns`).
   email_confirmed_at timestamptz,
   deleted_at timestamptz,
-  is_anonymous boolean not null default false
+  is_anonymous boolean not null default false,
+  -- Lue par `equipe_compte` (0067), constatée en production le 2026-11-07.
+  last_sign_in_at timestamptz,
+  -- Posée par `auth.admin.updateUserById(… ban_duration)` ; lue par
+  -- `ma_connexion_est_fermee` (0068). Constatée en production le 2026-11-07.
+  banned_until timestamptz
 );
+
+-- Sessions et jetons de rafraîchissement de GoTrue, réduits aux colonnes
+-- que lit `fermer_les_sessions` (0068). Mêmes clés étrangères qu'en
+-- production (constaté le 2026-11-07, `pg_constraint`) : supprimer une
+-- session emporte ses jetons ; `refresh_tokens.user_id` est un TEXTE.
+create table auth.sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now()
+);
+create table auth.refresh_tokens (
+  id bigserial primary key,
+  token varchar(255),
+  user_id varchar(255),
+  revoked boolean,
+  session_id uuid references auth.sessions(id) on delete cascade
+);
+alter table auth.sessions enable row level security;
+alter table auth.refresh_tokens enable row level security;
 
 create or replace function auth.uid() returns uuid
   language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;

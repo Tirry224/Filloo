@@ -34,8 +34,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
   notifications navigateur et app, application fermée.
-- **App mobile** dans `tirry224/filloo-mobile`, versions de test
-  seulement, rien sur les stores.
+- **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
+  le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
+  `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
+  rien ne la lit. Les applis de test déjà installées ne marchent plus
+  (connexion aux routes retirées, plus de notifications). Les mentions de
+  l'app plus bas dans ce fichier sont de l'histoire.
 
 ---
 
@@ -168,8 +172,47 @@ mis à jour et raccourci ; l'ancienne version se relit par
   depuis la session ; inscrites à la main dans `schema_migrations`).
   Constaté : fonctions fermées à `anon`, contraintes du journal à jour,
   9 catégories et 12 villes intactes.
+- **Gestion, deuxième passe** (décisions du 2026-11-07, `0067`) : seul le
+  PROPRIÉTAIRE (`equipe.proprietaire`, le plus ancien membre) ajoute ou
+  retire un membre ; listes Vendeurs et Acheteurs séparées
+  (`/admin/gestion/vendeurs`, `/acheteurs`, l'ancienne `/comptes`
+  redirige) ; fiche complète avec tous les produits, retour vers sa
+  liste ; suppression d'un compte (même anonymisation que « supprimer mon
+  compte », signée au journal après coup) et d'un produit (photos
+  comprises) ; l'ordre des catégories et villes se renumérote 1..n après
+  un retrait ; recherche dans Messages et Publicité ; l'équipe écrit en
+  premier (fil vide ouvert par `?profil=`, le RLS de 0042 le permettait).
+  `0067` appliquée le 2026-11-07, collée au SQL Editor par le porteur du
+  projet (l'envoi depuis la session restait sans réponse ; inscrite à la
+  main dans `schema_migrations` sous la version `0067`). Constaté juste
+  après : Tirry seul propriétaire (3 membres), catégories 1..8 et villes
+  1..7, contrainte du journal à jour, nouvelles fonctions fermées à
+  `anon`, internes fermées à `authenticated`, aucun droit d'écriture sur
+  `equipe`. Piège : coller la migration ET l'`insert` déjà fait dans le
+  même envoi annule tout (doublon de clé). Ouvert : l'app des
+  stores (`main`) n'a pas d'écran équipe, un premier message de l'équipe
+  n'y est pas lisible.
+- **Supprimé ou suspendu = immédiatement** (décision du 2026-11-07,
+  `0068`) : une suppression ferme les sessions (`fermer_les_sessions`,
+  appelée par `couperConnexion`) ; une connexion bannie n'écrit plus rien
+  (`ma_connexion_est_fermee`, dont la recréation de profil) ; un commerçant
+  suspendu n'envoie plus de photos. L'app (`filloo-mobile` `dev`,
+  `08b5c6b`) revérifie au premier plan, à chaque notification et à chaque
+  refus ; il faut un BUILD (pas d'`expo-updates`). `0068` collée au SQL
+  Editor par le porteur du projet le 2026-11-07 ; constaté juste après :
+  `fermer_les_sessions` réservée à `service_role`, la recréation de profil
+  exige une connexion ouverte. *À constater* : la ligne `0068` de
+  `schema_migrations` (pas encore inscrite à ce moment).
+- **Tests de navigateur de l'équipe** (`e2e/equipe.spec.ts`, 2026-11-07) :
+  propriétaire, listes séparées, fiche et retour, suspension qui retire la
+  fiche AUSSITÔT (le cache public est vidé par `revalidateTag(CATALOGUE)`
+  à chaque décision de l'équipe et à chaque suppression), écrire en
+  premier, suppression qui déconnecte, ordre refait. 27/27 sur pile
+  locale. Une suspension faite AU TABLEAU DE BORD reste visible jusqu'à
+  une minute (cache). `npm run largeurs` échoue dans la session cloud
+  (`networkidle` jamais atteint sur `/` et `/recherche`) : non élucidé.
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
-  `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0066.
+  `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0067.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
   pris 0052-0054 en même temps ; les nôtres sont devenues 0055-0057.
   `monetisation` garde 0048-0051, non appliquées : à renuméroter (0058+)
@@ -553,10 +596,17 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-402 commits, du plus récent au plus ancien.
+409 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `3726a9f` Suspendu ou supprimé : le catalogue public l'apprend aussitôt ; tests de navigateur de l'équipe
+- `80c91b2` Mémoire : 0068 appliquée et constatée en production
+- `f7bea3d` Compte supprimé ou suspendu : effectif immédiatement (0068 écrite)
+- `0a6be82` Mémoire : 0067 appliquée et constatée en production
+- `11e12be` Admin : vendeurs et acheteurs séparés, fiche complète, suppression, écrire en premier
+- `751660c` Admin : une barre de recherche dans Messages et Publicité
+- `4f9eaa2` Publicité : les demandes des commerçants sont fermées pour l'instant (« Bientôt disponible »)
 - `4da158f` 3G : les premières photos d'une liste partent en premier, les listes ne préchargent plus les fiches
 - `90e6b6e` Mémoire : 0065 et 0066 appliquées, la gestion depuis /admin est complète
 - `1c1492d` Admin : onglet Gestion — comptes, produits, équipe, catégories et villes

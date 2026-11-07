@@ -1,12 +1,14 @@
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
 
 type Admin = ReturnType<typeof createAdminClient>;
 type Role = "client" | "merchant";
 
 /**
- * Le cœur de « supprimer mon compte », partagé par le site
- * (`deleteAccountAction`) et l'app mobile (`/api/app/supprimer-compte`).
+ * Le cœur de « supprimer un compte » : par la personne elle-même
+ * (`deleteAccountAction`) ou par l'équipe (`supprimerCompteAction`).
  *
  * Hors de `src/lib/actions/` EXPRÈS : toute fonction exportée d'un fichier
  * `"use server"` devient une action appelable depuis n'importe quel
@@ -40,26 +42,12 @@ export async function supprimerProfil(userId: string, role: Role): Promise<{ con
   const cible =
     profiles.find((p) => p.role === role && !p.is_deleted) ?? [...profiles].reverse().find((p) => p.role === role);
   if (cible) await effacerProfil(admin, cible);
+  // Une boutique supprimée quitte le catalogue public AUSSITÔT (2026-11-07).
+  revalidateTag(CATALOGUE, { expire: 0 });
 
   if (profiles.some((p) => p.role !== role && !p.is_deleted)) return { connexionFermee: false };
   await couperConnexion(admin, userId);
   return { connexionFermee: true };
-}
-
-/**
- * Supprime TOUS les comptes de la connexion et la ferme : ce que fait
- * l'app mobile installée, qui n'envoie pas de rôle. Gardée telle quelle
- * pour ne pas changer ce que ces téléphones déclenchent.
- */
-export async function anonymiserEtBannir(userId: string) {
-  const admin = createAdminClient();
-  const { data: profiles, error: profilesError } = await admin
-    .from("profiles")
-    .select("id, role")
-    .eq("auth_user_id", userId);
-  if (profilesError) throw profilesError;
-  for (const profile of profiles) await effacerProfil(admin, profile);
-  await couperConnexion(admin, userId);
 }
 
 /** Efface un profil : son identité, et pour une boutique ses produits,
@@ -152,12 +140,6 @@ async function couperConnexion(admin: Admin, userId: string) {
     .delete()
     .eq("auth_user_id", userId);
   if (pushError) throw pushError;
-  // Les téléphones de l'app mobile (0035), pour la même raison.
-  const { error: telephonesError } = await admin
-    .from("expo_push_tokens")
-    .delete()
-    .eq("auth_user_id", userId);
-  if (telephonesError) throw telephonesError;
 
   /* L'EMAIL est libéré en même temps que l'accès est coupé : la ligne
      `auth.users` survit (voir plus haut), et tant qu'elle portait
@@ -178,6 +160,15 @@ async function couperConnexion(admin: Admin, userId: string) {
     ban_duration: "876000h",
   });
   if (banError) throw banError;
+
+  /* Le bannissement n'invalide pas un jeton déjà émis : sans ceci,
+     `getUser()` répondait « valide » encore ~1 h. Fermer les sessions
+     (0068) le fait refuser aussitôt, et l'app installée déconnecte la
+     personne à son prochain contrôle (décision du 2026-11-07 : « supprimé
+     = immédiatement »). Après le bannissement : aucune session ne peut se
+     rouvrir entre les deux. */
+  const { error: sessionsError } = await admin.rpc("fermer_les_sessions", { p_auth: userId });
+  if (sessionsError) throw sessionsError;
 }
 
 /* Journalise au lieu de lever, comme la photo de boutique : un fichier
@@ -197,4 +188,23 @@ async function effacerPhotosProduits(admin: Admin, merchantId: string) {
     );
     if (removeError) console.error("[suppression] photos produit restées :", removeError.message);
   }
+}
+
+/**
+ * Les photos d'UN produit supprimé par l'équipe (`/admin/gestion`) : son
+ * dossier `{merchant_id}/{product_id}` (0004). À n'appeler qu'APRÈS que la
+ * base a accepté la suppression (`supprimer_produit_equipe`, qui vérifie
+ * l'équipe). Journalise au lieu de lever : le produit est déjà parti.
+ */
+export async function effacerPhotosDuProduit(merchantId: string, productId: string) {
+  const bucket = createAdminClient().storage.from("product-images");
+  const dossier = `${merchantId}/${productId}`;
+  const { data: fichiers, error } = await bucket.list(dossier, { limit: 1000 });
+  if (error) {
+    console.error("[suppression] photos du produit restées :", error.message);
+    return;
+  }
+  if (!fichiers || fichiers.length === 0) return;
+  const { error: removeError } = await bucket.remove(fichiers.map((fichier) => `${dossier}/${fichier.name}`));
+  if (removeError) console.error("[suppression] photos du produit restées :", removeError.message);
 }

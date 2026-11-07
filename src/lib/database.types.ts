@@ -322,16 +322,19 @@ export type Database = {
           auth_user_id: string
           created_at: string
           nom: string
+          proprietaire: boolean
         }
         Insert: {
           auth_user_id: string
           created_at?: string
           nom: string
+          proprietaire?: boolean
         }
         Update: {
           auth_user_id?: string
           created_at?: string
           nom?: string
+          proprietaire?: boolean
         }
         Relationships: []
       }
@@ -930,8 +933,9 @@ export type Database = {
         Returns: undefined
       }
       equipe_comptes: {
-        Args: { p_limite?: number; p_recherche?: string }
+        Args: { p_limite?: number; p_recherche?: string; p_role?: string }
         Returns: {
+          auth_user_id: string
           created_at: string
           email: string
           is_deleted: boolean
@@ -956,6 +960,52 @@ export type Database = {
           email: string
           moi: boolean
           nom: string
+          proprietaire: boolean
+        }[]
+      }
+      equipe_compte: {
+        Args: { p_profile: string }
+        Returns: {
+          address_hint: string
+          approved_at: string
+          auth_user_id: string
+          conversations: number
+          created_at: string
+          deleted_at: string
+          derniere_connexion: string
+          description: string
+          email: string
+          email_confirme_le: string
+          est_de_l_equipe: boolean
+          is_deleted: boolean
+          is_suspended: boolean
+          merchant_id: string
+          nom: string
+          photo_path: string
+          produits: number
+          profile_id: string
+          rejection_reason: string
+          role: string
+          shop_name: string
+          signalements_en_attente: number
+          statut_boutique: string
+          suspension_reason: string
+          telephone: string
+          ville: string
+          whatsapp_phone: string
+        }[]
+      }
+      equipe_produits_boutique: {
+        Args: { p_merchant: string }
+        Returns: {
+          categorie: string
+          created_at: string
+          masque_par_equipe: boolean
+          photo_path: string
+          prix: number
+          product_id: string
+          statut: string
+          titre: string
         }[]
       }
       equipe_produits: {
@@ -983,6 +1033,14 @@ export type Database = {
       retirer_categorie: { Args: { p_id: number }; Returns: undefined }
       retirer_membre: { Args: { p_auth: string }; Returns: undefined }
       retirer_ville: { Args: { p_id: number }; Returns: undefined }
+      journaliser_suppression_compte: {
+        Args: { p_motif: string; p_profile: string }
+        Returns: undefined
+      }
+      supprimer_produit_equipe: {
+        Args: { p_motif: string; p_produit: string }
+        Returns: string
+      }
       comptes_suspendus: {
         Args: never
         Returns: {
@@ -1011,6 +1069,7 @@ export type Database = {
         Args: { p_plateforme: string; p_token: string }
         Returns: undefined
       }
+      fermer_les_sessions: { Args: { p_auth: string }; Returns: number }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       interrompre_campagne: {
         Args: { p_id: string; p_motif: string }
@@ -1022,6 +1081,7 @@ export type Database = {
         Returns: boolean
       }
       je_suis_de_l_equipe: { Args: never; Returns: boolean }
+      je_suis_proprietaire: { Args: never; Returns: boolean }
       lecteurs_annonce: {
         Args: { p_annonce: string }
         Returns: {
@@ -1030,6 +1090,7 @@ export type Database = {
           nom: string
         }[]
       }
+      ma_connexion_est_fermee: { Args: never; Returns: boolean }
       marquer_annonces_lues: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
         Returns: undefined

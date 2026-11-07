@@ -2,8 +2,7 @@
  * Partage le lien de la page produit. La photo, le nom et le prix de
  * l'aperçu (WhatsApp, Facebook, SMS) viennent des balises Open Graph de
  * `generateMetadata` ; le nom de la boutique est dans le texte, l'aperçu
- * ne le montre que pour un produit sans description. Même message que
- * le partage de l'app mobile (`src/lib/partage.ts` de l'app).
+ * ne le montre que pour un produit sans description.
  *
  * Utilisé par le bouton de la fiche client ET par la feuille d'actions
  * du commerçant. Le robot qui lit le lien n'est pas connecté : un produit

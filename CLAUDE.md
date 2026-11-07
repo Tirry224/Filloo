@@ -32,14 +32,13 @@ ajouterait serait effacée à la prochaine commande.
   explicite, y compris celles qui paraissent mortes : trois d'entre elles
   portaient encore, au 2026-09-19, 61 commits absents de `main`.
 
-## L'app mobile est dans un autre dépôt
+## Le site seul : l'app mobile est abandonnée
 
-Depuis le 2026-10-07, l'app mobile vit dans `tirry224/filloo-mobile`,
-pour qu'un commit ne touche jamais les deux apps à la fois. Ce dépôt-ci
-ne porte que le site, la base (migrations) et l'API que l'app appelle.
-Toute modification d'une table, d'une politique RLS ou de
-`/api/app/message-envoye` doit rester compatible avec l'app déjà
-installée sur les téléphones.
+Décision du porteur du projet le 2026-11-07 : le projet ne garde que le
+site web. Ce dépôt porte le site et la base (migrations) ; l'API de
+l'app (`/api/app/*`) et l'envoi des notifications Expo sont retirés.
+Les tables propres à l'app (`expo_push_tokens`) restent en base, plus
+rien ne les lit. Le dépôt `tirry224/filloo-mobile` n'est plus suivi.
 
 ## Ce que la préversion NE protège PAS : la base de données
 
@@ -51,8 +50,7 @@ compte, un vrai message.
 - **Une migration écrite s'applique aussitôt, sans redemander** (décision
   du porteur du projet le 2026-11-06, qui remplace l'accord au cas par
   cas). Elle s'applique quand même SEULEMENT après que ses tests
-  (`supabase/tests/security_test.sql`) passent en local, que `relecteur-compat`
-  (ou l'agent qui l'a écrite) a dit que l'app installée survit, et que
+  (`supabase/tests/security_test.sql`) passent en local et que
   `npm run typecheck` passe ; sinon on corrige avant d'appliquer. Le
   compte rendu dit qu'elle a été appliquée et ce qui a été constaté en
   production juste après.
@@ -89,14 +87,11 @@ savoir dans `.claude/savoir/`.
 
 - **`gardien-base`** : tout travail sur `supabase/` (migrations, RLS,
   fonctions, buckets, tests de sécurité). Il écrit, il n'applique jamais.
-- **`relecteur-compat`** : avant de pousser tout changement de la base
-  ou de `src/app/api/app/*`, il dit si l'app déjà installée survit.
 - **`veilleur-prod`** : bilan de santé de la production, en lecture
   seule.
 - **`testeur`** : avant chaque push, lance les bonnes vérifications sur
-  le site, la base et l'app, écrit les tests qui manquent, et liste ce
-  qui ne se teste que sur un vrai téléphone. Jamais contre la
-  production.
+  le site et la base, écrit les tests qui manquent, et liste ce qui ne
+  se teste que sur un vrai téléphone. Jamais contre la production.
 
 Règles :
 

@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 477 vérifications (compte du 2026-11-07, migrations 0063 à 0066
+Les 561 vérifications (compte du 2026-11-07, migrations 0063 à 0068
 comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -38,7 +38,24 @@ sur « anon et authenticated n'ont aucun droit sur les deux tables ». Sans
 mutations de leurs gardes (refus d'un non-membre, jokers de recherche,
 supprimés en dernier, démasquage rejoué, droits retirés sur `equipe` et
 `cities`, email confirmé, retrait de soi, comptes de campagnes et de
-profils, slug figé) arrêtent chacune la suite sur son contrôle.
+profils, slug figé) arrêtent chacune la suite sur son contrôle. Pour
+`0067` (le 2026-11-07), neuf mutations (garde du propriétaire à l'ajout,
+garde « le propriétaire ne se retire pas », égalité de date du premier
+propriétaire, filtre `p_role`, ordre des photos, refus d'un profil non
+supprimé au journal, motif de suppression d'un produit, renumérotation
+des catégories, puis des villes) arrêtent chacune la suite sur son
+contrôle.
+Pour `0068` (le 2026-11-07), vingt mutations arrêtent chacune la suite
+sur son contrôle : la garde de connexion fermée retirée de la recréation
+de profil, de la modification de profil, de l'abonnement push (insertion,
+puis `using` et `with check` ensemble), d'`enregistrer_telephone`, des
+deux `marquer_*_lu*`, de `je_suis_de_l_equipe` et de `je_suis_proprietaire` ;
+`deleted_at` et le bannissement échu dans `ma_connexion_est_fermee` ; la
+suppression des jetons sans session, le filtre `user_id` et le `revoke`
+de `fermer_les_sessions` ; `is_suspended` de la modification de profil ;
+le profil actif de chacune des six policies du stockage. Le stub porte
+désormais `auth.users.banned_until`, `auth.sessions` et
+`auth.refresh_tokens` (mêmes clés étrangères qu'en production).
 
 ## Ce que ces tests protègent
 

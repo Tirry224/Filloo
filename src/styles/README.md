@@ -81,8 +81,8 @@ passer pour la norme.
 Les couleurs sont en hexadécimal depuis l'adoption de la palette officielle,
 pour qu'on les compare d'un coup d'œil à la charte. Une couleur qui change
 doit être recopiée là où le CSS ne s'applique pas : `themeColor` de
-`layout.tsx`, `manifest.ts`, `opengraph-image.tsx`, les icônes de
-`public/icons`, et `src/theme.ts` de l'app mobile.
+`layout.tsx`, `manifest.ts`, `opengraph-image.tsx` et les icônes de
+`public/icons`.
 
 **Rendre toute l'interface plus aérée** — change les six valeurs
 d'espacement dans `tokens.css`, pas les composants. Passer `--spacing-snug` de

@@ -1,10 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { messagePourErreur } from "@/lib/erreurs";
 import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { espaceDuRole } from "@/lib/data/gestion";
+import { effacerPhotosDuProduit, supprimerProfil } from "@/lib/suppression-compte";
 
 /**
  * Les gestes de `/admin/gestion` (2026-11-07). Écrits AVEC la session du
@@ -17,10 +20,11 @@ const GESTION = "/admin/gestion";
 const MOTIF_MIN = 3;
 const MOTIF_MAX = 500;
 
-/** La page où revenir : seulement une page de `/admin/gestion`, jamais une adresse fournie de l'extérieur. */
+/** La page où revenir : seulement une page de `/admin/gestion` (une fiche
+ *  `/vendeurs/<uuid>` comprise), jamais une adresse fournie de l'extérieur. */
 function cheminRetour(formData: FormData): string {
   const brut = String(formData.get("retour") ?? "");
-  return /^\/admin\/gestion(\/[a-z-]+)?(\?[\w=&%+.-]*)?$/.test(brut) ? brut : GESTION;
+  return /^\/admin\/gestion(\/[a-z-]+(\/[0-9a-f-]{36})?)?(\?[\w=&%+.-]*)?$/.test(brut) ? brut : GESTION;
 }
 
 function retour(chemin: string, erreur?: string, info?: string): never {
@@ -42,6 +46,8 @@ function lireMotif(formData: FormData, chemin: string, quoi: string): string {
 }
 
 function rafraichir(): void {
+  // Le catalogue public aussi : une décision se voit aussitôt, pas une minute après.
+  revalidateTag(CATALOGUE, { expire: 0 });
   revalidatePath(GESTION, "layout");
   revalidatePath("/admin/moderation");
 }
@@ -72,6 +78,57 @@ export async function reactiverCompteGestionAction(formData: FormData): Promise<
   retour(chemin, undefined, "Compte réactivé.");
 }
 
+/**
+ * Supprimer un compte (2026-11-07) : la même anonymisation que « supprimer
+ * mon compte » (`supprimerProfil`), jamais un vrai `delete` — les fils des
+ * autres personnes gardent leurs messages. Irréversible : case à cocher et
+ * motif obligatoires.
+ *
+ * Ordre voulu : `equipe_compte` d'abord (la base refuse un non-membre, et
+ * dit si la cible est de l'équipe), puis l'effacement en `service_role`,
+ * puis le journal — qui refuse un profil non supprimé : il ne dit jamais
+ * qu'une suppression a eu lieu si elle a échoué.
+ */
+export async function supprimerCompteAction(formData: FormData): Promise<void> {
+  const chemin = cheminRetour(formData);
+  const profil = formData.get("profil");
+  if (!estUuid(profil)) retour(chemin, "Compte introuvable.");
+  if (formData.get("confirmer") !== "oui") retour(chemin, "Cochez la case pour confirmer la suppression.");
+  const motif = lireMotif(formData, chemin, "de la suppression (interne à l'équipe)");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("equipe_compte", { p_profile: profil });
+  if (error) retour(chemin, messagePourErreur(error, "modération"));
+  const fiche = data?.[0];
+  if (!fiche) retour(chemin, "Compte introuvable.");
+  const liste = `${GESTION}/${espaceDuRole(fiche.role)}`;
+  if (fiche.est_de_l_equipe) retour(chemin, "Ce compte appartient à un membre de l'équipe : retirez-le d'abord de l'équipe.");
+
+  const nom = fiche.shop_name ?? fiche.nom ?? "Sans nom";
+  const motifJournal = `${nom}${fiche.email ? ` <${fiche.email}>` : ""} — ${motif}`.slice(0, MOTIF_MAX);
+  /* Déjà supprimé : on n'efface rien de plus, mais on rejoue le journal
+     (sans effet s'il est déjà écrit) — une suppression dont le journal
+     avait échoué retrouve ainsi sa trace. */
+  if (fiche.is_deleted) {
+    await supabase.rpc("journaliser_suppression_compte", { p_profile: profil, p_motif: motifJournal });
+    retour(liste, undefined, "Ce compte était déjà supprimé.");
+  }
+  try {
+    await supprimerProfil(fiche.auth_user_id, fiche.role === "merchant" ? "merchant" : "client");
+  } catch (e) {
+    console.error("[gestion] suppression de compte interrompue :", e);
+    retour(chemin, "La suppression a été interrompue. Relancez-la : elle reprend là où elle s'est arrêtée.");
+  }
+
+  const { error: journalError } = await supabase.rpc("journaliser_suppression_compte", {
+    p_profile: profil,
+    p_motif: motifJournal,
+  });
+  if (journalError) console.error("[gestion] suppression faite, journal non écrit :", journalError.message);
+  rafraichir();
+  retour(liste, undefined, `${nom} : compte supprimé.`);
+}
+
 /* ---------- Produits ---------- */
 
 export async function masquerProduitGestionAction(formData: FormData): Promise<void> {
@@ -96,6 +153,23 @@ export async function demasquerProduitAction(formData: FormData): Promise<void> 
   if (error) retour(chemin, messagePourErreur(error, "modération"));
   rafraichir();
   retour(chemin, undefined, "Produit démasqué : le commerçant peut le republier.");
+}
+
+/** Suppression définitive d'un produit par l'équipe (2026-11-07). La base
+ *  vérifie, journalise et supprime ; les photos partent ensuite du stockage
+ *  (son dossier `{merchant_id}/{product_id}`, 0004), au mieux. */
+export async function supprimerProduitEquipeAction(formData: FormData): Promise<void> {
+  const chemin = cheminRetour(formData);
+  const produit = formData.get("produit");
+  if (!estUuid(produit)) retour(chemin, "Produit introuvable.");
+  if (formData.get("confirmer") !== "oui") retour(chemin, "Cochez la case pour confirmer la suppression.");
+  const motif = lireMotif(formData, chemin, "de la suppression");
+  const supabase = await createClient();
+  const { data: merchantId, error } = await supabase.rpc("supprimer_produit_equipe", { p_produit: produit, p_motif: motif });
+  if (error) retour(chemin, messagePourErreur(error, "modération"));
+  if (merchantId) await effacerPhotosDuProduit(merchantId, produit);
+  rafraichir();
+  retour(chemin, undefined, "Produit supprimé.");
 }
 
 /* ---------- Équipe ---------- */

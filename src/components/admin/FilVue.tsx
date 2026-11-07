@@ -24,6 +24,7 @@ export function FilVue({
   messages,
   nomDe,
   erreur,
+  profil,
 }: {
   id: string;
   espace: "client" | "merchant";
@@ -31,6 +32,8 @@ export function FilVue({
   messages: MessageDuFil[];
   nomDe: Map<string, string>;
   erreur?: string;
+  /** Fil encore vide : le compte visé, pour rouvrir cette page après une erreur. */
+  profil?: string;
 }) {
   return (
     <Screen largeur="rangees">
@@ -51,6 +54,11 @@ export function FilVue({
 
       <ScreenBody className="justify-end">
         <div className="flex flex-col gap-2.5 p-4">
+          {messages.length === 0 ? (
+            <p className="text-center text-sm text-ink-soft">
+              Aucun message encore. Écrivez le premier : {nom} le lira dans « Équipe Filloo » et recevra une notification.
+            </p>
+          ) : null}
           {messages.map((m) => (
             <div key={m.id} className={cn("flex flex-col gap-1", m.de_l_equipe ? "items-end" : "items-start")}>
               {m.annonces ? (
@@ -83,13 +91,14 @@ export function FilVue({
         <form action={repondreAuFilAction} className="flex items-center gap-2.5">
           <input type="hidden" name="filDe" value={id} />
           <input type="hidden" name="espace" value={espace} />
+          {profil ? <input type="hidden" name="profil" value={profil} /> : null}
           <input
             name="corps"
             maxLength={2000}
             required
             autoComplete="off"
             aria-label="Votre réponse"
-            placeholder={`Répondre à ${nom}`}
+            placeholder={messages.length ? `Répondre à ${nom}` : `Écrire à ${nom}`}
             className="h-tap flex-1 rounded-full border border-line bg-surface px-4 text-base"
           />
           <button

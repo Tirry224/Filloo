@@ -5,8 +5,7 @@ import { messagesBase } from "@/lib/espace";
 
 /**
  * Prévenir le destinataire d'un nouveau message, PAR NOTIFICATION
- * SEULEMENT : sur son téléphone (app mobile, 0035) et dans son navigateur
- * abonné (0023).
+ * SEULEMENT, dans son navigateur abonné (0023).
  *
  * Plus d'email depuis le 2026-10-07 : décision du porteur du projet, qui
  * veut des notifications « comme une vraie application » et réserve

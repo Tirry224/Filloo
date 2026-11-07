@@ -75,6 +75,8 @@ export const ACTIONS_JOURNAL = {
   retirer_categorie: "a retiré une catégorie",
   fixer_ville: "a créé ou modifié une ville",
   retirer_ville: "a retiré une ville",
+  supprimer_produit: "a supprimé un produit",
+  supprimer_compte: "a supprimé un compte",
 } as const satisfies Record<string, string>;
 
 export const DECISIONS = {

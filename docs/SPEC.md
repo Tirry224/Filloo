@@ -35,7 +35,7 @@ l'ancienne version se relit par `git log -p -- docs/SPEC.md`.
 | 16 | Suspension | **Gèle les fils dans les deux sens** (`0022`) ; les fils restent lisibles, jamais supprimés. |
 | 17 | Monétisation | Aucune en v1. |
 | 18 | Hébergement | Vercel sur **`filloo.net`**, base Supabase à Paris, emails de compte depuis `send.filloo.net`. |
-| 19 | App mobile | **App native iPhone et Android** (Expo, 2026-10-07) dans le dépôt `tirry224/filloo-mobile`. Même base, aucun code partagé ; ce qui exige un secret passe par `/api/app/*`. |
+| 19 | App mobile | **Abandonnée le 2026-11-07** : le projet ne garde que le site web (installable sur l'écran d'accueil). L'ancienne app native (Expo, `tirry224/filloo-mobile`) n'est plus suivie ; son API `/api/app/*` est retirée. |
 
 ## 2. Hors périmètre de la v1
 

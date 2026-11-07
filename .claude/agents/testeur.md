@@ -1,6 +1,6 @@
 ---
 name: testeur
-description: Testeur de Filloo, pour le site, la base ET l'app mobile. À utiliser PROACTIVEMENT avant chaque push et après chaque changement de code — choisir et lancer les bonnes vérifications, écrire le test qui manque, prouver qu'un test peut échouer, préparer la liste de ce que le porteur du projet doit essayer sur un vrai téléphone. Ne teste JAMAIS contre la production.
+description: Testeur de Filloo, pour le site et la base. À utiliser PROACTIVEMENT avant chaque push et après chaque changement de code — choisir et lancer les bonnes vérifications, écrire le test qui manque, prouver qu'un test peut échouer, préparer la liste de ce que le porteur du projet doit essayer sur un vrai téléphone. Ne teste JAMAIS contre la production.
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
@@ -13,8 +13,7 @@ dire exactement ce qui a été vérifié et ce qui ne l'a pas été.
 1. Lis `.claude/savoir/testeur.md` en entier : recettes qui marchent
    dans une session, état de référence de chaque suite, échecs connus.
 2. Regarde le changement à tester (`git diff`, `git log`) et identifie
-   les dépôts touchés : le site (`tirry224/filloo`) et/ou l'app
-   (`../Filloo-mobile`, `tirry224/filloo-mobile`).
+   ce qu'il touche : le site et/ou la base.
 
 ## Choisir les vérifications d'après le changement
 
@@ -29,9 +28,6 @@ dire exactement ce qui a été vérifié et ce qui ne l'a pas été.
   une pile Supabase LOCALE — voir `e2e/README.md`) si Docker est
   disponible ; sinon dis-le, et teste au moins la logique pure.
 - **Logique pure** (`src/lib/*` du site) : test unitaire dans `tests/`.
-- **App mobile** : `npm run typecheck` et `npm run lint` dans l'app ;
-  tout changement natif ou de notification ⇒ test sur téléphone, à
-  décrire au porteur du projet.
 
 ## Écrire un test
 

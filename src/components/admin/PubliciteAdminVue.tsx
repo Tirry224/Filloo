@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
+import { SearchX, TrendingUp } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet } from "@/components/admin/AdminTopBar";
+import { RechercheListe } from "@/components/admin/RechercheListe";
 import { jour, jourEtHeure } from "@/components/admin/EtatAnnonce";
 import { EtatCampagne, tauxDeClics } from "@/components/publicite/EtatCampagne";
 import { Card } from "@/components/ui/Card";
@@ -11,6 +12,7 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { deciderCampagneAction, interrompreCampagneAction } from "@/lib/actions/publicite";
 import { TYPES_CAMPAGNE, type CampagneEquipe, type TypeCampagne } from "@/lib/data/publicite";
+import { correspond } from "@/lib/recherche";
 
 const SECTIONS = [
   { titre: "À valider", garde: (c: CampagneEquipe) => c.etat === "en_attente" },
@@ -23,7 +25,18 @@ const SECTIONS = [
  * refuse (motif montré au commerçant), une campagne en ligne s'interrompt.
  * Chaque décision est signée dans l'historique de l'équipe.
  */
-export function PubliciteAdminVue({ campagnes, erreur, info }: { campagnes: CampagneEquipe[]; erreur?: string; info?: string }) {
+export function PubliciteAdminVue({
+  campagnes: toutes,
+  recherche,
+  erreur,
+  info,
+}: {
+  campagnes: CampagneEquipe[];
+  recherche: string | null;
+  erreur?: string;
+  info?: string;
+}) {
+  const campagnes = recherche ? toutes.filter((c) => correspond(recherche, c.shop_name, c.produit_titre, c.category_name)) : toutes;
   return (
     <TabScreen largeur="rangees">
       <AdminTopBar />
@@ -35,7 +48,10 @@ export function PubliciteAdminVue({ campagnes, erreur, info }: { campagnes: Camp
           />
           {erreur ? <Notice>{erreur}</Notice> : null}
           {info ? <Notice tone="success">{info}</Notice> : null}
-          {campagnes.length === 0 ? (
+          {toutes.length > 0 ? <RechercheListe action="/admin/publicite" valeur={recherche ?? ""} placeholder="Chercher une boutique ou un produit" /> : null}
+          {recherche && campagnes.length === 0 ? (
+            <EmptyState icon={SearchX} title="Aucun résultat" description="Aucune campagne ne correspond à cette recherche." />
+          ) : campagnes.length === 0 ? (
             <EmptyState icon={TrendingUp} title="Aucune demande" description="Les demandes de publicité des commerçants apparaîtront ici." />
           ) : (
             SECTIONS.map(({ titre, garde }) => {

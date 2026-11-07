@@ -17,7 +17,7 @@ import { premiereAnnonce } from "@/lib/notifications-une-fois";
 const SILENCE_MS = 15 * 60 * 1000;
 
 /** L'adresse d'« Équipe Filloo » dans chaque espace (0044) : le site et
- *  l'app mobile ont les mêmes. `/equipe` aiguille vers l'espace où la
+ *  `/equipe` aiguille vers l'espace où la
  *  personne se trouve, pour une annonce « tous » qui vaut pour les deux. */
 const CHEMIN_EQUIPE = { client: "/compte/equipe", merchant: "/vendeur/equipe" } as const;
 const CHEMIN_DE_L_ANNONCE = { tous: "/equipe", clients: CHEMIN_EQUIPE.client, commercants: CHEMIN_EQUIPE.merchant } as const;
@@ -93,7 +93,8 @@ export async function prevenirDeLaReponse(filDe: string, espace: "client" | "mer
   try {
     await sendPushToUser(filDe, {
       titre: "Équipe Filloo",
-      corps: espace === "merchant" ? "L'équipe a répondu à votre boutique." : "L'équipe vous a répondu.",
+      // « écrit » et non « répondu » : l'équipe peut écrire en premier (2026-11-07).
+      corps: espace === "merchant" ? "L'équipe a écrit à votre boutique." : "L'équipe vous a écrit.",
       // La notification ouvre la discussion, où la réponse est en bas.
       url: `${CHEMIN_EQUIPE[espace]}/discussion`,
       tag: `equipe-${espace}`,
