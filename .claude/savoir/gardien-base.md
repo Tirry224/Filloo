@@ -64,6 +64,12 @@ source, constaté ou supposé.
   TOUTES les valeurs : une suivante repart de la liste de 0050
   (cible_type gagne `achat_credits`, `boutique`). Suite locale : 627
   contrôles OK (96 pour 0050), 16 mutations tuées.
+- **`0051` ÉCRITE, NON APPLIQUÉE** (2026-11-07, même branche, part avec
+  0048-0050) : plafond de `produits_sponsorises` 4 → 6 (accueil 5,
+  recherche/catégories 3, décision du porteur du projet). Seule
+  définition antérieure : 0047 (0048-0050 ne la touchent pas, constaté).
+  `boutiques_mises_en_avant` plafonne à 12 (10 demandées passent). Suite
+  locale : 633 OK ; mutations plafond 4, 5, 7 tuées.
 - **pg_cron 1.6.4 en production, une seule tâche `purger-mesures`**
   (constaté 2026-11-07) : le cycle des annonces (0045) passe par le cron
   Vercel `/api/quotidien`, pas pg_cron.
@@ -180,6 +186,10 @@ source, constaté ou supposé.
   signée (ex. `revenus_publicite`).
 - **Test aléatoire** : `produits_sponsorises` garde UN produit par
   boutique au hasard : une campagne par boutique et par emplacement.
+  Pour tester un plafond, N boutiques distinctes ; en fin de suite, une
+  campagne produit d'une section antérieure reste éligible (constaté
+  2026-11-07) : écrire des contrôles qui tiennent malgré elle (`>= N`
+  éligibles, `= plafond`), pas « exactement mes lignes ».
 - Les pièges SQL généraux sont dans `docs/MEMOIRE.md`, « Pièges
   rencontrés — Sécurité et SQL » : les relire, pas les recopier.
 

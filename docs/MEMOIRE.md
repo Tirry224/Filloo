@@ -192,6 +192,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
   si elle est refusée, annulée avant son début, ou si le produit est
   supprimé. Revenus : comptés à l'achat des crédits, jamais deux fois.
   Équipe : onglet « Crédits » dans « Ventes ». Décidé le 2026-11-07.
+- **Emplacements (2026-11-07)** : accueil 5 produits sponsorisés
+  intercalés (un en tête, puis un tous les 4) et 10 boutiques sous la
+  première rangée ; recherche et catégorie 3. Place libre : encart
+  « Votre pub ici ». Plafond de la base porté à 6 par `0051` (écrite, PAS
+  appliquée, part avec `0048` à `0050`).
 - **Pas fait** : remboursement partiel,
   attribution des contacts à une campagne. App mobile : n'affiche pas la
   publicité, et n'utilise aucun objet touché par `0048`.
@@ -551,10 +556,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-397 commits, du plus récent au plus ancien.
+398 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `2100373` Accueil : 5 produits sponsorisés et 10 boutiques sous la première rangée ; recherche et catégories : 3
 - `a7cdfa0` Emplacements publicitaires visibles même vides : encart « Votre pub ici »
 - `d2717da` 0050 écrite, PAS appliquée : crédits de publicité
 - `c12c942` Crédits de publicité, côté site (EN COURS : ne compile pas sans 0050)

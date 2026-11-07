@@ -5049,5 +5049,63 @@ select pg_temp.check('0050 : supprimer une boutique qui a une campagne payee en 
   and not exists (select 1 from public.lots_credits where merchant_id = 'a0500000-0000-0000-0000-0000000000b1')
   and not exists (select 1 from public.campagnes where merchant_id = 'a0500000-0000-0000-0000-0000000000b1'));
 
+-- =====================================================================
+-- 0051 : six produits sponsorisés au plus par appel
+-- =====================================================================
+-- Six boutiques X1 … X6 (puis X7), un produit publié chacune, une
+-- campagne produit active chacune. Écrites en `postgres` : ce qui se teste
+-- ici est le plafond de `produits_sponsorises`, pas le parcours de
+-- paiement (testé en 0047 à 0050). D'autres campagnes actives des
+-- sections précédentes peuvent rester : chaque contrôle tient quand même
+-- (au moins 6 boutiques éligibles, et le plafond borne tout).
+create or replace function pg_temp.x51(kind text, n int) returns uuid
+language sql immutable as $$
+  select ('a0510000-0000-0000-0000-' || kind || lpad(n::text, 10, '0'))::uuid
+$$;
+insert into auth.users (id, email, raw_user_meta_data)
+select pg_temp.x51('00', n), 'x' || n || '0051@test.gn',
+       jsonb_build_object('role', 'merchant', 'full_name', 'Marchand X' || n, 'phone', '62005100' || n)
+  from generate_series(1, 7) n;
+update public.profiles set id = auth_user_id
+ where auth_user_id in (select pg_temp.x51('00', n) from generate_series(1, 7) n);
+insert into public.merchants (id, profile_id, shop_name, city_id)
+select pg_temp.x51('a1', n), pg_temp.x51('00', n), 'Chez X' || n || '51', 1 from generate_series(1, 7) n;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+select pg_temp.x51('c1', n), pg_temp.x51('a1', n), 1, 'Produit X' || n, 1000 * n, 'draft' from generate_series(1, 7) n;
+insert into public.product_images (product_id, storage_path, position)
+select pg_temp.x51('c1', n), 'a0510000/x' || n || '/0.webp', 0 from generate_series(1, 7) n;
+update public.products set status = 'active' where id in (select pg_temp.x51('c1', n) from generate_series(1, 7) n);
+insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at)
+select pg_temp.x51('a1', n), 'produit', pg_temp.x51('c1', n), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days'
+  from generate_series(1, 6) n;
+
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0051 : six campagnes produit actives, p_limit => 5 en rend 5 (accueil)',
+  (select count(*) from public.produits_sponsorises(p_limit => 5)) = 5
+  and (select count(distinct merchant_id) from public.produits_sponsorises(p_limit => 5)) = 5);
+select pg_temp.check('0051 : p_limit => 6 en rend 6',
+  (select count(*) from public.produits_sponsorises(p_limit => 6)) = 6);
+select pg_temp.check('0051 : p_limit => 50 n''en rend pas plus de 6',
+  (select count(*) from public.produits_sponsorises(p_limit => 50)) <= 6);
+select pg_temp.check('0051 : la recherche et les categories demandent 3, en ont 3',
+  (select count(*) from public.produits_sponsorises(p_limit => 3)) = 3
+  and (select count(*) from public.produits_sponsorises(null, 1, 3)) = 3);
+reset role;
+
+-- Une septième boutique éligible : le plafond tient encore à 6.
+insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at)
+values (pg_temp.x51('a1', 7), 'produit', pg_temp.x51('c1', 7), 7, 0, 'active', now() - interval '1 hour', now() + interval '7 days');
+set role anon;
+select pg_temp.check('0051 : sept boutiques eligibles, p_limit => 50 en rend exactement 6',
+  (select count(*) from public.produits_sponsorises(p_limit => 50)) = 6
+  and (select count(*) from public.produits_sponsorises(null, null, 1000)) = 6);
+reset role;
+select pg_temp.check('0051 : signature et droits inchanges (text, int, int), anon et authenticated',
+  has_function_privilege('anon', 'public.produits_sponsorises(text, int, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.produits_sponsorises(text, int, int)', 'execute')
+  and (select prosecdef and proconfig = array['search_path=""']
+         from pg_proc where oid = 'public.produits_sponsorises(text, int, int)'::regprocedure));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
