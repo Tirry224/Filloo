@@ -28,12 +28,9 @@ source, constaté ou supposé.
 - **`postgres` peut créer des politiques sur `realtime.messages`,
   `storage.*`, `auth.*`** sans en être propriétaire
   (`supautils.policy_grants`, constaté 2026-10-14).
-- **`profiles` : unicité (connexion, rôle)** = contrainte
-  `profiles_auth_user_id_role_key` en production (constaté 2026-10-23,
-  `pg_constraint` ; seul dépendant : son index). `0041` (APPLIQUÉE le
-  2026-10-23, vérifié : contrainte absente, index présent, policy et
-  `my_profile_id` à jour) la remplace par l'index partiel
-  `profiles_un_profil_actif_par_role … where is_deleted = false`.
+- **`profiles` : unicité (connexion, rôle) = index partiel
+  `profiles_un_profil_actif_par_role … where is_deleted = false`** (0041,
+  appliquée et vérifiée le 2026-10-23).
 - **`anon` et `authenticated` ont `INSERT` sur toute la table
   `profiles`** (constaté 2026-10-23, `role_table_grants`) : seule la
   policy d'insertion borne ce qu'une session y écrit, colonnes
@@ -43,15 +40,9 @@ source, constaté ou supposé.
   2026-10-22, encore écrit par l'app. Ne retirer ni l'un ni l'autre sans
   relecture de compatibilité.
 
-- **`0042`–`0046` appliquées les 2026-11-05/06** (constaté à chaque fois
-  dans `schema_migrations`). `0042` : l'équipe est une table à part
-  (`equipe`, écrite seulement en `service_role`), membres Tirry, Alpha
-  Nouhou, Laouratou ; pas d'entrée avant l'email confirmé. `0043` :
-  trigger qui pose `app_metadata.equipe` dans `auth.users` (`postgres` a
-  `UPDATE` dessus). `0044` : un fil par (personne, espace). `0045` :
-  cycle des annonces par trigger, cron 7 h. `0046` : modération,
-  `journal_equipe`, `products.masque_par_equipe`. Détails dans les
-  en-têtes de ces migrations.
+- **`0042`–`0046` appliquées les 2026-11-05/06** (constaté) : équipe
+  (`equipe`, écrite en `service_role` seul), fils d'équipe, annonces,
+  modération + `journal_equipe` + `masque_par_equipe`. Détails : en-têtes.
 - **Pièges de cette série** : une policy dépend de sa fonction (remplacer
   AVANT de supprimer) ; le RLS refuse avant NOT NULL ; le stub local ne
   donne pas `auth` à `authenticated` (une fonction `security invoker` qui
@@ -61,32 +52,33 @@ source, constaté ou supposé.
   campagne en production au 2026-11-07 (constaté). Noms constatés des
   checks : `journal_equipe_action_check`, `journal_equipe_cible_type_check`,
   `campagnes_statut_check`.
-- **`0048` et `0049` ÉCRITES, NON APPLIQUÉES** (2026-11-07, branche
-  `monetisation`, appliquées seulement à sa publication, avec le site) :
-  `0048` = prix et paiement manuel de la publicité ; `0049` = abonnements
-  Pro/Business, limite Gratuit 10 produits (`products.masque_par_limite`,
-  trigger `products_respecte_la_formule`, cron `appliquer-limites-abonnement`
-  3 h 41), statistiques. `0049` LIT `moyens_paiement` (0048) : jamais
-  l'une sans l'autre. Chacune réécrit les deux checks de `journal_equipe`
-  avec TOUTES les valeurs précédentes : une suivante doit repartir de la
-  liste de 0049. Suite locale : 531 contrôles OK (108 pour 0049).
+- **`0048`, `0049`, `0050` ÉCRITES, NON APPLIQUÉES** (2026-11-07, branche
+  `monetisation`, appliquées ensemble à sa publication, avec le site ;
+  `list_migrations` s'arrête à 0047, constaté) : `0048` = prix et
+  paiement manuel de la publicité ; `0049` = abonnements, limite Gratuit
+  10 produits, statistiques ; `0050` = crédits de publicité (lots
+  `lots_credits`, `consommations_credits`, `achats_credits`, triggers
+  `abonnements_donnent_leurs_credits` et
+  `campagnes_rendent_leurs_credits_a_la_suppression`). Chacune lit la
+  précédente. Chacune réécrit les deux checks de `journal_equipe` avec
+  TOUTES les valeurs : une suivante repart de la liste de 0050
+  (cible_type gagne `achat_credits`, `boutique`). Suite locale : 627
+  contrôles OK (96 pour 0050), 16 mutations tuées.
 - **pg_cron 1.6.4 en production, une seule tâche `purger-mesures`**
   (constaté 2026-11-07) : le cycle des annonces (0045) passe par le cron
   Vercel `/api/quotidien`, pas pg_cron.
-- **Mesures (`analytics_events`) au 2026-11-07** (constaté) : écrites par
-  le SITE seul (l'app n'en écrit aucune) ; `recherche` 6 048, `visite`
-  3 501, `produit_vu` 126, `boutique_vue` 45, `contact_ouvert` 43,
-  `whatsapp_ouvert` 16, `contact_abouti` 4. `produit_vu`, `contact_ouvert`,
-  `whatsapp_ouvert` portent `product_id` + `merchant_id` ; `boutique_vue`
-  `merchant_id` seul ; `recherche` porte `search_query` (déjà en
-  minuscules) et `category_id`, jamais de boutique. Purge à 13 mois (0028).
+- **Mesures (`analytics_events`, constaté 2026-11-07)** : écrites par le
+  SITE seul ; `produit_vu`/`contact_ouvert`/`whatsapp_ouvert` portent
+  produit + boutique, `boutique_vue` la boutique, `recherche` le texte
+  (minuscules) et `category_id`. Purge à 13 mois (0028).
 - **App mobile (clone `/home/user/filloo-mobile`, constaté 2026-11-07)** :
   publie par `update products set status` (création = insert `draft`,
   photos, puis `active` ; republication ; remise en vente), et affiche
   tel quel le message d'une erreur `P0001` (`lisible`, `changerStatut`).
   Un `raise exception` en français dans un trigger de `products` arrive
   donc lisible à l'écran. RPC appelées : `search_products`,
-  `conversation_is_open`, `enregistrer_telephone` seulement.
+  `conversation_is_open`, `enregistrer_telephone` seulement. Elle (et le
+  site) SUPPRIME des produits : cascade vers `campagnes` (trigger 0050).
 - **`hidden` sert AUSSI au commerçant** (constaté 2026-11-06, site
   `hideProductAction`/`republishProductAction`) : il masque et republie
   lui-même. Un masquage de l'équipe ne peut donc pas être « status =
@@ -113,9 +105,8 @@ source, constaté ou supposé.
 
 ## Pièges appris
 
-- **`drop` par le connecteur Supabase** : bloqué une fois (2026-10-14,
-  délai de 60 s), passé ensuite (2026-11-05) ; relire l'état après chaque
-  essai.
+- **`drop` par le connecteur Supabase** : parfois bloqué (délai de
+  60 s) ; relire l'état après chaque essai.
 - **Une politique de `realtime.messages` juge le canal demandé
   (`realtime.topic()`), pas la colonne `topic`** : un test pose
   `realtime.topic` et vérifie « 0 ligne visible » pour un refus.
@@ -154,12 +145,11 @@ source, constaté ou supposé.
 - **Tests locaux** : un dossier de données NEUF à chaque passe, pas de
   `rm -rf` dans un `su -c` (recette dans `.claude/savoir/testeur.md`).
 - **`truncate auth.users cascade` (tête de `security_test.sql`) vide
-  toute table qui pointe vers `equipe`**, même une table de référence
-  pré-remplie (`tarifs_publicite.modifie_par` 0048, `tarifs_abonnement`
-  0049) : la garder avant le `truncate` (`tarifs_origine`,
-  `tarifs_abo_origine`). Une section ancienne rejoue après
-  TOUTES les migrations : la section 0047 remet les tarifs à 0 pour
-  tester son chemin gratuit.
+  toute table qui pointe vers `equipe`**, tarifs compris : ils sont gardés
+  avant (`tarifs_origine`, `tarifs_abo_origine` avec `credits_inclus`).
+  Les sections les changent (0047 à 0, 0048 : produit 7 j = 25 000,
+  catégorie 3 j = 0) : une section qui compte sur un prix le remet
+  d'abord depuis ces copies.
 - **`journal_equipe.cible_id` est `uuid not null`** : une table cible
   sans uuid (tarifs, moyens) reçoit une colonne `id uuid unique` plutôt
   que rendre la colonne nullable (type lu par le site).
@@ -175,6 +165,15 @@ source, constaté ou supposé.
   trigger tient aussi sur une mise à jour groupée (prouvé, 0049).
 - **Port du Postgres de test** : une autre session peut tenir déjà
   `54329` ; prendre un autre port (`54339`) plutôt qu'arrêter le sien.
+- **Mutations rapides** (2026-11-07) : une base modèle (stub + migrations
+  sauf la nouvelle), puis `create database mX template …` par mutation.
+- **Une clé étrangère ne se revérifie à l'`update` que si l'ancienne
+  ligne a été écrite dans la MÊME transaction** (constaté 2026-11-07,
+  0050) : un trigger qui écrit dans un lot pendant la suppression en
+  cascade de sa boutique ne lève qu'en transaction unique. Le test doit
+  mettre l'écriture et la suppression dans un `begin … commit`, sinon la
+  mutation survit. Garde : vérifier que le parent existe encore.
+- **Un nom de policy de plus de 63 octets est tronqué** (simple NOTICE).
 - **Une mutation peut tomber sur une autre erreur que `ECHEC`** (clé
   étrangère vers `equipe` quand un non-membre signe) : la suite s'arrête
   quand même, mais pour une preuve nette, muter une garde sans écriture
@@ -196,7 +195,6 @@ source, constaté ou supposé.
   être recréé sur la même connexion (2026-10-23, `0041`).
 
 ## Questions ouvertes
-
 
 - **`0041` garde la suspension après suppression** (un client suspendu
   qui supprime son compte ne le recrée pas) : choix du gardien, à faire

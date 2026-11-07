@@ -185,7 +185,14 @@ mis à jour et raccourci ; l'ancienne version se relit par
   par le porteur du projet le 2026-11-07.
 - **À trancher** : un produit « vendu » ne compte pas dans les 10 ; un
   commerçant Gratuit peut donc en garder plus d'affichés, grisés.
-- **Pas fait** : crédits, remboursement partiel,
+- **Crédits (`0050`, écrite, PAS appliquée, part avec `0048` et `0049`)** :
+  1 crédit = 1 000 GNF, packs 10 / 25 / 50 valables 12 mois ; Business
+  reçoit 10 crédits par période (« 3 jours de pub offerte », réglable),
+  perdus à sa fin ; une publicité se paie en crédits, rendus tout seuls
+  si elle est refusée, annulée avant son début, ou si le produit est
+  supprimé. Revenus : comptés à l'achat des crédits, jamais deux fois.
+  Équipe : onglet « Crédits » dans « Ventes ». Décidé le 2026-11-07.
+- **Pas fait** : remboursement partiel,
   attribution des contacts à une campagne. App mobile : n'affiche pas la
   publicité, et n'utilise aucun objet touché par `0048`.
 
@@ -544,10 +551,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-394 commits, du plus récent au plus ancien.
+395 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `c12c942` Crédits de publicité, côté site (EN COURS : ne compile pas sans 0050)
 - `9abbbf5` 0049 écrite, PAS appliquée : abonnements Pro et Business, Gratuit limité à 10 produits
 - `d32987f` Abonnements Pro et Business, côté site (EN COURS : ne compile pas sans 0049)
 - `a6465a8` Prix de la publicité acceptés par le porteur du projet

@@ -130,6 +130,105 @@ export type Database = {
           },
         ]
       }
+      achats_credits: {
+        Row: {
+          created_at: string
+          credits: number
+          creee_par_equipe: string | null
+          decidee_at: string | null
+          decidee_par: string | null
+          id: string
+          merchant_id: string
+          motif: string | null
+          paiement_confirme_at: string | null
+          paiement_confirme_par: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number
+          rembourse_at: string | null
+          rembourse_par: string | null
+          statut: string
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          creee_par_equipe?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          id?: string
+          merchant_id: string
+          motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf: number
+          rembourse_at?: string | null
+          rembourse_par?: string | null
+          statut?: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          creee_par_equipe?: string | null
+          decidee_at?: string | null
+          decidee_par?: string | null
+          id?: string
+          merchant_id?: string
+          motif?: string | null
+          paiement_confirme_at?: string | null
+          paiement_confirme_par?: string | null
+          paiement_declare_at?: string | null
+          paiement_moyen?: string | null
+          paiement_numero?: string | null
+          paiement_reference?: string | null
+          prix_gnf?: number
+          rembourse_at?: string | null
+          rembourse_par?: string | null
+          statut?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achats_credits_creee_par_equipe_fkey"
+            columns: ["creee_par_equipe"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "achats_credits_decidee_par_fkey"
+            columns: ["decidee_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "achats_credits_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achats_credits_paiement_confirme_par_fkey"
+            columns: ["paiement_confirme_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "achats_credits_rembourse_par_fkey"
+            columns: ["rembourse_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           actor_role: string | null
@@ -421,6 +520,48 @@ export type Database = {
         }
         Relationships: []
       }
+      consommations_credits: {
+        Row: {
+          campagne_id: string
+          created_at: string
+          credits: number
+          id: string
+          lot_id: string
+          rendu_at: string | null
+        }
+        Insert: {
+          campagne_id: string
+          created_at?: string
+          credits: number
+          id?: string
+          lot_id: string
+          rendu_at?: string | null
+        }
+        Update: {
+          campagne_id?: string
+          created_at?: string
+          credits?: number
+          id?: string
+          lot_id?: string
+          rendu_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consommations_credits_campagne_id_fkey"
+            columns: ["campagne_id"]
+            isOneToOne: false
+            referencedRelation: "campagnes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consommations_credits_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots_credits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           blocked_by: string | null
@@ -597,6 +738,80 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "equipe"
             referencedColumns: ["auth_user_id"]
+          },
+        ]
+      }
+      lots_credits: {
+        Row: {
+          abonnement_id: string | null
+          achat_id: string | null
+          created_at: string
+          credits_initiaux: number
+          credits_restants: number
+          cree_par: string | null
+          disponible_at: string
+          expire_at: string
+          id: string
+          merchant_id: string
+          motif: string | null
+          origine: string
+        }
+        Insert: {
+          abonnement_id?: string | null
+          achat_id?: string | null
+          created_at?: string
+          credits_initiaux: number
+          credits_restants: number
+          cree_par?: string | null
+          disponible_at: string
+          expire_at: string
+          id?: string
+          merchant_id: string
+          motif?: string | null
+          origine: string
+        }
+        Update: {
+          abonnement_id?: string | null
+          achat_id?: string | null
+          created_at?: string
+          credits_initiaux?: number
+          credits_restants?: number
+          cree_par?: string | null
+          disponible_at?: string
+          expire_at?: string
+          id?: string
+          merchant_id?: string
+          motif?: string | null
+          origine?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lots_credits_abonnement_id_fkey"
+            columns: ["abonnement_id"]
+            isOneToOne: false
+            referencedRelation: "abonnements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lots_credits_achat_id_fkey"
+            columns: ["achat_id"]
+            isOneToOne: false
+            referencedRelation: "achats_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lots_credits_cree_par_fkey"
+            columns: ["cree_par"]
+            isOneToOne: false
+            referencedRelation: "equipe"
+            referencedColumns: ["auth_user_id"]
+          },
+          {
+            foreignKeyName: "lots_credits_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1022,6 +1237,7 @@ export type Database = {
       }
       tarifs_abonnement: {
         Row: {
+          credits_inclus: number
           formule: string
           id: string
           modifie_at: string | null
@@ -1029,6 +1245,7 @@ export type Database = {
           prix_gnf: number
         }
         Insert: {
+          credits_inclus?: number
           formule: string
           id?: string
           modifie_at?: string | null
@@ -1036,6 +1253,7 @@ export type Database = {
           prix_gnf: number
         }
         Update: {
+          credits_inclus?: number
           formule?: string
           id?: string
           modifie_at?: string | null
@@ -1114,6 +1332,26 @@ export type Database = {
           statut: string
         }[]
       }
+      achats_credits_equipe: {
+        Args: never
+        Returns: {
+          created_at: string
+          creee_par_equipe: string | null
+          credits: number
+          id: string
+          merchant_id: string
+          motif: string | null
+          paiement_confirme_at: string | null
+          paiement_declare_at: string | null
+          paiement_moyen: string | null
+          paiement_numero: string | null
+          paiement_reference: string | null
+          prix_gnf: number
+          rembourse_at: string | null
+          shop_name: string
+          statut: string
+        }[]
+      }
       annonce_concerne: {
         Args: {
           p_espace: Database["public"]["Enums"]["user_role"]
@@ -1122,6 +1360,7 @@ export type Database = {
         Returns: boolean
       }
       annuler_abonnement: { Args: { p_id: string }; Returns: undefined }
+      annuler_achat_credits: { Args: { p_id: string }; Returns: undefined }
       annuler_campagne: { Args: { p_id: string }; Returns: undefined }
       appliquer_limites_abonnement: { Args: never; Returns: undefined }
       badges_boutiques: {
@@ -1192,6 +1431,18 @@ export type Database = {
         }[]
       }
       conversation_is_open: { Args: { cid: string }; Returns: boolean }
+      corriger_credits: {
+        Args: { p_credits: number; p_merchant: string; p_motif: string }
+        Returns: undefined
+      }
+      credits_equipe: {
+        Args: never
+        Returns: {
+          disponibles: number
+          merchant_id: string
+          shop_name: string
+        }[]
+      }
       creer_abonnement_equipe: {
         Args: {
           p_formule: string
@@ -1216,6 +1467,10 @@ export type Database = {
       debut_prochaine_periode: {
         Args: { p_formule: string; p_merchant: string }
         Returns: string
+      }
+      decider_achat_credits: {
+        Args: { p_accepter: boolean; p_id: string; p_motif?: string }
+        Returns: undefined
       }
       decider_abonnement: {
         Args: { p_accepter: boolean; p_id: string; p_motif?: string }
@@ -1243,6 +1498,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      declarer_paiement_credits: {
+        Args: {
+          p_id: string
+          p_moyen: string
+          p_numero: string
+          p_reference: string
+        }
+        Returns: undefined
+      }
       demander_abonnement: { Args: { p_formule: string }; Returns: string }
       demander_campagne: {
         Args: {
@@ -1253,8 +1517,13 @@ export type Database = {
         }
         Returns: string
       }
+      demander_credits: { Args: { p_credits: number }; Returns: string }
       enregistrer_telephone: {
         Args: { p_plateforme: string; p_token: string }
+        Returns: undefined
+      }
+      fixer_credits_inclus: {
+        Args: { p_credits: number; p_formule: string }
         Returns: undefined
       }
       fixer_moyen_paiement: {
@@ -1311,6 +1580,10 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
+      marquer_achat_credits_rembourse: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       marquer_annonces_lues: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
         Returns: undefined
@@ -1329,6 +1602,14 @@ export type Database = {
         Returns: undefined
       }
       merchant_is_public: { Args: { mid: string }; Returns: boolean }
+      mes_credits: {
+        Args: never
+        Returns: {
+          disponibles: number
+          expirent_sous_30_jours: number
+          prochaine_expiration: string | null
+        }[]
+      }
       messages_signales: {
         Args: { p_report: string }
         Returns: {
@@ -1360,9 +1641,17 @@ export type Database = {
         Returns: string
       }
       owns_profile: { Args: { pid: string }; Returns: boolean }
+      payer_campagne_en_credits: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       photos_orphelines: {
         Args: { age?: unknown; limite?: number }
         Returns: string[]
+      }
+      prendre_credits: {
+        Args: { p_campagne: string; p_credits: number; p_merchant: string }
+        Returns: undefined
       }
       produits_les_plus_vus: {
         Args: { p_jours?: number }
@@ -1401,6 +1690,7 @@ export type Database = {
         Args: { p_motif: string; p_profile: string }
         Returns: undefined
       }
+      rendre_credits: { Args: { p_campagne: string }; Returns: undefined }
       restaurer_produits_masques: {
         Args: { p_merchant: string }
         Returns: undefined
@@ -1417,6 +1707,15 @@ export type Database = {
         Args: never
         Returns: {
           abonnements: number
+          encaisse_gnf: number
+          mois: string
+          rembourse_gnf: number
+        }[]
+      }
+      revenus_credits: {
+        Args: never
+        Returns: {
+          achats: number
           encaisse_gnf: number
           mois: string
           rembourse_gnf: number
@@ -1479,6 +1778,7 @@ export type Database = {
           target_type: string
         }[]
       }
+      solde_credits: { Args: { p_merchant: string }; Returns: number }
       statistiques_boutique: {
         Args: { p_jours?: number }
         Returns: {

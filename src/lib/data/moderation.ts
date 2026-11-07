@@ -73,6 +73,12 @@ export const ACTIONS_JOURNAL = {
   creer_abonnement: "a activé un abonnement pour une boutique",
   rembourser_abonnement: "a remboursé un abonnement",
   fixer_tarif_abonnement: "a changé le prix d'un abonnement",
+  // Crédits (0050).
+  fixer_credits_inclus: "a changé les crédits inclus d'une formule",
+  valider_achat_credits: "a validé un achat de crédits",
+  refuser_achat_credits: "a refusé un achat de crédits",
+  rembourser_achat_credits: "a remboursé un achat de crédits",
+  corriger_credits: "a offert ou retiré des crédits",
 } as const satisfies Record<string, string>;
 
 export const DECISIONS = {
