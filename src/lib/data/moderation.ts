@@ -33,6 +33,15 @@ export async function lireMessagesSignales(supabase: Client, reportId: string): 
   return [...(data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
+export type CompteTresSignale = Database["public"]["Functions"]["comptes_tres_signales"]["Returns"][number];
+
+/** Les personnes signalées par 5 personnes différentes ou plus (0055), à traiter en premier. */
+export async function lireComptesTresSignales(supabase: Client): Promise<CompteTresSignale[]> {
+  const { data, error } = await supabase.rpc("comptes_tres_signales");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export type CompteSuspendu = Database["public"]["Functions"]["comptes_suspendus"]["Returns"][number];
 
 export async function lireComptesSuspendus(supabase: Client): Promise<CompteSuspendu[]> {
