@@ -596,10 +596,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-411 commits, du plus récent au plus ancien.
+412 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `4b9f4c5` Mémoire : 0068 inscrite, site seul en production
 - `812aa17` Merge pull request #8 from Tirry224/claude/admin-add-remove-permissions-3kd1m3
 - `dcee4a9` Le site seul : l'app mobile est abandonnée
 - `3726a9f` Suspendu ou supprimé : le catalogue public l'apprend aussitôt ; tests de navigateur de l'équipe
