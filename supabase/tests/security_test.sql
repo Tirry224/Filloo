@@ -4778,5 +4778,275 @@ select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
 select public.retirer_ville(:vd67);
 reset role;
 
+
+-- =====================================================================
+-- Un compte supprimé est fermé aussitôt (0068)
+-- =====================================================================
+-- X : client, la connexion qu'on supprime. Y : client témoin (ses
+-- sessions ne doivent pas bouger). M : commerçant, pour le stockage.
+-- T (0063) : propriétaire de l'équipe. « Supprimer » = ce que fait le
+-- site : profil `is_deleted`, PUIS `banned_until` (couperConnexion).
+create or replace function pg_temp.refus_rls(q text) returns boolean
+language plpgsql as $$
+begin
+  execute q;
+  return false;
+exception when insufficient_privilege then
+  return sqlerrm like 'new row violates row-level security policy%';
+end $$;
+
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0680000-0000-0000-0000-0000000000c1', 'x0068@test.gn', '{"role":"client","full_name":"Xavier X68","phone":"620006801"}', now()),
+  ('a0680000-0000-0000-0000-0000000000c2', 'y0068@test.gn', '{"role":"client","full_name":"Yaya Y68","phone":"620006802"}', now()),
+  ('a0680000-0000-0000-0000-0000000000a1', 'm0068@test.gn', '{"role":"merchant","full_name":"Marchand M68","phone":"620006803"}', now());
+insert into public.merchants (id, profile_id, shop_name, city_id)
+select 'a0680000-0000-0000-0000-0000000000b1', p.id, 'Chez M68', 1
+  from public.profiles p where p.auth_user_id = 'a0680000-0000-0000-0000-0000000000a1';
+
+-- Deux sessions de X (chacune avec un jeton), un jeton ancien sans
+-- session, et une session de Y.
+insert into auth.sessions (id, user_id) values
+  ('a0680000-0000-0000-0000-0000000005c1', 'a0680000-0000-0000-0000-0000000000c1'),
+  ('a0680000-0000-0000-0000-0000000005c2', 'a0680000-0000-0000-0000-0000000000c1'),
+  ('a0680000-0000-0000-0000-0000000005c3', 'a0680000-0000-0000-0000-0000000000c2');
+insert into auth.refresh_tokens (token, user_id, session_id) values
+  ('jx1', 'a0680000-0000-0000-0000-0000000000c1', 'a0680000-0000-0000-0000-0000000005c1'),
+  ('jx2', 'a0680000-0000-0000-0000-0000000000c1', 'a0680000-0000-0000-0000-0000000005c2'),
+  ('jx0', 'a0680000-0000-0000-0000-0000000000c1', null),
+  ('jy1', 'a0680000-0000-0000-0000-0000000000c2', 'a0680000-0000-0000-0000-0000000005c3'),
+  ('jy0', 'a0680000-0000-0000-0000-0000000000c2', null);
+
+-- --- Droits ------------------------------------------------------------
+select pg_temp.check('0068 : fermer_les_sessions est reservee au serveur',
+  not has_function_privilege('anon', 'public.fermer_les_sessions(uuid)', 'execute')
+  and not has_function_privilege('authenticated', 'public.fermer_les_sessions(uuid)', 'execute')
+  and has_function_privilege('service_role', 'public.fermer_les_sessions(uuid)', 'execute'));
+select pg_temp.check('0068 : ma_connexion_est_fermee est appelable par les policies (anon, authenticated)',
+  has_function_privilege('anon', 'public.ma_connexion_est_fermee()', 'execute')
+  and has_function_privilege('authenticated', 'public.ma_connexion_est_fermee()', 'execute'));
+select pg_temp.check('0068 : les deux fonctions sont security definer, search_path vide',
+  (select bool_and(p.prosecdef and p.proconfig = array['search_path=""'])
+     from pg_proc p
+    where p.oid in ('public.fermer_les_sessions(uuid)'::regprocedure,
+                    'public.ma_connexion_est_fermee()'::regprocedure)));
+
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0068 : une session ne ferme pas les sessions (les siennes ni celles d''un autre)',
+  pg_temp.refuse($q$select public.fermer_les_sessions('a0680000-0000-0000-0000-0000000000c2')$q$)
+  and pg_temp.refuse($q$select public.fermer_les_sessions('a0680000-0000-0000-0000-0000000000c1')$q$));
+reset role;
+
+-- --- Fermer les sessions -----------------------------------------------
+set role service_role;
+select pg_temp.check('0068 : fermer_les_sessions sans connexion leve une erreur',
+  pg_temp.erreur_de('select public.fermer_les_sessions(null)') = 'Connexion manquante.');
+select pg_temp.check('0068 : fermer_les_sessions rend le nombre de sessions fermees (2)',
+  public.fermer_les_sessions('a0680000-0000-0000-0000-0000000000c1') = 2);
+reset role;
+select pg_temp.check('0068 : plus aucune session ni aucun jeton de X, ancien format compris',
+  not exists (select 1 from auth.sessions where user_id = 'a0680000-0000-0000-0000-0000000000c1')
+  and not exists (select 1 from auth.refresh_tokens where user_id = 'a0680000-0000-0000-0000-0000000000c1'));
+select pg_temp.check('0068 : la session et les jetons de Y sont intacts',
+  exists (select 1 from auth.sessions where id = 'a0680000-0000-0000-0000-0000000005c3')
+  and (select count(*) from auth.refresh_tokens where user_id = 'a0680000-0000-0000-0000-0000000000c2') = 2);
+set role service_role;
+select pg_temp.check('0068 : fermer_les_sessions est rejouable (0 la seconde fois)',
+  public.fermer_les_sessions('a0680000-0000-0000-0000-0000000000c1') = 0);
+reset role;
+
+-- --- Ma connexion est-elle fermée ? -------------------------------------
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0068 : une connexion ouverte n''est pas fermee',
+  not public.ma_connexion_est_fermee());
+reset role;
+update auth.users set banned_until = now() - interval '1 minute'
+ where id = 'a0680000-0000-0000-0000-0000000000c1';
+set role authenticated;
+select pg_temp.check('0068 : un bannissement echu ne ferme pas',
+  not public.ma_connexion_est_fermee());
+reset role;
+update auth.users set banned_until = null, deleted_at = now()
+ where id = 'a0680000-0000-0000-0000-0000000000c1';
+set role authenticated;
+select pg_temp.check('0068 : une connexion supprimee cote Auth (deleted_at) est fermee',
+  public.ma_connexion_est_fermee());
+select pg_temp.login('a0680000-0000-0000-0000-00000000dead');
+select pg_temp.check('0068 : une connexion qui n''existe plus est fermee',
+  public.ma_connexion_est_fermee());
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0068 : un visiteur n''a pas de connexion fermee',
+  not public.ma_connexion_est_fermee());
+reset role;
+update auth.users set deleted_at = null where id = 'a0680000-0000-0000-0000-0000000000c1';
+
+-- --- X tant qu'il est ouvert : tout marche (témoins positifs) ------------
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+values ('a0680000-0000-0000-0000-0000000000c1', 'https://push.test/x68', 'p', 's');
+select public.enregistrer_telephone('ExponentPushToken[x68]', 'android');
+update public.profiles set city_id = 2 where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1';
+reset role;
+select pg_temp.check('0068 : ouvert, X abonne son navigateur, son telephone et change sa ville',
+  exists (select 1 from public.push_subscriptions where endpoint = 'https://push.test/x68')
+  and exists (select 1 from public.expo_push_tokens
+               where token = 'ExponentPushToken[x68]' and auth_user_id = 'a0680000-0000-0000-0000-0000000000c1')
+  and (select city_id from public.profiles where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1') = 2);
+
+-- Le site supprime X : profil effacé, puis connexion bannie. Une
+-- transaction annulée prouve d'abord que c'est le BANNISSEMENT qui ferme
+-- la recréation (sans lui, 0041 la permet) : la donnée peut faire échouer
+-- le contrôle suivant.
+update public.profiles set is_deleted = true, deleted_at = now(), full_name = 'Compte supprimé', phone = '000000000'
+ where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1';
+begin;
+set local role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+insert into public.profiles (auth_user_id, role, full_name, phone)
+values ('a0680000-0000-0000-0000-0000000000c1', 'client', 'Xavier X68', '620006801');
+reset role;
+select pg_temp.check('0068 : temoin : supprime mais pas banni, X recree son compte (0041)',
+  exists (select 1 from public.profiles
+           where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1' and not is_deleted));
+rollback;
+update auth.users set banned_until = now() + interval '876000 hours'
+ where id = 'a0680000-0000-0000-0000-0000000000c1';
+
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0068 : une connexion bannie est fermee',
+  public.ma_connexion_est_fermee());
+select pg_temp.check('0068 : supprime et banni, X ne recree pas de compte client (jeton encore valable)',
+  pg_temp.refus_rls($q$insert into public.profiles (auth_user_id, role, full_name, phone)
+    values ('a0680000-0000-0000-0000-0000000000c1', 'client', 'Xavier X68', '620006801')$q$));
+select pg_temp.check('0068 : ni de compte boutique',
+  pg_temp.refus_rls($q$insert into public.profiles (auth_user_id, role, full_name, phone)
+    values ('a0680000-0000-0000-0000-0000000000c1', 'merchant', 'Xavier X68', '620006801')$q$));
+select pg_temp.check('0068 : banni, X n''abonne plus de navigateur',
+  pg_temp.refus_rls($q$insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+    values ('a0680000-0000-0000-0000-0000000000c1', 'https://push.test/x68-bis', 'p', 's')$q$));
+update public.push_subscriptions set p256dh = 'change' where endpoint = 'https://push.test/x68';
+select pg_temp.check('0068 : banni, X n''enregistre plus de telephone',
+  pg_temp.erreur_de($q$select public.enregistrer_telephone('ExponentPushToken[x68bis]', 'ios')$q$)
+    = 'Ce compte est fermé.');
+update public.profiles set city_id = 3 where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1';
+reset role;
+select pg_temp.check('0068 : banni, X ne modifie ni son abonnement ni sa ville',
+  (select p256dh from public.push_subscriptions where endpoint = 'https://push.test/x68') = 'p'
+  and (select city_id from public.profiles where auth_user_id = 'a0680000-0000-0000-0000-0000000000c1') = 2
+  and not exists (select 1 from public.expo_push_tokens where token = 'ExponentPushToken[x68bis]'));
+
+-- Un téléphone déjà à Y ne passe pas à X banni (le `on conflict`).
+insert into public.expo_push_tokens (auth_user_id, token, plateforme)
+values ('a0680000-0000-0000-0000-0000000000c2', 'ExponentPushToken[y68]', 'ios');
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0068 : banni, X ne s''approprie pas le telephone de Y',
+  pg_temp.erreur_de($q$select public.enregistrer_telephone('ExponentPushToken[y68]', 'ios')$q$) = 'Ce compte est fermé.');
+reset role;
+select pg_temp.check('0068 : le telephone de Y lui reste',
+  (select auth_user_id from public.expo_push_tokens where token = 'ExponentPushToken[y68]')
+    = 'a0680000-0000-0000-0000-0000000000c2');
+
+-- État de lecture : un message de l'équipe non lu reste non lu.
+insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, espace)
+values ('a0680000-0000-0000-0000-0000000000c1', 'a0630000-0000-0000-0000-0000000000e1', true, 'Bonjour X', 'client');
+insert into public.annonces (auteur_id, titre, corps, public, etat)
+values ('a0630000-0000-0000-0000-0000000000e1', 'Annonce 0068', 'Pour X', 'clients', 'publiee');
+insert into public.annonce_destinataires (annonce_id, auth_user_id)
+select a.id, 'a0680000-0000-0000-0000-0000000000c1' from public.annonces a
+ where a.titre = 'Annonce 0068'
+   and not exists (select 1 from public.annonce_destinataires d
+                    where d.annonce_id = a.id and d.auth_user_id = 'a0680000-0000-0000-0000-0000000000c1');
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select public.marquer_fil_equipe_lu('client');
+select public.marquer_annonces_lues('client');
+reset role;
+select pg_temp.check('0068 : banni, X ne marque plus le fil de l''equipe lu',
+  (select lu_at from public.fil_equipe where fil_de = 'a0680000-0000-0000-0000-0000000000c1') is null);
+select pg_temp.check('0068 : banni, X ne marque plus l''annonce lue',
+  (select d.lue_at from public.annonce_destinataires d join public.annonces a on a.id = d.annonce_id
+    where a.titre = 'Annonce 0068' and d.auth_user_id = 'a0680000-0000-0000-0000-0000000000c1') is null);
+update auth.users set banned_until = null where id = 'a0680000-0000-0000-0000-0000000000c1';
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c1');
+select public.marquer_fil_equipe_lu('client');
+select public.marquer_annonces_lues('client');
+reset role;
+select pg_temp.check('0068 : temoin : ouvert, X marque le fil et l''annonce lus',
+  (select lu_at from public.fil_equipe where fil_de = 'a0680000-0000-0000-0000-0000000000c1') is not null
+  and (select d.lue_at from public.annonce_destinataires d join public.annonces a on a.id = d.annonce_id
+        where a.titre = 'Annonce 0068' and d.auth_user_id = 'a0680000-0000-0000-0000-0000000000c1') is not null);
+
+-- Banni SANS profil supprimé (Y, transaction annulée) : seule la garde de
+-- connexion ferme la modification du profil.
+begin;
+update auth.users set banned_until = now() + interval '1 hour'
+ where id = 'a0680000-0000-0000-0000-0000000000c2';
+set local role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000c2');
+update public.profiles set city_id = 3 where auth_user_id = 'a0680000-0000-0000-0000-0000000000c2';
+reset role;
+select pg_temp.check('0068 : banni avec un profil actif, Y ne modifie pas sa ville',
+  (select city_id from public.profiles where auth_user_id = 'a0680000-0000-0000-0000-0000000000c2') is distinct from 3);
+rollback;
+update auth.users set banned_until = now() + interval '876000 hours'
+ where id = 'a0680000-0000-0000-0000-0000000000c1';
+
+-- --- L'équipe -----------------------------------------------------------
+begin;
+update auth.users set banned_until = now() + interval '876000 hours'
+ where id = 'a0630000-0000-0000-0000-0000000000e1';
+set local role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0068 : un membre banni n''est plus de l''equipe ni proprietaire',
+  not public.je_suis_de_l_equipe() and not public.je_suis_proprietaire());
+select pg_temp.check('0068 : un membre banni n''agit plus (ajout refuse)',
+  pg_temp.erreur_de($q$select public.ajouter_membre('y0068@test.gn', 'Yaya')$q$) = 'Réservé à l''équipe Filloo.');
+select pg_temp.check('0068 : un membre banni ne repond plus dans un fil',
+  pg_temp.refus_rls($q$insert into public.fil_equipe (fil_de, auteur_id, de_l_equipe, corps, espace)
+    values ('a0680000-0000-0000-0000-0000000000c2', 'a0630000-0000-0000-0000-0000000000e1', true, 'x', 'client')$q$));
+rollback;
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0068 : temoin : le proprietaire ouvert reste de l''equipe et proprietaire',
+  public.je_suis_de_l_equipe() and public.je_suis_proprietaire());
+reset role;
+
+-- --- Suspension : le stockage (trou fermé) ------------------------------
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000a1');
+insert into storage.objects (bucket_id, name) values
+  ('product-images', 'a0680000-0000-0000-0000-0000000000b1/p/actif.webp'),
+  ('shop-photos', 'a0680000-0000-0000-0000-0000000000b1/actif.webp');
+reset role;
+select pg_temp.check('0068 : temoin : un commercant actif envoie ses photos',
+  (select count(*) from storage.objects where name like 'a0680000-0000-0000-0000-0000000000b1/%') = 2);
+update public.profiles set is_suspended = true, suspended_at = now()
+ where auth_user_id = 'a0680000-0000-0000-0000-0000000000a1';
+set role authenticated;
+select pg_temp.login('a0680000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0068 : suspendu, un commercant n''envoie plus de photo produit',
+  pg_temp.refus_rls($q$insert into storage.objects (bucket_id, name)
+    values ('product-images', 'a0680000-0000-0000-0000-0000000000b1/p/suspendu.webp')$q$));
+select pg_temp.check('0068 : ni de photo de boutique',
+  pg_temp.refus_rls($q$insert into storage.objects (bucket_id, name)
+    values ('shop-photos', 'a0680000-0000-0000-0000-0000000000b1/suspendu.webp')$q$));
+update storage.objects set name = name || '.x' where name like 'a0680000-0000-0000-0000-0000000000b1/%';
+delete from storage.objects where name like 'a0680000-0000-0000-0000-0000000000b1/%';
+update public.profiles set city_id = 3 where auth_user_id = 'a0680000-0000-0000-0000-0000000000a1';
+reset role;
+select pg_temp.check('0068 : suspendu, il ne remplace ni n''efface ses photos',
+  (select count(*) from storage.objects
+    where name in ('a0680000-0000-0000-0000-0000000000b1/p/actif.webp',
+                   'a0680000-0000-0000-0000-0000000000b1/actif.webp')) = 2);
+select pg_temp.check('0068 : suspendu, son profil ne se modifie plus (ville)',
+  (select city_id from public.profiles where auth_user_id = 'a0680000-0000-0000-0000-0000000000a1') is distinct from 3);
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

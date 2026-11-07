@@ -185,11 +185,17 @@ mis à jour et raccourci ; l'ancienne version se relit par
   1..7, contrainte du journal à jour, nouvelles fonctions fermées à
   `anon`, internes fermées à `authenticated`, aucun droit d'écriture sur
   `equipe`. Piège : coller la migration ET l'`insert` déjà fait dans le
-  même envoi annule tout (doublon de clé). Ouvert : un compte supprimé garde
-  ~1 h de jeton valide, pendant laquelle la policy « je cree mon second
-  compte » laisserait peut-être recréer un profil (non testé) ; l'app des
+  même envoi annule tout (doublon de clé). Ouvert : l'app des
   stores (`main`) n'a pas d'écran équipe, un premier message de l'équipe
   n'y est pas lisible.
+- **Supprimé ou suspendu = immédiatement** (décision du 2026-11-07,
+  `0068`) : une suppression ferme les sessions (`fermer_les_sessions`,
+  appelée par `couperConnexion`) ; une connexion bannie n'écrit plus rien
+  (`ma_connexion_est_fermee`, dont la recréation de profil) ; un commerçant
+  suspendu n'envoie plus de photos. L'app (`filloo-mobile` `dev`,
+  `08b5c6b`) revérifie au premier plan, à chaque notification et à chaque
+  refus ; il faut un BUILD (pas d'`expo-updates`). *À constater* : `0068`
+  appliquée en production.
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
   `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0067.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
@@ -575,10 +581,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-405 commits, du plus récent au plus ancien.
+406 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `0a6be82` Mémoire : 0067 appliquée et constatée en production
 - `11e12be` Admin : vendeurs et acheteurs séparés, fiche complète, suppression, écrire en premier
 - `751660c` Admin : une barre de recherche dans Messages et Publicité
 - `4f9eaa2` Publicité : les demandes des commerçants sont fermées pour l'instant (« Bientôt disponible »)

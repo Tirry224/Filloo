@@ -178,6 +178,15 @@ async function couperConnexion(admin: Admin, userId: string) {
     ban_duration: "876000h",
   });
   if (banError) throw banError;
+
+  /* Le bannissement n'invalide pas un jeton déjà émis : sans ceci,
+     `getUser()` répondait « valide » encore ~1 h. Fermer les sessions
+     (0068) le fait refuser aussitôt, et l'app installée déconnecte la
+     personne à son prochain contrôle (décision du 2026-11-07 : « supprimé
+     = immédiatement »). Après le bannissement : aucune session ne peut se
+     rouvrir entre les deux. */
+  const { error: sessionsError } = await admin.rpc("fermer_les_sessions", { p_auth: userId });
+  if (sessionsError) throw sessionsError;
 }
 
 /* Journalise au lieu de lever, comme la photo de boutique : un fichier

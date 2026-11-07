@@ -11,11 +11,12 @@ source, constaté ou supposé.
   la base a une sauvegarde quotidienne (7 jours), PAS les fichiers du
   stockage. `max_connections` = 60 (constaté 2026-10-14).
 - **Migrations appliquées (constaté 2026-11-07 soir, `list_migrations`)** :
-  `0001`–`0047`, `0052`–`0057`, `0063`–`0066`. Sur `dev` les numéros
+  `0001`–`0047`, `0052`–`0057`, `0063`–`0067` (`0067` inscrite avec la
+  version `0067`, pas un horodatage). Sur `dev` les numéros
   sautent `0048`–`0062` : `monetisation` porte `0058`–`0062`
   (renumérotées, constaté `origin/monetisation`), non appliquées.
-  `0067` (propriétaire, fiche, suppressions, renumérotation) ÉCRITE et
-  testée le 2026-11-07, non appliquée à la fin de la mission. `scripts/migrations.mjs`
+  `0068` (compte supprimé fermé aussitôt) ÉCRITE et testée le
+  2026-11-07, non appliquée à la fin de la mission. `scripts/migrations.mjs`
   n'exige pas la continuité. Ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -107,6 +108,30 @@ source, constaté ou supposé.
   restent `reports.target_id` et `analytics_events.product_id` (sans FK).
   Les fichiers du stockage ne partent que par le site.
 
+- **Auth, constaté 2026-11-07** (`pg_constraint`, `has_table_privilege`) :
+  `refresh_tokens.session_id → sessions on delete cascade`,
+  `sessions.user_id → users on delete cascade` ; `refresh_tokens.user_id`
+  est un TEXTE ; tables à `supabase_auth_admin`, RLS activé, sans
+  trigger ; `postgres` y a DELETE (et BYPASSRLS). `auth.jwt()` lit
+  `request.jwt.claims`. 9 sessions, 17 jetons, 0 jeton sans session,
+  0 connexion bannie.
+- **Fermer un compte (`0068`)** : un bannissement n'invalide ni le jeton
+  (~1 h, PostgREST ne lit que la signature) ni les sessions. La base
+  ferme les écritures dès `banned_until` par `ma_connexion_est_fermee()`
+  (policies sans profil actif, `enregistrer_telephone`, `marquer_*`,
+  `je_suis_de_l_equipe`/`je_suis_proprietaire`) ; `fermer_les_sessions`
+  (service_role) fait refuser `getUser()` par GoTrue — le site doit
+  l'appeler dans `couperConnexion` (à faire, `src/lib/suppression-compte.ts`).
+  Toute NOUVELLE policy d'écriture bornée au seul `auth.uid()` doit
+  porter la garde. Les lectures restent ouvertes jusqu'à expiration
+  (sans profil actif, elles ne montrent presque rien). L'app appelle
+  `signOut()` global (`notifications.ts`) : une garde sur le
+  `session_id` du jeton couperait les autres appareils avant leur
+  rafraîchissement — écartée, à ne pas ajouter sans décision.
+- **Suspension** : effective aussitôt par `is_active_profile` & co ;
+  restent ouverts EXPRÈS au suspendu : bloquer/débloquer (0032), marquer
+  lu, annuler sa campagne (0047), retirer téléphone/abonnement.
+
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
 - **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par
@@ -159,7 +184,11 @@ source, constaté ou supposé.
   `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
-  2026-11-07 (`0001`–`0066`), 524 avec `0067`. En `authenticated`, un
+  2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`.
+  Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
+  la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
+  Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve
+  qu'avec une donnée où elle est seule (banni, profil actif). En `authenticated`, un
   contrôle qui compte dans une table passe par le RLS (l'équipe ne voit
   pas les brouillons de `products`) : écrire la valeur attendue en dur.
   Une garde inatteignable (unicité) se prouve en levant l'index dans

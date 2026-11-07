@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 524 vérifications (compte du 2026-11-07, migrations 0063 à 0067
+Les 561 vérifications (compte du 2026-11-07, migrations 0063 à 0068
 comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -45,6 +45,17 @@ propriétaire, filtre `p_role`, ordre des photos, refus d'un profil non
 supprimé au journal, motif de suppression d'un produit, renumérotation
 des catégories, puis des villes) arrêtent chacune la suite sur son
 contrôle.
+Pour `0068` (le 2026-11-07), vingt mutations arrêtent chacune la suite
+sur son contrôle : la garde de connexion fermée retirée de la recréation
+de profil, de la modification de profil, de l'abonnement push (insertion,
+puis `using` et `with check` ensemble), d'`enregistrer_telephone`, des
+deux `marquer_*_lu*`, de `je_suis_de_l_equipe` et de `je_suis_proprietaire` ;
+`deleted_at` et le bannissement échu dans `ma_connexion_est_fermee` ; la
+suppression des jetons sans session, le filtre `user_id` et le `revoke`
+de `fermer_les_sessions` ; `is_suspended` de la modification de profil ;
+le profil actif de chacune des six policies du stockage. Le stub porte
+désormais `auth.users.banned_until`, `auth.sessions` et
+`auth.refresh_tokens` (mêmes clés étrangères qu'en production).
 
 ## Ce que ces tests protègent
 

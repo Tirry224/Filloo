@@ -1069,6 +1069,7 @@ export type Database = {
         Args: { p_plateforme: string; p_token: string }
         Returns: undefined
       }
+      fermer_les_sessions: { Args: { p_auth: string }; Returns: number }
       i_talk_with_merchant: { Args: { mid: string }; Returns: boolean }
       interrompre_campagne: {
         Args: { p_id: string; p_motif: string }
@@ -1089,6 +1090,7 @@ export type Database = {
           nom: string
         }[]
       }
+      ma_connexion_est_fermee: { Args: never; Returns: boolean }
       marquer_annonces_lues: {
         Args: { p_espace: Database["public"]["Enums"]["user_role"] }
         Returns: undefined
