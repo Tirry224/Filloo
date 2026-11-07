@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DUREES, lireTypeCampagne } from "@/lib/data/publicite";
+import { DEMANDES_PUB_OUVERTES, DUREES, lireTypeCampagne } from "@/lib/data/publicite";
 import { messagePourErreur } from "@/lib/erreurs";
 import { estUuid, longueur, texteNettoye } from "@/lib/saisie";
 
@@ -31,6 +31,8 @@ function rafraichir(): void {
 }
 
 export async function demanderCampagneAction(formData: FormData): Promise<void> {
+  // Fermé pour l'instant (`DEMANDES_PUB_OUVERTES`) : un formulaire resté ouvert dans un onglet ne passe pas non plus.
+  if (!DEMANDES_PUB_OUVERTES) retour(VENDEUR, "Les demandes de publicité ne sont pas encore ouvertes.");
   const type = lireTypeCampagne(formData.get("type"));
   if (!type) retour(VENDEUR, "Choisissez un type de publicité.");
   const duree = Number(formData.get("duree"));

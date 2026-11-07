@@ -10,7 +10,7 @@ import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { annulerCampagneAction, demanderCampagneAction } from "@/lib/actions/publicite";
-import { DUREES, TYPES_CAMPAGNE, type CampagneCommercant } from "@/lib/data/publicite";
+import { DEMANDES_PUB_OUVERTES, DUREES, TYPES_CAMPAGNE, type CampagneCommercant } from "@/lib/data/publicite";
 import type { Product } from "@/lib/types";
 
 /**
@@ -38,13 +38,16 @@ export function PubliciteVendeurVue({
           {info ? <Notice tone="success">{info}</Notice> : null}
 
           <p className="rounded-lg bg-accent-soft px-3.5 py-3 text-sm leading-normal text-accent-hover">
-            Pendant la phase de lancement, la publicité est offerte. Chaque demande est vérifiée par l&apos;équipe
-            Filloo avant sa mise en ligne.
+            {DEMANDES_PUB_OUVERTES
+              ? "Pendant la phase de lancement, la publicité est offerte. Chaque demande est vérifiée par l'équipe Filloo avant sa mise en ligne."
+              : "Bientôt : vous pourrez demander ici à mettre en avant vos produits ou votre boutique. Les demandes ne sont pas encore ouvertes."}
           </p>
 
           <Card padded>
             <form action={demanderCampagneAction} className="flex flex-col gap-4">
               <h2 className="text-base font-bold">Nouvelle publicité</h2>
+              {/* `disabled` sur un fieldset grise et désactive tout ce qu'il contient, bouton compris. */}
+              <fieldset disabled={!DEMANDES_PUB_OUVERTES} className="flex flex-col gap-4 disabled:opacity-50">
               <fieldset className="flex flex-col gap-2">
                 <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Type</legend>
                 {Object.entries(TYPES_CAMPAGNE).map(([cle, { libelle, aide }], i) => (
@@ -80,9 +83,20 @@ export function PubliciteVendeurVue({
                   ))}
                 </Select>
               </Field>
-              <PendingSubmit className="flex h-control w-full cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent">
-                Envoyer la demande
-              </PendingSubmit>
+              {DEMANDES_PUB_OUVERTES ? (
+                <PendingSubmit className="flex h-control w-full cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent">
+                  Envoyer la demande
+                </PendingSubmit>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-control w-full cursor-not-allowed items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent"
+                >
+                  Bientôt disponible
+                </button>
+              )}
+              </fieldset>
             </form>
           </Card>
 

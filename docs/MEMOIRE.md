@@ -177,6 +177,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### Décidé par le porteur du projet (2026-11-06) : la publicité, sans paiement
 
+- **Demandes des commerçants FERMÉES pour l'instant** (2026-11-07) :
+  `DEMANDES_PUB_OUVERTES = false` (`lib/data/publicite.ts`) grise le
+  formulaire de `/vendeur/publicite` (« Bientôt disponible ») et fait
+  refuser l'action. La base (`demander_campagne`) l'accepterait encore
+  par un appel direct. L'équipe crée et valide toujours.
+
 - **`0047` appliquée le 2026-11-06** : table, 8 fonctions et
   `analytics_events.campagne_id` constatés en production ; 0 campagne.
 - **Trois types** : produit sponsorisé (accueil + recherches pertinentes),
@@ -547,10 +553,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-401 commits, du plus récent au plus ancien.
+402 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `4da158f` 3G : les premières photos d'une liste partent en premier, les listes ne préchargent plus les fiches
 - `90e6b6e` Mémoire : 0065 et 0066 appliquées, la gestion depuis /admin est complète
 - `1c1492d` Admin : onglet Gestion — comptes, produits, équipe, catégories et villes
 - `c310858` Base : 0063-0066 écrites (gestion depuis /admin) ; 0063 et 0064 appliquées, 0065 et 0066 en attente

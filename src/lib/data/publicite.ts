@@ -32,6 +32,15 @@ export type TypeCampagne = keyof typeof TYPES_CAMPAGNE;
 
 export const DUREES = [3, 7, 14, 30] as const;
 
+/**
+ * Les commerçants peuvent-ils DEMANDER une publicité ? Fermé par le
+ * porteur du projet le 2026-11-07, « pour l'instant » : la page reste
+ * visible (et ses publicités passées), le formulaire est grisé, l'action
+ * refuse. L'équipe, elle, crée et valide toujours depuis `/admin/publicite`.
+ * Rouvrir = passer à `true`.
+ */
+export const DEMANDES_PUB_OUVERTES = false;
+
 export function lireTypeCampagne(valeur: unknown): TypeCampagne | null {
   return typeof valeur === "string" && valeur in TYPES_CAMPAGNE ? (valeur as TypeCampagne) : null;
 }
