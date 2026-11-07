@@ -16,6 +16,7 @@ import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { melanger } from "@/lib/melange";
+import { badgesBoutiques } from "@/lib/data/abonnements";
 import { compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 import { premier } from "@/lib/next-param";
 
@@ -74,6 +75,7 @@ export default async function SearchPage({
      cette catégorie (0047), en tête et marqués. Rien sur l'écran de repos. */
   const sponsorises = q || category ? await produitsSponsorises({ query: q, categoryId: category?.id ?? null, limit: 2 }) : [];
   await compterAffichages(sponsorises.map((p) => p.campagneId));
+  const badges = await badgesBoutiques([...sponsorises, ...results].map((p) => p.merchant.id));
   const idsSponsorises = new Set(sponsorises.map((p) => p.id));
 
   if (q || category) {
@@ -190,12 +192,12 @@ export default async function SearchPage({
             ) : (
               <ProductGrid>
                 {sponsorises.map((p) => (
-                  <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} />
+                  <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} badge={badges.get(p.merchant.id)} />
                 ))}
                 {results
                   .filter((p) => !idsSponsorises.has(p.id))
                   .map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                    <ProductCard key={p.id} product={p} badge={badges.get(p.merchant.id)} />
                   ))}
               </ProductGrid>
             )}

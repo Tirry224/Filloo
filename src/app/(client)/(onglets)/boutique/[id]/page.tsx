@@ -7,6 +7,8 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
+import { BadgeFormule } from "@/components/abonnement/BadgeFormule";
+import { badgesBoutiques } from "@/lib/data/abonnements";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
@@ -62,6 +64,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     : await produitsBoutiqueEnCache(merchant);
 
   await compter("boutique_vue", { merchantId: merchant.id });
+  const badge = (await badgesBoutiques([merchant.id])).get(merchant.id);
 
   return (
     <TabScreen largeur="grille">
@@ -72,7 +75,10 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center gap-3.5">
             <Avatar name={merchant.shopName} kind="shop" size={64} src={merchant.photoUrl} />
             <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-bold">{merchant.shopName}</h2>
+              <h2 className="flex flex-wrap items-center gap-2 text-xl font-bold">
+                {merchant.shopName}
+                {badge ? <BadgeFormule formule={badge} /> : null}
+              </h2>
               <p className="text-sm text-ink-soft">{merchant.description}</p>
             </div>
           </div>
@@ -89,7 +95,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
           </SectionLabel>
           <ProductGrid>
             {catalogue.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p.id} product={p} badge={badge} />
             ))}
           </ProductGrid>
         </Section>

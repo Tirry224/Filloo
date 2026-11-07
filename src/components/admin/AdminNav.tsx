@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Megaphone, MessageCircle, ShieldAlert, TrendingUp } from "lucide-react";
+import { BarChart3, Megaphone, MessageCircle, ShieldAlert, Wallet } from "lucide-react";
 import { NavBar, type NavTab } from "@/components/nav/NavBar";
 
 /* Les cinq `match` sont DISJOINTS, comme pour les autres espaces : deux
@@ -26,10 +26,11 @@ const TABS: readonly NavTab[] = [
     match: (p: string) => p.startsWith("/admin/moderation") || p.startsWith("/admin/signalement"),
   },
   {
-    label: "Publicité",
+    // Publicité (0048) et abonnements (0049) : ce que Filloo vend.
+    label: "Ventes",
     href: "/admin/publicite",
-    icon: TrendingUp,
-    match: (p: string) => p.startsWith("/admin/publicite"),
+    icon: Wallet,
+    match: (p: string) => p.startsWith("/admin/publicite") || p.startsWith("/admin/abonnements"),
   },
   {
     label: "Statistiques",

@@ -55,3 +55,38 @@ export async function informerDeLaCampagne(
 }
 
 export type CampagnePourMessage = { cible: string; finAt: string | null; prixGnf: number | null };
+
+/**
+ * Un message de l'équipe à une boutique, à propos de son abonnement (0049).
+ * Mêmes règles que pour une campagne : signé par le membre, jamais bloquant.
+ */
+export async function informerDeLAbonnement(
+  supabase: SupabaseClient<Database>,
+  auteurId: string,
+  abonnementId: string,
+  corps: (a: { formule: string; finAt: string | null; prixGnf: number | null }) => string,
+): Promise<void> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from("abonnements")
+      .select("formule, fin_at, prix_gnf, merchants(profiles(auth_user_id))")
+      .eq("id", abonnementId)
+      .single();
+    const filDe = data?.merchants?.profiles?.auth_user_id;
+    if (error || !data || !filDe) {
+      console.error(`[abonnement] boutique de l'abonnement ${abonnementId} introuvable :`, error?.message);
+      return;
+    }
+    const texte = corps({ formule: data.formule === "business" ? "Business" : "Pro", finAt: data.fin_at, prixGnf: data.prix_gnf });
+    const { error: erreurMessage } = await supabase
+      .from("fil_equipe")
+      .insert({ fil_de: filDe, espace: "merchant", auteur_id: auteurId, de_l_equipe: true, corps: texte });
+    if (erreurMessage) {
+      console.error(`[abonnement] message ${abonnementId} non écrit :`, erreurMessage.message);
+      return;
+    }
+    await prevenirDeLaReponse(filDe, "merchant");
+  } catch (cause) {
+    console.error(`[abonnement] boutique non prévenue (${abonnementId}) :`, cause);
+  }
+}

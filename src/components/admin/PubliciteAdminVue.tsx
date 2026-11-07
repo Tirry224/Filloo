@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Tags, TrendingUp } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet } from "@/components/admin/AdminTopBar";
+import { OngletsVentes } from "@/components/admin/OngletsVentes";
 import { jour, jourEtHeure } from "@/components/admin/EtatAnnonce";
 import { EtatCampagne, tauxDeClics } from "@/components/publicite/EtatCampagne";
 import { Card } from "@/components/ui/Card";
@@ -55,9 +56,10 @@ export function PubliciteAdminVue({
       <ScreenBody>
         <Section className="gap-5">
           <EnTeteOnglet
-            titre="Publicité"
+            titre="Ventes"
             sousTitre="Le commerçant paie par Orange Money ou MTN MoMo, l'équipe vérifie avant la mise en ligne."
           />
+          <OngletsVentes actif="publicite" />
           {erreur ? <Notice>{erreur}</Notice> : null}
           {info ? <Notice tone="success">{info}</Notice> : null}
           <div className="grid grid-cols-2 gap-2">
@@ -194,7 +196,7 @@ function LigneCampagne({ c }: { c: CampagneEquipe }) {
 }
 
 /** Ce qui a été payé, comment, et la référence à chercher dans le relevé Orange Money ou MTN. */
-function Paiement({ c }: { c: CampagneEquipe }) {
+export function Paiement({ c }: { c: CampagneEquipe }) {
   const moyen = lireMoyen(c.paiement_moyen);
   if (c.prix_gnf === null) return null;
   return (
@@ -222,7 +224,7 @@ function Paiement({ c }: { c: CampagneEquipe }) {
 }
 
 /** Le mois en cours et le total : ce qui est réellement entré (vérifié, moins les remboursements). */
-function Revenus({ revenus }: { revenus: RevenuDuMois[] }) {
+export function Revenus({ revenus }: { revenus: RevenuDuMois[] }) {
   const ceMois = new Date().toISOString().slice(0, 7);
   const mois = revenus.find((r) => r.mois.slice(0, 7) === ceMois);
   const total = revenus.reduce((s, r) => s + r.encaisse - r.rembourse, 0);

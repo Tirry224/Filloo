@@ -1,6 +1,6 @@
 "use client";
 
-import { House, MessageCircle, Package, Store } from "lucide-react";
+import { BarChart3, House, MessageCircle, Package, Store } from "lucide-react";
 import { NavBar, type NavTab } from "@/components/nav/NavBar";
 
 /* Les quatre `match` sont volontairement DISJOINTS : deux onglets allumés
@@ -32,6 +32,15 @@ const TABS: readonly NavTab[] = [
   },
 ] as const;
 
-export function MerchantNav({ unreadCount = 0 }: { unreadCount?: number }) {
-  return <NavBar tabs={TABS} unreadCount={unreadCount} label="Navigation commerçant" />;
+/* Business seulement (0049) : l'onglet Statistiques, inséré avant « Boutique ». */
+const STATISTIQUES: NavTab = {
+  label: "Stats",
+  href: "/vendeur/statistiques",
+  icon: BarChart3,
+  match: (p: string) => p.startsWith("/vendeur/statistiques"),
+};
+const TABS_BUSINESS: readonly NavTab[] = [...TABS.slice(0, 3), STATISTIQUES, TABS[3]];
+
+export function MerchantNav({ unreadCount = 0, business = false }: { unreadCount?: number; business?: boolean }) {
+  return <NavBar tabs={business ? TABS_BUSINESS : TABS} unreadCount={unreadCount} label="Navigation commerçant" />;
 }

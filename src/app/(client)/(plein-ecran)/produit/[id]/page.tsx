@@ -24,6 +24,7 @@ import { formatGnf } from "@/lib/format";
 import Link from "next/link";
 import { compter } from "@/lib/analytics";
 import { lienWhatsApp } from "@/lib/telephone";
+import { badgesBoutiques } from "@/lib/data/abonnements";
 
 /**
  * Le produit tel que le public le voit, depuis le cache partagé ; sinon
@@ -111,6 +112,7 @@ export default async function ProductPage({
   // « Vous aimerez aussi » : la même catégorie surtout, un peu d'ailleurs, ordonné par les goûts de l'appareil.
   const [catalogue, gouts] = await Promise.all([rechercheEnCache({ sort: "recent", limit: 50 }), goutsDeLaRequete()]);
   const aimerezAussi = suggestions(catalogue, product, gouts);
+  const badges = await badgesBoutiques([product.merchant.id, ...aimerezAussi.map((p) => p.merchant.id)]);
 
   /* Les données structurées que Google lit pour afficher le prix et la
      disponibilité dans ses résultats (schema.org `Product`). Le `<`
@@ -184,7 +186,7 @@ export default async function ProductPage({
             <p className="text-base leading-relaxed text-ink-soft">{product.description}</p>
           ) : null}
 
-          <MerchantCard merchant={product.merchant} />
+          <MerchantCard merchant={product.merchant} badge={badges.get(product.merchant.id)} />
 
           <Link
             href={`/produit/${product.id}/signaler`}
@@ -199,7 +201,7 @@ export default async function ProductPage({
             <SectionLabel>Vous aimerez aussi</SectionLabel>
             <ProductGrid>
               {aimerezAussi.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} badge={badges.get(p.merchant.id)} />
               ))}
             </ProductGrid>
           </Section>

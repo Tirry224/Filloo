@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Photo } from "@/components/ui/Photo";
 import { PriceTag } from "./PriceTag";
+import { BadgeFormule } from "@/components/abonnement/BadgeFormule";
+import type { FormulePayante } from "@/lib/data/abonnements";
 import { cn } from "@/lib/cn";
 import type { Product } from "@/lib/types";
 
@@ -13,7 +15,16 @@ import type { Product } from "@/lib/types";
  * obligatoire, pour ne jamais faire passer une annonce payée pour un
  * résultat ordinaire.
  */
-export function ProductCard({ product, sponsorise }: { product: Product; sponsorise?: { campagneId: string } }) {
+/** `badge` : l'abonnement de la boutique (0049), lu par `badgesBoutiques` pour tout l'écran d'un coup. */
+export function ProductCard({
+  product,
+  sponsorise,
+  badge,
+}: {
+  product: Product;
+  sponsorise?: { campagneId: string };
+  badge?: FormulePayante;
+}) {
   const sold = product.status === "sold";
 
   return (
@@ -32,6 +43,7 @@ export function ProductCard({ product, sponsorise }: { product: Product; sponsor
             <span>
               {product.merchant.shopName} · {product.merchant.city}
             </span>
+            {badge ? <BadgeFormule formule={badge} /> : null}
           </div>
           {sold ? (
             <Badge>Vendu</Badge>

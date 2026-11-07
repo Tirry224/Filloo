@@ -13,6 +13,8 @@ import { PushBell } from "@/components/push/PushBell";
 import { createClient } from "@/lib/supabase/server";
 import { getMyMerchant, getMerchantProducts } from "@/lib/data/merchants";
 import { countUnreadMessages, getMyThreadsAsMerchant } from "@/lib/data/messages";
+import { InvitationPro, ProduitsLesPlusVus, ResumeStatistiques } from "@/components/abonnement/StatistiquesBoutique";
+import { maFormule, produitsLesPlusVus, statistiquesBoutique } from "@/lib/data/abonnements";
 
 export default async function MerchantHomePage({
   searchParams,
@@ -25,11 +27,18 @@ export default async function MerchantHomePage({
   const merchant = await getMyMerchant(supabase);
   if (!merchant) redirect("/inscription/boutique");
 
-  const [catalogue, unreadCount, threads] = await Promise.all([
+  const [catalogue, unreadCount, threads, formule] = await Promise.all([
     getMerchantProducts(supabase, merchant),
     countUnreadMessages(supabase, "merchant"),
     getMyThreadsAsMerchant(supabase),
+    maFormule(supabase),
   ]);
+  /* Les statistiques sont le cœur de Pro (document de monétisation, 2.1) :
+     sur l'accueil, pas dans un onglet à part (réservé à Business). */
+  const payant = formule.formule !== "gratuit";
+  const [stats, plusVus] = payant
+    ? await Promise.all([statistiquesBoutique(supabase, 30), produitsLesPlusVus(supabase, 30)])
+    : [[], []];
 
   const published = catalogue.filter((p) => p.status === "active").length;
   const contacts = catalogue.reduce((total, p) => total + p.contactCount, 0);
@@ -80,6 +89,21 @@ export default async function MerchantHomePage({
               </Card>
             </div>
           </div>
+
+          {formule.enGrace ? (
+            <Link href="/vendeur/abonnement">
+              <Notice>Votre abonnement est terminé. Renouvelez-le dans les 7 jours, sinon vos produits au-delà de 10 seront masqués.</Notice>
+            </Link>
+          ) : null}
+
+          {payant ? (
+            <>
+              <ResumeStatistiques jours={stats} titre="Vos 30 derniers jours" />
+              <ProduitsLesPlusVus produits={plusVus} />
+            </>
+          ) : catalogue.length > 0 ? (
+            <InvitationPro />
+          ) : null}
 
           {catalogue.length === 0 ? (
             <EmptyState

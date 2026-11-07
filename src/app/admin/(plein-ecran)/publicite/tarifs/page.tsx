@@ -1,4 +1,5 @@
 import { TarifsPubliciteVue } from "@/components/admin/TarifsPubliciteVue";
+import { lireTarifsAbonnement } from "@/lib/data/abonnements";
 import { lireMoyensPaiement, lireTarifs } from "@/lib/data/publicite";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,6 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 export default async function TarifsPage({ searchParams }: { searchParams: Promise<{ erreur?: string; info?: string }> }) {
   const { erreur, info } = await searchParams;
   const supabase = await createClient();
-  const [tarifs, moyens] = await Promise.all([lireTarifs(supabase), lireMoyensPaiement(supabase)]);
-  return <TarifsPubliciteVue tarifs={tarifs} moyens={moyens} erreur={erreur} info={info} />;
+  const [tarifs, tarifsAbonnement, moyens] = await Promise.all([
+    lireTarifs(supabase),
+    lireTarifsAbonnement(supabase),
+    lireMoyensPaiement(supabase),
+  ]);
+  return <TarifsPubliciteVue tarifs={tarifs} tarifsAbonnement={tarifsAbonnement} moyens={moyens} erreur={erreur} info={info} />;
 }

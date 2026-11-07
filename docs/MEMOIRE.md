@@ -535,10 +535,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-391 commits, du plus récent au plus ancien.
+392 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `a6465a8` Prix de la publicité acceptés par le porteur du projet
 - `86184e2` Mémoire : la publicité payante, sur monetisation seulement
 - `fd4c046` 0048 écrite, PAS appliquée : prix de la publicité et paiement manuel Orange Money / MTN
 - `7236797` Publicité payante, côté site (EN COURS : ne compile pas sans 0048)

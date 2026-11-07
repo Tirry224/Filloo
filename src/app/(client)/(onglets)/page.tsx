@@ -24,6 +24,7 @@ import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { categoriesParGouts, melanger } from "@/lib/melange";
 import { RetenirGout } from "@/components/product/RetenirGout";
 import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
+import { badgesBoutiques } from "@/lib/data/abonnements";
 import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 
 /** Les trois ordres de l'accueil. « Pour vous », le mélange, est celui par défaut (2026-11-06). */
@@ -85,6 +86,7 @@ export default async function HomePage({
     categorie === "Tout" ? boutiquesMisesEnAvant() : Promise.resolve([]),
   ]);
   await compterAffichages([...sponsorises, ...boutiquesEnAvant].map((x) => x.campagneId));
+  const badges = await badgesBoutiques([...sponsorises, ...tous].map((p) => p.merchant.id));
   const idsSponsorises = new Set(sponsorises.map((p) => p.id));
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 
@@ -186,7 +188,7 @@ export default async function HomePage({
           </div>
           <ProductGrid>
             {gridItems.map(({ p, s }) => (
-              <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} />
+              <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} badge={badges.get(p.merchant.id)} />
             ))}
           </ProductGrid>
         </Section>

@@ -38,6 +38,14 @@
   --color-danger: #ef4444;      /* corail */
   --color-danger-soft: #fdecec;
 
+  /* Badges d'abonnement (0049) : bleu pour PRO, violet pour BUSINESS,
+     comme le propose le document de monétisation. Texte foncé sur fond
+     clair : lisible au soleil. */
+  --color-pro-soft: #e0edff;
+  --color-pro-ink: #1d4ed8;
+  --color-business-soft: #efe7ff;
+  --color-business-ink: #6d28d9;
+
   --color-overlay: rgb(24 43 73 / 0.45);
 
   --color-viewer: #0b1424;

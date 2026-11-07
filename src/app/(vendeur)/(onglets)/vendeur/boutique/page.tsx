@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Ban, FileText, TrendingUp, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User } from "lucide-react";
+import { Ban, FileText, TrendingUp, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Pencil, ShoppingBag, Trash2, User, Crown } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
@@ -115,6 +115,7 @@ export default async function EditShopPage() {
           )}
 
           <MenuList>
+            <MenuItem icon={Crown} label="Mon abonnement" href="/vendeur/abonnement" />
             <MenuItem icon={TrendingUp} label="Publicité et visibilité" href="/vendeur/publicite" />
             <MenuItem icon={User} label="Mes informations" href="/vendeur/informations" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/vendeur/bloques" />

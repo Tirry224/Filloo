@@ -3,12 +3,13 @@ import { jour } from "@/components/admin/EtatAnnonce";
 import { EtatCampagne, tauxDeClics } from "@/components/publicite/EtatCampagne";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Select } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Notice";
 import { PendingSubmit } from "@/components/ui/PendingSubmit";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
+import { BlocPaiement } from "@/components/publicite/BlocPaiement";
 import { PrixIndicatifs } from "@/components/publicite/PrixIndicatifs";
 import { annulerCampagneAction, declarerPaiementAction, demanderCampagneAction } from "@/lib/actions/publicite";
 import {
@@ -135,7 +136,9 @@ function LigneCampagne({ c, moyens }: { c: CampagneCommercant; moyens: MoyenDePa
           {c.offerteParLEquipe && !c.prixGnf ? "Offerte par Filloo" : c.prixGnf === 0 ? "Gratuite" : formatGnf(c.prixGnf)}
         </p>
       ) : null}
-      {c.etat === "a_payer" ? <Payer c={c} moyens={moyens} /> : null}
+      {c.etat === "a_payer" ? (
+        <BlocPaiement montant={c.prixGnf} moyens={moyens} action={declarerPaiementAction} champ="campagne" id={c.id} />
+      ) : null}
       {c.etat === "en_attente" && c.paiementReference ? (
         <p className="text-sm text-ink-soft">
           Paiement déclaré ({c.paiementMoyen ? MOYENS_PAIEMENT[c.paiementMoyen] : ""}, réf. {c.paiementReference}) : l&apos;équipe le
@@ -186,46 +189,3 @@ function Chiffre({
   );
 }
 
-/** Où envoyer l'argent, puis de quoi le retrouver : la référence du SMS et le numéro qui a payé. */
-function Payer({ c, moyens }: { c: CampagneCommercant; moyens: MoyenDePaiement[] }) {
-  const actifs = moyens.filter((m) => m.actif);
-  if (actifs.length === 0) {
-    return <p className="text-sm text-ink-soft">Le paiement n&apos;est pas encore ouvert. L&apos;équipe Filloo vous contactera.</p>;
-  }
-  return (
-    <div className="flex flex-col gap-3 border-t border-line pt-2.5">
-      <p className="text-sm">
-        Envoyez <strong>{c.prixGnf ? formatGnf(c.prixGnf) : ""}</strong> à l&apos;un de ces numéros :
-      </p>
-      <ul className="flex flex-col gap-1.5">
-        {actifs.map((m) => (
-          <li key={m.moyen} className="rounded-lg bg-paper px-3 py-2 text-sm">
-            <span className="font-semibold">{MOYENS_PAIEMENT[m.moyen]}</span> · {m.numero}
-            <span className="block text-2xs text-ink-soft">Au nom de {m.titulaire}</span>
-          </li>
-        ))}
-      </ul>
-      <form action={declarerPaiementAction} className="flex flex-col gap-3">
-        <input type="hidden" name="campagne" value={c.id} />
-        <Field label="Payé avec" htmlFor={`moyen-${c.id}`}>
-          <Select id={`moyen-${c.id}`} name="moyen" defaultValue={actifs[0].moyen}>
-            {actifs.map((m) => (
-              <option key={m.moyen} value={m.moyen}>
-                {MOYENS_PAIEMENT[m.moyen]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Référence du paiement" htmlFor={`reference-${c.id}`} hint="Elle est dans le SMS de confirmation.">
-          <Input id={`reference-${c.id}`} name="reference" required minLength={3} maxLength={60} />
-        </Field>
-        <Field label="Numéro qui a payé" htmlFor={`numero-${c.id}`}>
-          <Input id={`numero-${c.id}`} name="numero" inputMode="tel" required />
-        </Field>
-        <PendingSubmit className="flex h-control w-full cursor-pointer items-center justify-center rounded-lg bg-accent text-base font-semibold text-on-accent">
-          J&apos;ai payé
-        </PendingSubmit>
-      </form>
-    </div>
-  );
-}

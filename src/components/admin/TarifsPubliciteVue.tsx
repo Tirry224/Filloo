@@ -5,7 +5,9 @@ import { PendingSubmit } from "@/components/ui/PendingSubmit";
 import { Screen, ScreenBody, Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
+import { fixerTarifsAbonnementAction } from "@/lib/actions/abonnements";
 import { fixerMoyenPaiementAction, fixerTarifsAction } from "@/lib/actions/publicite";
+import { FORMULES, FORMULES_PAYANTES, type TarifsAbonnement } from "@/lib/data/abonnements";
 import {
   DUREES,
   MOYENS_MOBILES,
@@ -27,11 +29,13 @@ const BOUTON =
  */
 export function TarifsPubliciteVue({
   tarifs,
+  tarifsAbonnement,
   moyens,
   erreur,
   info,
 }: {
   tarifs: Tarifs;
+  tarifsAbonnement: TarifsAbonnement;
   moyens: MoyenDePaiement[];
   erreur?: string;
   info?: string;
@@ -46,7 +50,24 @@ export function TarifsPubliciteVue({
           {info ? <Notice tone="success">{info}</Notice> : null}
 
           <div className="flex flex-col gap-2.5">
-            <SectionLabel>Prix en GNF</SectionLabel>
+            <SectionLabel>Abonnements, par mois</SectionLabel>
+            <Card padded>
+              <form action={fixerTarifsAbonnementAction} className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {FORMULES_PAYANTES.map((f) => (
+                    <Field key={f} label={FORMULES[f].libelle} htmlFor={`abo-${f}`}>
+                      <input type="hidden" name={`ancien:${f}`} value={tarifsAbonnement[f] ?? ""} />
+                      <Input id={`abo-${f}`} name={`prix:${f}`} inputMode="numeric" defaultValue={tarifsAbonnement[f] ?? ""} />
+                    </Field>
+                  ))}
+                </div>
+                <PendingSubmit className={BOUTON}>Enregistrer</PendingSubmit>
+              </form>
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <SectionLabel>Publicité, en GNF</SectionLabel>
             <p className="text-sm text-ink-soft">
               Le nouveau prix vaut pour les prochaines demandes. Une demande déjà faite garde le sien. 0 = offert.
             </p>
