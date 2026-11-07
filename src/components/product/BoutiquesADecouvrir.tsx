@@ -2,11 +2,19 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Section } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { EncartPub } from "@/components/publicite/EncartPub";
 import { lienPub, type BoutiqueEnAvant } from "@/lib/data/publicite";
 
 /** La rangée « Boutiques à découvrir » de l'accueil : des boutiques mises en avant (0047), marquées comme telles. */
 export function BoutiquesADecouvrir({ boutiques }: { boutiques: BoutiqueEnAvant[] }) {
-  if (!boutiques.length) return null;
+  // Place libre : l'encart la montre, sans fausse boutique (2026-11-07).
+  if (!boutiques.length) {
+    return (
+      <Section className="pt-3 pb-0">
+        <EncartPub emplacement="boutique" />
+      </Section>
+    );
+  }
   return (
     <Section className="gap-2 pt-3 pb-0">
       <div className="flex items-baseline justify-between">

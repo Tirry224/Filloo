@@ -24,6 +24,7 @@ import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { categoriesParGouts, melanger } from "@/lib/melange";
 import { RetenirGout } from "@/components/product/RetenirGout";
 import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
+import { EncartPub } from "@/components/publicite/EncartPub";
 import { badgesBoutiques } from "@/lib/data/abonnements";
 import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 
@@ -186,6 +187,7 @@ export default async function HomePage({
               ),
             )}
           </div>
+          {sponsorises.length === 0 ? <EncartPub emplacement={idCategorie ? "categorie" : "accueil"} /> : null}
           <ProductGrid>
             {gridItems.map(({ p, s }) => (
               <ProductCard key={p.id} product={p} sponsorise={s ? { campagneId: s } : undefined} badge={badges.get(p.merchant.id)} />

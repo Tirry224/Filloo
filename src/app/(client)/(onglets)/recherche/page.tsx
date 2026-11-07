@@ -8,6 +8,7 @@ import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { TopBar } from "@/components/ui/TopBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { EncartPub } from "@/components/publicite/EncartPub";
 import { CategoryGrid } from "@/components/product/CategoryGrid";
 import { RecentSearches } from "@/components/product/RecentSearches";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -190,16 +191,19 @@ export default async function SearchPage({
                 </Button>
               </EmptyState>
             ) : (
-              <ProductGrid>
-                {sponsorises.map((p) => (
-                  <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} badge={badges.get(p.merchant.id)} />
-                ))}
-                {results
-                  .filter((p) => !idsSponsorises.has(p.id))
-                  .map((p) => (
-                    <ProductCard key={p.id} product={p} badge={badges.get(p.merchant.id)} />
+              <>
+                {sponsorises.length === 0 && (q || category) ? <EncartPub emplacement={q ? "recherche" : "categorie"} /> : null}
+                <ProductGrid>
+                  {sponsorises.map((p) => (
+                    <ProductCard key={`pub-${p.id}`} product={p} sponsorise={{ campagneId: p.campagneId }} badge={badges.get(p.merchant.id)} />
                   ))}
-              </ProductGrid>
+                  {results
+                    .filter((p) => !idsSponsorises.has(p.id))
+                    .map((p) => (
+                      <ProductCard key={p.id} product={p} badge={badges.get(p.merchant.id)} />
+                    ))}
+                </ProductGrid>
+              </>
             )}
           </Section>
         )}
