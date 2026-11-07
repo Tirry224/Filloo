@@ -27,8 +27,11 @@
 --    badge public (`badges_boutiques`) ne compte QUE la période payée.
 -- 5. En Gratuit, un 11e produit ne passe pas « active » (trigger, message
 --    lisible, code P0001). Chaque nuit, `appliquer_limites_abonnement`
---    masque les plus anciens au-delà des 10 plus récents d'une boutique
---    revenue en Gratuit (`masque_par_limite`) ; jamais rien n'est
+--    masque les produits au-delà des 10 gardés d'une boutique revenue en
+--    Gratuit (`masque_par_limite`) : sont gardés d'abord ceux qu'une
+--    campagne en cours vise (« en_attente », ou « active » et pas
+--    terminée ; jamais « a_payer »), puis les plus récents. Les campagnes
+--    en cours sont maintenues (décision du 2026-11-07). Jamais rien n'est
 --    supprimé. À l'activation d'un abonnement, ils reviennent — sauf ceux
 --    que l'équipe a masqués (`masque_par_equipe`, 0046).
 -- 6. Les statistiques d'une boutique ne se lisent qu'en Pro ou Business,
@@ -316,8 +319,13 @@ create trigger products_respecte_la_formule
   for each row execute function public.produit_respecte_la_formule();
 
 
--- Chaque nuit : une boutique en Gratuit garde ses 10 produits publiés les
--- plus récents ; les autres passent « hidden » avec `masque_par_limite`.
+-- Chaque nuit : une boutique en Gratuit garde 10 produits publiés ; les
+-- autres passent « hidden » avec `masque_par_limite`. Gardés d'abord : les
+-- produits visés par une campagne en cours (« en_attente » = payée, en
+-- attente de validation ; « active » et `fin_at` future). Une campagne
+-- « a_payer » ne protège pas (une demande jamais payée ne garde rien
+-- gratuitement). Puis les plus récents. Une campagne « boutique » ne vise
+-- aucun produit : la boutique reste visible, rien à protéger.
 create or replace function public.appliquer_limites_abonnement()
 returns void
 language sql
@@ -328,7 +336,13 @@ as $$
      set status = 'hidden', masque_par_limite = true
     from (
       select pr.id,
-             row_number() over (partition by pr.merchant_id order by pr.created_at desc, pr.id desc) as rang
+             row_number() over (
+               partition by pr.merchant_id
+               order by exists (select 1 from public.campagnes c
+                                 where c.product_id = pr.id
+                                   and (c.statut = 'en_attente'
+                                        or (c.statut = 'active' and c.fin_at > now()))) desc,
+                        pr.created_at desc, pr.id desc) as rang
         from public.products pr
        where pr.status = 'active'
          and pr.merchant_id in (select x.merchant_id from public.products x

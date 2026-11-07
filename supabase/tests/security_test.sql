@@ -4461,6 +4461,61 @@ select pg_temp.check('0049 : un produit que le commercant a masque ne revient pa
 select pg_temp.check('0049 : un produit masque sans photo ne revient pas (et ne bloque pas l''activation)',
   (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.p49(1)));
 
+-- Les campagnes en cours sont maintenues (décision du 2026-11-07) : G,
+-- revenue en Gratuit avec 12 produits publiés, g01 (le plus ancien) …
+-- g12. g01 porte une campagne active, g02 une campagne payée en attente
+-- de validation, g03 une demande « a_payer », g04 une campagne terminée.
+-- Attendu : g01 et g02 gardés, g03 et g04 masqués (les deux plus anciens
+-- sans campagne en cours).
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0491000-0000-0000-0000-00000000000a', 'g0049@test.gn', '{"role":"merchant","full_name":"Marchand G","phone":"620004904"}');
+update public.profiles set id = auth_user_id where auth_user_id = 'a0491000-0000-0000-0000-00000000000a';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0491000-0000-0000-0000-0000000000a1', 'a0491000-0000-0000-0000-00000000000a', 'Chez G49', 1);
+create or replace function pg_temp.g49(n int) returns uuid
+language sql immutable as $$ select ('a0491000-0000-0000-0000-0000000001' || lpad(n::text, 2, '0'))::uuid $$;
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status, created_at)
+select pg_temp.g49(n), 'a0491000-0000-0000-0000-0000000000a1', 1, 'Produit G' || lpad(n::text, 2, '0'),
+       1000 * n, 'draft', now() - make_interval(days => 30 - n)
+  from generate_series(1, 12) n;
+insert into public.product_images (product_id, storage_path, position)
+select pg_temp.g49(n), 'a0491000/g' || n || '/0.webp', 0 from generate_series(1, 12) n;
+-- Publiés pendant un Pro offert, que l'on recule ensuite au-delà de la grâce.
+set role authenticated;
+select pg_temp.login('a0420000-0000-0000-0000-000000000005');
+select public.creer_abonnement_equipe('a0491000-0000-0000-0000-0000000000a1', 'pro', 'offert');
+reset role;
+update public.products set status = 'active' where merchant_id = 'a0491000-0000-0000-0000-0000000000a1';
+update public.abonnements
+   set debut_at = now() - interval '2 months', fin_at = now() - interval '1 month'
+ where merchant_id = 'a0491000-0000-0000-0000-0000000000a1';
+insert into public.campagnes (merchant_id, type, product_id, duree_jours, prix_gnf, statut, debut_at, fin_at) values
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(1), 7, 0, 'active', now() - interval '1 day', now() + interval '6 days'),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(2), 7, 25000, 'en_attente', null, null),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(3), 7, 25000, 'a_payer', null, null),
+  ('a0491000-0000-0000-0000-0000000000a1', 'produit', pg_temp.g49(4), 7, 0, 'active', now() - interval '8 days', now() - interval '1 day');
+select pg_temp.check('0049 : G est en Gratuit avec 12 produits publies',
+  public.formule_de('a0491000-0000-0000-0000-0000000000a1') = 'gratuit'
+  and (select count(*) from public.products
+        where merchant_id = 'a0491000-0000-0000-0000-0000000000a1' and status = 'active') = 12);
+select public.appliquer_limites_abonnement();
+select pg_temp.check('0049 : la nuit garde le produit d''une campagne active, meme le plus ancien',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g49(1)));
+select pg_temp.check('0049 : la nuit garde le produit d''une campagne payee en attente de validation',
+  (select status = 'active' and not masque_par_limite from public.products where id = pg_temp.g49(2)));
+select pg_temp.check('0049 : une demande a_payer ne protege pas son produit',
+  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g49(3)));
+select pg_temp.check('0049 : une campagne terminee ne protege pas son produit',
+  (select status = 'hidden' and masque_par_limite from public.products where id = pg_temp.g49(4)));
+select pg_temp.check('0049 : avec des campagnes, G garde exactement 10 produits, les autres sont les plus recents',
+  (select count(*) from public.products
+    where merchant_id = 'a0491000-0000-0000-0000-0000000000a1' and status = 'active') = 10
+  and (select string_agg(title, ',' order by title) from public.products
+        where merchant_id = 'a0491000-0000-0000-0000-0000000000a1' and status = 'hidden')
+      = 'Produit G03,Produit G04');
+-- Les campagnes de G ne doivent pas peser sur les sections suivantes.
+delete from public.campagnes where merchant_id = 'a0491000-0000-0000-0000-0000000000a1';
+
 
 
 

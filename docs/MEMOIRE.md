@@ -183,8 +183,16 @@ mis à jour et raccourci ; l'ancienne version se relit par
   pendant la période payée ; statistiques sur l'accueil (Pro), onglet
   « Stats » et tendances (Business). Équipe : onglet « Ventes ». Décidé
   par le porteur du projet le 2026-11-07.
-- **À trancher** : un produit « vendu » ne compte pas dans les 10 ; un
-  commerçant Gratuit peut donc en garder plus d'affichés, grisés.
+- **Décidé (2026-11-07)** : un produit « vendu » ne compte pas dans les
+  10 (un Gratuit peut en garder plus d'affichés, grisés). À l'expiration,
+  les campagnes en cours continuent : la nuit, les produits visés par une
+  campagne `en_attente` ou `active` non finie sont masqués EN DERNIER
+  (`a_payer` ne protège pas). Testé dans `security_test.sql`.
+- **Décidé (2026-11-07)** : remboursement TOTAL seulement ; tous les
+  membres de l'équipe ont les mêmes droits ; les numéros Orange Money et
+  MTN sont mis de côté pour l'instant (toujours bloquants pour publier).
+- **Visiteurs uniques : à mesurer** (porteur du projet, 2026-11-07),
+  méthode en cours de choix ; change la politique de confidentialité.
 - **Crédits (`0050`, écrite, PAS appliquée, part avec `0048` et `0049`)** :
   1 crédit = 1 000 GNF, packs 10 / 25 / 50 valables 12 mois ; Business
   reçoit 10 crédits par période (« 3 jours de pub offerte », réglable),

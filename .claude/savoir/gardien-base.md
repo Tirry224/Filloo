@@ -70,6 +70,10 @@ source, constaté ou supposé.
   définition antérieure : 0047 (0048-0050 ne la touchent pas, constaté).
   `boutiques_mises_en_avant` plafonne à 12 (10 demandées passent). Suite
   locale : 633 OK ; mutations plafond 4, 5, 7 tuées.
+- **0049 modifiée sur place le 2026-11-07** (non appliquée, décision du
+  porteur du projet) : la passe de la nuit garde d'abord les produits
+  d'une campagne en cours (`en_attente`, ou `active` et `fin_at > now()` ;
+  jamais `a_payer`). Suite locale : 639 OK ; 5 mutations tuées.
 - **pg_cron 1.6.4 en production, une seule tâche `purger-mesures`**
   (constaté 2026-11-07) : le cycle des annonces (0045) passe par le cron
   Vercel `/api/quotidien`, pas pg_cron.

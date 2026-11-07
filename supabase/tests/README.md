@@ -17,8 +17,8 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 531 vérifications (compte du 2026-11-07, migration 0049
-comprise) affichent `OK`. La première qui échoue interrompt tout
+Les 639 vérifications (compte du 2026-11-07, migrations 0048 à 0051
+comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les
@@ -38,6 +38,10 @@ la suite : propriétaire dans `declarer_paiement_abonnement`, limite de 10
 de 3 des tendances, formule dans `statistiques_boutique`, renouvellement
 qui suit le précédent, et — par une erreur du trigger plutôt qu'un
 `ECHEC` — `masque_par_equipe` et la photo dans `restaurer_produits_masques`.
+Pour la passe de la nuit (`appliquer_limites_abonnement`), cinq mutations
+font chacune tomber le test qui les nomme : sans priorité aux campagnes,
+`a_payer` qui protège, sans `fin_at > now()`, sans `en_attente`, sans
+`active`.
 
 ## Ce que ces tests protègent
 
