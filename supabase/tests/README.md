@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 477 vérifications (compte du 2026-11-07, migrations 0063 à 0066
+Les 524 vérifications (compte du 2026-11-07, migrations 0063 à 0067
 comprises) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -38,7 +38,13 @@ sur « anon et authenticated n'ont aucun droit sur les deux tables ». Sans
 mutations de leurs gardes (refus d'un non-membre, jokers de recherche,
 supprimés en dernier, démasquage rejoué, droits retirés sur `equipe` et
 `cities`, email confirmé, retrait de soi, comptes de campagnes et de
-profils, slug figé) arrêtent chacune la suite sur son contrôle.
+profils, slug figé) arrêtent chacune la suite sur son contrôle. Pour
+`0067` (le 2026-11-07), neuf mutations (garde du propriétaire à l'ajout,
+garde « le propriétaire ne se retire pas », égalité de date du premier
+propriétaire, filtre `p_role`, ordre des photos, refus d'un profil non
+supprimé au journal, motif de suppression d'un produit, renumérotation
+des catégories, puis des villes) arrêtent chacune la suite sur son
+contrôle.
 
 ## Ce que ces tests protègent
 

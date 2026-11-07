@@ -1,4 +1,5 @@
-import { CheckCheck, Inbox, MessageCircle, MessageSquareReply, SearchX } from "lucide-react";
+import Link from "next/link";
+import { CheckCheck, ChevronRight, Inbox, MessageCircle, MessageSquareReply, SearchX, Store, UserRound } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet, Tuile } from "@/components/admin/AdminTopBar";
 import { LigneFil } from "@/components/admin/LigneFil";
 import { RechercheListe } from "@/components/admin/RechercheListe";
@@ -6,10 +7,22 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import type { FilBoite } from "@/lib/data/equipe";
+import type { CompteGere } from "@/lib/data/gestion";
 import { correspond } from "@/lib/recherche";
 
 /** La boîte, affichage seul (données lues par `admin/(onglets)/page.tsx`). */
-export function BoiteVue({ nom, fils: tous, recherche }: { nom: string | null; fils: FilBoite[]; recherche: string | null }) {
+export function BoiteVue({
+  nom,
+  fils: tous,
+  recherche,
+  sansFil = [],
+}: {
+  nom: string | null;
+  fils: FilBoite[];
+  recherche: string | null;
+  /** Comptes trouvés par la recherche qui n'ont pas encore écrit : l'équipe peut écrire en premier. */
+  sansFil?: CompteGere[];
+}) {
   /* Les tuiles comptent toute la boîte ; la recherche ne filtre que les listes. */
   const aRepondreTous = tous.filter((f) => !f.dernierDeLEquipe).length;
   const nonLus = tous.reduce((total, f) => total + f.nonLus, 0);
@@ -33,10 +46,38 @@ export function BoiteVue({ nom, fils: tous, recherche }: { nom: string | null; f
             <Tuile icone={Inbox} valeur={tous.length} libelle={tous.length > 1 ? "conversations" : "conversation"} />
           </div>
 
-          {tous.length > 0 ? <RechercheListe action="/admin" valeur={recherche ?? ""} placeholder="Chercher une personne ou un message" /> : null}
+          <RechercheListe action="/admin" valeur={recherche ?? ""} placeholder="Chercher une personne pour lui écrire" />
+
+          {sansFil.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <SectionLabel>Écrire en premier</SectionLabel>
+              {sansFil.map((c) => {
+                const boutique = c.role === "merchant";
+                const Icone = boutique ? Store : UserRound;
+                return (
+                  <Link
+                    key={c.profile_id}
+                    href={`/admin/fil/${c.auth_user_id}?espace=${c.role}&profil=${c.profile_id}`}
+                    className="flex items-center gap-3 border-b border-line py-3"
+                  >
+                    <Icone size={20} strokeWidth={1.9} className="shrink-0 text-ink-soft" aria-hidden />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-base font-semibold">{(boutique ? c.shop_name : null) ?? c.nom ?? "Sans nom"}</span>
+                      <span className="truncate text-sm text-ink-soft">
+                        {[boutique ? "Vendeur" : "Acheteur", c.telephone, c.email].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
 
           {recherche && fils.length === 0 ? (
-            <EmptyState icon={SearchX} title="Aucun résultat" description="Aucune conversation ne correspond à cette recherche." />
+            sansFil.length > 0 ? null : (
+            <EmptyState icon={SearchX} title="Aucun résultat" description="Personne ne correspond à cette recherche." />
+            )
           ) : fils.length === 0 ? (
             <EmptyState
               icon={MessageCircle}

@@ -25,7 +25,9 @@ create table auth.users (
   -- production (constaté le 2026-11-07, `information_schema.columns`).
   email_confirmed_at timestamptz,
   deleted_at timestamptz,
-  is_anonymous boolean not null default false
+  is_anonymous boolean not null default false,
+  -- Lue par `equipe_compte` (0067), constatée en production le 2026-11-07.
+  last_sign_in_at timestamptz
 );
 
 create or replace function auth.uid() returns uuid

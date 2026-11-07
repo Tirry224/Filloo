@@ -168,8 +168,24 @@ mis à jour et raccourci ; l'ancienne version se relit par
   depuis la session ; inscrites à la main dans `schema_migrations`).
   Constaté : fonctions fermées à `anon`, contraintes du journal à jour,
   9 catégories et 12 villes intactes.
+- **Gestion, deuxième passe** (décisions du 2026-11-07, `0067`) : seul le
+  PROPRIÉTAIRE (`equipe.proprietaire`, le plus ancien membre) ajoute ou
+  retire un membre ; listes Vendeurs et Acheteurs séparées
+  (`/admin/gestion/vendeurs`, `/acheteurs`, l'ancienne `/comptes`
+  redirige) ; fiche complète avec tous les produits, retour vers sa
+  liste ; suppression d'un compte (même anonymisation que « supprimer mon
+  compte », signée au journal après coup) et d'un produit (photos
+  comprises) ; l'ordre des catégories et villes se renumérote 1..n après
+  un retrait ; recherche dans Messages et Publicité ; l'équipe écrit en
+  premier (fil vide ouvert par `?profil=`, le RLS de 0042 le permettait).
+  *À constater* : `0067` appliquée en production (l'envoi depuis la session
+  est resté sans réponse le 2026-11-07). Ouvert : un compte supprimé garde
+  ~1 h de jeton valide, pendant laquelle la policy « je cree mon second
+  compte » laisserait peut-être recréer un profil (non testé) ; l'app des
+  stores (`main`) n'a pas d'écran équipe, un premier message de l'équipe
+  n'y est pas lisible.
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
-  `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0066.
+  `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0067.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
   pris 0052-0054 en même temps ; les nôtres sont devenues 0055-0057.
   `monetisation` garde 0048-0051, non appliquées : à renuméroter (0058+)
@@ -553,10 +569,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-403 commits, du plus récent au plus ancien.
+404 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `751660c` Admin : une barre de recherche dans Messages et Publicité
 - `4f9eaa2` Publicité : les demandes des commerçants sont fermées pour l'instant (« Bientôt disponible »)
 - `4da158f` 3G : les premières photos d'une liste partent en premier, les listes ne préchargent plus les fiches
 - `90e6b6e` Mémoire : 0065 et 0066 appliquées, la gestion depuis /admin est complète

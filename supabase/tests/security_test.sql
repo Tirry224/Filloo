@@ -4037,8 +4037,9 @@ insert into public.reports (reporter_id, target_type, target_id, reason, handled
   ('a0630000-0000-0000-0000-0000000000c3', 'product',  'a0630000-0000-0000-0000-0000000000f2', 'Deja vu', now());
 
 select pg_temp.check('0063 : equipe_comptes est fermee a anon, ouverte a authenticated',
-  not has_function_privilege('anon', 'public.equipe_comptes(text, int)', 'execute')
-  and has_function_privilege('authenticated', 'public.equipe_comptes(text, int)', 'execute'));
+  -- Signature à trois paramètres depuis 0067 (p_role).
+  not has_function_privilege('anon', 'public.equipe_comptes(text, int, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_comptes(text, int, text)', 'execute'));
 
 set role authenticated;
 select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
@@ -4168,6 +4169,10 @@ insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at, delet
   ('a0650000-0000-0000-0000-0000000000e2', 'u0065@test.gn', '{"role":"client","full_name":"Ursule U65","phone":"620006501"}', now(), null),
   ('a0650000-0000-0000-0000-0000000000c1', 'v0065@test.gn', '{"role":"client","full_name":"Victor V65","phone":"620006502"}', null, null),
   ('a0650000-0000-0000-0000-0000000000c2', 'w0065@test.gn', '{"role":"client","full_name":"Wanda W65","phone":"620006503"}', now(), now());
+-- Depuis 0067, seul le propriétaire ajoute ou retire : T l'est (posé ici,
+-- comme au tableau de bord ; la migration ne trouve aucune équipe à son
+-- passage dans une base de test).
+update public.equipe set proprietaire = true where auth_user_id = 'a0630000-0000-0000-0000-0000000000e1';
 
 select pg_temp.check('0065 : les trois fonctions sont fermees a anon, ouvertes a authenticated',
   not has_function_privilege('anon', 'public.equipe_membres()', 'execute')
@@ -4424,6 +4429,354 @@ select pg_temp.check('0066 : une ville libre se retire, signee au journal',
   and exists (select 1 from public.journal_equipe
                where action = 'retirer_ville' and cible_type = 'ville'
                  and cible_id = public.cible_journal_entier(:v66) and motif = 'Fria Centre'));
+
+
+-- =====================================================================
+-- Le propriétaire tient l'équipe ; fiche, suppressions, ordre (0067)
+-- =====================================================================
+-- T (0063) est le propriétaire (posé en 0065 de ce fichier). Y : membre
+-- ordinaire, ajouté par T. N (0063) : client hors équipe. M (0063) :
+-- boutique b1. C1, C3 : clients ; C2 : compte supprimé (0063).
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at, last_sign_in_at) values
+  ('a0670000-0000-0000-0000-0000000000e3', 'y0067@test.gn', '{"role":"client","full_name":"Yacine Y67","phone":"620006701"}', now(), null),
+  ('a0670000-0000-0000-0000-0000000000e4', 'z0067@test.gn', '{"role":"client","full_name":"Zalika Z67","phone":"620006702"}', now(), null);
+update auth.users set last_sign_in_at = '2026-11-06 10:00+00'
+ where id = 'a0630000-0000-0000-0000-0000000000a1';
+
+select pg_temp.check('0067 : les nouvelles fonctions sont fermees a anon, ouvertes a authenticated',
+  not has_function_privilege('anon', 'public.je_suis_proprietaire()', 'execute')
+  and not has_function_privilege('anon', 'public.equipe_compte(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.equipe_produits_boutique(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.supprimer_produit_equipe(uuid, text)', 'execute')
+  and not has_function_privilege('anon', 'public.journaliser_suppression_compte(uuid, text)', 'execute')
+  and not has_function_privilege('anon', 'public.equipe_membres()', 'execute')
+  and has_function_privilege('authenticated', 'public.je_suis_proprietaire()', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_compte(uuid)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_produits_boutique(uuid)', 'execute')
+  and has_function_privilege('authenticated', 'public.supprimer_produit_equipe(uuid, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.journaliser_suppression_compte(uuid, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.equipe_membres()', 'execute'));
+select pg_temp.check('0067 : les outils internes ne sont exposes a personne',
+  not has_function_privilege('anon', 'public.poser_premier_proprietaire()', 'execute')
+  and not has_function_privilege('authenticated', 'public.poser_premier_proprietaire()', 'execute')
+  and not has_function_privilege('authenticated', 'public.renumeroter_categories()', 'execute')
+  and not has_function_privilege('authenticated', 'public.renumeroter_villes()', 'execute')
+  and not has_function_privilege('anon', 'public.renumeroter_villes()', 'execute'));
+select pg_temp.check('0067 : l''ancienne equipe_comptes(text, int) n''existe plus (pas de doublon pour PostgREST)',
+  to_regprocedure('public.equipe_comptes(text, int)') is null
+  and to_regprocedure('public.equipe_comptes(text, int, text)') is not null);
+
+-- --- Le propriétaire --------------------------------------------------
+select pg_temp.check('0067 : aucun ecran n''ecrit la colonne proprietaire',
+  not has_column_privilege('authenticated', 'public.equipe', 'proprietaire', 'update')
+  and not has_column_privilege('authenticated', 'public.equipe', 'proprietaire', 'insert')
+  and not has_column_privilege('anon', 'public.equipe', 'proprietaire', 'update')
+  and not has_column_privilege('anon', 'public.equipe', 'proprietaire', 'insert'));
+select pg_temp.check('0067 : un seul proprietaire (index unique partiel)',
+  pg_temp.erreur_de($q$update public.equipe set proprietaire = true where auth_user_id <> 'a0630000-0000-0000-0000-0000000000e1'$q$)
+    like '%equipe_un_seul_proprietaire%'
+  and (select count(*) = 1 from public.equipe where proprietaire));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : meme le proprietaire ne change pas proprietaire en direct',
+  pg_temp.refuse($q$update public.equipe set proprietaire = false where auth_user_id = 'a0630000-0000-0000-0000-0000000000e1'$q$)
+  and public.je_suis_proprietaire());
+select public.ajouter_membre('y0067@test.gn', 'Yacine');
+select pg_temp.check('0067 : equipe_membres dit qui est proprietaire (T seul), le nouveau membre ne l''est pas',
+  (select array_agg(x.auth_user_id) from public.equipe_membres() x where x.proprietaire)
+    = array['a0630000-0000-0000-0000-0000000000e1']::uuid[]
+  and exists (select 1 from public.equipe_membres() x
+               where x.auth_user_id = 'a0670000-0000-0000-0000-0000000000e3' and not x.proprietaire and not x.moi));
+
+select pg_temp.login('a0670000-0000-0000-0000-0000000000e3');
+select pg_temp.check('0067 : un membre ordinaire n''est pas proprietaire',
+  public.je_suis_de_l_equipe() and not public.je_suis_proprietaire());
+select pg_temp.check('0067 : un membre ordinaire n''ajoute personne',
+  pg_temp.erreur_de($q$select public.ajouter_membre('z0067@test.gn', 'Zalika')$q$) = 'Réservé au propriétaire de Filloo.');
+select pg_temp.check('0067 : un membre ordinaire ne retire personne (ni un collegue, ni le proprietaire)',
+  pg_temp.erreur_de($q$select public.retirer_membre('a0630000-0000-0000-0000-0000000000e1')$q$) = 'Réservé au propriétaire de Filloo.');
+select pg_temp.check('0067 : un membre ordinaire lit toujours l''equipe',
+  (select count(*) >= 2 from public.equipe_membres()));
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0067 : un non-membre recoit toujours le refus de l''equipe (il n''apprend rien)',
+  pg_temp.erreur_de($q$select public.ajouter_membre('z0067@test.gn', 'Zalika')$q$) = 'Réservé à l''équipe Filloo.'
+  and not public.je_suis_proprietaire());
+reset role;
+select pg_temp.check('0067 : les refus n''ont rien change (Z dehors, T dedans, aucun journal de Y)',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0670000-0000-0000-0000-0000000000e4')
+  and exists (select 1 from public.equipe where auth_user_id = 'a0630000-0000-0000-0000-0000000000e1')
+  and not exists (select 1 from public.journal_equipe where auteur = 'a0670000-0000-0000-0000-0000000000e3'));
+
+-- Garde explicite « le propriétaire ne se retire pas » : inatteignable
+-- avec un seul propriétaire (on ne se retire pas soi-même) ; prouvée en
+-- levant l'unicité le temps d'une transaction annulée.
+begin;
+drop index public.equipe_un_seul_proprietaire;
+update public.equipe set proprietaire = true where auth_user_id = 'a0670000-0000-0000-0000-0000000000e3';
+set local role authenticated;
+select pg_temp.login('a0670000-0000-0000-0000-0000000000e3');
+select pg_temp.check('0067 : le proprietaire ne se retire pas de l''equipe, meme par un autre proprietaire',
+  pg_temp.erreur_de($q$select public.retirer_membre('a0630000-0000-0000-0000-0000000000e1')$q$)
+    = 'Le propriétaire de Filloo ne se retire pas de l''équipe.');
+rollback;
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_membre('a0670000-0000-0000-0000-0000000000e3');
+reset role;
+select pg_temp.check('0067 : le proprietaire retire un membre, signe au journal',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0670000-0000-0000-0000-0000000000e3')
+  and exists (select 1 from public.journal_equipe
+               where action = 'retirer_membre' and cible_id = 'a0670000-0000-0000-0000-0000000000e3'
+                 and auteur = 'a0630000-0000-0000-0000-0000000000e1'));
+
+-- La désignation du premier propriétaire (celle que la migration a faite),
+-- rejouée dans des transactions annulées.
+begin;
+insert into public.equipe (auth_user_id, nom) values ('a0670000-0000-0000-0000-0000000000e4', 'Zalika');
+update public.equipe set proprietaire = false;
+update public.equipe set created_at = '2030-01-01';
+update public.equipe set created_at = '2020-01-01' where auth_user_id = 'a0670000-0000-0000-0000-0000000000e4';
+select public.poser_premier_proprietaire();
+select pg_temp.check('0067 : le plus ancien membre devient proprietaire, lui seul',
+  (select array_agg(e.auth_user_id) from public.equipe e where e.proprietaire)
+    = array['a0670000-0000-0000-0000-0000000000e4']::uuid[]);
+rollback;
+begin;
+update public.equipe set proprietaire = false;
+update public.equipe set created_at = '2020-01-01';
+select pg_temp.check('0067 : deux membres a egalite pour le plus ancien : la designation s''arrete',
+  pg_temp.erreur_de('select public.poser_premier_proprietaire()') like '%propriétaire ambigu%'
+  and not exists (select 1 from public.equipe where proprietaire));
+rollback;
+begin;
+update public.equipe set created_at = '2030-01-01' where auth_user_id = 'a0630000-0000-0000-0000-0000000000e1';
+select public.poser_premier_proprietaire();
+select pg_temp.check('0067 : un proprietaire deja en place ne change pas',
+  (select array_agg(e.auth_user_id) from public.equipe e where e.proprietaire)
+    = array['a0630000-0000-0000-0000-0000000000e1']::uuid[]);
+rollback;
+
+-- --- Acheteurs et vendeurs --------------------------------------------
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : p_role merchant : les vendeurs seuls',
+  (select array_agg(x.profile_id) from public.equipe_comptes('mamadou', 50, 'merchant') x)
+    = array['a0630000-0000-0000-0000-0000000000a1']::uuid[]
+  and not exists (select 1 from public.equipe_comptes(null, 200, 'merchant') x where x.role <> 'merchant'));
+select pg_temp.check('0067 : p_role client : les acheteurs seuls',
+  (select array_agg(x.profile_id) from public.equipe_comptes('mamadou', 50, 'client') x)
+    = array['a0630000-0000-0000-0000-0000000000c3']::uuid[]
+  and not exists (select 1 from public.equipe_comptes(null, 200, 'client') x where x.role <> 'client'));
+select pg_temp.check('0067 : l''appel a deux parametres (site en production) rend toujours tout',
+  (select count(*) from public.equipe_comptes('mamadou', 50)) = 2
+  and (select count(*) from public.equipe_comptes(p_recherche => 'mamadou')) = 2);
+select pg_temp.check('0067 : equipe_comptes rend la connexion (auth_user_id) en derniere colonne',
+  (select x.auth_user_id from public.equipe_comptes('mamadou0063@', 50, 'merchant') x)
+    = 'a0630000-0000-0000-0000-0000000000a1'
+  and (select (proargnames)[array_length(proargnames, 1)] = 'auth_user_id'
+         from pg_proc where oid = 'public.equipe_comptes(text, int, text)'::regprocedure));
+select pg_temp.check('0067 : un role inconnu est refuse',
+  pg_temp.erreur_de($q$select * from public.equipe_comptes(null, 50, 'admin')$q$) = 'Filtre de comptes inconnu.');
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0067 : un non-membre ne lit ni les listes ni une fiche ni les produits d''une boutique',
+  pg_temp.erreur_de($q$select * from public.equipe_comptes(null, 50, 'client')$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select * from public.equipe_compte('a0630000-0000-0000-0000-0000000000a1')$q$) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de($q$select * from public.equipe_produits_boutique('a0630000-0000-0000-0000-0000000000b1')$q$) = 'Réservé à l''équipe Filloo.');
+select pg_temp.login('a0630000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0067 : le commercant ne lit pas sa propre fiche d''equipe',
+  pg_temp.erreur_de($q$select * from public.equipe_compte('a0630000-0000-0000-0000-0000000000a1')$q$) = 'Réservé à l''équipe Filloo.');
+reset role;
+
+-- --- La fiche ---------------------------------------------------------
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0670000-0000-0000-0000-0000000000d1', 'a0630000-0000-0000-0000-0000000000c1', 'a0630000-0000-0000-0000-0000000000b1');
+update public.merchants set description = 'Electro a Kaloum', whatsapp_phone = '620006799', address_hint = 'Marche Niger'
+ where id = 'a0630000-0000-0000-0000-0000000000b1';
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : fiche d''une boutique : connexion, boutique, compteurs',
+  exists (select 1 from public.equipe_compte('a0630000-0000-0000-0000-0000000000a1') x
+           where x.profile_id = 'a0630000-0000-0000-0000-0000000000a1'
+             and x.auth_user_id = 'a0630000-0000-0000-0000-0000000000a1'
+             and x.role = 'merchant' and x.nom = 'Mamadou Diallo' and x.telephone = '+224621630001'
+             and x.email = 'mamadou0063@test.gn' and x.email_confirme_le is not null
+             and x.derniere_connexion = '2026-11-06 10:00+00' and x.ville is not null
+             and x.created_at is not null and not x.is_suspended and x.suspension_reason is null
+             and not x.is_deleted and x.deleted_at is null
+             and x.merchant_id = 'a0630000-0000-0000-0000-0000000000b1'
+             and x.shop_name = 'Boutique Kaloum Électro' and x.description = 'Electro a Kaloum'
+             and x.whatsapp_phone = '620006799' and x.address_hint = 'Marche Niger'
+             and x.photo_path is null and x.statut_boutique = 'approved' and x.approved_at is not null
+             and x.rejection_reason is null
+             and x.produits = 3  -- f1, f2, f3 (0063, 0064), tous statuts
+             and x.conversations = 1 and x.signalements_en_attente = 2 and not x.est_de_l_equipe));
+select pg_temp.check('0067 : fiche d''un client : pas de boutique, ses conversations comptees',
+  exists (select 1 from public.equipe_compte('a0630000-0000-0000-0000-0000000000c1') x
+           where x.role = 'client' and x.merchant_id is null and x.shop_name is null
+             and x.produits = 0 and x.conversations = 1 and not x.est_de_l_equipe));
+select pg_temp.check('0067 : fiche d''un membre de l''equipe : est_de_l_equipe',
+  (select x.est_de_l_equipe from public.equipe_compte('a0630000-0000-0000-0000-0000000000e1') x));
+select pg_temp.check('0067 : fiche d''un compte supprime, et d''un profil inconnu (aucune ligne)',
+  (select x.is_deleted and x.deleted_at is not null from public.equipe_compte('a0630000-0000-0000-0000-0000000000c2') x)
+  and not exists (select 1 from public.equipe_compte('a0670000-0000-0000-0000-00000000ffff')));
+reset role;
+
+-- --- Les produits d'une boutique --------------------------------------
+-- f2 reçoit deux photos, la position 1 insérée AVANT la position 0 : la
+-- première photo est celle de plus petite position, pas la première écrite.
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0630000-0000-0000-0000-0000000000f2', 'a0630000/radio-dos.webp', 1);
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0630000-0000-0000-0000-0000000000f2', 'a0630000/radio-face.webp', 0);
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : tous les produits de la boutique, tous statuts (brouillon, masque, en ligne), d''elle seule',
+  (select array_agg(x.product_id order by x.product_id) from public.equipe_produits_boutique('a0630000-0000-0000-0000-0000000000b1') x)
+    = array['a0630000-0000-0000-0000-0000000000f1', 'a0630000-0000-0000-0000-0000000000f2',
+            'a0630000-0000-0000-0000-0000000000f3']::uuid[]
+  and (select count(distinct x.statut) >= 2 from public.equipe_produits_boutique('a0630000-0000-0000-0000-0000000000b1') x));
+select pg_temp.check('0067 : la premiere photo est celle de plus petite position',
+  (select x.photo_path from public.equipe_produits_boutique('a0630000-0000-0000-0000-0000000000b1') x
+    where x.product_id = 'a0630000-0000-0000-0000-0000000000f2') = 'a0630000/radio-face.webp');
+select pg_temp.check('0067 : colonnes d''un produit, photo absente = null',
+  exists (select 1 from public.equipe_produits_boutique('a0630000-0000-0000-0000-0000000000b1') x
+           where x.product_id = 'a0630000-0000-0000-0000-0000000000f1' and x.titre = 'Télévision Samsung'
+             and x.prix = 1500000 and x.categorie is not null and x.masque_par_equipe
+             and x.statut = 'hidden' and x.created_at is not null and x.photo_path is null));
+select pg_temp.check('0067 : une boutique inconnue ne rend rien',
+  not exists (select 1 from public.equipe_produits_boutique('a0670000-0000-0000-0000-00000000ffff')));
+reset role;
+
+-- --- Supprimer un produit ---------------------------------------------
+-- f9 : en ligne, une photo, une campagne, cité par un message.
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0670000-0000-0000-0000-0000000000f9', 'a0630000-0000-0000-0000-0000000000b1', 1, 'Ventilateur Binatone', 300000, 'draft');
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0670000-0000-0000-0000-0000000000f9', 'a0630000-0000-0000-0000-0000000000b1/a0670000-0000-0000-0000-0000000000f9/1.webp', 0);
+update public.products set status = 'active' where id = 'a0670000-0000-0000-0000-0000000000f9';
+insert into public.campagnes (id, merchant_id, type, product_id, duree_jours) values
+  ('a0670000-0000-0000-0000-0000000000a9', 'a0630000-0000-0000-0000-0000000000b1', 'produit',
+   'a0670000-0000-0000-0000-0000000000f9', 7);
+insert into public.messages (id, conversation_id, sender_id, product_id, body) values
+  ('a0670000-0000-0000-0000-0000000000b9', 'a0670000-0000-0000-0000-0000000000d1',
+   'a0630000-0000-0000-0000-0000000000c1', 'a0670000-0000-0000-0000-0000000000f9', 'Le ventilateur est dispo ?');
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0067 : un non-membre ne supprime pas un produit',
+  pg_temp.erreur_de($q$select public.supprimer_produit_equipe('a0670000-0000-0000-0000-0000000000f9', 'Je veux')$q$)
+    = 'Réservé à l''équipe Filloo.');
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : suppression : motif de 3 a 500 caracteres, produit inconnu',
+  pg_temp.erreur_de($q$select public.supprimer_produit_equipe('a0670000-0000-0000-0000-0000000000f9', ' ab ')$q$)
+    = 'Le motif fait de 3 à 500 caractères.'
+  and pg_temp.erreur_de($q$select public.supprimer_produit_equipe('a0670000-0000-0000-0000-0000000000f9', repeat('x', 501))$q$)
+    = 'Le motif fait de 3 à 500 caractères.'
+  and pg_temp.erreur_de($q$select public.supprimer_produit_equipe('a0670000-0000-0000-0000-00000000ffff', 'Motif')$q$)
+    = 'Produit introuvable.');
+reset role;
+select pg_temp.check('0067 : les refus n''ont rien supprime',
+  exists (select 1 from public.products where id = 'a0670000-0000-0000-0000-0000000000f9')
+  and not exists (select 1 from public.journal_equipe where action = 'supprimer_produit'));
+
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.supprimer_produit_equipe('a0670000-0000-0000-0000-0000000000f9', 'Contrefacon') as m67 \gset
+reset role;
+select pg_temp.check('0067 : la suppression rend le merchant_id (le site efface le dossier des photos)',
+  :'m67' = 'a0630000-0000-0000-0000-0000000000b1');
+select pg_temp.check('0067 : produit, photos et campagne partis ; le message reste, sans produit',
+  not exists (select 1 from public.products where id = 'a0670000-0000-0000-0000-0000000000f9')
+  and not exists (select 1 from public.product_images where product_id = 'a0670000-0000-0000-0000-0000000000f9')
+  and not exists (select 1 from public.campagnes where id = 'a0670000-0000-0000-0000-0000000000a9')
+  and (select product_id is null and body = 'Le ventilateur est dispo ?' from public.messages
+        where id = 'a0670000-0000-0000-0000-0000000000b9'));
+select pg_temp.check('0067 : la suppression est signee au journal, titre et boutique en clair',
+  (select count(*) = 1 and bool_and(auteur = 'a0630000-0000-0000-0000-0000000000e1' and cible_type = 'produit'
+                                    and motif = '« Ventilateur Binatone » (Boutique Kaloum Électro) : Contrefacon')
+     from public.journal_equipe
+    where action = 'supprimer_produit' and cible_id = 'a0670000-0000-0000-0000-0000000000f9'));
+
+-- --- Signer une suppression de compte ---------------------------------
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0067 : un non-membre ne signe pas une suppression',
+  pg_temp.erreur_de($q$select public.journaliser_suppression_compte('a0630000-0000-0000-0000-0000000000c2', 'Motif')$q$)
+    = 'Réservé à l''équipe Filloo.');
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0067 : le journal refuse un compte qui n''est PAS supprime (il ne ment pas)',
+  pg_temp.erreur_de($q$select public.journaliser_suppression_compte('a0630000-0000-0000-0000-0000000000c1', 'Doublon')$q$)
+    = 'Ce compte n''est pas supprimé : rien à inscrire au journal.');
+select pg_temp.check('0067 : signature : motif borne, profil inconnu',
+  pg_temp.erreur_de($q$select public.journaliser_suppression_compte('a0630000-0000-0000-0000-0000000000c2', 'ab')$q$)
+    = 'Le motif fait de 3 à 500 caractères.'
+  and pg_temp.erreur_de($q$select public.journaliser_suppression_compte('a0670000-0000-0000-0000-00000000ffff', 'Motif')$q$)
+    = 'Compte introuvable.');
+select public.journaliser_suppression_compte('a0630000-0000-0000-0000-0000000000c2', 'barry <ancien0063@test.gn> — Doublon');
+select public.journaliser_suppression_compte('a0630000-0000-0000-0000-0000000000c2', 'Envoi rejoue');
+reset role;
+select pg_temp.check('0067 : la suppression est signee une seule fois, et rien pour le compte actif',
+  (select count(*) = 1 and bool_and(auteur = 'a0630000-0000-0000-0000-0000000000e1'
+                                    and motif = 'barry <ancien0063@test.gn> — Doublon')
+     from public.journal_equipe
+    where action = 'supprimer_compte' and cible_type = 'profil' and cible_id = 'a0630000-0000-0000-0000-0000000000c2')
+  and not exists (select 1 from public.journal_equipe
+                   where action = 'supprimer_compte' and cible_id = 'a0630000-0000-0000-0000-0000000000c1'));
+
+-- --- L'ordre se refait seul -------------------------------------------
+select pg_temp.check('0067 : les positions des categories et des villes vont de 1 a n, sans trou',
+  (select bool_and(position = n) from (select position, row_number() over (order by position, name, id) as n
+                                         from public.categories) c)
+  and (select bool_and(position = n) from (select position, row_number() over (order by position, name, id) as n
+                                             from public.cities) v));
+
+-- Trois catégories neuves en fin de liste ; deux à la même position
+-- (départagées par le nom) ; on retire celle du milieu.
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.fixer_categorie(p_nom => 'Zeta 67', p_position => 9000) as z67 \gset
+select public.fixer_categorie(p_nom => 'Alpha 67', p_position => 9000) as a67 \gset
+select public.fixer_categorie(p_nom => 'Milieu 67', p_position => 8000) as mil67 \gset
+reset role;
+select count(*) as journal_avant from public.journal_equipe \gset
+select array_agg(id order by position, name, id) filter (where id <> :mil67) as ordre_attendu from public.categories \gset
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_categorie(:mil67);
+reset role;
+select pg_temp.check('0067 : apres un retrait, les categories sont renumerotees 1..n dans le meme ordre',
+  (select array_agg(id order by position) from public.categories) = :'ordre_attendu'::int[]
+  and (select array_agg(position order by position) from public.categories)
+      = (select array_agg(g) from generate_series(1, (select count(*)::int from public.categories)) g)
+  and (select position from public.categories where id = :a67) < (select position from public.categories where id = :z67));
+select pg_temp.check('0067 : seul le retrait est journalise, pas la renumerotation',
+  (select count(*) from public.journal_equipe) = :journal_avant + 1
+  and exists (select 1 from public.journal_equipe where action = 'retirer_categorie'
+               and cible_id = public.cible_journal_entier(:mil67)));
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_categorie(:z67);
+select public.retirer_categorie(:a67);
+select public.fixer_ville(p_nom => 'Boffa 67', p_position => 5000) as vb67 \gset
+select public.fixer_ville(p_nom => 'Dabola 67', p_position => 6000) as vd67 \gset
+reset role;
+select array_agg(id order by position, name, id) filter (where id <> :vb67) as villes_attendues from public.cities \gset
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_ville(:vb67);
+reset role;
+select pg_temp.check('0067 : apres un retrait, les villes sont renumerotees 1..n dans le meme ordre',
+  (select array_agg(id order by position) from public.cities) = :'villes_attendues'::int[]
+  and (select array_agg(position order by position) from public.cities)
+      = (select array_agg(g) from generate_series(1, (select count(*)::int from public.cities)) g));
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_ville(:vd67);
+reset role;
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

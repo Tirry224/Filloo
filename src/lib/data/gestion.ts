@@ -15,6 +15,24 @@ type Fonctions = Database["public"]["Functions"];
 export type CompteGere = Fonctions["equipe_comptes"]["Returns"][number];
 export type ProduitGere = Fonctions["equipe_produits"]["Returns"][number];
 export type Membre = Fonctions["equipe_membres"]["Returns"][number];
+export type FicheCompte = Fonctions["equipe_compte"]["Returns"][number];
+export type ProduitBoutique = Fonctions["equipe_produits_boutique"]["Returns"][number];
+
+/** Acheteurs et vendeurs ont chacun leur liste (décision du 2026-11-07). */
+export const ESPACES = {
+  vendeurs: { role: "merchant", titre: "Vendeurs", un: "vendeur", icone: "boutique" },
+  acheteurs: { role: "client", titre: "Acheteurs", un: "acheteur", icone: "client" },
+} as const;
+export type Espace = keyof typeof ESPACES;
+
+export function lireEspace(brut: unknown): Espace | null {
+  return brut === "vendeurs" || brut === "acheteurs" ? brut : null;
+}
+
+/** L'espace d'un rôle : là où sa fiche et sa liste vivent. */
+export function espaceDuRole(role: string): Espace {
+  return role === "merchant" ? "vendeurs" : "acheteurs";
+}
 export type Categorie = Database["public"]["Tables"]["categories"]["Row"];
 export type Ville = Database["public"]["Tables"]["cities"]["Row"];
 
@@ -24,8 +42,33 @@ export function lireRecherche(brut: unknown): string | null {
   return q || null;
 }
 
-export async function lireComptes(supabase: Client, recherche: string | null): Promise<CompteGere[]> {
-  const { data, error } = await supabase.rpc("equipe_comptes", { p_recherche: recherche ?? undefined, p_limite: 50 });
+export async function lireComptes(supabase: Client, recherche: string | null, espace: Espace): Promise<CompteGere[]> {
+  const { data, error } = await supabase.rpc("equipe_comptes", {
+    p_recherche: recherche ?? undefined,
+    p_limite: 50,
+    p_role: ESPACES[espace].role,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Tous espaces : la recherche des Messages, pour écrire en premier. */
+export async function lireComptesTous(supabase: Client, recherche: string): Promise<CompteGere[]> {
+  const { data, error } = await supabase.rpc("equipe_comptes", { p_recherche: recherche, p_limite: 20 });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** La fiche d'un compte, ou `null` s'il n'existe pas. */
+export async function lireFiche(supabase: Client, profil: string): Promise<FicheCompte | null> {
+  const { data, error } = await supabase.rpc("equipe_compte", { p_profile: profil });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+/** Tous les produits d'une boutique, tous statuts. */
+export async function lireProduitsBoutique(supabase: Client, merchant: string): Promise<ProduitBoutique[]> {
+  const { data, error } = await supabase.rpc("equipe_produits_boutique", { p_merchant: merchant });
   if (error) throw error;
   return data ?? [];
 }

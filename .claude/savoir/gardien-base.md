@@ -11,19 +11,18 @@ source, constaté ou supposé.
   la base a une sauvegarde quotidienne (7 jours), PAS les fichiers du
   stockage. `max_connections` = 60 (constaté 2026-10-14).
 - **Migrations appliquées (constaté 2026-11-07 soir, `list_migrations`)** :
-  `0001`–`0047`, puis `0052`–`0057` (le nom de `0055` est corrigé). Sur
-  `dev` les numéros sautent `0048`–`0062` : `monetisation` porte
-  `0058`–`0062` (renumérotées, constaté `origin/monetisation`), non
-  appliquées. `0063`–`0066` ÉCRITES sur `dev` (gestion depuis `/admin`),
-  pas encore appliquées à la fin de la mission. `scripts/migrations.mjs`
+  `0001`–`0047`, `0052`–`0057`, `0063`–`0066`. Sur `dev` les numéros
+  sautent `0048`–`0062` : `monetisation` porte `0058`–`0062`
+  (renumérotées, constaté `origin/monetisation`), non appliquées.
+  `0067` (propriétaire, fiche, suppressions, renumérotation) ÉCRITE et
+  testée le 2026-11-07, non appliquée à la fin de la mission. `scripts/migrations.mjs`
   n'exige pas la continuité. Ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
-- **Volume** : 5 boutiques, base 15 Mo (2026-10-22) ; au plus 2 produits
-  publiés par boutique (2026-11-07). Aucune mesure de performance n'y
-  prouve rien.
-- **Buckets** `product-images` (`0040`) et `shop-photos` (`0029`,
-  `0031`) : 1 Mo, `image/webp` et `image/jpeg` seulement.
+- **Volume** : 5 boutiques, 15 Mo (2026-10-22), ≤ 2 produits publiés par
+  boutique (2026-11-07) : aucune mesure de performance n'y prouve rien.
+  Buckets `product-images` (`0040`), `shop-photos` (`0029`, `0031`) :
+  1 Mo, webp/jpeg.
 - **Realtime** : canal privé `user:<uid>` (`0038`) ; `messages` reste en
   `postgres_changes` tant qu'une app l'écoute. `realtime.send` est
   `security invoker` et **avale toute erreur en `WARNING`** ;
@@ -47,7 +46,11 @@ source, constaté ou supposé.
   ajoutée ensuite n'est pas insérable sans grant), `0053`/`0054` (tables
   serveur seul purgées par pg_cron) ; `0055` `comptes_tres_signales`,
   `0056` bienvenue des boutiques, `0057` `visiteur_id`. Détails : en-têtes.
-  Avec `0065`, `equipe` s'écrit aussi par `ajouter_membre`/`retirer_membre`.
+  Avec `0065`, `equipe` s'écrit aussi par `ajouter_membre`/`retirer_membre`,
+  réservées au PROPRIÉTAIRE depuis `0067` (`equipe.proprietaire`, un seul,
+  posé sur le plus ancien : Tirry, 2026-11-05 21:15, aucune égalité,
+  constaté 2026-11-07). Toutes les autres fonctions d'équipe restent
+  ouvertes à tout membre.
 - **Pièges de cette série** : une policy dépend de sa fonction (remplacer
   AVANT de supprimer) ; le RLS refuse avant NOT NULL ; le stub ne donne
   pas `auth` à `authenticated` ; une instruction ne voit pas son propre
@@ -62,17 +65,16 @@ source, constaté ou supposé.
   pub, abonnements + limite Gratuit, crédits, plafond sponsorisés 4 → 6,
   contact après clic. `0058`–`0060` réécrivent les deux checks de
   `journal_equipe` avec LEUR liste complète, SANS les valeurs de
-  `0064`–`0066` (`demasquer_produit`, `ajouter_membre`, `retirer_membre`,
-  `fixer_categorie`, `retirer_categorie`, `fixer_ville`, `retirer_ville` ;
-  cibles `membre`, `categorie`, `ville`). À sa publication (renumérotée
+  `0064`–`0067` (`demasquer_produit`, `ajouter_membre`, `retirer_membre`,
+  `fixer_categorie`, `retirer_categorie`, `fixer_ville`, `retirer_ville`,
+  `supprimer_produit`, `supprimer_compte` ; cibles `membre`, `categorie`,
+  `ville`). À sa publication (renumérotée
   après `0066`) : ajouter ces valeurs à ses trois réécritures, sinon le
   `add constraint` échoue (lignes existantes) ou, journal sans ces
   lignes, chaque geste de gestion échoue ensuite au journal.
-- **pg_cron 1.6.4, trois tâches** (constaté 2026-11-07, `cron.job`) :
-  `purger-mesures`, `purger-essais-mot-de-passe` (3 h 33),
-  `purger-notifications-envoyees` (3 h 43).
-- **Mesures (`analytics_events`)** : écrites par le SITE seul, purge à
-  13 mois (0028) (constaté 2026-11-07).
+- **pg_cron 1.6.4** (constaté 2026-11-07) : `purger-mesures`,
+  `purger-essais-mot-de-passe`, `purger-notifications-envoyees`.
+  `analytics_events` écrite par le SITE seul, purge à 13 mois (0028).
 - **App mobile (`/home/user/Filloo-mobile`, constaté 2026-11-07)** :
   `fil_equipe` lu sur sa branche `dev` seulement, pas `main` (stores) ;
   `main` lit `categories`/`cities` en `(id, name)` triées par `position`,
@@ -96,7 +98,14 @@ source, constaté ou supposé.
   (retirés par `0066`), `equipe` toute écriture (retirée par `0065`).
 - **Divers constatés 2026-11-07** : `campagnes.category_id` → `categories`
   sans `on delete` ; `journal_equipe` vide en production ; `auth.users` a
-  `email_confirmed_at`, `deleted_at`, `is_anonymous` (le stub aussi).
+  `email_confirmed_at`, `deleted_at`, `is_anonymous`, `last_sign_in_at`
+  (le stub aussi). `merchants.rejection_reason` N'EXISTE PLUS (0033) :
+  `equipe_compte` rend un `null::text` sous ce nom pour le site.
+  Positions avant `0067` : catégories 2..9, villes 1, 2, 4, 6..9.
+- **Supprimer un produit emporte** (constaté 2026-11-07, `pg_constraint`) :
+  `product_images` et `campagnes` (cascade), `messages.product_id` → null ;
+  restent `reports.target_id` et `analytics_events.product_id` (sans FK).
+  Les fichiers du stockage ne partent que par le site.
 
 ## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
 
@@ -112,8 +121,7 @@ source, constaté ou supposé.
 
 ## Pièges appris
 
-- **`drop` par le connecteur Supabase** : parfois bloqué (délai de
-  60 s) ; relire l'état après chaque essai.
+- **`drop` par le connecteur** : parfois bloqué (60 s) ; relire l'état.
 - **Realtime** : une policy de `realtime.messages` juge le canal demandé
   (`realtime.topic()`), pas la colonne : refus = « 0 ligne visible » ;
   panne de `realtime.send` = la remplacer par une version qui lève, dans
@@ -151,7 +159,12 @@ source, constaté ou supposé.
   `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
-  2026-11-07 (`0001`–`0066`). Omettre une migration qui crée des
+  2026-11-07 (`0001`–`0066`), 524 avec `0067`. En `authenticated`, un
+  contrôle qui compte dans une table passe par le RLS (l'équipe ne voit
+  pas les brouillons de `products`) : écrire la valeur attendue en dur.
+  Une garde inatteignable (unicité) se prouve en levant l'index dans
+  `begin … rollback` ; une règle de backfill se met dans une fonction
+  interne (revoke all) pour être rejouée par les tests (`0067`). Omettre une migration qui crée des
   fonctions ne prouve que leur absence : muter ses GARDES (sauvegarde,
   `perl -0pi`, restaurer, `cmp` ; accents dans le motif = octets, écrire
   `[^\n]*`). Aides : `pg_temp.erreur_de(q)` (message exact),
@@ -176,12 +189,10 @@ source, constaté ou supposé.
   pouvoir faire échouer le filtre** (2026-11-07) ; vérifier que la
   mutation a pris (`cmp`) et qu'elle tombe sur un `ECHEC`, pas une autre
   erreur.
-- **Trigger BEFORE ROW** : voit les lignes déjà traitées de la même
-  instruction (`volatile`, 0049). **« Jamais bloquant »** se prouve par un
-  `check (false) not valid` posé dans `begin … rollback` (0056).
-- **Une FK ne se revérifie à l'`update` que si l'ancienne ligne a été
-  écrite dans la MÊME transaction** (0050) : tester écriture + suppression
-  en cascade dans un `begin … commit`. Garde : le parent existe encore.
+- **Trigger BEFORE ROW** voit les lignes déjà traitées de l'instruction
+  (0049) ; « jamais bloquant » se prouve par un `check (false) not valid`
+  dans `begin … rollback` (0056) ; une FK ne se revérifie à l'`update` que
+  si l'ancienne ligne a été écrite dans la MÊME transaction (0050).
 - **`produits_sponsorises` tire UN produit par boutique au hasard** :
   plafond testé avec N boutiques, contrôles `>= N` / `= plafond`.
 - **Divers PG** (constaté 2026-11-07) : nom de policy > 63 octets tronqué

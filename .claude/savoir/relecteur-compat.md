@@ -84,11 +84,40 @@ l'app.
 
 ## Accès au code de l'app
 
-- **2026-11-06 (constaté)** : `../Filloo-mobile` absent, et
-  `tirry224/filloo-mobile` refusé à la session (MCP GitHub : seul
-  `tirry224/filloo` autorisé ; `gh`/`git clone` en 403). Il faut que la
-  session principale ajoute le dépôt (`add_repo`) ou clone l'app à côté.
-  L'historique de ce dépôt-ci ne contient aucune copie de l'app.
+- **2026-11-07 (constaté)** : app clonée dans `/home/user/Filloo-mobile`
+  (session sur une branche `claude/…` = `main`). `main` = `bfbc1cb`
+  (2026-11-03), `dev` = `1f7cacc` (+11 commits), lu par
+  `git fetch origin dev` puis `git grep FETCH_HEAD`. Le 2026-11-06,
+  l'accès avait été refusé (MCP GitHub limité à `tirry224/filloo`).
+
+## Équipe Filloo dans l'app (constaté 2026-11-07, `git grep`)
+
+- **`main` n'a AUCUN écran équipe** : ni `fil_equipe` ni `annonces` ;
+  une notification d'équipe (`/compte/equipe/...`) ouvre l'accueil
+  (`ouvrir()` de `src/lib/notifications.ts`).
+- **`dev` a `src/app/equipe.tsx` + `src/lib/equipe.ts`** : lit
+  `annonces`, `fil_equipe` (`id, de_l_equipe, corps, created_at,
+  annonces(titre)`, filtre `fil_de` + `espace`), compte
+  `annonce_destinataires.lue_at` et `fil_equipe.lu_at`, RPC
+  `marquer_annonces_lues`, `marquer_fil_equipe_lu`, insère dans
+  `fil_equipe`, appelle `POST /api/app/message-equipe`. `ouvrir()`
+  route `/(compte|vendeur)/equipe(/discussion|/(reponse|annonce)/uuid)?`
+  et `/equipe` vers `/equipe?espace=…`. Un fil ouvert par l'équipe
+  s'affiche normalement (aucune hypothèse sur l'auteur du 1er message).
+- **Ne jamais changer** ces chemins de notification ni ces colonnes sans
+  garder l'ancien format tant qu'une version `dev` est installée.
+
+## Suppressions par l'équipe (0067, relu 2026-11-07)
+
+- Produit supprimé : l'écran vendeur dit « Produit introuvable » à la
+  réouverture ; un enregistrement en cours répond « ce produit n'est pas
+  le vôtre… » (0 ligne, `edition-produit.ts`) ; côté client, citer le
+  produit → « Ce produit n'appartient pas à cette boutique. »
+  (`check_message_product`, 0002). Gênant, pas cassant.
+- Compte supprimé (`supprimerProfil`) : `lireComptes` filtre
+  `is_deleted`, le fil passe en lecture seule (`conversation_is_open`).
+  Le jeton reste valable jusqu'à son expiration (supposé ~1 h) ; le
+  rafraîchissement d'un banni échoue (supposé : retour déconnecté).
 
 ## Décisions du porteur du projet
 

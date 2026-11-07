@@ -93,7 +93,8 @@ export async function prevenirDeLaReponse(filDe: string, espace: "client" | "mer
   try {
     await sendPushToUser(filDe, {
       titre: "Équipe Filloo",
-      corps: espace === "merchant" ? "L'équipe a répondu à votre boutique." : "L'équipe vous a répondu.",
+      // « écrit » et non « répondu » : l'équipe peut écrire en premier (2026-11-07).
+      corps: espace === "merchant" ? "L'équipe a écrit à votre boutique." : "L'équipe vous a écrit.",
       // La notification ouvre la discussion, où la réponse est en bas.
       url: `${CHEMIN_EQUIPE[espace]}/discussion`,
       tag: `equipe-${espace}`,

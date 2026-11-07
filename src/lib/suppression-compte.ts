@@ -198,3 +198,22 @@ async function effacerPhotosProduits(admin: Admin, merchantId: string) {
     if (removeError) console.error("[suppression] photos produit restées :", removeError.message);
   }
 }
+
+/**
+ * Les photos d'UN produit supprimé par l'équipe (`/admin/gestion`) : son
+ * dossier `{merchant_id}/{product_id}` (0004). À n'appeler qu'APRÈS que la
+ * base a accepté la suppression (`supprimer_produit_equipe`, qui vérifie
+ * l'équipe). Journalise au lieu de lever : le produit est déjà parti.
+ */
+export async function effacerPhotosDuProduit(merchantId: string, productId: string) {
+  const bucket = createAdminClient().storage.from("product-images");
+  const dossier = `${merchantId}/${productId}`;
+  const { data: fichiers, error } = await bucket.list(dossier, { limit: 1000 });
+  if (error) {
+    console.error("[suppression] photos du produit restées :", error.message);
+    return;
+  }
+  if (!fichiers || fichiers.length === 0) return;
+  const { error: removeError } = await bucket.remove(fichiers.map((fichier) => `${dossier}/${fichier.name}`));
+  if (removeError) console.error("[suppression] photos du produit restées :", removeError.message);
+}

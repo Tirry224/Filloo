@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, FolderTree, Package, Search, Store, UserRound, UsersRound } from "lucide-react";
+import { ChevronRight, FolderTree, Package, Search, ShoppingBag, Store, UserRound, UsersRound } from "lucide-react";
 import { AdminTopBar, EnTeteOnglet } from "@/components/admin/AdminTopBar";
 import { jourEtHeure } from "@/components/admin/EtatAnnonce";
 import { Badge } from "@/components/ui/Badge";
@@ -20,14 +20,21 @@ import {
   retirerCategorieAction,
   retirerMembreAction,
   retirerVilleAction,
+  supprimerCompteAction,
+  supprimerProduitEquipeAction,
   suspendreCompteAction,
 } from "@/lib/actions/gestion";
+import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import {
+  ESPACES,
   FILTRES_PRODUITS,
   type Categorie,
   type CompteGere,
+  type Espace,
+  type FicheCompte,
   type FiltreProduits,
   type Membre,
+  type ProduitBoutique,
   type ProduitGere,
   type Ville,
 } from "@/lib/data/gestion";
@@ -57,9 +64,10 @@ function Avis({ erreur, info }: Messages) {
 /* ---------- L'onglet ---------- */
 
 const RUBRIQUES = [
-  { href: "/admin/gestion/comptes", icone: UserRound, titre: "Comptes et boutiques", texte: "Chercher un client ou une boutique, suspendre, réactiver." },
-  { href: "/admin/gestion/produits", icone: Package, titre: "Produits", texte: "Chercher un produit, le masquer ou le démasquer." },
-  { href: "/admin/gestion/equipe", icone: UsersRound, titre: "Équipe", texte: "Ajouter ou retirer un collaborateur." },
+  { href: "/admin/gestion/vendeurs", icone: Store, titre: "Vendeurs", texte: "Les boutiques : fiche complète, produits, suspendre, supprimer." },
+  { href: "/admin/gestion/acheteurs", icone: ShoppingBag, titre: "Acheteurs", texte: "Les clients : fiche complète, suspendre, supprimer." },
+  { href: "/admin/gestion/produits", icone: Package, titre: "Produits", texte: "Chercher un produit, le masquer, le démasquer ou le supprimer." },
+  { href: "/admin/gestion/equipe", icone: UsersRound, titre: "Équipe", texte: "Les membres. Seul le propriétaire en ajoute ou en retire." },
   { href: "/admin/gestion/catalogue", icone: FolderTree, titre: "Catégories et villes", texte: "Ajouter, renommer, ordonner, retirer." },
 ] as const;
 
@@ -144,22 +152,40 @@ function GesteAvecMotif({
   );
 }
 
-/* ---------- Comptes ---------- */
+/* ---------- Vendeurs et acheteurs ---------- */
 
-export function ComptesVue({ comptes, recherche, ...m }: { comptes: CompteGere[]; recherche: string | null } & Messages) {
-  const retour = `/admin/gestion/comptes${recherche ? `?q=${encodeURIComponent(recherche)}` : ""}`;
+/** La liste d'un espace : `/admin/gestion/vendeurs` ou `/admin/gestion/acheteurs`. */
+function lienListe(espace: Espace, recherche: string | null): string {
+  return `/admin/gestion/${espace}${recherche ? `?q=${encodeURIComponent(recherche)}` : ""}`;
+}
+
+export function ComptesVue({
+  espace,
+  comptes,
+  recherche,
+  ...m
+}: { espace: Espace; comptes: CompteGere[]; recherche: string | null } & Messages) {
+  const e = ESPACES[espace];
   return (
     <Screen largeur="rangees">
-      <TopBar backHref="/admin/gestion" title="Comptes et boutiques" />
+      <TopBar backHref="/admin/gestion" title={e.titre} />
       <ScreenBody>
         <Section className="gap-4">
           <Avis {...m} />
-          <Recherche action="/admin/gestion/comptes" valeur={recherche ?? ""} placeholder="Nom, boutique, téléphone ou email" />
+          <Recherche
+            action={`/admin/gestion/${espace}`}
+            valeur={recherche ?? ""}
+            placeholder={espace === "vendeurs" ? "Boutique, nom, téléphone ou email" : "Nom, téléphone ou email"}
+          />
           <SectionLabel>{recherche ? `Résultats · ${comptes.length}` : `Les plus récents · ${comptes.length}`}</SectionLabel>
           {comptes.length === 0 ? (
-            <EmptyState icon={UserRound} title="Aucun compte" description="Essayez un autre nom, un numéro ou une adresse." />
+            <EmptyState
+              icon={espace === "vendeurs" ? Store : UserRound}
+              title={`Aucun ${e.un}`}
+              description="Essayez un autre nom, un numéro ou une adresse."
+            />
           ) : (
-            comptes.map((c) => <LigneCompte key={c.profile_id} c={c} retour={retour} />)
+            comptes.map((c) => <LigneCompte key={c.profile_id} c={c} espace={espace} recherche={recherche} />)
           )}
         </Section>
       </ScreenBody>
@@ -167,59 +193,210 @@ export function ComptesVue({ comptes, recherche, ...m }: { comptes: CompteGere[]
   );
 }
 
-function LigneCompte({ c, retour }: { c: CompteGere; retour: string }) {
-  const boutique = c.role === "merchant";
+function EtatCompte({ supprime, suspendu }: { supprime: boolean; suspendu: boolean }) {
+  if (supprime) return <Badge>Supprimé</Badge>;
+  if (suspendu) return <Badge tone="warn">Suspendu</Badge>;
+  return null;
+}
+
+/** Une ligne de liste : toute la carte ouvre la fiche. La recherche suit,
+ *  pour que le retour de la fiche ramène à la même liste. */
+function LigneCompte({ c, espace, recherche }: { c: CompteGere; espace: Espace; recherche: string | null }) {
+  const boutique = espace === "vendeurs";
   const Icone = boutique ? Store : UserRound;
+  const href = `/admin/gestion/${espace}/${c.profile_id}${recherche ? `?q=${encodeURIComponent(recherche)}` : ""}`;
   return (
-    <Card padded className="flex flex-col gap-2.5">
-      <div className="flex items-start gap-3">
-        <Icone size={20} strokeWidth={1.9} className="mt-0.5 shrink-0 text-ink-soft" aria-hidden />
+    <Link href={href}>
+      <Card className="flex items-center gap-3 p-3.5">
+        <Icone size={20} strokeWidth={1.9} className="shrink-0 text-ink-soft" aria-hidden />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-base font-semibold">{c.shop_name ?? c.nom ?? "Sans nom"}</span>
-            <Badge tone={boutique ? "accent" : "neutral"}>{boutique ? "Boutique" : "Client"}</Badge>
-            {c.is_deleted ? <Badge>Supprimé</Badge> : c.is_suspended ? <Badge tone="warn">Suspendu</Badge> : null}
+            <span className="truncate text-base font-semibold">{(boutique ? c.shop_name : null) ?? c.nom ?? "Sans nom"}</span>
+            <EtatCompte supprime={c.is_deleted} suspendu={c.is_suspended} />
           </div>
-          {boutique && c.nom ? <span className="text-sm text-ink-soft">{c.nom}</span> : null}
-          <span className="text-sm text-ink-soft">
-            {[c.telephone, c.email, c.ville].filter(Boolean).join(" · ") || "Aucune coordonnée"}
+          <span className="truncate text-sm text-ink-soft">
+            {[boutique ? c.nom : null, c.telephone, c.email, c.ville].filter(Boolean).join(" · ") || "Aucune coordonnée"}
           </span>
           <span className="text-2xs text-ink-soft">
             Inscrit le {jourEtHeure(c.created_at)}
             {boutique ? ` · ${c.produits} produit${Number(c.produits) > 1 ? "s" : ""}` : ""}
             {Number(c.signalements_en_attente) > 0 ? ` · ${c.signalements_en_attente} signalement(s) en attente` : ""}
           </span>
-          {c.is_suspended && c.suspension_reason ? <p className="text-sm text-ink-soft">Motif : {c.suspension_reason}</p> : null}
         </div>
-      </div>
-      {boutique && c.shop_name ? (
-        <Link href={`/admin/gestion/produits?q=${encodeURIComponent(c.shop_name)}`} className="text-sm font-semibold text-accent-hover">
-          Voir ses produits
-        </Link>
-      ) : null}
-      {c.is_deleted ? null : c.is_suspended ? (
-        <GesteAvecMotif
-          libelle="Réactiver ce compte"
-          action={reactiverCompteGestionAction}
-          champ="profil"
-          valeur={c.profile_id}
-          retour={retour}
-          placeholder="Pourquoi réactiver (interne à l'équipe)"
-          bouton="Réactiver"
-        />
-      ) : (
-        <GesteAvecMotif
-          libelle="Suspendre ce compte"
-          action={suspendreCompteAction}
-          champ="profil"
-          valeur={c.profile_id}
-          retour={retour}
-          placeholder="Motif, montré à la personne"
-          bouton="Suspendre"
-          danger
-        />
-      )}
-    </Card>
+        <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-soft" aria-hidden />
+      </Card>
+    </Link>
+  );
+}
+
+const STATUTS_BOUTIQUE: Record<string, string> = { pending: "En attente de validation", approved: "Validée", rejected: "Refusée" };
+
+function Info({ libelle, valeur }: { libelle: string; valeur: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-2xs text-ink-soft">{libelle}</dt>
+      <dd className="text-base break-words">{valeur ?? <span className="text-ink-soft">—</span>}</dd>
+    </div>
+  );
+}
+
+/** Supprimer, avec case à cocher : le geste ne se défait pas. */
+function GesteSuppression({
+  libelle,
+  action,
+  champ,
+  valeur,
+  retour,
+  avertissement,
+  bouton,
+}: {
+  libelle: string;
+  action: (formData: FormData) => Promise<void>;
+  champ: string;
+  valeur: string;
+  retour: string;
+  avertissement: string;
+  bouton: string;
+}) {
+  const id = `suppr-${champ}-${valeur}`;
+  return (
+    <details>
+      <summary className="cursor-pointer text-sm font-semibold text-danger">{libelle}</summary>
+      <form action={action} className="mt-2.5 flex flex-col gap-2">
+        <input type="hidden" name={champ} value={valeur} />
+        <input type="hidden" name="retour" value={retour} />
+        <p className="text-sm text-ink-soft">{avertissement}</p>
+        <label className="sr-only" htmlFor={`${id}-motif`}>
+          Motif
+        </label>
+        <input id={`${id}-motif`} name="motif" required minLength={3} maxLength={500} placeholder="Motif (interne à l'équipe)" className={CHAMP} />
+        <label className="flex items-center gap-2 text-sm" htmlFor={`${id}-ok`}>
+          <input id={`${id}-ok`} type="checkbox" name="confirmer" value="oui" required className="size-5" />
+          Je confirme : c&apos;est définitif.
+        </label>
+        <PendingSubmit className={BOUTON_DANGER}>{bouton}</PendingSubmit>
+      </form>
+    </details>
+  );
+}
+
+export function FicheVue({
+  espace,
+  fiche,
+  produits,
+  recherche,
+  ...m
+}: { espace: Espace; fiche: FicheCompte; produits: ProduitBoutique[]; recherche: string | null } & Messages) {
+  const boutique = espace === "vendeurs";
+  const retour = `/admin/gestion/${espace}/${fiche.profile_id}${recherche ? `?q=${encodeURIComponent(recherche)}` : ""}`;
+  const titre = (boutique ? fiche.shop_name : null) ?? fiche.nom ?? "Sans nom";
+  return (
+    <Screen largeur="rangees">
+      <TopBar backHref={lienListe(espace, recherche)} title={titre} />
+      <ScreenBody>
+        <Section className="gap-5">
+          <Avis {...m} />
+
+          <Card padded className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              {boutique && fiche.photo_path ? (
+                <img src={shopPhotoUrl(fiche.photo_path)} alt="" className="size-14 shrink-0 rounded-full object-cover" />
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={boutique ? "accent" : "neutral"}>{boutique ? "Vendeur" : "Acheteur"}</Badge>
+                <EtatCompte supprime={fiche.is_deleted} suspendu={fiche.is_suspended} />
+                {fiche.est_de_l_equipe ? <Badge tone="accent">Équipe Filloo</Badge> : null}
+              </div>
+            </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <Info libelle="Nom" valeur={fiche.nom} />
+              <Info libelle="Téléphone" valeur={fiche.telephone} />
+              <Info libelle="Email" valeur={fiche.email} />
+              <Info libelle="Email confirmé" valeur={fiche.email_confirme_le ? jourEtHeure(fiche.email_confirme_le) : "Non"} />
+              <Info libelle="Ville" valeur={fiche.ville} />
+              <Info libelle="Inscrit le" valeur={jourEtHeure(fiche.created_at)} />
+              <Info libelle="Dernière connexion" valeur={fiche.derniere_connexion ? jourEtHeure(fiche.derniere_connexion) : "Jamais"} />
+              <Info libelle="Conversations" valeur={String(fiche.conversations)} />
+              <Info libelle="Signalements en attente" valeur={String(fiche.signalements_en_attente)} />
+              {fiche.is_suspended ? <Info libelle="Motif de la suspension" valeur={fiche.suspension_reason} /> : null}
+              {fiche.is_deleted && fiche.deleted_at ? <Info libelle="Supprimé le" valeur={jourEtHeure(fiche.deleted_at)} /> : null}
+            </dl>
+            {boutique ? (
+              <dl className="grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+                <Info libelle="Boutique" valeur={fiche.shop_name} />
+                <Info libelle="État de la boutique" valeur={fiche.statut_boutique ? STATUTS_BOUTIQUE[fiche.statut_boutique] ?? fiche.statut_boutique : null} />
+                <Info libelle="WhatsApp" valeur={fiche.whatsapp_phone} />
+                <Info libelle="Adresse" valeur={fiche.address_hint} />
+                <Info libelle="Validée le" valeur={fiche.approved_at ? jourEtHeure(fiche.approved_at) : null} />
+                {fiche.rejection_reason ? <Info libelle="Motif du refus" valeur={fiche.rejection_reason} /> : null}
+                <div className="sm:col-span-2">
+                  <Info libelle="Description" valeur={fiche.description} />
+                </div>
+              </dl>
+            ) : null}
+          </Card>
+
+          {fiche.is_deleted ? null : (
+            <Card padded className="flex flex-col gap-3">
+              <Link
+                href={`/admin/fil/${fiche.auth_user_id}?espace=${fiche.role}&profil=${fiche.profile_id}`}
+                className={BOUTON_FORT}
+              >
+                Écrire à {boutique ? "cette boutique" : "cette personne"}
+              </Link>
+              {fiche.is_suspended ? (
+                <GesteAvecMotif
+                  libelle="Réactiver ce compte"
+                  action={reactiverCompteGestionAction}
+                  champ="profil"
+                  valeur={fiche.profile_id}
+                  retour={retour}
+                  placeholder="Pourquoi réactiver (interne à l'équipe)"
+                  bouton="Réactiver"
+                />
+              ) : (
+                <GesteAvecMotif
+                  libelle="Suspendre ce compte"
+                  action={suspendreCompteAction}
+                  champ="profil"
+                  valeur={fiche.profile_id}
+                  retour={retour}
+                  placeholder="Motif, montré à la personne"
+                  bouton="Suspendre"
+                  danger
+                />
+              )}
+              {fiche.est_de_l_equipe ? null : (
+                <GesteSuppression
+                  libelle="Supprimer ce compte"
+                  action={supprimerCompteAction}
+                  champ="profil"
+                  valeur={fiche.profile_id}
+                  retour={retour}
+                  avertissement={
+                    boutique
+                      ? "Le nom, le téléphone, la photo et les coordonnées de la boutique sont effacés, ses produits retirés avec leurs photos. Les conversations restent lisibles pour les clients. Impossible à annuler."
+                      : "Le nom et le téléphone sont effacés et la personne ne peut plus se connecter. Les conversations restent lisibles pour les boutiques. Impossible à annuler."
+                  }
+                  bouton="Supprimer définitivement"
+                />
+              )}
+            </Card>
+          )}
+
+          {boutique ? (
+            <div className="flex flex-col gap-2.5">
+              <SectionLabel>{`Produits publiés · ${produits.length}`}</SectionLabel>
+              {produits.length === 0 ? (
+                <EmptyState icon={Package} title="Aucun produit" description="Cette boutique n'a encore rien publié." />
+              ) : (
+                produits.map((p) => <LigneProduit key={p.product_id} p={{ ...p, shop_name: null }} retour={retour} photo={p.photo_path} />)
+              )}
+            </div>
+          ) : null}
+        </Section>
+      </ScreenBody>
+    </Screen>
   );
 }
 
@@ -267,10 +444,24 @@ export function ProduitsVue({
   );
 }
 
-function LigneProduit({ p, retour }: { p: ProduitGere; retour: string }) {
+type LigneDeProduit = Pick<ProduitGere, "product_id" | "titre" | "statut" | "prix" | "categorie" | "masque_par_equipe" | "created_at"> & {
+  shop_name: string | null;
+};
+
+function LigneProduit({ p, retour, photo }: { p: LigneDeProduit; retour: string; photo?: string | null }) {
   return (
     <Card padded className="flex flex-col gap-2.5">
-      <div className="flex flex-col gap-0.5">
+      <div className="flex gap-3">
+      {photo !== undefined ? (
+        photo ? (
+          <img src={productImageUrl(photo)} alt="" loading="lazy" className="size-16 shrink-0 rounded-lg object-cover" />
+        ) : (
+          <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-line/40 text-ink-soft">
+            <Package size={20} strokeWidth={1.6} aria-hidden />
+          </div>
+        )
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-base font-semibold">{p.titre}</span>
           {p.masque_par_equipe ? <Badge tone="warn">Masqué par l&apos;équipe</Badge> : <Badge>{STATUTS[p.statut] ?? p.statut}</Badge>}
@@ -279,6 +470,7 @@ function LigneProduit({ p, retour }: { p: ProduitGere; retour: string }) {
           {[p.shop_name, p.categorie, p.prix != null ? `${Number(p.prix).toLocaleString("fr-FR")} GNF` : null].filter(Boolean).join(" · ")}
         </span>
         <span className="text-2xs text-ink-soft">Publié le {jourEtHeure(p.created_at)}</span>
+      </div>
       </div>
       {p.statut === "active" ? (
         <Link href={`/produit/${p.product_id}`} className="text-sm font-semibold text-accent-hover">
@@ -307,6 +499,15 @@ function LigneProduit({ p, retour }: { p: ProduitGere; retour: string }) {
           danger
         />
       )}
+      <GesteSuppression
+        libelle="Supprimer ce produit"
+        action={supprimerProduitEquipeAction}
+        champ="produit"
+        valeur={p.product_id}
+        retour={retour}
+        avertissement="Le produit et ses photos sont effacés. Les conversations qui le citaient restent. Impossible à annuler."
+        bouton="Supprimer définitivement"
+      />
     </Card>
   );
 }
@@ -315,6 +516,8 @@ function LigneProduit({ p, retour }: { p: ProduitGere; retour: string }) {
 
 export function EquipeVue({ membres, ...m }: { membres: Membre[] } & Messages) {
   const retour = "/admin/gestion/equipe";
+  /* L'écran suit la base (0067) : seul le propriétaire ajoute ou retire. */
+  const proprietaire = membres.some((u) => u.moi && u.proprietaire);
   return (
     <Screen largeur="rangees">
       <TopBar backHref="/admin/gestion" title="Équipe" />
@@ -327,11 +530,12 @@ export function EquipeVue({ membres, ...m }: { membres: Membre[] } & Messages) {
               <Card key={u.auth_user_id} padded className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-base font-semibold">{u.nom}</span>
-                  {u.moi ? <Badge tone="accent">Vous</Badge> : null}
+                  {u.proprietaire ? <Badge tone="accent">Propriétaire</Badge> : null}
+                  {u.moi ? <Badge>Vous</Badge> : null}
                 </div>
                 <span className="text-sm text-ink-soft">{u.email ?? "Adresse inconnue"}</span>
                 <span className="text-2xs text-ink-soft">Membre depuis le {jourEtHeure(u.created_at)}</span>
-                {u.moi ? null : (
+                {u.moi || u.proprietaire || !proprietaire ? null : (
                   <details>
                     <summary className="cursor-pointer text-sm font-semibold text-danger">Retirer de l&apos;équipe</summary>
                     <form action={retirerMembreAction} className="mt-2.5 flex flex-col gap-2">
@@ -348,6 +552,7 @@ export function EquipeVue({ membres, ...m }: { membres: Membre[] } & Messages) {
             ))}
           </div>
 
+          {proprietaire ? (
           <Card padded className="flex flex-col gap-2.5">
             <h2 className="text-base font-semibold">Ajouter un membre</h2>
             <p className="text-sm text-ink-soft">
@@ -367,6 +572,9 @@ export function EquipeVue({ membres, ...m }: { membres: Membre[] } & Messages) {
               <PendingSubmit className={BOUTON_FORT}>Ajouter</PendingSubmit>
             </form>
           </Card>
+          ) : (
+            <p className="text-sm text-ink-soft">Seul le propriétaire de Filloo ajoute ou retire un membre de l&apos;équipe.</p>
+          )}
         </Section>
       </ScreenBody>
     </Screen>
@@ -420,7 +628,7 @@ function Liste({
   return (
     <div className="flex flex-col gap-2.5">
       <SectionLabel>{`${titre} · ${elements.length}`}</SectionLabel>
-      <p className="text-sm text-ink-soft">{note} L&apos;ordre : le plus petit nombre en premier.</p>
+      <p className="text-sm text-ink-soft">{note} L&apos;ordre : le plus petit nombre en premier ; il se refait seul après un retrait.</p>
       {elements.map((e) => (
         <Card key={e.id} padded className="flex flex-col gap-2">
           <form action={fixer} className="flex flex-wrap items-end gap-2">

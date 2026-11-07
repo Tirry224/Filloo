@@ -33,7 +33,10 @@ export async function repondreAuFilAction(formData: FormData): Promise<void> {
   if (!estUuid(filDe)) retour("/admin", "Fil introuvable.");
   // Le fil client ou le fil boutique de cette personne (0044).
   const espace = lireEspace(formData.get("espace"));
-  const chemin = `/admin/fil/${filDe}?espace=${espace}`;
+  /* Un premier message (fil vide) garde son `profil` : sans lui, la page
+     d'un fil vide ne se rouvre pas pour montrer l'erreur. */
+  const profil = formData.get("profil");
+  const chemin = `/admin/fil/${filDe}?espace=${espace}${estUuid(profil) ? `&profil=${profil}` : ""}`;
   const corps = texteNettoye(formData.get("corps"));
   if (!corps) retour(chemin, "Écrivez une réponse.");
   if (longueur(corps) > CORPS_MAX) retour(chemin, `${CORPS_MAX} caractères au plus.`);
