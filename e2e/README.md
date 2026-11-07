@@ -59,3 +59,14 @@ Le signalement unique a été vérifié par sabotage : sans l'index
 `reports_un_seul_en_attente` (migration `0027`), le test voit deux
 signalements et échoue. Un nouveau test de refus mérite le même
 traitement avant qu'on s'y fie.
+
+## Dans une session cloud de Claude
+
+Docker y démarre (`dockerd &`), mais les registres `public.ecr.aws` et
+`ghcr.io` sont refusés et Docker Hub limite vite (429). Ce qui a marché
+le 2026-11-07 : tirer les images par le miroir `mirror.gcr.io/supabase/…`
+(et `supabase/postgres` depuis Docker Hub), les renommer
+`public.ecr.aws/supabase/…` avec `docker tag`, puis
+`npx supabase start -x studio,imgproxy,pgadmin-schema-diff,migra,pgmeta,logflare,vector,supavisor`.
+Arrêter l'ancien serveur avec `pkill -f next-server` avant chaque
+`npm start` : sinon le port 3000 reste à l'ancien build, sans erreur visible.

@@ -138,13 +138,19 @@ test("un client suspendu est arrêté avant d’écrire", async ({ browser }) =>
 });
 
 test("une boutique suspendue quitte le catalogue", async ({ browser }) => {
+  test.setTimeout(120_000); // l'échéance du cache public, voir plus bas
   await suspendre(V.nom, "merchant", true);
   try {
     const page = await personne(browser);
     await page.goto(`/recherche?q=${encodeURIComponent("riz " + id)}`);
     await expect(page.getByText(PRODUIT)).toHaveCount(0);
-    const r = await page.goto(`/produit/${produitId}`);
-    expect(r?.status()).toBe(404);
+    /* Suspendue ici EN BASE, comme au tableau de bord : le cache public de
+       la fiche (une minute, `catalogue-public.ts`) ne l'apprend qu'à son
+       échéance — une décision prise depuis /admin, elle, le vide aussitôt
+       (`equipe.spec.ts`). D'où l'attente. */
+    await expect
+      .poll(async () => (await page.goto(`/produit/${produitId}`))?.status(), { timeout: 80_000, intervals: [5_000] })
+      .toBe(404);
   } finally {
     await suspendre(V.nom, "merchant", false);
   }
@@ -153,12 +159,12 @@ test("une boutique suspendue quitte le catalogue", async ({ browser }) => {
 test("le commerçant supprime son compte : produit retiré, connexion refusée", async ({ browser }) => {
   const page = await personne(browser);
   await connecter(page, V.email, V.mdp);
-  await page.goto("/compte/informations/supprimer");
+  await page.goto("/vendeur/informations/supprimer"); // l'espace boutique : depuis 0041, chaque compte se supprime dans le sien
   await page.getByLabel("Mot de passe", { exact: true }).fill("pas-le-bon");
-  await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
+  await page.getByRole("button", { name: "Supprimer ma boutique" }).click();
   await expect(page.getByText(/Mot de passe incorrect/)).toBeVisible();
   await page.getByLabel("Mot de passe", { exact: true }).fill(V.mdp);
-  await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
+  await page.getByRole("button", { name: "Supprimer ma boutique" }).click();
   await expect(page).toHaveURL(/\/connexion/);
 
   const visiteur = await personne(browser);
@@ -169,5 +175,6 @@ test("le commerçant supprime son compte : produit retiré, connexion refusée",
   await visiteur.getByLabel("Mot de passe", { exact: true }).fill(V.mdp);
   await visiteur.getByRole("button", { name: /connecter/i }).click();
   await expect(visiteur).toHaveURL(/\/connexion/);
-  await expect(visiteur.getByText(/supprimé|fermé/i).first()).toBeVisible();
+  // L'email est libéré à la suppression (2026-10-23) : il n'existe plus.
+  await expect(visiteur.getByText(/Email ou mot de passe incorrect/)).toBeVisible();
 });

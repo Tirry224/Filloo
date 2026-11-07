@@ -199,6 +199,14 @@ mis à jour et raccourci ; l'ancienne version se relit par
   `fermer_les_sessions` réservée à `service_role`, la recréation de profil
   exige une connexion ouverte. *À constater* : la ligne `0068` de
   `schema_migrations` (pas encore inscrite à ce moment).
+- **Tests de navigateur de l'équipe** (`e2e/equipe.spec.ts`, 2026-11-07) :
+  propriétaire, listes séparées, fiche et retour, suspension qui retire la
+  fiche AUSSITÔT (le cache public est vidé par `revalidateTag(CATALOGUE)`
+  à chaque décision de l'équipe et à chaque suppression), écrire en
+  premier, suppression qui déconnecte, ordre refait. 27/27 sur pile
+  locale. Une suspension faite AU TABLEAU DE BORD reste visible jusqu'à
+  une minute (cache). `npm run largeurs` échoue dans la session cloud
+  (`networkidle` jamais atteint sur `/` et `/recherche`) : non élucidé.
 - **`monetisation`** : ses 0058-0060 réécrivent les contraintes de
   `journal_equipe` ; à sa publication, y garder les valeurs de 0064-0067.
 - **Numéros de migration** : deux sessions sur `dev` le 2026-11-07 ont
@@ -584,10 +592,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-407 commits, du plus récent au plus ancien.
+408 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `80c91b2` Mémoire : 0068 appliquée et constatée en production
 - `f7bea3d` Compte supprimé ou suspendu : effectif immédiatement (0068 écrite)
 - `0a6be82` Mémoire : 0067 appliquée et constatée en production
 - `11e12be` Admin : vendeurs et acheteurs séparés, fiche complète, suppression, écrire en premier

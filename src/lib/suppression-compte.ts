@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -40,6 +42,8 @@ export async function supprimerProfil(userId: string, role: Role): Promise<{ con
   const cible =
     profiles.find((p) => p.role === role && !p.is_deleted) ?? [...profiles].reverse().find((p) => p.role === role);
   if (cible) await effacerProfil(admin, cible);
+  // Une boutique supprimée quitte le catalogue public AUSSITÔT (2026-11-07).
+  revalidateTag(CATALOGUE, { expire: 0 });
 
   if (profiles.some((p) => p.role !== role && !p.is_deleted)) return { connexionFermee: false };
   await couperConnexion(admin, userId);
@@ -59,6 +63,7 @@ export async function anonymiserEtBannir(userId: string) {
     .eq("auth_user_id", userId);
   if (profilesError) throw profilesError;
   for (const profile of profiles) await effacerProfil(admin, profile);
+  revalidateTag(CATALOGUE, { expire: 0 });
   await couperConnexion(admin, userId);
 }
 

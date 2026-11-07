@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { messagePourErreur } from "@/lib/erreurs";
@@ -45,6 +46,8 @@ function lireMotif(formData: FormData, chemin: string, quoi: string): string {
 }
 
 function rafraichir(): void {
+  // Le catalogue public aussi : une décision se voit aussitôt, pas une minute après.
+  revalidateTag(CATALOGUE, { expire: 0 });
   revalidatePath(GESTION, "layout");
   revalidatePath("/admin/moderation");
 }

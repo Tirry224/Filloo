@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js";
  * compte, se font en production dans le tableau de bord
  * Supabase. Ici, par la clé `service_role` de la pile LOCALE.
  */
-function admin() {
+export function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const cle = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !cle) {
@@ -76,4 +76,23 @@ export async function connecter(page: Page, email: string, mdp: string) {
   await page.getByLabel("Mot de passe", { exact: true }).fill(mdp);
   await page.getByRole("button", { name: /connecter/i }).click();
   await expect(page).not.toHaveURL(/\/connexion/);
+}
+
+/**
+ * Un membre de l'équipe Filloo, comme le porteur du projet l'inscrit au
+ * tableau de bord : une connexion confirmée, sans profil (l'équipe n'a
+ * que `/admin`, 0043), une ligne `equipe`.
+ */
+export async function creerMembre(o: { email: string; mdp: string; nom: string; proprietaire: boolean }) {
+  const a = admin();
+  const { data, error } = await a.auth.admin.createUser({ email: o.email, password: o.mdp, email_confirm: true });
+  if (error) throw error;
+  const uid = data.user.id;
+  // `handle_new_user` a pu lui créer un profil client : l'équipe n'en a pas.
+  await a.from("profiles").delete().eq("auth_user_id", uid);
+  // Un seul propriétaire (0067) : celui d'un passage précédent cède la place.
+  if (o.proprietaire) await a.from("equipe").update({ proprietaire: false }).eq("proprietaire", true);
+  const { error: e2 } = await a.from("equipe").insert({ auth_user_id: uid, nom: o.nom, proprietaire: o.proprietaire });
+  if (e2) throw e2;
+  return uid;
 }
