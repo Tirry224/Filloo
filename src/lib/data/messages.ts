@@ -274,34 +274,23 @@ export async function getCitableProducts(supabase: SupabaseClient<Database>, mer
   }));
 }
 
+/**
+ * Le nombre de messages non lus d'un espace, compté par la base en une
+ * requête (`compter_messages_non_lus`, 0069, `security invoker` : le RLS
+ * s'applique). Avant, on lisait les identifiants de TOUTES les
+ * conversations pour les renvoyer dans l'adresse d'une seconde requête
+ * (`.in(...)`) : deux allers-retours, et une adresse qui dépasse la limite
+ * des serveurs vers quelques centaines de conversations.
+ */
 export async function countUnreadMessages(
   supabase: SupabaseClient<Database>,
   space: Espace,
 ): Promise<number> {
-  const profile = await getMyProfile(supabase, space === "merchant" ? "merchant" : "client");
-  if (!profile) return 0;
-
-  let conversationQuery = supabase.from("conversations").select("id");
-  if (space === "merchant") {
-    const merchant = await getMyMerchant(supabase);
-    if (!merchant) return 0;
-    conversationQuery = conversationQuery.eq("merchant_id", merchant.id);
-  } else {
-    conversationQuery = conversationQuery.eq("client_id", profile.id);
-  }
-
-  const { data: conversations, error: conversationsError } = await conversationQuery;
-  if (conversationsError) throw conversationsError;
-  if (conversations.length === 0) return 0;
-
-  const { count, error } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .in("conversation_id", conversations.map((c) => c.id))
-    .is("read_at", null)
-    .neq("sender_id", profile.id);
+  const { data, error } = await supabase.rpc("compter_messages_non_lus", {
+    p_espace: space === "merchant" ? "merchant" : "client",
+  });
   if (error) throw error;
-  return count ?? 0;
+  return data ?? 0;
 }
 
 export type BlockedPeer = { conversationId: string; peerName: string };

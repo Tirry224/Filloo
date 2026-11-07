@@ -596,10 +596,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-416 commits, du plus récent au plus ancien.
+417 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `a6e23ce` Cron du matin : un nouvel essai, puis l'échec part dans Sentry
 - `0fe49a7` Publicité : candidats lus une minute en cache, rotation à chaque visite
 - `1ba5ee9` Merge pull request #9 from Tirry224/dev
 - `ea75ee9` Admin : l'en-tête dit « Propriétaire » au propriétaire, « Équipe » aux autres

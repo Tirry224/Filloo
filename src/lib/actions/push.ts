@@ -9,8 +9,9 @@ import { estAdressePush } from "@/lib/push-adresse";
 /**
  * Le client de SESSION, non `service_role` : contrairement à l'envoi
  * (`src/lib/push.ts`), ces trois actions ne touchent que les appareils de
- * la personne connectée. Le RLS de `0023` suffit, et un bug ici ne peut
- * pas abonner un téléphone au nom d'un tiers.
+ * la personne connectée. Le RLS de `0023` (et, pour l'enregistrement,
+ * `enregistrer_appareil_push` qui lit `auth.uid()`) fait qu'un bug ici ne
+ * peut pas abonner un téléphone au nom d'un tiers.
  */
 
 /** Ce que `PushSubscription.toJSON()` rend. Recopié plutôt qu'importé :
@@ -39,20 +40,19 @@ export async function savePushSubscriptionAction(
   const user = await getSessionUser(supabase);
   if (!user) return { error: "Connectez-vous d'abord." };
 
-  /* `upsert` sur `endpoint`, non `insert` : le même appareil se réabonne
-     régulièrement (mise à jour du navigateur, effacement de données), et
-     un `insert` afficherait une erreur pour un geste qui a réussi côté
-     navigateur. */
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      auth_user_id: user.id,
-      endpoint,
-      p256dh,
-      auth_secret: auth,
-      user_agent: userAgent.slice(0, 300) || null,
-    },
-    { onConflict: "endpoint" },
-  );
+  /* Par la fonction `enregistrer_appareil_push` (0069), non un `upsert` :
+     l'adresse d'un navigateur est unique pour toute la table, et quand un
+     second compte se connectait sur le même appareil, l'`upsert` visait la
+     ligne du premier et le RLS le refusait (58 refus en 24 h, constaté le
+     2026-11-07). Le second compte ne recevait rien, et le premier recevait
+     encore SES notifications sur un appareil qui n'était plus le sien. La
+     fonction donne l'appareil à la connexion qui l'enregistre. */
+  const { error } = await supabase.rpc("enregistrer_appareil_push", {
+    p_endpoint: endpoint,
+    p_p256dh: p256dh,
+    p_auth: auth,
+    p_user_agent: userAgent.slice(0, 300) || undefined,
+  });
   if (error) return { error: messagePourErreur(error, "push") };
 
   return { sent: true };
