@@ -157,8 +157,27 @@ mis à jour et raccourci ; l'ancienne version se relit par
   au refus, signé dans l'historique). Gratuit tant que le paiement manque.
 - **Résultats** : affichages et clics (`pub_vue`, `pub_clic`, robots
   exclus), clic compté par `/pub/[id]` seulement pendant la campagne.
-- **Le commerçant n'est pas notifié** d'une décision : il la lit sur sa
-  page. À décider.
+- **Le commerçant n'est pas notifié** d'une décision sur `dev` ; il l'est
+  sur `monetisation` (message de l'équipe dans le fil boutique + notification).
+
+### Sur la branche `monetisation` seulement (2026-11-07) : la publicité payante
+
+- **Pas fusionnée dans `dev`, `0048` PAS appliquée** : décision du porteur
+  du projet. `0048` et le site partent ENSEMBLE, sinon une demande naît
+  « à payer » sur un site qui ne sait pas la payer.
+- **Parcours** : le commerçant voit les prix, demande, paie par Orange
+  Money ou MTN MoMo au numéro de Filloo, recopie la référence du SMS ;
+  l'équipe vérifie (`/admin/publicite`), valide ou refuse, note le
+  remboursement ; elle peut aussi créer une campagne (espèces, mobile,
+  offerte). Revenus par mois sur la même page.
+- **Prix** : `/admin/publicite/tarifs`. Pré-remplis par des HYPOTHÈSES
+  (produit 7 000 à 45 000 GNF, catégorie 5 000 à 32 000, boutique 10 000
+  à 60 000, de 3 à 30 jours), à décider par le porteur du projet.
+- **Avant publication** : saisir les vrais numéros Orange Money et MTN
+  (aucun au départ : sans eux, personne ne peut payer).
+- **Pas fait** : crédits, abonnements, badges, remboursement partiel,
+  attribution des contacts à une campagne. App mobile : n'affiche pas la
+  publicité, et n'utilise aucun objet touché par `0048`.
 
 ### Décidé par le porteur du projet (2026-11-06) : l'accueil mélangé
 
@@ -515,10 +534,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-389 commits, du plus récent au plus ancien.
+390 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `fd4c046` 0048 écrite, PAS appliquée : prix de la publicité et paiement manuel Orange Money / MTN
 - `7236797` Publicité payante, côté site (EN COURS : ne compile pas sans 0048)
 
 ### 2026-11-06
