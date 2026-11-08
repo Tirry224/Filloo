@@ -618,12 +618,20 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-417 commits, du plus récent au plus ancien.
+422 commits, du plus récent au plus ancien.
+
+### 2026-11-08
+
+- `75c96ce` Ramener claude/jolly-curie-v0v5e6 dans dev : audit du 2026-11-07
+- `4717458` 0069 : un navigateur sonne pour le compte connecté dessus
 
 ### 2026-11-07
 
 - `677d48a` Notifications de session : à chaque tâche finie et à chaque besoin du porteur
 - `f6b4d3a` Règle : toutes les sessions préviennent par notification
+- `4476058` Push et non-lus : passer par les fonctions de 0069
+- `a6e23ce` Cron du matin : un nouvel essai, puis l'échec part dans Sentry
+- `0fe49a7` Publicité : candidats lus une minute en cache, rotation à chaque visite
 - `1ba5ee9` Merge pull request #9 from Tirry224/dev
 - `ea75ee9` Admin : l'en-tête dit « Propriétaire » au propriétaire, « Équipe » aux autres
 - `86f62bc` Politique de confidentialité réécrite de zéro
