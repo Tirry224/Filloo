@@ -18,6 +18,7 @@ import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { melanger } from "@/lib/melange";
 import { compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 import { premier } from "@/lib/next-param";
+import { estFiltree } from "@/lib/seo";
 
 
 /**
@@ -30,7 +31,7 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const filtree = Object.keys(await searchParams).length > 0;
+  const filtree = estFiltree(await searchParams, ["q", "categorie", "tri"]);
   return {
     title: "Rechercher un produit",
     alternates: { canonical: "/recherche" },

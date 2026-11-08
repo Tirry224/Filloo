@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { jsonLd } from "@/lib/seo";
+import { siteUrl } from "@/lib/site-url";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -115,10 +117,12 @@ export default async function ProductPage({
   /* Les données structurées que Google lit pour afficher le prix et la
      disponibilité dans ses résultats (schema.org `Product`). Le `<`
      échappé empêche un titre de commerçant de fermer la balise. */
-  const donneesStructurees = JSON.stringify({
+  const base = siteUrl();
+  const donneesStructurees = jsonLd({
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
+    url: base ? `${base}/produit/${product.id}` : undefined,
     description: product.description ?? undefined,
     image: product.imageUrls.length > 0 ? product.imageUrls : undefined,
     category: product.category,
@@ -127,9 +131,14 @@ export default async function ProductPage({
       price: product.priceGnf,
       priceCurrency: "GNF",
       availability: sold ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: product.merchant.shopName },
+      url: base ? `${base}/produit/${product.id}` : undefined,
+      seller: {
+        "@type": "Organization",
+        name: product.merchant.shopName,
+        url: base ? `${base}/boutique/${product.merchant.id}` : undefined,
+      },
     },
-  }).replace(/</g, "\\u003c");
+  });
 
   return (
     <Screen>

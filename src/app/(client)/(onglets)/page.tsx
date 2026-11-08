@@ -20,6 +20,8 @@ import { PushBell } from "@/components/push/PushBell";
 import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
+import { estFiltree, jsonLd } from "@/lib/seo";
+import { siteUrl } from "@/lib/site-url";
 import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { categoriesParGouts, melanger } from "@/lib/melange";
 import { RetenirGout } from "@/components/product/RetenirGout";
@@ -33,13 +35,14 @@ const TRIS = [
   { valeur: "populaire", libelle: "Populaires" },
 ] as const;
 
-/** L'accueil filtré (`?categorie=…`) n'est qu'une variante de l'accueil. */
+/** L'accueil filtré (`?categorie=…`, `?tri=…`) n'est qu'une variante de
+ * l'accueil ; un paramètre de suivi (`?fbclid=…`) n'en fait pas une. */
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const filtree = Object.keys(await searchParams).length > 0;
+  const filtree = estFiltree(await searchParams, ["categorie", "tri"]);
   return {
     alternates: { canonical: "/" },
     robots: filtree ? { index: false, follow: true } : undefined,
@@ -105,8 +108,36 @@ export default async function HomePage({
 
   await compter("visite", {});
 
+  /* Ce que Google lit pour nommer le site dans ses résultats (« Filloo »
+     plutôt que « filloo.net ») et le relier à une organisation. Seulement
+     sur l'accueil, comme le demande sa documentation. */
+  const base = siteUrl();
+  const donneesStructurees = base
+    ? jsonLd([
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Filloo",
+          alternateName: "filloo.net",
+          url: `${base}/`,
+          inLanguage: "fr",
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Filloo",
+          url: `${base}/`,
+          logo: `${base}/icons/icone-512.png`,
+          areaServed: { "@type": "Country", name: "Guinée" },
+        },
+      ])
+    : null;
+
   return (
     <TabScreen largeur="grille">
+      {donneesStructurees ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: donneesStructurees }} />
+      ) : null}
       {/* La cloche prend la place de l'ancienne puce de ville. */}
       <TopBar title={<Wordmark size="lg" />} right={<PushBell connecte={connecte} />} />
 

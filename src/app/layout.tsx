@@ -40,6 +40,13 @@ export const metadata: Metadata = {
      l'installation est la condition pour recevoir un push. */
   appleWebApp: { capable: true, title: "Filloo", statusBarStyle: "default" },
   icons: { apple: "/icons/icone-180.png" },
+  /* Preuve de propriété pour Google Search Console (méthode « balise
+     HTML ») : le code donné par la console va dans cette variable sur
+     Vercel. Absente, aucune balise n'est écrite. La méthode DNS
+     (« propriété de domaine ») s'en passe entièrement. */
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION.trim() }
+    : undefined,
 };
 
 export const viewport: Viewport = {

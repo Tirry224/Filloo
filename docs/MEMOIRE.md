@@ -314,8 +314,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Branches `claude/*` sur GitHub** : à supprimer depuis une machine où
   `git` parle directement à GitHub (le relais des sessions refuse,
   403), jamais sans accord.
-- **Google Search Console** : déclarer `filloo.net`, soumettre
-  `/sitemap.xml` (porteur du projet).
+- **Google Search Console** : déclarer `filloo.net` (propriété de
+  domaine, enregistrement DNS sur Vercel ; ou balise HTML via la variable
+  `GOOGLE_SITE_VERIFICATION`), soumettre `/sitemap.xml`, demander
+  l'indexation de l'accueil (porteur du projet). C'est la cause n° 1 de
+  « Google ne trouve pas le site » : rien n'est encore déclaré.
 - **`/admin/statistiques` compte encore les « boutiques en attente »**, toujours 0
   depuis `0033`.
 
@@ -621,10 +624,12 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-423 commits, du plus récent au plus ancien.
+425 commits, du plus récent au plus ancien.
 
 ### 2026-11-08
 
+- `9850c1f` Ramener claude/jolly-curie-v0v5e6 dans dev : middleware getClaims, sauvegarde R2
+- `a5d595b` Sauvegarde de chaque nuit vers Cloudflare R2, restauration vérifiée
 - `b967df6` Middleware : vérifier le jeton sur place (getClaims) au lieu d'appeler Supabase
 - `75c96ce` Ramener claude/jolly-curie-v0v5e6 dans dev : audit du 2026-11-07
 - `4717458` 0069 : un navigateur sonne pour le compte connecté dessus
