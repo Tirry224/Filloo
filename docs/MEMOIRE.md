@@ -61,6 +61,28 @@ mis à jour et raccourci ; l'ancienne version se relit par
   *À constater* : demander le lien sur un téléphone, l'ouvrir depuis
   l'app Mail.
 
+### Audit du 2026-11-07 (soir) : corrigé, et ce qui attend
+
+- **`0069` appliquée le 2026-11-07** (après 611 tests au vert) : un
+  navigateur passe à la DERNIÈRE connexion qui l'enregistre
+  (`enregistrer_appareil_push`) — avant, 58 refus RLS en 24 h, le second
+  compte d'un téléphone ne recevait rien et le premier recevait encore
+  ses notifications dessus. Neuf fonctions de trigger fermées à
+  `anon`/`authenticated` ; non-lus comptés par `compter_messages_non_lus`.
+  *À constater* : réception sur un téléphone avec deux comptes.
+- **Publicité en cache une minute**, tirage au hasard à chaque visite
+  parmi les candidats (`data/publicite.ts`).
+- **Cron du matin** : un nouvel essai après 5 s, échec envoyé à Sentry,
+  500 dès qu'une tâche échoue. « JWT issued at future » non reproduit
+  (journaux Vercel Hobby : une heure).
+- **Attend le porteur du projet** : destination des sauvegardes (base +
+  photos), clé Turnstile, case « mots de passe compromis » (Supabase
+  Auth), type des clés JWT (Settings → JWT Keys) avant d'alléger
+  `/auth/v1/user` (1 752 appels sur 3 855 en 24 h).
+- **Attend le trafic** : index trigramme de recherche, pagination,
+  agrégation d'`analytics_events`, liste des fils (3 produits, 17
+  messages, ~9 900 mesures au 2026-11-07).
+
 ### Décidé par le porteur du projet (2026-10-23), à faire
 
 - **Supabase Pro : fait** (constaté le 2026-11-06). Les seuils de la
@@ -596,10 +618,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-417 commits, du plus récent au plus ancien.
+418 commits, du plus récent au plus ancien.
 
 ### 2026-11-07
 
+- `4476058` Push et non-lus : passer par les fonctions de 0069
 - `a6e23ce` Cron du matin : un nouvel essai, puis l'échec part dans Sentry
 - `0fe49a7` Publicité : candidats lus une minute en cache, rotation à chaque visite
 - `1ba5ee9` Merge pull request #9 from Tirry224/dev

@@ -15,8 +15,10 @@ source, constaté ou supposé.
   version `0067`, pas un horodatage). Sur `dev` les numéros
   sautent `0048`–`0062` : `monetisation` porte `0058`–`0062`
   (renumérotées, constaté `origin/monetisation`), non appliquées.
-  `0068` (compte supprimé fermé aussitôt) ÉCRITE et testée le
-  2026-11-07, non appliquée à la fin de la mission. `scripts/migrations.mjs`
+  `0068` appliquée (version `0068`, constaté `list_migrations` le
+  2026-11-07 tard). `0069` (push à la dernière connexion, triggers fermés,
+  non-lus) ÉCRITE et testée le 2026-11-07, non appliquée à la fin de la
+  mission. `scripts/migrations.mjs`
   n'exige pas la continuité. Ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -76,15 +78,11 @@ source, constaté ou supposé.
 - **pg_cron 1.6.4** (constaté 2026-11-07) : `purger-mesures`,
   `purger-essais-mot-de-passe`, `purger-notifications-envoyees`.
   `analytics_events` écrite par le SITE seul, purge à 13 mois (0028).
-- **App mobile (`/home/user/Filloo-mobile`, constaté 2026-11-07)** :
-  `fil_equipe` lu sur sa branche `dev` seulement, pas `main` (stores) ;
-  `main` lit `categories`/`cities` en `(id, name)` triées par `position`,
-  et `categories(name)` en jointure ; ne touche pas `equipe` ;
-  boutique = `insert` direct dans `merchants` sans `.select()` ; publie
-  par `update products set status` et affiche tel quel un `P0001` (un
-  `raise exception` en français arrive lisible) ; RPC : `search_products`,
-  `conversation_is_open`, `enregistrer_telephone` ; supprime des produits
-  (cascade vers `campagnes`, trigger 0050).
+- **App mobile ABANDONNÉE** (décision du 2026-11-07, `CLAUDE.md`) : plus
+  de relecture de compatibilité avec `Filloo-mobile` ; seuls comptent le
+  site de `main` et des installations encore en circulation (RPC qu'elle
+  appelait : `search_products`, `conversation_is_open`,
+  `enregistrer_telephone` ; ne pas les casser sans raison).
 - **`hidden` sert AUSSI au commerçant** (constaté 2026-11-06, site
   `hideProductAction`/`republishProductAction`) : il masque et republie
   lui-même. Un masquage de l'équipe ne peut donc pas être « status =
@@ -132,12 +130,14 @@ source, constaté ou supposé.
   restent ouverts EXPRÈS au suspendu : bloquer/débloquer (0032), marquer
   lu, annuler sa campagne (0047), retirer téléphone/abonnement.
 
-## Alertes Supabase ouvertes (get_advisors, 2026-10-14)
+## Alertes Supabase ouvertes (get_advisors, constaté 2026-11-07)
 
-- **15 fonctions `SECURITY DEFINER` exécutables par `anon`**, 17 par
-  `authenticated` : celles qui renvoient une donnée (`my_profile_id`,
-  `owns_profile`, `merchant_is_public`…) d'abord. Protection des mots de
-  passe fuités désactivée (Auth).
+- **18 `SECURITY DEFINER` exécutables par `anon`, 57 par `authenticated`**.
+  `0069` retire les 9 fonctions de trigger (restent 9 pour anon : aides
+  du RLS et vitrines publiques, VOULUES — ne pas y toucher). Les ~48
+  d'`authenticated` sont des RPC gardées (équipe, `my_*`) : alerte
+  attendue pour toute nouvelle RPC definer. Protection des mots de passe
+  fuités désactivée (Auth).
 - **RLS sans politique, voulu** : `analytics_events` (constaté, `0024`),
   `essais_mot_de_passe`, `notifications_envoyees` (constaté,
   `0053`/`0054`) ; `notifications` : *supposé* pareil (0021).
@@ -184,7 +184,8 @@ source, constaté ou supposé.
   `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
-  2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`.
+  2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
+  avec `0069` (`/var/tmp/rejouer.sh` rejoue tout).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve
@@ -224,6 +225,20 @@ source, constaté ou supposé.
   si l'ancienne ligne a été écrite dans la MÊME transaction (0050).
 - **`produits_sponsorises` tire UN produit par boutique au hasard** :
   plafond testé avec N boutiques, contrôles `>= N` / `= plafond`.
+- **EXECUTE d'une fonction de trigger n'est vérifié qu'à la création du
+  trigger** (prouvé `0069` en PG16 : anon, authenticated et un rôle sans
+  aucun droit déclenchent les 9 triggers après `revoke`). Appeler une
+  fonction de trigger hors trigger est de toute façon impossible : alerte
+  advisor non exploitable. Un `drop function` + `create` rend les droits
+  par défaut (refaire le `revoke`) ; `create or replace` les garde.
+- **`upsert` du client de session sur une colonne unique pour TOUTE la
+  table** (`push_subscriptions.endpoint`) : si la ligne est à un autre,
+  l'UPDATE du `on conflict` tombe sur le `using` → « violates row-level
+  security policy (USING expression) » (58/24 h en production le
+  2026-11-07). Remède : fonction definer qui donne la ligne à l'appelant,
+  et efface tout ce qui trahirait l'ancien (dates, user_agent) puisque le
+  nouveau la lit ensuite (`0069`, comme `enregistrer_telephone`). Dans
+  `on conflict do update`, l'alias de la table (`as s`) = ligne existante.
 - **Divers PG** (constaté 2026-11-07) : nom de policy > 63 octets tronqué
   (NOTICE) ; `has_any_column_privilege` refuse `delete` ; une colonne
   `generated always as identity` s'insère sans droit sur la séquence.
@@ -252,8 +267,10 @@ source, constaté ou supposé.
 - **`0041` garde la suspension après suppression** (un client suspendu
   qui supprime son compte ne le recrée pas) : choix du gardien, à faire
   confirmer par le porteur du projet.
-- Fermer `EXECUTE` à `anon` sur les fonctions que ni le site ni l'app
-  n'appellent ? Inventaire à faire.
+- Après `0069` et le passage du site sur `enregistrer_appareil_push` :
+  retirer les policies d'insertion/mise à jour directes de
+  `push_subscriptions` (migration suivante, quand `main` ne s'en sert
+  plus). Le site doit aussi appeler `compter_messages_non_lus`.
 - **`suspension_reason` lisible par l'interlocuteur** de la personne
   suspendue (voir `profiles` plus haut) : à faire trancher par le porteur
   du projet (accepter, ou déplacer le motif dans une table à part lue
