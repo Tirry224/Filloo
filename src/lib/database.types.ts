@@ -1065,6 +1065,19 @@ export type Database = {
         }
         Returns: string
       }
+      compter_messages_non_lus: {
+        Args: { p_espace: Database["public"]["Enums"]["user_role"] }
+        Returns: number
+      }
+      enregistrer_appareil_push: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_p256dh: string
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       enregistrer_telephone: {
         Args: { p_plateforme: string; p_token: string }
         Returns: undefined

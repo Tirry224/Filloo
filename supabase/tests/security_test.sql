@@ -5048,5 +5048,402 @@ select pg_temp.check('0068 : suspendu, il ne remplace ni n''efface ses photos',
 select pg_temp.check('0068 : suspendu, son profil ne se modifie plus (ville)',
   (select city_id from public.profiles where auth_user_id = 'a0680000-0000-0000-0000-0000000000a1') is distinct from 3);
 
+
+-- =====================================================================
+-- Un navigateur sonne pour le compte connecté dessus ; les fonctions de
+-- trigger ne s'appellent plus de l'extérieur ; les non-lus se comptent
+-- en une requête (0069)
+-- =====================================================================
+-- P1, P2 : clients qui partagent un navigateur (push). Z : connexion
+-- fermée. MA, MB : commerçants (boutiques b1, b2, produits f1, f2).
+-- C, D : clients (non-lus).
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0690000-0000-0000-0000-0000000000c1', 'p1-0069@test.gn', '{"role":"client","full_name":"Penda P1","phone":"620006901"}', now()),
+  ('a0690000-0000-0000-0000-0000000000c2', 'p2-0069@test.gn', '{"role":"client","full_name":"Pathe P2","phone":"620006902"}', now()),
+  ('a0690000-0000-0000-0000-0000000000c3', 'z0069@test.gn', '{"role":"client","full_name":"Zeinab Z69","phone":"620006903"}', now()),
+  ('a0690000-0000-0000-0000-0000000000c4', 'c0069@test.gn', '{"role":"client","full_name":"Client C69","phone":"620006904"}', now()),
+  ('a0690000-0000-0000-0000-0000000000c5', 'd0069@test.gn', '{"role":"client","full_name":"Client D69","phone":"620006905"}', now()),
+  ('a0690000-0000-0000-0000-0000000000a1', 'ma0069@test.gn', '{"role":"merchant","full_name":"Marchand MA69","phone":"620006906"}', now()),
+  ('a0690000-0000-0000-0000-0000000000a2', 'mb0069@test.gn', '{"role":"merchant","full_name":"Marchand MB69","phone":"620006907"}', now());
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0690000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0690000-0000-0000-0000-0000000000b1', 'a0690000-0000-0000-0000-0000000000a1', 'Chez MA69', 1),
+  ('a0690000-0000-0000-0000-0000000000b2', 'a0690000-0000-0000-0000-0000000000a2', 'Chez MB69', 1);
+insert into public.products (id, merchant_id, category_id, title, price_gnf) values
+  ('a0690000-0000-0000-0000-0000000000f1', 'a0690000-0000-0000-0000-0000000000b1', 3, 'Pagne MA69', 90000),
+  ('a0690000-0000-0000-0000-0000000000f2', 'a0690000-0000-0000-0000-0000000000b2', 3, 'Sac MB69', 70000);
+insert into public.product_images (product_id, storage_path, position) values
+  ('a0690000-0000-0000-0000-0000000000f1', 'a0690000-0000-0000-0000-0000000000b1/f1/0.webp', 0),
+  ('a0690000-0000-0000-0000-0000000000f2', 'a0690000-0000-0000-0000-0000000000b2/f2/0.webp', 0);
+update public.products set status = 'active' where id::text like 'a0690000-%';
+
+-- --- 1. Push : droits ----------------------------------------------------
+select pg_temp.check('0069 : enregistrer_appareil_push est security definer, search_path vide, ouverte a authenticated seul',
+  (select p.prosecdef and p.proconfig = array['search_path=""']
+     from pg_proc p where p.oid = 'public.enregistrer_appareil_push(text, text, text, text)'::regprocedure)
+  and has_function_privilege('authenticated', 'public.enregistrer_appareil_push(text, text, text, text)', 'execute')
+  and not has_function_privilege('anon', 'public.enregistrer_appareil_push(text, text, text, text)', 'execute')
+  and not has_function_privilege('public', 'public.enregistrer_appareil_push(text, text, text, text)', 'execute'));
+
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0069 : un visiteur n''enregistre pas d''appareil',
+  pg_temp.refuse($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/anon69', 'p', 's')$q$));
+reset role;
+set role authenticated;
+select pg_temp.check('0069 : sans connexion (jeton sans sub), refuse',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/nul69', 'p', 's')$q$)
+    = 'Connectez-vous pour recevoir les notifications.');
+reset role;
+
+-- --- 1. Push : P1 abonne le navigateur, puis P2 s'y connecte -------------
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c1');
+select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/commun69', 'cle-p1', 'secret-p1', 'Navigateur de P1');
+reset role;
+select pg_temp.check('0069 : P1 enregistre son navigateur',
+  (select auth_user_id = 'a0690000-0000-0000-0000-0000000000c1' and p256dh = 'cle-p1'
+          and auth_secret = 'secret-p1' and user_agent = 'Navigateur de P1'
+     from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69'));
+-- La trace d'usage de P1, qui ne doit pas passer à P2.
+update public.push_subscriptions
+   set last_used_at = now() - interval '1 hour', created_at = now() - interval '10 days'
+ where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69';
+
+-- Témoin : le chemin actuel du site (upsert direct) échoue pour P2, avec
+-- l'erreur constatée en production.
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0069 : temoin : l''upsert direct de P2 sur l''appareil de P1 est refuse (USING expression)',
+  pg_temp.erreur_de($q$insert into public.push_subscriptions (auth_user_id, endpoint, p256dh, auth_secret)
+    values ('a0690000-0000-0000-0000-0000000000c2', 'https://fcm.googleapis.com/fcm/send/commun69', 'cle-p2', 'secret-p2')
+    on conflict (endpoint) do update set auth_user_id = excluded.auth_user_id, p256dh = excluded.p256dh,
+      auth_secret = excluded.auth_secret$q$)
+    like 'new row violates row-level security policy (USING expression)%');
+select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/commun69', 'cle-p2', 'secret-p2');
+select pg_temp.check('0069 : P2 voit desormais l''appareil',
+  (select count(*) from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69') = 1);
+reset role;
+select pg_temp.check('0069 : l''appareil appartient a P2, avec ses cles a lui, sur la meme ligne',
+  (select count(*) from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69') = 1
+  and (select auth_user_id = 'a0690000-0000-0000-0000-0000000000c2' and p256dh = 'cle-p2' and auth_secret = 'secret-p2'
+         from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69'));
+select pg_temp.check('0069 : rien de P1 ne passe a P2 (navigateur, date d''abonnement, dernier envoi)',
+  (select user_agent is null and last_used_at is null and created_at > now() - interval '1 minute'
+     from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69'));
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0069 : P1 ne voit plus l''appareil (ses notifications n''y partent plus)',
+  (select count(*) from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69') = 0);
+reset role;
+
+-- Même connexion qui se réenregistre (nouvelles clés) : sa trace reste.
+update public.push_subscriptions
+   set last_used_at = now() - interval '1 hour', created_at = now() - interval '10 days'
+ where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69';
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c2');
+select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/commun69', 'cle-p2-bis', 'secret-p2-bis', repeat('u', 400));
+reset role;
+select pg_temp.check('0069 : P2 qui se reabonne garde sa date et son dernier envoi, cles changees, user_agent tronque a 300',
+  (select auth_user_id = 'a0690000-0000-0000-0000-0000000000c2' and p256dh = 'cle-p2-bis' and auth_secret = 'secret-p2-bis'
+          and length(user_agent) = 300 and last_used_at < now() - interval '30 minutes'
+          and created_at < now() - interval '9 days'
+     from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69'));
+
+-- --- 1. Push : formes refusées --------------------------------------------
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0069 : adresse http refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('http://fcm.googleapis.com/x69', 'p', 's')$q$)
+    = 'Adresse de notification invalide.');
+select pg_temp.check('0069 : adresse absente refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push(null, 'p', 's')$q$)
+    = 'Adresse de notification invalide.');
+select pg_temp.check('0069 : adresse de 2049 caracteres refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/' || repeat('x', 2049 - 27), 'p', 's')$q$)
+    = 'Adresse de notification invalide.');
+select pg_temp.check('0069 : adresse avec un espace refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/a b', 'p', 's')$q$)
+    = 'Adresse de notification invalide.');
+select pg_temp.check('0069 : cle vide refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/k69', '  ', 's')$q$)
+    = 'Clés de notification invalides.');
+select pg_temp.check('0069 : secret absent refuse',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/k69', 'p', null)$q$)
+    = 'Clés de notification invalides.');
+select pg_temp.check('0069 : cle de plus de 512 caracteres refusee',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/k69', repeat('p', 513), 's')$q$)
+    = 'Clés de notification invalides.');
+reset role;
+select pg_temp.check('0069 : aucune forme refusee n''a laisse de ligne',
+  not exists (select 1 from public.push_subscriptions
+               where auth_user_id = 'a0690000-0000-0000-0000-0000000000c2'
+                 and endpoint <> 'https://fcm.googleapis.com/fcm/send/commun69'));
+-- Témoin des bornes : 2048 et 512 exactement passent.
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c2');
+select public.enregistrer_appareil_push('https://fcm.googleapis.com/' || repeat('x', 2048 - 27), repeat('p', 512), repeat('s', 512), '');
+reset role;
+select pg_temp.check('0069 : temoin : une adresse de 2048 et des cles de 512 passent (user_agent vide = null)',
+  exists (select 1 from public.push_subscriptions
+           where auth_user_id = 'a0690000-0000-0000-0000-0000000000c2' and length(endpoint) = 2048
+             and length(p256dh) = 512 and user_agent is null));
+
+-- --- 1. Push : connexion fermée -------------------------------------------
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c3');
+select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/z69', 'cle-z', 'secret-z');
+reset role;
+select pg_temp.check('0069 : temoin : Z ouvert enregistre son navigateur',
+  exists (select 1 from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/z69'));
+update auth.users set banned_until = now() + interval '876000 hours'
+ where id = 'a0690000-0000-0000-0000-0000000000c3';
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c3');
+select pg_temp.check('0069 : connexion fermee, Z n''enregistre plus d''appareil',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/z69-bis', 'p', 's')$q$)
+    = 'Ce compte est fermé.');
+select pg_temp.check('0069 : connexion fermee, Z ne prend pas l''appareil de P2',
+  pg_temp.erreur_de($q$select public.enregistrer_appareil_push('https://fcm.googleapis.com/fcm/send/commun69', 'p', 's')$q$)
+    = 'Ce compte est fermé.');
+reset role;
+select pg_temp.check('0069 : l''appareil de P2 lui reste, rien de neuf pour Z',
+  (select auth_user_id from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/commun69')
+    = 'a0690000-0000-0000-0000-0000000000c2'
+  and not exists (select 1 from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/z69-bis'));
+
+-- --- 2. Fonctions de trigger : plus de droit d'appel ----------------------
+select pg_temp.check('0069 : les neuf fonctions visees rendent trigger, sans argument',
+  (select count(*) from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.pronargs = 0
+      and p.prorettype = 'trigger'::regtype
+      and p.proname in ('bump_contact_count', 'check_conversation_rate_limit', 'check_message_product',
+                        'check_message_rate_limit', 'check_product_publishable', 'handle_new_user',
+                        'queue_profile_suspension', 'touch_conversation', 'unpublish_products_without_image')) = 9);
+select pg_temp.check('0069 : aucune des neuf n''est executable par public, anon ni authenticated',
+  not exists (
+    select 1
+      from unnest(array['bump_contact_count', 'check_conversation_rate_limit', 'check_message_product',
+                        'check_message_rate_limit', 'check_product_publishable', 'handle_new_user',
+                        'queue_profile_suspension', 'touch_conversation', 'unpublish_products_without_image']) f,
+           unnest(array['public', 'anon', 'authenticated']) r
+     where has_function_privilege(r, ('public.' || f || '()')::regprocedure, 'execute')));
+select pg_temp.check('0069 : les aides du RLS gardent leur droit pour anon (my_profile_id, merchant_is_public)',
+  has_function_privilege('anon', 'public.my_profile_id(public.user_role)', 'execute')
+  and has_function_privilege('anon', 'public.merchant_is_public(uuid)', 'execute'));
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c4');
+select pg_temp.check('0069 : un utilisateur ne peut plus appeler une fonction de trigger (droit refuse)',
+  pg_temp.refuse('select public.touch_conversation()')
+  and pg_temp.refuse('select public.handle_new_user()'));
+reset role;
+
+-- --- 2. … et leurs triggers se déclenchent toujours ------------------------
+-- Tout dans une transaction annulée : les non-lus plus bas partent d'un
+-- état connu.
+begin;
+-- Un commerçant (authenticated) : publier sans photo est refusé
+-- (check_product_publishable), retirer la dernière photo dépublie
+-- (unpublish_products_without_image).
+set local role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a1');
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status)
+values ('a0690000-0000-0000-0000-0000000000f3', 'a0690000-0000-0000-0000-0000000000b1', 3, 'Natte MA69', 30000, 'draft');
+select pg_temp.check('0069 : declenche par un commercant, check_product_publishable refuse une publication sans photo',
+  pg_temp.erreur_de($q$update public.products set status = 'active' where id = 'a0690000-0000-0000-0000-0000000000f3'$q$)
+    = 'Un produit doit avoir au moins une photo pour être publié.');
+delete from public.product_images where product_id = 'a0690000-0000-0000-0000-0000000000f1';
+reset role;
+select pg_temp.check('0069 : declenche par un commercant, unpublish_products_without_image depublie le produit sans photo',
+  (select status from public.products where id = 'a0690000-0000-0000-0000-0000000000f1') = 'draft');
+rollback;
+
+begin;
+-- Un client (authenticated) ouvre un fil chez MB et écrit.
+set local role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c4');
+insert into public.conversations (id, client_id, merchant_id)
+values ('a0690000-0000-0000-0000-0000000000d9', 'a0690000-0000-0000-0000-0000000000c4', 'a0690000-0000-0000-0000-0000000000b2');
+select pg_temp.check('0069 : declenche par un client, check_message_product exige le produit au premier message',
+  pg_temp.erreur_de($q$insert into public.messages (conversation_id, sender_id, body)
+    values ('a0690000-0000-0000-0000-0000000000d9', 'a0690000-0000-0000-0000-0000000000c4', 'Bonjour')$q$)
+    = 'Le premier message doit préciser le produit concerné.');
+insert into public.messages (id, conversation_id, sender_id, product_id, body)
+values ('a0690000-0000-0000-0000-0000000009e1', 'a0690000-0000-0000-0000-0000000000d9',
+        'a0690000-0000-0000-0000-0000000000c4', 'a0690000-0000-0000-0000-0000000000f2', 'Le sac est-il dispo ?');
+reset role;
+select pg_temp.check('0069 : declenche par un client, bump_contact_count compte le contact',
+  (select contact_count from public.products where id = 'a0690000-0000-0000-0000-0000000000f2') = 1);
+select pg_temp.check('0069 : declenche par un client, touch_conversation date le fil',
+  (select c.last_message_at = m.created_at
+     from public.conversations c join public.messages m on m.conversation_id = c.id
+    where m.id = 'a0690000-0000-0000-0000-0000000009e1'));
+-- Limite des messages : 100 envoyés aujourd'hui (posés par postgres), le
+-- 101e du client est refusé par check_message_rate_limit.
+insert into public.messages (conversation_id, sender_id, body)
+select 'a0690000-0000-0000-0000-0000000000d9', 'a0690000-0000-0000-0000-0000000000c4', 'm' || g
+  from generate_series(1, 99) g;
+set local role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c4');
+select pg_temp.check('0069 : declenche par un client, check_message_rate_limit bloque le 101e message',
+  pg_temp.erreur_de($q$insert into public.messages (conversation_id, sender_id, body)
+    values ('a0690000-0000-0000-0000-0000000000d9', 'a0690000-0000-0000-0000-0000000000c4', 'encore')$q$)
+    = 'Limite atteinte : 100 messages par jour maximum.');
+reset role;
+rollback;
+
+begin;
+-- Limite des fils : 20 fils ouverts aujourd'hui par D (boutiques posées
+-- par postgres), le 21e est refusé par check_conversation_rate_limit.
+insert into auth.users (id, email, raw_user_meta_data)
+select ('a0690000-0000-0000-0000-0000000010' || lpad(g::text, 2, '0'))::uuid, 'r' || g || '-0069@test.gn',
+       '{"role":"merchant","full_name":"Limite","phone":"620006999"}'::jsonb
+  from generate_series(1, 20) g;
+insert into public.merchants (profile_id, shop_name, city_id)
+select p.id, 'Limite ' || p.auth_user_id, 1
+  from public.profiles p where p.auth_user_id::text like 'a0690000-0000-0000-0000-0000000010%';
+insert into public.conversations (client_id, merchant_id)
+select 'a0690000-0000-0000-0000-0000000000c5', m.id
+  from public.merchants m join public.profiles p on p.id = m.profile_id
+ where p.auth_user_id::text like 'a0690000-0000-0000-0000-0000000010%';
+set local role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c5');
+select pg_temp.check('0069 : declenche par un client, check_conversation_rate_limit bloque le 21e fil du jour',
+  pg_temp.erreur_de($q$insert into public.conversations (client_id, merchant_id)
+    values ('a0690000-0000-0000-0000-0000000000c5', 'a0690000-0000-0000-0000-0000000000b2')$q$)
+    = 'Limite atteinte : 20 nouvelles conversations par jour maximum.');
+reset role;
+rollback;
+
+begin;
+-- handle_new_user : anon et authenticated n'écrivent pas dans auth.users ;
+-- on leur en donne le droit le temps de la transaction, pour prouver
+-- que le trigger crée le profil sans qu'ils aient EXECUTE.
+grant usage on schema auth to anon, authenticated;
+grant insert on auth.users to anon, authenticated;
+set local role anon;
+insert into auth.users (id, email, raw_user_meta_data)
+values ('a0690000-0000-0000-0000-0000000000e1', 'n1-0069@test.gn', '{"role":"client","full_name":"Nouveau N1","phone":"620006911"}');
+reset role;
+set local role authenticated;
+insert into auth.users (id, email, raw_user_meta_data)
+values ('a0690000-0000-0000-0000-0000000000e2', 'n2-0069@test.gn', '{"role":"merchant","full_name":"Nouveau N2","phone":"620006912"}');
+reset role;
+select pg_temp.check('0069 : declenche par anon puis authenticated (sans EXECUTE), handle_new_user cree les profils',
+  not has_function_privilege('anon', 'public.handle_new_user()', 'execute')
+  and exists (select 1 from public.profiles where auth_user_id = 'a0690000-0000-0000-0000-0000000000e1' and role = 'client')
+  and exists (select 1 from public.profiles where auth_user_id = 'a0690000-0000-0000-0000-0000000000e2' and role = 'merchant'));
+-- queue_profile_suspension : un rôle sans AUCUN droit sur la fonction
+-- (seulement UPDATE sur la table, RLS contourné) suspend un profil.
+create role essai_sans_execute_0069 nologin bypassrls;
+grant usage on schema public to essai_sans_execute_0069;
+grant select, update on public.profiles to essai_sans_execute_0069;
+set local role essai_sans_execute_0069;
+update public.profiles set is_suspended = true, suspended_at = now()
+ where id = 'a0690000-0000-0000-0000-0000000000c1';
+reset role;
+select pg_temp.check('0069 : declenche par un role sans EXECUTE, queue_profile_suspension met la notification en file',
+  not has_function_privilege('essai_sans_execute_0069', 'public.queue_profile_suspension()', 'execute')
+  and exists (select 1 from public.notifications
+               where profile_id = 'a0690000-0000-0000-0000-0000000000c1' and kind = 'profile_suspended'));
+rollback;
+
+-- --- 3. Compter les messages non lus --------------------------------------
+-- Fils : C–MA (d1), D–MB (d2), D–MA (d3). Posés par postgres, triggers
+-- compris (le premier message de chaque fil cite un produit).
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0690000-0000-0000-0000-0000000000d1', 'a0690000-0000-0000-0000-0000000000c4', 'a0690000-0000-0000-0000-0000000000b1'),
+  ('a0690000-0000-0000-0000-0000000000d2', 'a0690000-0000-0000-0000-0000000000c5', 'a0690000-0000-0000-0000-0000000000b2'),
+  ('a0690000-0000-0000-0000-0000000000d3', 'a0690000-0000-0000-0000-0000000000c5', 'a0690000-0000-0000-0000-0000000000b1');
+insert into public.messages (conversation_id, sender_id, product_id, body, read_at) values
+  -- d1 : C → MA, 2 non lus + 1 lu ; MA → C, 1 non lu.
+  ('a0690000-0000-0000-0000-0000000000d1', 'a0690000-0000-0000-0000-0000000000c4', 'a0690000-0000-0000-0000-0000000000f1', 'c1', null),
+  ('a0690000-0000-0000-0000-0000000000d1', 'a0690000-0000-0000-0000-0000000000c4', null, 'c2', null),
+  ('a0690000-0000-0000-0000-0000000000d1', 'a0690000-0000-0000-0000-0000000000c4', null, 'c3 lu', now()),
+  ('a0690000-0000-0000-0000-0000000000d1', 'a0690000-0000-0000-0000-0000000000a1', null, 'ma1', null),
+  -- d2 : D → MB, 3 non lus ; MB → D, 1 non lu.
+  ('a0690000-0000-0000-0000-0000000000d2', 'a0690000-0000-0000-0000-0000000000c5', 'a0690000-0000-0000-0000-0000000000f2', 'd1', null),
+  ('a0690000-0000-0000-0000-0000000000d2', 'a0690000-0000-0000-0000-0000000000c5', null, 'd2', null),
+  ('a0690000-0000-0000-0000-0000000000d2', 'a0690000-0000-0000-0000-0000000000c5', null, 'd3', null),
+  ('a0690000-0000-0000-0000-0000000000d2', 'a0690000-0000-0000-0000-0000000000a2', null, 'mb1', null),
+  -- d3 : D → MA, 1 non lu ; MA → D, 2 non lus.
+  ('a0690000-0000-0000-0000-0000000000d3', 'a0690000-0000-0000-0000-0000000000c5', 'a0690000-0000-0000-0000-0000000000f1', 'd4', null),
+  ('a0690000-0000-0000-0000-0000000000d3', 'a0690000-0000-0000-0000-0000000000a1', null, 'ma2', null),
+  ('a0690000-0000-0000-0000-0000000000d3', 'a0690000-0000-0000-0000-0000000000a1', null, 'ma3', null);
+
+select pg_temp.check('0069 : compter_messages_non_lus est security invoker, search_path vide, ouverte a authenticated seul',
+  (select not p.prosecdef and p.proconfig = array['search_path=""']
+     from pg_proc p where p.oid = 'public.compter_messages_non_lus(public.user_role)'::regprocedure)
+  and has_function_privilege('authenticated', 'public.compter_messages_non_lus(public.user_role)', 'execute')
+  and not has_function_privilege('anon', 'public.compter_messages_non_lus(public.user_role)', 'execute')
+  and not has_function_privilege('public', 'public.compter_messages_non_lus(public.user_role)', 'execute'));
+
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0069 : MA compte 3 non lus (2 de C, 1 de D), ni les siens, ni le lu, ni ceux de MB',
+  public.compter_messages_non_lus('merchant') = 3);
+select pg_temp.check('0069 : MA sans compte client compte 0 cote client',
+  public.compter_messages_non_lus('client') = 0);
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a2');
+select pg_temp.check('0069 : MB compte 3 non lus (ceux de D), jamais ceux des fils de MA',
+  public.compter_messages_non_lus('merchant') = 3);
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c4');
+select pg_temp.check('0069 : C compte 1 non lu (de MA), pas les siens ni ceux des fils de D',
+  public.compter_messages_non_lus('client') = 1);
+select pg_temp.check('0069 : C sans boutique compte 0 cote commercant',
+  public.compter_messages_non_lus('merchant') = 0);
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c5');
+select pg_temp.check('0069 : D compte 3 non lus (1 de MB, 2 de MA), pas les 4 qu''il a envoyes',
+  public.compter_messages_non_lus('client') = 3);
+select pg_temp.login('a0690000-0000-0000-0000-00000000dead');
+select pg_temp.check('0069 : une connexion sans profil compte 0',
+  public.compter_messages_non_lus('client') = 0 and public.compter_messages_non_lus('merchant') = 0);
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0069 : un visiteur ne compte rien (droit refuse)',
+  pg_temp.refuse($q$select public.compter_messages_non_lus('client')$q$));
+reset role;
+-- Un profil supprimé ne compte plus (comme getMyProfiles, is_deleted).
+begin;
+update public.profiles set is_deleted = true, deleted_at = now()
+ where id = 'a0690000-0000-0000-0000-0000000000c5';
+set local role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000c5');
+select pg_temp.check('0069 : un profil supprime compte 0',
+  public.compter_messages_non_lus('client') = 0);
+reset role;
+rollback;
+-- MA ouvre aussi un compte client (connexion a1, profil a9) et parle à MB
+-- comme client : chaque espace ne compte que ses fils. Le RLS ne suffit
+-- pas ici (MA voit les fils de ses deux espaces) : ce sont les filtres de
+-- la fonction qui séparent.
+insert into public.profiles (id, auth_user_id, role, full_name, phone)
+values ('a0690000-0000-0000-0000-0000000000a9', 'a0690000-0000-0000-0000-0000000000a1', 'client', 'Marchand MA69', '620006906');
+insert into public.conversations (id, client_id, merchant_id)
+values ('a0690000-0000-0000-0000-0000000000d4', 'a0690000-0000-0000-0000-0000000000a9', 'a0690000-0000-0000-0000-0000000000b2');
+insert into public.messages (conversation_id, sender_id, product_id, body, read_at) values
+  ('a0690000-0000-0000-0000-0000000000d4', 'a0690000-0000-0000-0000-0000000000a9', 'a0690000-0000-0000-0000-0000000000f2', 'ma-client1', null),
+  ('a0690000-0000-0000-0000-0000000000d4', 'a0690000-0000-0000-0000-0000000000a2', null, 'mb-a-ma', null);
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0069 : MA cote client compte 1 (de MB), aucun message de ses fils de commercant',
+  public.compter_messages_non_lus('client') = 1);
+select pg_temp.check('0069 : MA cote commercant compte toujours 3, rien de son fil de client',
+  public.compter_messages_non_lus('merchant') = 3);
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a2');
+select pg_temp.check('0069 : MB compte aussi le message de MA client (3 -> 4)',
+  public.compter_messages_non_lus('merchant') = 4);
+reset role;
+-- Lire un message le retire du compte.
+update public.messages set read_at = now()
+ where conversation_id = 'a0690000-0000-0000-0000-0000000000d1' and body = 'c1';
+set role authenticated;
+select pg_temp.login('a0690000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0069 : un message lu sort du compte de MA (3 -> 2)',
+  public.compter_messages_non_lus('merchant') = 2);
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { mapRow } from "@/lib/data/products";
@@ -5,6 +6,7 @@ import { compter } from "@/lib/analytics";
 import { createPublicClient } from "@/lib/supabase/public";
 import { shopPhotoUrl } from "@/lib/storage";
 import type { Product } from "@/lib/types";
+import { CATALOGUE } from "@/lib/data/catalogue-public";
 
 /**
  * La publicité de Filloo (0047, étape 2 du document de monétisation,
@@ -48,22 +50,74 @@ export function lireTypeCampagne(valeur: unknown): TypeCampagne | null {
 export type ProduitSponsorise = Product & { campagneId: string };
 
 /**
- * Les produits sponsorisés d'un emplacement, dans un ordre tiré par la base
- * (rotation entre annonceurs). PAS de cache : la rotation changerait une
- * fois par minute au lieu d'à chaque visite, et la requête est petite.
+ * Les plafonds de la base (0047) : `produits_sponsorises` ne rend jamais
+ * plus de 4 lignes, `boutiques_mises_en_avant` jamais plus de 12.
+ */
+const PLAFOND_PRODUITS = 4;
+const PLAFOND_BOUTIQUES = 12;
+
+/** Fisher-Yates : un ordre au hasard, sans biais. */
+function auHasard<T>(liste: readonly T[]): T[] {
+  const copie = [...liste];
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copie[i], copie[j]] = [copie[j], copie[i]];
+  }
+  return copie;
+}
+
+/**
+ * Les CANDIDATS d'un emplacement, lus une minute en cache (2026-11-07).
+ * Avant, chaque visite de l'accueil appelait la base deux fois pour la
+ * publicité (306 + 152 appels en 24 h, presque toujours pour rendre une
+ * liste vide : 0 campagne). On lit maintenant le plafond de la base une
+ * fois par minute et la ROTATION se fait à chaque visite, ici, parmi ces
+ * candidats : tant qu'il y a au plus 4 produits (12 boutiques) en
+ * campagne, c'est exactement le tirage d'avant ; au-delà, le lot change
+ * une fois par minute. Étiquette `CATALOGUE` : une suspension ou une
+ * décision sur une campagne vide le cache aussitôt.
+ */
+const candidatsProduitsEnCache = unstable_cache(
+  async (query: string | null, categoryId: number | null) => {
+    const { data, error } = await createPublicClient().rpc("produits_sponsorises", {
+      p_query: query || undefined,
+      p_category_id: categoryId ?? undefined,
+      p_limit: PLAFOND_PRODUITS,
+    });
+    // Lever plutôt que rendre [] : une panne ne doit pas rester une minute en cache.
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  },
+  ["produits-sponsorises"],
+  { revalidate: 60, tags: [CATALOGUE] },
+);
+
+const candidatsBoutiquesEnCache = unstable_cache(
+  async () => {
+    const { data, error } = await createPublicClient().rpc("boutiques_mises_en_avant", { p_limit: PLAFOND_BOUTIQUES });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  },
+  ["boutiques-mises-en-avant"],
+  { revalidate: 60, tags: [CATALOGUE] },
+);
+
+/**
+ * Les produits sponsorisés d'un emplacement, dans un ordre tiré à chaque
+ * visite parmi les candidats en cache (voir plus haut).
  */
 export async function produitsSponsorises(opts: { query?: string | null; categoryId?: number | null; limit?: number }): Promise<ProduitSponsorise[]> {
-  const { data, error } = await createPublicClient().rpc("produits_sponsorises", {
-    p_query: opts.query || undefined,
-    p_category_id: opts.categoryId ?? undefined,
-    p_limit: opts.limit ?? 2,
-  });
-  // Une panne de la publicité ne doit jamais vider l'accueil : on l'oublie.
-  if (error) {
-    console.error("[publicité] produits sponsorisés illisibles :", error.message);
+  let candidats;
+  try {
+    candidats = await candidatsProduitsEnCache(opts.query?.trim() || null, opts.categoryId ?? null);
+  } catch (cause) {
+    // Une panne de la publicité ne doit jamais vider l'accueil : on l'oublie.
+    console.error("[publicité] produits sponsorisés illisibles :", cause instanceof Error ? cause.message : cause);
     return [];
   }
-  return (data ?? []).map((row) => ({ ...mapRow(row), campagneId: row.campagne_id }));
+  return auHasard(candidats)
+    .slice(0, opts.limit ?? 2)
+    .map((row) => ({ ...mapRow(row), campagneId: row.campagne_id }));
 }
 
 export type BoutiqueEnAvant = {
@@ -76,19 +130,23 @@ export type BoutiqueEnAvant = {
 };
 
 export async function boutiquesMisesEnAvant(limit = 6): Promise<BoutiqueEnAvant[]> {
-  const { data, error } = await createPublicClient().rpc("boutiques_mises_en_avant", { p_limit: limit });
-  if (error) {
-    console.error("[publicité] boutiques mises en avant illisibles :", error.message);
+  let candidates;
+  try {
+    candidates = await candidatsBoutiquesEnCache();
+  } catch (cause) {
+    console.error("[publicité] boutiques mises en avant illisibles :", cause instanceof Error ? cause.message : cause);
     return [];
   }
-  return (data ?? []).map((b) => ({
-    campagneId: b.campagne_id,
-    id: b.merchant_id,
-    nom: b.shop_name,
-    ville: b.city_name,
-    photoUrl: b.shop_photo_path ? shopPhotoUrl(b.shop_photo_path) : null,
-    produitsActifs: b.produits_actifs,
-  }));
+  return auHasard(candidates)
+    .slice(0, limit)
+    .map((b) => ({
+      campagneId: b.campagne_id,
+      id: b.merchant_id,
+      nom: b.shop_name,
+      ville: b.city_name,
+      photoUrl: b.shop_photo_path ? shopPhotoUrl(b.shop_photo_path) : null,
+      produitsActifs: b.produits_actifs,
+    }));
 }
 
 /** Un affichage par campagne montrée (les robots ne comptent pas, voir `compter`). */
