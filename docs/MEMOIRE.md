@@ -624,10 +624,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-425 commits, du plus récent au plus ancien.
+426 commits, du plus récent au plus ancien.
 
 ### 2026-11-08
 
+- `25e0e3a` SEO : l'accueil n'est plus retiré de Google par un paramètre de suivi
 - `9850c1f` Ramener claude/jolly-curie-v0v5e6 dans dev : middleware getClaims, sauvegarde R2
 - `a5d595b` Sauvegarde de chaque nuit vers Cloudflare R2, restauration vérifiée
 - `b967df6` Middleware : vérifier le jeton sur place (getClaims) au lieu d'appeler Supabase

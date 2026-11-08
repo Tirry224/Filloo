@@ -72,3 +72,12 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   supprimer l'un, vérifier que l'autre entre sans reconnexion.
 - L'app mobile en entier. Premiers candidats à un test unitaire :
   `src/lib/format.ts`, `src/lib/telephone.ts` — *supposé*.
+
+## Mise en production du 2026-11-08 (main @ 25e0e3a)
+
+- Unitaires 83/83 sur 14 fichiers ; `security_test.sql` vert sur Postgres
+  16 local, 60 migrations rejouées (la production est en 17).
+- `npm run largeurs` ne se lance pas ici : il demande `npm start` et
+  `.env` pointe sur la Supabase de production.
+- `npm run migrations` interroge la production (API de gestion) : ne pas
+  le lancer comme simple vérification.
