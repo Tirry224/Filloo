@@ -50,11 +50,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Vercel Hobby interdit l'usage commercial** ; une marketplace en
   relève probablement, même gratuite. Risque de suspension, qui
   couperait aussi l'API de l'app. Passer en Pro (~20 $/mois).
-- **Les photos n'ont aucune sauvegarde.** L'organisation Supabase est en
-  Pro (constaté le 2026-11-06) : la BASE a une sauvegarde quotidienne
-  gardée 7 jours, mais elle ne contient que les métadonnées du stockage,
-  pas les fichiers. Une photo effacée est perdue. Copie régulière du
-  bucket ailleurs (à écrire) ; restauration de la base jamais essayée.
+- **Sauvegarde vers Cloudflare R2 ÉCRITE, pas encore lancée**
+  (2026-11-08, décision du porteur du projet) : base chiffrée et photos
+  chaque nuit, restauration vérifiée à chaque fois
+  (`docs/SAUVEGARDE.md`). Attend les huit secrets GitHub et un premier
+  lancement à la main : tant qu'il n'a pas réussi, il n'y a toujours
+  AUCUNE copie des photos.
 - **« Mot de passe oublié » n'est pas prouvé.** Le modèle d'email
   « Reset Password » doit porter
   `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`.
@@ -78,7 +79,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Attend le porteur du projet** : destination des sauvegardes (base +
   photos), clé Turnstile, case « mots de passe compromis » (Supabase
   Auth), type des clés JWT (Settings → JWT Keys) avant d'alléger
-  `/auth/v1/user` (1 752 appels sur 3 855 en 24 h).
+  `/auth/v1/user` (1 752 appels sur 3 855 en 24 h). Clés ECC P-256
+  (2026-11-08) : le middleware vérifie maintenant le jeton sur place
+  (`getClaims`), la page revérifie toujours auprès de Supabase.
 - **Attend le trafic** : index trigramme de recherche, pagination,
   agrégation d'`analytics_events`, liste des fils (3 produits, 17
   messages, ~9 900 mesures au 2026-11-07).
@@ -618,12 +621,21 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-417 commits, du plus récent au plus ancien.
+423 commits, du plus récent au plus ancien.
+
+### 2026-11-08
+
+- `b967df6` Middleware : vérifier le jeton sur place (getClaims) au lieu d'appeler Supabase
+- `75c96ce` Ramener claude/jolly-curie-v0v5e6 dans dev : audit du 2026-11-07
+- `4717458` 0069 : un navigateur sonne pour le compte connecté dessus
 
 ### 2026-11-07
 
 - `677d48a` Notifications de session : à chaque tâche finie et à chaque besoin du porteur
 - `f6b4d3a` Règle : toutes les sessions préviennent par notification
+- `4476058` Push et non-lus : passer par les fonctions de 0069
+- `a6e23ce` Cron du matin : un nouvel essai, puis l'échec part dans Sentry
+- `0fe49a7` Publicité : candidats lus une minute en cache, rotation à chaque visite
 - `1ba5ee9` Merge pull request #9 from Tirry224/dev
 - `ea75ee9` Admin : l'en-tête dit « Propriétaire » au propriétaire, « Équipe » aux autres
 - `86f62bc` Politique de confidentialité réécrite de zéro

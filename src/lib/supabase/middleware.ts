@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { isAuthSessionMissingError } from "@supabase/supabase-js";
+import { isAuthSessionMissingError, type JwtPayload, type User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { naQueLAdmin } from "@/lib/proprietaire";
@@ -17,7 +17,7 @@ const ESPACES_AUTHENTIFIES = ["/vendeur", "/compte", "/messages", "/admin", "/eq
 const CHEMINS_DU_PROPRIETAIRE = ["/admin", "/api", "/auth", "/reinitialiser-mot-de-passe"];
 
 /**
- * `supabaseResponse` est reconstruit après `getUser()` : `setAll` doit
+ * `supabaseResponse` est reconstruit après `getClaims()` : `setAll` doit
  * écrire sur la MÊME réponse que celle envoyée au navigateur, sinon les
  * cookies rafraîchis ne partent jamais.
  *
@@ -31,6 +31,23 @@ const CHEMINS_DU_PROPRIETAIRE = ["/admin", "/api", "/auth", "/reinitialiser-mot-
  * catalogue public compris, pour un second exemplaire qui finirait par
  * diverger. Et un cookie n'est pas une autorisation.
  */
+/**
+ * Ce que le middleware lit du jeton pour `naQueLAdmin`. Le jeton ne porte
+ * pas `email_confirmed_at` : on le tient pour confirmé, ce qui ne donne
+ * AUCUN droit — ici, être reconnu propriétaire ou membre de l'équipe ne
+ * fait que RESTREINDRE la navigation à `/admin`, où `requireEquipe`
+ * revérifie tout auprès de Supabase. `app_metadata` n'est écrit que par
+ * le serveur (0043) et le jeton est signé : il ne se fabrique pas.
+ */
+function utilisateurDuJeton(claims: JwtPayload): Pick<User, "email" | "email_confirmed_at" | "app_metadata"> {
+  const email = typeof claims.email === "string" ? claims.email : undefined;
+  return {
+    email,
+    email_confirmed_at: email ? "jeton" : undefined,
+    app_metadata: (claims.app_metadata ?? {}) as User["app_metadata"],
+  };
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -51,12 +68,28 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Ne PAS retirer : c'est cet appel qui déclenche le rafraîchissement du
-  // jeton, nécessaire même sans le refus ci-dessous.
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  /* Ne PAS retirer : c'est cet appel qui déclenche le rafraîchissement du
+     jeton (`getClaims` passe par `getSession`), nécessaire même sans le
+     refus ci-dessous.
+
+     `getClaims()` et non plus `getUser()` (2026-11-08) : le projet signe
+     ses jetons en ECC P-256 (constaté par le porteur du projet), la
+     signature se vérifie donc ICI, avec la clé publique gardée dix minutes
+     en mémoire, sans aller-retour vers Supabase. Avant, chaque page,
+     préchargement et action d'un compte connecté faisait un appel à
+     `/auth/v1/user` dans le middleware PUIS un second dans la page
+     (1 752 appels sur 3 855 requêtes en 24 h, constaté le 2026-11-07).
+     Un ancien jeton symétrique (HS256) retombe tout seul sur `getUser()`.
+
+     Ce que l'on perd, et pourquoi c'est acceptable : un jeton signé reste
+     valable jusqu'à son expiration (une heure) même si le compte vient
+     d'être supprimé ou banni. Le middleware ne décide que « y a-t-il une
+     session ? » et « faut-il renvoyer vers /admin ? » ; la page revérifie
+     auprès de Supabase (`getSessionUser`, toujours `getUser()`) et la base
+     refuse toute écriture d'une connexion fermée (0068). */
+  const { data: lecture, error } = await supabase.auth.getClaims();
+  const claims = lecture?.claims ?? null;
+  const user = claims ? utilisateurDuJeton(claims) : null;
 
   /* « Pas de session » est une réponse ; tout le reste est une panne (même
      distinction que dans `getSessionUser`). On ne refuse donc que sur un
@@ -100,7 +133,7 @@ export async function updateSession(request: NextRequest) {
     const admin = request.nextUrl.clone();
     admin.pathname = "/admin";
     admin.search = "";
-    // Les cookies que `getUser()` vient peut-être de rafraîchir partent
+    // Les cookies que `getClaims()` vient peut-être de rafraîchir partent
     // avec la redirection, sinon la session expirerait au tour suivant.
     const redirection = NextResponse.redirect(admin);
     supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));

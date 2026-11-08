@@ -1,0 +1,146 @@
+# La sauvegarde de Filloo, chaque nuit, HORS de Supabase (décision du
+# porteur du projet le 2026-11-08 : Cloudflare R2).
+#
+# Ce qu'elle fait, dans l'ordre :
+#   1. copie la base (rôles, schéma, données : procédure de Supabase) ;
+#   2. la RESTAURE dans une pile Supabase jetable montée sur la machine de
+#      GitHub, et vérifie que chaque table a le même nombre de lignes : une
+#      sauvegarde qu'on n'a jamais restaurée n'est qu'un espoir ;
+#   3. chiffre la copie (age, clé PUBLIQUE : ni GitHub ni Cloudflare ne
+#      peuvent la relire ; la clé privée est chez le porteur du projet) et
+#      l'envoie dans R2, sous base/AAAA-MM-JJ/ ;
+#   4. copie les photos des deux buckets dans R2, sous photos/ ; une photo
+#      effacée chez Supabase est DÉPLACÉE sous photos-effacees/AAAA-MM-JJ/,
+#      jamais perdue.
+# La durée de conservation (30 jours) est une règle du bucket R2, pas d'ici.
+#
+# Un échec envoie un e-mail au propriétaire du dépôt (réglage par défaut de
+# GitHub pour un workflow planifié). Rien ici n'écrit dans la production :
+# elle n'est que LUE (pg_dump, lecture S3 du stockage).
+#
+# Secrets à créer dans GitHub → Settings → Secrets and variables → Actions :
+#   SUPABASE_DB_URL          adresse « Session pooler » (Connect → Session pooler)
+#   SUPABASE_S3_ACCESS_KEY   Storage → S3 Connection → New access key
+#   SUPABASE_S3_SECRET_KEY
+#   R2_ACCOUNT_ID            Cloudflare, identifiant du compte
+#   R2_ACCESS_KEY            jeton R2 limité AU SEUL bucket, « Object Read & Write »
+#   R2_SECRET_KEY
+#   R2_BUCKET                ex. filloo-sauvegardes
+#   SAUVEGARDE_CLE_PUBLIQUE  la ligne « age1… » de `age-keygen`
+# Procédure complète et restauration : docs/SAUVEGARDE.md.
+
+name: Sauvegarde
+
+on:
+  schedule:
+    # 02:23 UTC = 02:23 à Conakry : l'heure la plus calme (jamais à :00, où
+    # GitHub retarde les tâches planifiées).
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  sauvegarde:
+    name: Copier, restaurer, envoyer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      PROJET: bfmsruzyrgbndbueikcb
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Outils
+        run: |
+          npm ci --no-audit --no-fund
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age rclone postgresql-client
+          npx -y supabase@3.0.0 --version
+
+      - name: Secrets présents
+        env:
+          A: ${{ secrets.SUPABASE_DB_URL }}
+          B: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+          C: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
+          D: ${{ secrets.R2_ACCOUNT_ID }}
+          E: ${{ secrets.R2_ACCESS_KEY }}
+          F: ${{ secrets.R2_SECRET_KEY }}
+          G: ${{ secrets.R2_BUCKET }}
+          H: ${{ secrets.SAUVEGARDE_CLE_PUBLIQUE }}
+        run: |
+          manque=0
+          for v in A B C D E F G H; do [ -n "${!v}" ] || manque=1; done
+          if [ "$manque" = 1 ]; then echo "::error::Un secret manque : voir l'en-tête de ce fichier."; exit 1; fi
+
+      - name: 1. Copier la base
+        run: scripts/sauvegarde/copier-base.sh copie
+
+      - name: 2. Restaurer dans une pile jetable et vérifier
+        run: |
+          # Un projet Supabase VIDE (aucune migration) : la copie doit se
+          # suffire à elle-même, comme le jour où il faudra s'en servir.
+          mkdir -p /tmp/vide && cd /tmp/vide
+          npx -y supabase@3.0.0 init --force < /dev/null > /dev/null
+          sed -i 's/^major_version = .*/major_version = 17/' supabase/config.toml
+          npx -y supabase@3.0.0 start -x studio,imgproxy,pgadmin-schema-diff,migra,pgmeta,logflare,vector,supavisor,edge-runtime,realtime,mailpit
+          cible=$(npx -y supabase@3.0.0 status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')
+          cd "$GITHUB_WORKSPACE"
+          scripts/sauvegarde/restaurer.sh copie "$cible"
+
+      - name: 3. Chiffrer et envoyer la base
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          BUCKET: ${{ secrets.R2_BUCKET }}
+          CLE: ${{ secrets.SAUVEGARDE_CLE_PUBLIQUE }}
+        run: |
+          jour=$(date -u +%F)
+          tar -C copie -czf - roles.sql schema.sql data.sql comptes.tsv | age -r "$CLE" > base.tar.gz.age
+          rclone copyto base.tar.gz.age "r2:$BUCKET/base/$jour/base.tar.gz.age"
+          # Les comptes en clair : ils ne disent que des nombres, et permettent
+          # de vérifier une restauration sans déchiffrer d'abord.
+          rclone copyto copie/comptes.tsv "r2:$BUCKET/base/$jour/comptes.tsv"
+          rclone lsl "r2:$BUCKET/base/$jour/"
+
+      - name: 4. Copier les photos
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          RCLONE_CONFIG_SB_TYPE: s3
+          RCLONE_CONFIG_SB_PROVIDER: Other
+          RCLONE_CONFIG_SB_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+          RCLONE_CONFIG_SB_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
+          RCLONE_CONFIG_SB_ENDPOINT: https://${{ env.PROJET }}.storage.supabase.co/storage/v1/s3
+          RCLONE_CONFIG_SB_REGION: eu-west-3
+          RCLONE_CONFIG_SB_FORCE_PATH_STYLE: "true"
+          BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          jour=$(date -u +%F)
+          for b in product-images shop-photos; do
+            rclone sync "sb:$b" "r2:$BUCKET/photos/$b" \
+              --backup-dir "r2:$BUCKET/photos-effacees/$jour/$b" --checksum --transfers 8
+            # Le stockage annonce N fichiers (comptes.tsv) : R2 doit en avoir N.
+            attendu=$(awk -F'\t' -v k="storage.objects:$b" '$1==k {print $2}' copie/comptes.tsv)
+            obtenu=$(rclone lsf -R --files-only "r2:$BUCKET/photos/$b" | wc -l)
+            echo "$b : $obtenu fichier(s) dans R2, $attendu attendu(s)"
+            [ "$obtenu" = "$attendu" ] || { echo "::error::$b : R2 n'a pas le même nombre de photos que Supabase."; exit 1; }
+          done
