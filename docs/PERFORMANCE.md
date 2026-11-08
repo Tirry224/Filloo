@@ -54,6 +54,22 @@ de l'accueil et d'une boutique est la PREMIÈRE PHOTO de produit ; marquée
 10 à 11 s en 3G lente, contre 1,5 s pour une fiche. Les
 `CARTES_PRIORITAIRES` (4) premières cartes d'une liste ont `priority`.
 
+Corrigé le 2026-11-08 : depuis Next 16, `priority` ne fait que
+précharger, sans `fetchPriority="high"` — la photo partait à temps mais
+en priorité « basse », derrière la police. `PhotoImage` traduit
+désormais `priority` en `loading="eager"` + `fetchPriority="high"`. La
+simulation de réseau de Chrome ignore les priorités : le gain ne se voit
+que sur un vrai réseau lent, à vérifier sur téléphone.
+
+### R2 ter — Le carrousel d'une fiche ne charge que ce qu'on regarde
+
+Les photos 2, 3… d'une fiche étaient `lazy` mais voisines de l'écran :
+Chrome les prenait quand même, et plus le réseau est lent, plus il prend
+loin. Mesuré le 2026-11-08 (fiche de 5 photos, 3G) : 267 Ko de photos,
+485 Ko au total. Depuis, seule la première part à l'ouverture, la
+suivante dès qu'on touche ou fait glisser : 59 Ko de photos, 277 Ko au
+total, photo principale à 3,3 s au lieu de 3,8 s.
+
 ### R3 — Le JavaScript se juge au gramme
 
 Un composant client se justifie s'il économise plus qu'il ne pèse
