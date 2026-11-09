@@ -32,6 +32,13 @@ export default async function LoginPage({
             </div>
           ) : null}
 
+          {params.erreur === "google" ? (
+            <p className="rounded-lg bg-warn-soft px-3.5 py-3 text-sm leading-normal text-warn-ink">
+              La connexion avec Google n&apos;a pas abouti. Réessayez, ou connectez-vous avec
+              votre email.
+            </p>
+          ) : null}
+
           <LoginForm next={next} />
 
           <p className="mt-1 text-center text-sm text-ink-soft">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
@@ -13,6 +14,7 @@ export function LoginForm({ next }: { next?: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <GoogleButton label="Se connecter avec Google" next={next} />
       <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <Field label="Email" htmlFor="email">
