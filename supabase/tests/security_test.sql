@@ -3915,11 +3915,11 @@ select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, 
               and corps like '🎉 Bienvenue sur Filloo !%'
          from public.fil_equipe));
 reset role;
-select pg_temp.check('0056/0071 : le texte est exactement celui ecrit par le porteur du projet (0071)',
+select pg_temp.check('0056/0071 : le texte est exactement celui ecrit par le porteur du projet (0071, 0072)',
   (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
   = E'🎉 Bienvenue sur Filloo !\n\n'
     || E'Nous sommes ravis de vous compter parmi les commerçants de notre plateforme.\n\n'
-    || E'Filloo vous permet de créer votre boutique en ligne, de présenter vos produits et de les faire découvrir à de nouveaux clients.\n\n'
+    || E'Filloo vous permet de présenter vos produits et de les faire découvrir à de nouveaux clients.\n\n'
     || E'💡 Quelques conseils pour attirer davantage de clients :\n\n'
     || E'• Publiez des photos nettes, lumineuses et de bonne qualité.\n'
     || E'• Choisissez des photos qui montrent clairement vos produits.\n'
