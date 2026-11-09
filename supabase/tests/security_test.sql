@@ -5456,5 +5456,35 @@ select pg_temp.check('0069 : un message lu sort du compte de MA (3 -> 2)',
   public.compter_messages_non_lus('merchant') = 2);
 reset role;
 
+-- ---------------------------------------------------------------------
+-- Un compte créé par Google complète lui-même son profil (0073)
+-- ---------------------------------------------------------------------
+insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values
+  ('a0730000-0000-0000-0000-00000000000a', 'g0073@test.gn', '{"full_name":"Awa Google","name":"Awa Google"}', '{"provider":"google","providers":["google"]}'),
+  ('a0730000-0000-0000-0000-00000000000b', 'e0073@test.gn', '{"role":"merchant","full_name":"Email Marchand","phone":"620007301"}', '{"provider":"email","providers":["email"]}');
+select pg_temp.check('0073 : une connexion Google ne recoit aucun profil automatique',
+  not exists (select 1 from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000a'));
+select pg_temp.check('0073 : l''inscription par email cree toujours son profil, avec ses metadonnees',
+  (select count(*) from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000b'
+     and role = 'merchant' and full_name = 'Email Marchand' and phone = '620007301') = 1);
+select pg_temp.check('0073 : la fonction du declencheur n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.handle_new_user()', 'execute')
+  and not has_function_privilege('anon', 'public.handle_new_user()', 'execute'));
+
+select pg_temp.login('a0730000-0000-0000-0000-00000000000a');
+set role authenticated;
+insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0730000-0000-0000-0000-00000000000a', 'merchant', 'Awa Google', '620007302');
+select pg_temp.check('0073 : la personne Google cree elle-meme son premier profil',
+  (select count(*) from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000a' and role = 'merchant') = 1);
+do $$ begin
+  insert into public.profiles (auth_user_id, role, full_name, phone)
+    values ('a0730000-0000-0000-0000-00000000000b', 'client', 'Usurpation', '620007303');
+  raise exception 'ECHEC 0073 : un profil a ete cree pour une autre connexion';
+exception when insufficient_privilege then
+  raise notice 'OK    0073 : impossible de creer un profil pour une autre connexion';
+end $$;
+reset role;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
