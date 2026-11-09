@@ -185,7 +185,7 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Message de bienvenue à chaque nouvelle boutique** (2026-11-07,
   `0056` appliquée, trigger sur `merchants`) : dans le fil « boutique »
   avec l'équipe, conseil de photos fidèles. Texte remplacé le
-  2026-11-09 par `0070` puis `0071` (appliquées) : celui ÉCRIT par le
+  2026-11-09 par `0070`, `0071` puis `0072` (appliquées) : celui ÉCRIT par le
   porteur du projet, dans `texte_de_bienvenue_boutique()` — conseils
   pour attirer des clients, sans menace ni mot sur litiges/signalements.
   Le changer = remplacer cette seule fonction. Sans notification ; l'app
@@ -628,10 +628,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-430 commits, du plus récent au plus ancien.
+431 commits, du plus récent au plus ancien.
 
 ### 2026-11-09
 
+- `e8f59a5` 0071 : le mot de bienvenue écrit par le porteur du projet
 - `14256a0` 0070 : un mot de bienvenue plus chaleureux pour les nouvelles boutiques
 
 ### 2026-11-08
