@@ -184,8 +184,29 @@ mis à jour et raccourci ; l'ancienne version se relit par
   participant ; comptes suspendus exclus.
 - **Message de bienvenue à chaque nouvelle boutique** (2026-11-07,
   `0056` appliquée, trigger sur `merchants`) : dans le fil « boutique »
-  avec l'équipe, conseil de photos fidèles. Sans notification ; l'app
+  avec l'équipe, conseil de photos fidèles. Texte remplacé le
+  2026-11-09 par `0070`, `0071` puis `0072` (appliquées) : celui ÉCRIT par le
+  porteur du projet, dans `texte_de_bienvenue_boutique()` — conseils
+  pour attirer des clients, sans menace ni mot sur litiges/signalements.
+  Le changer = remplacer cette seule fonction. Sans notification ; l'app
   des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
+- **Connexion et inscription avec Google** (2026-11-09, `0073`
+  appliquée ; Facebook écarté par le porteur du projet) : bouton sur
+  `/inscription` (après Acheter/Vendre) et `/connexion`. Action
+  `googleSignInAction` → Google → `/auth/confirm?origine=google`. Une
+  connexion Google ne reçoit PAS de profil d'office (`handle_new_user`
+  lit `raw_app_meta_data.provider`) : elle passe par `/inscription` en
+  mode « Complétez votre compte » (rôle, nom prérempli, téléphone),
+  `completeSignupAction`. Le retour suit l'adresse de la requête, pas
+  `siteUrl` : la préversion doit figurer dans les « Redirect URLs » de
+  Supabase, sinon Supabase renvoie sur la Site URL et l'échange échoue.
+  Liste en place (2026-11-09) : `https://filloo.net/**` et
+  `https://filloo-git-dev-tiirry.vercel.app/**` (une page seule, comme
+  `/inscription`, ne suffit pas : le retour arrive sur `/auth/confirm`).
+  Vérifier sans navigateur : `auth.flow_state.referrer` garde l'adresse
+  retenue par Supabase (`https://filloo.net` nu = refusée). Testé en vrai
+  le 2026-11-09 : connexion d'un compte existant et création d'un compte
+  Google OK sur la préversion.
 - **Pas de sous-catégories** (décision du 2026-11-07).
 - **Tout s'administre depuis `/admin`** (décision du 2026-11-07) : onglet
   « Gestion » — comptes et boutiques (chercher, suspendre, réactiver ;
@@ -624,10 +645,18 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-428 commits, du plus récent au plus ancien.
+433 commits, du plus récent au plus ancien.
+
+### 2026-11-09
+
+- `6c0a865` Connexion et inscription avec Google (0073)
+- `8a95378` 0072 : la bienvenue ne dit plus « créer votre boutique »
+- `e8f59a5` 0071 : le mot de bienvenue écrit par le porteur du projet
+- `14256a0` 0070 : un mot de bienvenue plus chaleureux pour les nouvelles boutiques
 
 ### 2026-11-08
 
+- `0cfc898` Carrousel d'une fiche : les photos se chargent au glissement
 - `fa25274` Photos prioritaires : vraiment en tête de file, pas seulement préchargées
 - `0041881` Savoir du testeur : vérifications de la mise en production du 2026-11-08
 - `25e0e3a` SEO : l'accueil n'est plus retiré de Google par un paramètre de suivi

@@ -2,7 +2,8 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/next-param";
-import { landingForSession } from "@/lib/data/session";
+import { getMyProfiles, landingForSession } from "@/lib/data/session";
+import { destinationApresAuthentification } from "@/lib/destination";
 
 /** Les seuls types de lien email que `/auth/confirm` accepte par
  * `token_hash`. */
@@ -43,6 +44,29 @@ export async function GET(request: Request) {
      modèle d'email Supabase n'est pas passé au `token_hash`
      (docs/MEMOIRE.md). */
   const supabase = await createClient();
+
+  /* RETOUR DE GOOGLE (`googleSignInAction`). La clé PKCE a été déposée en
+     cookie, dans ce navigateur, au clic sur « Continuer avec Google ». Une
+     connexion sans profil (première venue, `0073`) passe par « Complétez
+     votre compte » ; les autres atterrissent comme après un mot de passe. */
+  if (searchParams.get("origine") === "google") {
+    const echec = code
+      ? (await supabase.auth.exchangeCodeForSession(code)).error?.message ?? null
+      : (searchParams.get("error_description") ?? "retour Google sans code");
+    if (echec) {
+      console.error("[auth/confirm google]", echec);
+      return NextResponse.redirect(`${origin}/connexion?erreur=google`);
+    }
+    if ((await getMyProfiles(supabase)).length === 0) {
+      const completer = new URL("/inscription", origin);
+      const role = searchParams.get("role");
+      if (role === "client" || role === "merchant") completer.searchParams.set("role", role);
+      if (next) completer.searchParams.set("next", next);
+      return NextResponse.redirect(completer);
+    }
+    return NextResponse.redirect(`${origin}${await destinationApresAuthentification(supabase, next)}`);
+  }
+
   let erreur: string | null = "lien sans jeton";
   if (tokenHash && type && TYPES_ACCEPTES.has(type)) {
     erreur = (await supabase.auth.verifyOtp({ type, token_hash: tokenHash })).error?.message ?? null;

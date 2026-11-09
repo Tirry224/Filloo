@@ -3912,15 +3912,26 @@ select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, 
   (select count(*) from public.fil_equipe) = 1
   and (select de_l_equipe and auteur_id is null and lu_at is null and espace = 'merchant'
               and fil_de = 'a0560000-0000-0000-0000-00000000000a'
-              and corps like 'Bienvenue sur Filloo, Chez Bienvenue !%'
+              and corps like '🎉 Bienvenue sur Filloo !%'
          from public.fil_equipe));
 reset role;
-select pg_temp.check('0056 : le texte est exactement celui decide',
+select pg_temp.check('0056/0071 : le texte est exactement celui ecrit par le porteur du projet (0071, 0072)',
   (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
-  = 'Bienvenue sur Filloo, Chez Bienvenue ! Votre boutique est prête.' || E'\n'
-    || 'Un conseil important : publiez des photos qui montrent vraiment vos produits — vos propres photos, avec une bonne lumière. Un client qui reçoit un article différent de la photo sera déçu, et cela peut entraîner des litiges et des signalements contre votre boutique.' || E'\n'
-    || 'Des photos fidèles, ce sont des clients satisfaits qui reviennent. Une question ? Répondez-nous ici.' || E'\n'
-    || '— L''équipe Filloo');
+  = E'🎉 Bienvenue sur Filloo !\n\n'
+    || E'Nous sommes ravis de vous compter parmi les commerçants de notre plateforme.\n\n'
+    || E'Filloo vous permet de présenter vos produits et de les faire découvrir à de nouveaux clients.\n\n'
+    || E'💡 Quelques conseils pour attirer davantage de clients :\n\n'
+    || E'• Publiez des photos nettes, lumineuses et de bonne qualité.\n'
+    || E'• Choisissez des photos qui montrent clairement vos produits.\n'
+    || E'• Ajoutez des prix et des descriptions précises.\n'
+    || E'• Prenez le temps de bien présenter chaque article.\n'
+    || E'• Publiez régulièrement de nouveaux produits pour faire vivre votre boutique.\n\n'
+    || E'Un conseil important : une belle présentation donne envie aux clients de découvrir vos produits et de vous contacter.\n\n'
+    || E'Notre objectif est de vous accompagner dans le développement de votre activité.\n\n'
+    || E'Bienvenue dans la communauté Filloo !');
+select pg_temp.check('0071 : la fonction du texte n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.texte_de_bienvenue_boutique()', 'execute')
+  and not has_function_privilege('anon', 'public.texte_de_bienvenue_boutique()', 'execute'));
 
 update public.merchants set description = 'Nouvelle description', shop_name = 'Chez Bienvenue 2'
  where id = 'a0560000-0000-0000-0000-0000000000b1';
@@ -5443,6 +5454,36 @@ set role authenticated;
 select pg_temp.login('a0690000-0000-0000-0000-0000000000a1');
 select pg_temp.check('0069 : un message lu sort du compte de MA (3 -> 2)',
   public.compter_messages_non_lus('merchant') = 2);
+reset role;
+
+-- ---------------------------------------------------------------------
+-- Un compte créé par Google complète lui-même son profil (0073)
+-- ---------------------------------------------------------------------
+insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values
+  ('a0730000-0000-0000-0000-00000000000a', 'g0073@test.gn', '{"full_name":"Awa Google","name":"Awa Google"}', '{"provider":"google","providers":["google"]}'),
+  ('a0730000-0000-0000-0000-00000000000b', 'e0073@test.gn', '{"role":"merchant","full_name":"Email Marchand","phone":"620007301"}', '{"provider":"email","providers":["email"]}');
+select pg_temp.check('0073 : une connexion Google ne recoit aucun profil automatique',
+  not exists (select 1 from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000a'));
+select pg_temp.check('0073 : l''inscription par email cree toujours son profil, avec ses metadonnees',
+  (select count(*) from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000b'
+     and role = 'merchant' and full_name = 'Email Marchand' and phone = '620007301') = 1);
+select pg_temp.check('0073 : la fonction du declencheur n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.handle_new_user()', 'execute')
+  and not has_function_privilege('anon', 'public.handle_new_user()', 'execute'));
+
+select pg_temp.login('a0730000-0000-0000-0000-00000000000a');
+set role authenticated;
+insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0730000-0000-0000-0000-00000000000a', 'merchant', 'Awa Google', '620007302');
+select pg_temp.check('0073 : la personne Google cree elle-meme son premier profil',
+  (select count(*) from public.profiles where auth_user_id = 'a0730000-0000-0000-0000-00000000000a' and role = 'merchant') = 1);
+do $$ begin
+  insert into public.profiles (auth_user_id, role, full_name, phone)
+    values ('a0730000-0000-0000-0000-00000000000b', 'client', 'Usurpation', '620007303');
+  raise exception 'ECHEC 0073 : un profil a ete cree pour une autre connexion';
+exception when insufficient_privilege then
+  raise notice 'OK    0073 : impossible de creer un profil pour une autre connexion';
+end $$;
 reset role;
 
 \echo ''

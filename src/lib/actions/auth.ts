@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { siteUrlOuLocalhost } from "@/lib/site-url";
 import { getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
+import { destinationApresAuthentification } from "@/lib/destination";
+import { headers } from "next/headers";
 import { erreurNouveauMotDePasse } from "@/lib/password";
 import { messageErreurAuth } from "@/lib/erreurs-auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
@@ -133,24 +135,6 @@ export async function createLinkedProfileAction(
 
   if (role === "merchant") redirect("/inscription/boutique");
   redirect(safeNextPath(formData.get("next")) ?? "/");
-}
-
-/**
- * Où atterrir après s'être authentifié — connexion OU réinitialisation de
- * mot de passe. Jamais `/` en dur : `landingForSession` tranche
- * (décision 8 de SPEC), et `next` ne fait que CHOISIR une destination à
- * l'intérieur de l'espace autorisé, il ne défait pas la décision.
- */
-async function destinationApresAuthentification(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  brut: FormDataEntryValue | null,
-): Promise<string> {
-  const landing = await landingForSession(supabase);
-  const next = safeNextPath(brut);
-  const espaceCommercantSeul = landing === "/vendeur";
-  const autorise =
-    next && (!espaceCommercantSeul || next === "/vendeur" || next.startsWith("/vendeur/"));
-  return autorise ? next : landing;
 }
 
 export async function signInAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
@@ -295,4 +279,92 @@ export async function changeMyPasswordAction(
   if (error) return { error: messageErreurAuth(error.message) };
 
   return { sent: true };
+}
+
+/**
+ * L'adresse de CE site, lue sur la requête — pour le retour de Google
+ * seulement.
+ *
+ * `siteUrlOuLocalhost` renvoie toujours l'adresse de production : sur la
+ * préversion de `dev`, Google ramènerait la personne sur `filloo.net`,
+ * qui n'a pas la clé PKCE déposée en cookie sur la préversion, et
+ * l'échange échouerait. Lire `Host` est sans danger ICI : Supabase ne suit
+ * `redirectTo` que s'il figure dans sa liste « Redirect URLs » ; sinon il
+ * renvoie vers la « Site URL ». Un `Host` forgé ne mène donc nulle part.
+ */
+async function origineDeLaRequete(): Promise<string> {
+  const h = await headers();
+  const hote = h.get("x-forwarded-host") ?? h.get("host");
+  if (!hote) return siteUrlOuLocalhost();
+  const protocole = h.get("x-forwarded-proto") ?? (hote.startsWith("localhost") ? "http" : "https");
+  return `${protocole}://${hote}`;
+}
+
+/**
+ * « Continuer avec Google » (connexion ET inscription). Le retour passe
+ * par `/auth/confirm?origine=google`, qui échange le code puis envoie une
+ * connexion sans profil sur « Complétez votre compte » (`/inscription`).
+ */
+export async function googleSignInAction(formData: FormData): Promise<void> {
+  const role = formData.get("role") === "merchant" ? "merchant" : formData.get("role") === "client" ? "client" : null;
+  const next = safeNextPath(formData.get("next"));
+  const retour = new URL("/auth/confirm", await origineDeLaRequete());
+  retour.searchParams.set("origine", "google");
+  if (role) retour.searchParams.set("role", role);
+  if (next) retour.searchParams.set("next", next);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: retour.toString() },
+  });
+  if (error || !data.url) {
+    console.error("[google]", error?.message ?? "aucune adresse Google");
+    redirect("/connexion?erreur=google");
+  }
+  redirect(data.url);
+}
+
+/**
+ * « Complétez votre compte » : le PREMIER profil d'une connexion venue de
+ * Google, qui n'en reçoit pas d'office (`0073`). Google donne le nom et
+ * l'email ; le rôle et le téléphone se demandent ici.
+ *
+ * Insert direct, policy « profiles: je cree mon second compte » (0068) :
+ * `auth_user_id` = la connexion, compte non suspendu, connexion ouverte.
+ */
+export async function completeSignupAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+  const role = formData.get("role") === "merchant" ? "merchant" : "client";
+  const fullName = texteNettoye(formData.get("fullName"));
+  const phone = String(formData.get("phone") ?? "").trim();
+
+  const manquants = erreurChampsManquants([
+    ["le nom complet", fullName],
+    ["le téléphone", phone],
+  ]);
+  if (manquants) return { error: manquants };
+  const erreurNomComplet = erreurNom(fullName, "Nom complet");
+  if (erreurNomComplet) return { error: erreurNomComplet };
+  const erreurNumero = erreurTelephone(phone, true);
+  if (erreurNumero) return { error: erreurNumero };
+
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Votre session a expiré. Reconnectez-vous avec Google." };
+  if ((await getMyProfiles(supabase)).length > 0) {
+    redirect(await destinationApresAuthentification(supabase, formData.get("next")));
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .insert({ auth_user_id: user.id, role, full_name: fullName, phone: nettoyerTelephone(phone) });
+  if (error) {
+    if (error.code === "23505") return { error: "Vous avez déjà ce type de compte." };
+    return { error: messagePourErreur(error, "compte") };
+  }
+
+  await compter("inscription", { role });
+
+  if (role === "merchant") redirect("/inscription/boutique");
+  redirect(safeNextPath(formData.get("next")) ?? "/");
 }
