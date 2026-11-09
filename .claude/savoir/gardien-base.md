@@ -48,7 +48,7 @@ source, constaté ou supposé.
   audit `0052` (INSERT de `products` limité à 8 colonnes : une colonne
   ajoutée ensuite n'est pas insérable sans grant), `0053`/`0054` (tables
   serveur seul purgées par pg_cron) ; `0055` `comptes_tres_signales`,
-  `0056` bienvenue des boutiques, `0057` `visiteur_id`. Détails : en-têtes.
+  `0056` bienvenue des boutiques (texte : `texte_de_bienvenue_boutique()` de `0071`), `0057` `visiteur_id`. Détails : en-têtes.
   Avec `0065`, `equipe` s'écrit aussi par `ajouter_membre`/`retirer_membre`,
   réservées au PROPRIÉTAIRE depuis `0067` (`equipe.proprietaire`, un seul,
   posé sur le plus ancien : Tirry, 2026-11-05 21:15, aucune égalité,

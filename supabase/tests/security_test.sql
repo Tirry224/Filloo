@@ -3912,15 +3912,26 @@ select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, 
   (select count(*) from public.fil_equipe) = 1
   and (select de_l_equipe and auteur_id is null and lu_at is null and espace = 'merchant'
               and fil_de = 'a0560000-0000-0000-0000-00000000000a'
-              and corps like 'Bienvenue sur Filloo, Chez Bienvenue !%'
+              and corps like '🎉 Bienvenue sur Filloo !%'
          from public.fil_equipe));
 reset role;
-select pg_temp.check('0056 : le texte est exactement celui decide',
+select pg_temp.check('0056/0071 : le texte est exactement celui ecrit par le porteur du projet (0071)',
   (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
-  = 'Bienvenue sur Filloo, Chez Bienvenue ! Votre boutique est prête.' || E'\n'
-    || 'Un conseil important : publiez des photos qui montrent vraiment vos produits — vos propres photos, avec une bonne lumière. Un client qui reçoit un article différent de la photo sera déçu, et cela peut entraîner des litiges et des signalements contre votre boutique.' || E'\n'
-    || 'Des photos fidèles, ce sont des clients satisfaits qui reviennent. Une question ? Répondez-nous ici.' || E'\n'
-    || '— L''équipe Filloo');
+  = E'🎉 Bienvenue sur Filloo !\n\n'
+    || E'Nous sommes ravis de vous compter parmi les commerçants de notre plateforme.\n\n'
+    || E'Filloo vous permet de créer votre boutique en ligne, de présenter vos produits et de les faire découvrir à de nouveaux clients.\n\n'
+    || E'💡 Quelques conseils pour attirer davantage de clients :\n\n'
+    || E'• Publiez des photos nettes, lumineuses et de bonne qualité.\n'
+    || E'• Choisissez des photos qui montrent clairement vos produits.\n'
+    || E'• Ajoutez des prix et des descriptions précises.\n'
+    || E'• Prenez le temps de bien présenter chaque article.\n'
+    || E'• Publiez régulièrement de nouveaux produits pour faire vivre votre boutique.\n\n'
+    || E'Un conseil important : une belle présentation donne envie aux clients de découvrir vos produits et de vous contacter.\n\n'
+    || E'Notre objectif est de vous accompagner dans le développement de votre activité.\n\n'
+    || E'Bienvenue dans la communauté Filloo !');
+select pg_temp.check('0071 : la fonction du texte n''est appelable par personne',
+  not has_function_privilege('authenticated', 'public.texte_de_bienvenue_boutique()', 'execute')
+  and not has_function_privilege('anon', 'public.texte_de_bienvenue_boutique()', 'execute'));
 
 update public.merchants set description = 'Nouvelle description', shop_name = 'Chez Bienvenue 2'
  where id = 'a0560000-0000-0000-0000-0000000000b1';
