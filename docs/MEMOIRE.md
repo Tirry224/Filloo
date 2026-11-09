@@ -184,7 +184,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
   participant ; comptes suspendus exclus.
 - **Message de bienvenue à chaque nouvelle boutique** (2026-11-07,
   `0056` appliquée, trigger sur `merchants`) : dans le fil « boutique »
-  avec l'équipe, conseil de photos fidèles. Sans notification ; l'app
+  avec l'équipe, conseil de photos fidèles. Texte adouci par `0070`
+  (2026-11-09, appliquée) : bienvenue chaleureuse + conseil pour avoir
+  plus de clients, sans menace ni mot sur litiges/signalements. Sans notification ; l'app
   des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
 - **Pas de sous-catégories** (décision du 2026-11-07).
 - **Tout s'administre depuis `/admin`** (décision du 2026-11-07) : onglet
@@ -624,10 +626,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-428 commits, du plus récent au plus ancien.
+429 commits, du plus récent au plus ancien.
 
 ### 2026-11-08
 
+- `0cfc898` Carrousel d'une fiche : les photos se chargent au glissement
 - `fa25274` Photos prioritaires : vraiment en tête de file, pas seulement préchargées
 - `0041881` Savoir du testeur : vérifications de la mise en production du 2026-11-08
 - `25e0e3a` SEO : l'accueil n'est plus retiré de Google par un paramètre de suivi

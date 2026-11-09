@@ -3915,11 +3915,11 @@ select pg_temp.check('0056 : la commercante lit 1 message de l''equipe, non lu, 
               and corps like 'Bienvenue sur Filloo, Chez Bienvenue !%'
          from public.fil_equipe));
 reset role;
-select pg_temp.check('0056 : le texte est exactement celui decide',
+select pg_temp.check('0056/0070 : le texte est exactement celui decide (0070)',
   (select corps from public.fil_equipe where fil_de = 'a0560000-0000-0000-0000-00000000000a')
-  = 'Bienvenue sur Filloo, Chez Bienvenue ! Votre boutique est prête.' || E'\n'
-    || 'Un conseil important : publiez des photos qui montrent vraiment vos produits — vos propres photos, avec une bonne lumière. Un client qui reçoit un article différent de la photo sera déçu, et cela peut entraîner des litiges et des signalements contre votre boutique.' || E'\n'
-    || 'Des photos fidèles, ce sont des clients satisfaits qui reviennent. Une question ? Répondez-nous ici.' || E'\n'
+  = 'Bienvenue sur Filloo, Chez Bienvenue ! Nous sommes ravis de vous compter parmi nous : votre boutique est prête.' || E'\n'
+    || 'Notre conseil pour attirer plus de clients : publiez vos propres photos, prises avec une bonne lumière, qui montrent vos produits tels qu''ils sont. Les clients achètent plus volontiers quand ils voient le vrai produit, et ils reviennent quand ce qu''ils reçoivent ressemble à la photo.' || E'\n'
+    || 'Une question ? Répondez-nous ici, nous sommes là pour vous aider.' || E'\n'
     || '— L''équipe Filloo');
 
 update public.merchants set description = 'Nouvelle description', shop_name = 'Chez Bienvenue 2'
