@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
 import { Field, Select } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import type { CategoryOption } from "@/lib/data/reference";
@@ -119,11 +118,17 @@ export function ChoixMode({
 
       <fieldset className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Couleurs disponibles</legend>
-        <div className="flex flex-wrap gap-2">
+        {/* Une seule ligne qui défile, trois couleurs visibles à la fois
+            (demande du porteur du projet, 2026-11-10) : quinze pastilles
+            sur quatre lignes prenaient un écran entier. */}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
           {COULEURS.map((c) => {
             const coche = couleurs.includes(c.nom);
             return (
-              <label key={c.nom} className={cn(PASTILLE, coche ? ACTIVE : INACTIVE)}>
+              <label
+                key={c.nom}
+                className={cn(PASTILLE, "basis-[calc((100%-1rem)/3)] justify-center", coche ? ACTIVE : INACTIVE)}
+              >
                 <input
                   type="checkbox"
                   name="couleurs"
@@ -137,8 +142,7 @@ export function ChoixMode({
                   className="size-3.5 shrink-0 rounded-full border border-line"
                   style={{ background: c.teinte }}
                 />
-                {c.nom}
-                {coche ? <Check size={14} strokeWidth={2.4} aria-hidden /> : null}
+                <span className="truncate">{c.nom}</span>
               </label>
             );
           })}
