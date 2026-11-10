@@ -18,7 +18,11 @@ source, constaté ou supposé.
   `0068` appliquée (version `0068`, constaté `list_migrations` le
   2026-11-07 tard). `0069` (push à la dernière connexion, triggers fermés,
   non-lus) ÉCRITE et testée le 2026-11-07, non appliquée à la fin de la
-  mission. `scripts/migrations.mjs`
+  mission. `0069`–`0073` appliquées (constaté `list_migrations` le
+  2026-11-10). `0074` (catalogue mode : `categories.visible`/`famille`,
+  `products.genre`/`tailles`/`couleurs`, trigger
+  `products_categorie_visible`, `search_products` à 11 paramètres) ÉCRITE
+  et testée le 2026-11-10, non appliquée en fin de mission. `scripts/migrations.mjs`
   n'exige pas la continuité. Ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -101,6 +105,13 @@ source, constaté ou supposé.
   (le stub aussi). `merchants.rejection_reason` N'EXISTE PLUS (0033) :
   `equipe_compte` rend un `null::text` sous ce nom pour le site.
   Positions avant `0067` : catégories 2..9, villes 1, 2, 4, 6..9.
+- **Catégories, constaté 2026-11-10** : production = 8 (ids 2..9, pas
+  d'`alimentation`) ; la base de TEST en a 9 (`alimentation` id 1 de
+  0003). Après `0074` : seize de mode visibles (1..16), anciennes masquées
+  (17..) ; policy de lecture toujours `true` (le SITE filtre `visible`).
+  Unicité : `slug` seul (le nom par `fixer_categorie`). Le site code les
+  écrans en parallèle : `database.types.ts` portait déjà `0074` avant
+  la migration (lire `git status`/`src/` avant d'écrire une signature).
 - **Supprimer un produit emporte** (constaté 2026-11-07, `pg_constraint`) :
   `product_images` et `campagnes` (cascade), `messages.product_id` → null ;
   restent `reports.target_id` et `analytics_events.product_id` (sans FK).
@@ -185,7 +196,7 @@ source, constaté ou supposé.
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
   2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
-  avec `0069` (`/var/tmp/rejouer.sh` rejoue tout).
+  avec `0069`, 644 avec `0074` (2026-11-10) (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve
@@ -239,6 +250,17 @@ source, constaté ou supposé.
   et efface tout ce qui trahirait l'ancien (dates, user_agent) puisque le
   nouveau la lit ensuite (`0069`, comme `enregistrer_telephone`). Dans
   `on conflict do update`, l'alias de la table (`as s`) = ligne existante.
+- **Toute colonne ajoutée à `products` qu'écrit le commerçant demande
+  `grant insert (…), update (…)` à `authenticated`** (droits colonne de
+  0052) et met à jour le contrôle « exactement les colonnes » de 0052
+  (constaté 2026-11-10, `0074`).
+- **Masquer des catégories casse les fixtures** : les sections du test
+  rangent leurs produits dans les ids 1..3 ; `0074` les rend visibles en
+  tête de `security_test.sql` après avoir copié l'état des migrations
+  dans une table temporaire (`categories_apres_migrations`). Une étape
+  de données d'une migration (déplacer un produit) se prouve en insérant
+  la ligne ENTRE la migration précédente et la nouvelle (script de passe
+  locale), la suite tronquant tout ensuite.
 - **Divers PG** (constaté 2026-11-07) : nom de policy > 63 octets tronqué
   (NOTICE) ; `has_any_column_privilege` refuse `delete` ; une colonne
   `generated always as identity` s'insère sans droit sur la séquence.

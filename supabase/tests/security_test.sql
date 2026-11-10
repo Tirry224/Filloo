@@ -17,6 +17,18 @@ set client_min_messages = notice;
 -- chaînage est correct.
 truncate auth.users cascade;
 
+-- 0074 masque toutes les catégories d'avant la mode, dont les trois que
+-- les sections antérieures utilisent (ids 1, 2, 3 du jeu de 0003 :
+-- alimentation, mode, electronique) ; un produit n'y entre plus. On garde
+-- d'abord l'état laissé par les migrations (contrôlé dans la section
+-- 0074), puis on rend ces trois-là visibles : pour ces sections, ce sont
+-- des catégories ordinaires du catalogue, comme l'étaient toutes les
+-- catégories quand elles ont été écrites. Aucun contrôle n'est relâché ;
+-- la section 0074 prouve le masquage sur les autres catégories masquées.
+drop table if exists pg_temp.categories_apres_migrations;
+create temp table categories_apres_migrations as select * from public.categories;
+update public.categories set visible = true where id in (1, 2, 3);
+
 create or replace function pg_temp.check(label text, condition boolean) returns void
 language plpgsql as $$
 begin
@@ -3623,13 +3635,15 @@ select pg_temp.check('0052 : aucun des refus n''a laisse de produit',
 select pg_temp.check('0052 : anon n''a plus aucun droit d''insertion sur products',
   not has_table_privilege('anon', 'public.products', 'insert')
   and not has_any_column_privilege('anon', 'public.products', 'insert'));
-select pg_temp.check('0052 : authenticated insere exactement les huit colonnes envoyees',
+-- Les huit colonnes de 0052, plus genre, tailles, couleurs de 0074 : la
+-- liste reste EXACTE (aucune colonne réservée ne s'y glisse).
+select pg_temp.check('0052 : authenticated insere exactement les huit colonnes envoyees (+ trois de 0074)',
   not has_table_privilege('authenticated', 'public.products', 'insert')
   and (select array_agg(attname::text order by attname::text)
          from pg_attribute
         where attrelid = 'public.products'::regclass and attnum > 0 and not attisdropped
           and has_column_privilege('authenticated', 'public.products', attname, 'insert'))
-      = array['category_id', 'description', 'id', 'is_negotiable', 'merchant_id', 'price_gnf', 'status', 'title']);
+      = array['category_id', 'couleurs', 'description', 'genre', 'id', 'is_negotiable', 'merchant_id', 'price_gnf', 'status', 'tailles', 'title']);
 set role anon;
 select pg_temp.login('00000000-0000-0000-0000-000000000000');
 select pg_temp.check('0052 : anon est refuse par le droit, avant meme le RLS',
@@ -5485,6 +5499,192 @@ exception when insufficient_privilege then
   raise notice 'OK    0073 : impossible de creer un profil pour une autre connexion';
 end $$;
 reset role;
+
+-- =====================================================================
+-- Un catalogue de mode seulement (0074)
+-- =====================================================================
+-- MA : commerçant (boutique b1). Produits f1..f4 dans des catégories de
+-- la mode ; f5 dans une catégorie de test VISIBLE à sa création puis
+-- masquée (le trigger interdit d'y entrer ensuite) : seul `cat.visible`
+-- l'écarte de la recherche. Titres « T74 » pour isoler la recherche.
+-- --- 1. L'état laissé par la migration (avant la tête de ce fichier) ---
+select pg_temp.check('0074 : seize categories de mode visibles, positions 1..16, une famille chacune',
+  (select count(*) from categories_apres_migrations where visible) = 16
+  and (select array_agg(position order by position) from categories_apres_migrations where visible)
+      = (select array_agg(g) from generate_series(1, 16) g)
+  and not exists (select 1 from categories_apres_migrations where visible and famille is null)
+  and (select famille from categories_apres_migrations where slug = 'chaussures') = 'chaussures'
+  and (select count(*) from categories_apres_migrations where famille = 'accessoires') = 5
+  and (select name from categories_apres_migrations where slug = 'sous-vetements') = 'Sous-vêtements & Nuit');
+select pg_temp.check('0074 : toutes les anciennes categories sont masquees, gardees, apres la mode dans leur ordre',
+  (select array_agg(slug order by position) from categories_apres_migrations where not visible)
+    = array['alimentation', 'mode', 'electronique', 'beaute', 'maison', 'materiaux', 'enfants', 'sport', 'vehicules']
+  and (select array_agg(position order by position) from categories_apres_migrations where not visible)
+    = (select array_agg(g) from generate_series(17, 25) g)
+  and not exists (select 1 from categories_apres_migrations where not visible and famille is not null));
+select pg_temp.check('0074 : la fonction du declencheur n''est appelable par personne',
+  not has_function_privilege('anon', 'public.produit_dans_une_categorie_visible()', 'execute')
+  and not has_function_privilege('authenticated', 'public.produit_dans_une_categorie_visible()', 'execute'));
+
+select id as cat74_robes from public.categories where slug = 'robes' \gset
+select id as cat74_hauts from public.categories where slug = 'hauts' \gset
+select id as cat74_chaussures from public.categories where slug = 'chaussures' \gset
+select id as cat74_maison from public.categories where slug = 'maison' \gset
+insert into public.categories (slug, name, position, visible) values ('test-cachee-0074', 'Cachee 74', 900, true);
+select id as cat74_cachee from public.categories where slug = 'test-cachee-0074' \gset
+
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0740000-0000-0000-0000-0000000000a1', 'ma0074@test.gn', '{"role":"merchant","full_name":"Marchand MA74","phone":"620007401"}', now());
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0740000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0740000-0000-0000-0000-0000000000b1', 'a0740000-0000-0000-0000-0000000000a1', 'Chez MA74', 1);
+
+-- --- 2. Le commerçant : création, genre, tailles, couleurs ---------------
+set role authenticated;
+select pg_temp.login('a0740000-0000-0000-0000-0000000000a1');
+-- Exactement l'insertion du site (src/lib/actions/products.ts).
+insert into public.products (id, merchant_id, category_id, title, description, price_gnf, is_negotiable, status, genre, tailles, couleurs) values
+  ('a0740000-0000-0000-0000-0000000000f1', 'a0740000-0000-0000-0000-0000000000b1', :cat74_robes, 'Robe T74', null, 100000, false, 'draft', 'femme', '{M,L}', '{Rouge}'),
+  ('a0740000-0000-0000-0000-0000000000f2', 'a0740000-0000-0000-0000-0000000000b1', :cat74_robes, 'Boubou T74', null, 200000, false, 'draft', 'homme', '{XL}', '{Bleu}'),
+  ('a0740000-0000-0000-0000-0000000000f3', 'a0740000-0000-0000-0000-0000000000b1', :cat74_hauts, 'T-shirt T74', null, 300000, false, 'draft', 'mixte', '{M}', '{Noir}'),
+  ('a0740000-0000-0000-0000-0000000000f4', 'a0740000-0000-0000-0000-0000000000b1', :cat74_chaussures, 'Baskets T74', null, 400000, false, 'draft', 'enfant', '{30}', '{Rouge}'),
+  ('a0740000-0000-0000-0000-0000000000f5', 'a0740000-0000-0000-0000-0000000000b1', :cat74_cachee, 'Cachee T74', null, 100000, false, 'draft', 'femme', '{M}', '{Rouge}');
+select pg_temp.check('0074 : un commercant cree un produit de mode avec genre, tailles et couleurs',
+  (select genre = 'femme' and tailles = '{M,L}' and couleurs = '{Rouge}'
+     from public.products where id = 'a0740000-0000-0000-0000-0000000000f1'));
+select pg_temp.check('0074 : un commercant ne cree pas de produit dans une categorie masquee',
+  pg_temp.erreur_de(format($q$insert into public.products (merchant_id, category_id, title, price_gnf)
+                              values ('a0740000-0000-0000-0000-0000000000b1', %s, 'Canape T74', 1000)$q$, :cat74_maison))
+    = 'Cette catégorie n''est plus proposée : choisissez une catégorie de la mode.');
+select pg_temp.check('0074 : ni une categorie qui n''existe pas',
+  pg_temp.erreur_de($q$insert into public.products (merchant_id, category_id, title, price_gnf)
+                       values ('a0740000-0000-0000-0000-0000000000b1', 999999, 'Fantome T74', 1000)$q$)
+    = 'Cette catégorie n''est plus proposée : choisissez une catégorie de la mode.');
+select pg_temp.check('0074 : un commercant ne deplace pas un produit vers une categorie masquee',
+  pg_temp.erreur_de(format($q$update public.products set category_id = %s
+                              where id = 'a0740000-0000-0000-0000-0000000000f2'$q$, :cat74_maison))
+    = 'Cette catégorie n''est plus proposée : choisissez une catégorie de la mode.');
+select pg_temp.check('0074 : il deplace un produit vers une autre categorie visible et modifie genre, tailles, couleurs',
+  pg_temp.erreur_de(format($q$update public.products set category_id = %s, genre = 'homme', tailles = '{XL,XXL}', couleurs = '{Bleu}'
+                              where id = 'a0740000-0000-0000-0000-0000000000f2'$q$, :cat74_hauts)) is null
+  and pg_temp.erreur_de(format($q$update public.products set category_id = %s, tailles = '{XL}'
+                              where id = 'a0740000-0000-0000-0000-0000000000f2'$q$, :cat74_robes)) is null);
+select pg_temp.check('0074 : genre invalide refuse',
+  pg_temp.erreur_de($q$update public.products set genre = 'unisexe' where id = 'a0740000-0000-0000-0000-0000000000f1'$q$)
+    like '%products_genre_check%');
+select pg_temp.check('0074 : 26 tailles refusees, 25 acceptees',
+  pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 26) g)
+                       where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) like '%products_tailles_check%'
+  and pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 25) g)
+                       where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) is null);
+select pg_temp.check('0074 : 21 couleurs refusees, 20 acceptees (le site en propose 15)',
+  pg_temp.erreur_de($q$update public.products set couleurs = (select array_agg('C' || g) from generate_series(1, 21) g)
+                       where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) like '%products_couleurs_check%'
+  and pg_temp.erreur_de($q$update public.products set couleurs = (select array_agg('C' || g) from generate_series(1, 20) g)
+                       where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) is null);
+select pg_temp.check('0074 : un element nul ou des listes demesurees sont refuses',
+  pg_temp.erreur_de($q$update public.products set tailles = '{M,NULL}' where id = 'a0740000-0000-0000-0000-0000000000f1'$q$)
+    like '%products_tailles_check%'
+  and pg_temp.erreur_de($q$update public.products set couleurs = array[repeat('x', 401)] where id = 'a0740000-0000-0000-0000-0000000000f1'$q$)
+    like '%products_couleurs_check%'
+  and pg_temp.erreur_de($q$update public.products set tailles = array[repeat('x', 501)] where id = 'a0740000-0000-0000-0000-0000000000f1'$q$)
+    like '%products_tailles_check%');
+update public.products set tailles = '{M,L}', couleurs = '{Rouge}' where id = 'a0740000-0000-0000-0000-0000000000f1';
+reset role;
+
+insert into public.product_images (product_id, storage_path, position)
+  select id, 'a0740000/' || id || '/0.webp', 0 from public.products where id::text like 'a0740000-%';
+update public.products set status = 'active' where id::text like 'a0740000-%';
+-- f5 : sa catégorie se masque APRÈS coup ; il reste publié.
+update public.categories set visible = false where id = :cat74_cachee;
+
+-- --- 3. Un produit déjà dans une catégorie masquée reste modifiable ---
+set role authenticated;
+select pg_temp.login('a0740000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0074 : un produit deja dans une categorie masquee se modifie sans en changer',
+  pg_temp.erreur_de($q$update public.products set price_gnf = 110000, category_id = category_id
+                       where id = 'a0740000-0000-0000-0000-0000000000f5'$q$) is null);
+-- Une instruction ne voit pas son propre changement : vérifier à part.
+select pg_temp.check('0074 : ... et la modification a bien pris',
+  (select price_gnf from public.products where id = 'a0740000-0000-0000-0000-0000000000f5') = 110000);
+reset role;
+update public.products set price_gnf = 100000 where id = 'a0740000-0000-0000-0000-0000000000f5';
+
+-- --- 4. La recherche --------------------------------------------------
+select pg_temp.check('0074 : une seule search_products, invoker, search_path vide, ouverte a anon et authenticated, pas a public',
+  (select count(*) from pg_proc where proname = 'search_products' and pronamespace = 'public'::regnamespace) = 1
+  and (select not p.prosecdef and p.proconfig = array['search_path=""']
+         from pg_proc p where p.oid = 'public.search_products(text, int, int, text, int, int, text, text, text, bigint, bigint)'::regprocedure)
+  and has_function_privilege('anon', 'public.search_products(text, int, int, text, int, int, text, text, text, bigint, bigint)', 'execute')
+  and has_function_privilege('authenticated', 'public.search_products(text, int, int, text, int, int, text, text, text, bigint, bigint)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.search_products(text, int, int, text, int, int, text, text, text, bigint, bigint)'::regprocedure
+                     and a.grantee = 0));
+-- Les produits T74 rendus, nommés par la fin de leur id (f1..f5).
+create or replace function pg_temp.r74(
+  p_genre text default null, p_taille text default null, p_couleur text default null,
+  p_prix_min bigint default null, p_prix_max bigint default null, p_category_id int default null)
+returns text[] language sql as $$
+  select coalesce(array_agg(right(s.product_id::text, 2) order by s.product_id), '{}')
+    from public.search_products(p_query => 'T74', p_category_id => p_category_id, p_genre => p_genre,
+                                p_taille => p_taille, p_couleur => p_couleur,
+                                p_prix_min => p_prix_min, p_prix_max => p_prix_max) s
+$$;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0074 : une categorie masquee n''apparait pas dans la recherche (f5 publie, absent)',
+  pg_temp.r74() = array['f1', 'f2', 'f3', 'f4']
+  and pg_temp.r74(p_category_id => :cat74_cachee) = '{}'
+  and exists (select 1 from public.products where id = 'a0740000-0000-0000-0000-0000000000f5' and status = 'active'));
+select pg_temp.check('0074 : filtre femme = femme + mixte, sans homme ni enfant',
+  pg_temp.r74(p_genre => 'femme') = array['f1', 'f3']);
+select pg_temp.check('0074 : filtre homme = homme + mixte',
+  pg_temp.r74(p_genre => 'homme') = array['f2', 'f3']);
+select pg_temp.check('0074 : filtres enfant et mixte : la valeur exacte seule',
+  pg_temp.r74(p_genre => 'enfant') = array['f4'] and pg_temp.r74(p_genre => 'mixte') = array['f3']);
+select pg_temp.check('0074 : filtre taille',
+  pg_temp.r74(p_taille => 'M') = array['f1', 'f3'] and pg_temp.r74(p_taille => 'XXS') = '{}');
+select pg_temp.check('0074 : filtre couleur',
+  pg_temp.r74(p_couleur => 'Rouge') = array['f1', 'f4'] and pg_temp.r74(p_couleur => 'Bleu') = array['f2']);
+select pg_temp.check('0074 : filtre prix, bornes incluses',
+  pg_temp.r74(p_prix_min => 200000, p_prix_max => 300000) = array['f2', 'f3']
+  and pg_temp.r74(p_prix_min => 400000) = array['f4']
+  and pg_temp.r74(p_prix_max => 100000) = array['f1']);
+select pg_temp.check('0074 : filtres combines (femme, M, Rouge, <= 150000)',
+  pg_temp.r74(p_genre => 'femme', p_taille => 'M', p_couleur => 'Rouge', p_prix_max => 150000) = array['f1']);
+select pg_temp.check('0074 : les anciens appels positionnels et nommes marchent toujours',
+  (select count(*) from public.search_products(null, 4)) >= 0
+  and (select count(*) from public.search_products('T74', 1)) = 4
+  and (select count(*) from public.search_products('T74', null, null, 'recent', 24, 0)) = 4
+  and (select count(*) from public.search_products('T74', 1, :cat74_robes, 'popular', 1, 0)) = 1
+  and (select count(*) from public.search_products(p_query => 'T74', p_sort => 'recent', p_limit => 24)) = 4
+  and (select count(*) from public.search_products(p_limit => 1000)) <= 50);
+reset role;
+
+-- --- 5. Les produits sponsorisés --------------------------------------
+-- Deux boutiques sinon `distinct on (m.id)` n'en montre qu'un : MA74 a f1
+-- (visible) et f5 (masqué) ; on met f5 seul en campagne, puis f1.
+insert into public.campagnes (id, merchant_id, type, product_id, duree_jours, statut, debut_at, fin_at) values
+  ('a0740000-0000-0000-0000-0000000000c5', 'a0740000-0000-0000-0000-0000000000b1', 'produit',
+   'a0740000-0000-0000-0000-0000000000f5', 7, 'active', now() - interval '1 hour', now() + interval '1 day');
+set role anon;
+select pg_temp.check('0074 : un produit sponsorise d''une categorie masquee n''est pas montre',
+  not exists (select 1 from public.produits_sponsorises('T74', null, 4)));
+reset role;
+insert into public.campagnes (id, merchant_id, type, product_id, duree_jours, statut, debut_at, fin_at) values
+  ('a0740000-0000-0000-0000-0000000000c1', 'a0740000-0000-0000-0000-0000000000b1', 'produit',
+   'a0740000-0000-0000-0000-0000000000f1', 7, 'active', now() - interval '1 hour', now() + interval '1 day');
+set role anon;
+select pg_temp.check('0074 : un produit sponsorise d''une categorie visible l''est toujours',
+  (select array_agg(product_id) from public.produits_sponsorises('T74', null, 4))
+    = array['a0740000-0000-0000-0000-0000000000f1'::uuid]);
+reset role;
+select pg_temp.check('0074 : produits_sponsorises garde sa signature et ses droits',
+  has_function_privilege('anon', 'public.produits_sponsorises(text, int, int)', 'execute')
+  and has_function_privilege('authenticated', 'public.produits_sponsorises(text, int, int)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.produits_sponsorises(text, int, int)'::regprocedure and a.grantee = 0)
+  and (select prosecdef from pg_proc where oid = 'public.produits_sponsorises(text, int, int)'::regprocedure));
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

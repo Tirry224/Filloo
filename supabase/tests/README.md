@@ -17,8 +17,8 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 611 vérifications (compte du 2026-11-07, migrations 0063 à 0069
-comprises) affichent `OK`. La première qui échoue interrompt tout
+Les 644 vérifications (compte du 2026-11-10, migrations jusqu'à 0074
+comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
 Un test qui ne peut pas échouer ne prouve rien. Pour le vérifier, rejoue les
@@ -62,6 +62,14 @@ d'espace du compte client (commerçant qui est aussi client), la remise à
 vide de `last_used_at` quand l'appareil change de connexion, la garde de
 connexion fermée d'`enregistrer_appareil_push`, le `revoke` d'une
 fonction de trigger, la borne de 2048 caractères de l'adresse.
+Pour `0074` (le 2026-11-10), sept mutations arrêtent chacune la suite
+sur son contrôle : `c.visible` retiré du trigger, de `search_products`,
+de `produits_sponsorises` ; le trigger qui ne laisse plus passer un
+changement sans changement de catégorie ; « mixte » retiré du filtre
+femme/homme ; la borne basse du prix rendue stricte ; le droit de
+colonne sur genre/tailles/couleurs retiré. La tête du fichier rend
+visibles les catégories 1 à 3 (masquées par 0074) pour les sections
+antérieures, après avoir gardé l'état des migrations pour la section 0074.
 
 ## Ce que ces tests protègent
 

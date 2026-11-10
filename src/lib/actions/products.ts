@@ -10,7 +10,7 @@ import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
 import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
-import { garderPermises, lireGenre, NOMS_COULEURS, TOUTES_TAILLES, type Genre } from "@/lib/mode";
+import { COULEURS_MAX, garderPermises, lireGenre, NOMS_COULEURS, TAILLES_MAX, TOUTES_TAILLES, type Genre } from "@/lib/mode";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -60,6 +60,8 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
   if (!genre) return { error: "Choisissez pour qui : femme, homme, enfant ou mixte." };
   if (tailles.length === 0) return { error: "Cochez au moins une taille (ou « Taille unique »)." };
   if (couleurs.length === 0) return { error: "Cochez au moins une couleur." };
+  // Bornes de la base (0074) : un formulaire forgé ne doit pas finir en erreur brute.
+  if (tailles.length > TAILLES_MAX || couleurs.length > COULEURS_MAX) return { error: "Trop de tailles ou de couleurs cochées." };
   if ("erreur" in prix) return { error: prix.erreur };
   if (longueur(description) > 2000) return { error: "Description : 2 000 caractères maximum." };
   if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos maximum.` };
