@@ -118,7 +118,7 @@ export function ProductForm(props: ProductFormProps) {
               disabled={pending}
               onClick={() => demanderPermissionPush("publication")}
             >
-              {pending ? "Publication en cours" : "Publier le produit"}
+              {pending ? "Publication en cours" : "Publier l'article"}
             </Button>
             <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
               {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}
