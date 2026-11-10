@@ -9,6 +9,7 @@ import { Notice } from "@/components/ui/Notice";
 import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { Screen, ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { PriceTag } from "@/components/product/PriceTag";
+import { CaracteristiquesMode } from "@/components/product/CaracteristiquesMode";
 import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { ShareButton } from "@/components/product/ShareButton";
@@ -126,6 +127,8 @@ export default async function ProductPage({
     description: product.description ?? undefined,
     image: product.imageUrls.length > 0 ? product.imageUrls : undefined,
     category: product.category,
+    color: product.couleurs?.length ? product.couleurs.join(", ") : undefined,
+    size: product.tailles?.length ? product.tailles.join(", ") : undefined,
     offers: {
       "@type": "Offer",
       price: product.priceGnf,
@@ -188,6 +191,8 @@ export default async function ProductPage({
               </p>
             )}
           </div>
+
+          <CaracteristiquesMode product={product} />
 
           {product.description ? (
             <p className="text-base leading-relaxed text-ink-soft">{product.description}</p>

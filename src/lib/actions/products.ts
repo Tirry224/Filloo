@@ -10,6 +10,7 @@ import { compter } from "@/lib/analytics";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
 import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { garderPermises, lireGenre, NOMS_COULEURS, TOUTES_TAILLES, type Genre } from "@/lib/mode";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -28,6 +29,9 @@ async function requireMerchantId(): Promise<{ merchantId: string } | { error: st
 type ProductFields = {
   title: string;
   categoryId: number;
+  genre: Genre;
+  tailles: string[];
+  couleurs: string[];
   priceGnf: number;
   isNegotiable: boolean;
   description: string;
@@ -44,11 +48,18 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
   const prix = lirePrixGnf(String(formData.get("priceGnf") ?? ""));
   const description = texteNettoye(formData.get("description"));
   const imagePaths = formData.getAll("imagePaths").map(String).filter(Boolean);
+  const genre = lireGenre(formData.get("genre"));
+  // Une valeur hors liste (champ forgé) est ignorée, jamais enregistrée.
+  const tailles = garderPermises(formData.getAll("tailles").map(String), TOUTES_TAILLES);
+  const couleurs = garderPermises(formData.getAll("couleurs").map(String), NOMS_COULEURS);
 
   if (longueur(title) < 3 || longueur(title) > 120) {
     return { error: "Titre : entre 3 et 120 caractères." };
   }
   if (!categoryId) return { error: "Choisissez une catégorie." };
+  if (!genre) return { error: "Choisissez pour qui : femme, homme, enfant ou mixte." };
+  if (tailles.length === 0) return { error: "Cochez au moins une taille (ou « Taille unique »)." };
+  if (couleurs.length === 0) return { error: "Cochez au moins une couleur." };
   if ("erreur" in prix) return { error: prix.erreur };
   if (longueur(description) > 2000) return { error: "Description : 2 000 caractères maximum." };
   if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos maximum.` };
@@ -63,6 +74,9 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
     fields: {
       title,
       categoryId,
+      genre,
+      tailles,
+      couleurs,
       priceGnf: prix.prix,
       isNegotiable: formData.get("isNegotiable") === "on",
       description,
@@ -120,6 +134,9 @@ export async function createProductAction(_prevState: ActionState | null, formDa
     id: productId,
     merchant_id: owner.merchantId,
     category_id: fields.categoryId,
+    genre: fields.genre,
+    tailles: fields.tailles,
+    couleurs: fields.couleurs,
     title: fields.title,
     description: fields.description || null,
     price_gnf: fields.priceGnf,
@@ -147,6 +164,9 @@ export async function createProductAction(_prevState: ActionState | null, formDa
       .from("products")
       .update({
         category_id: fields.categoryId,
+        genre: fields.genre,
+        tailles: fields.tailles,
+        couleurs: fields.couleurs,
         title: fields.title,
         description: fields.description || null,
         price_gnf: fields.priceGnf,
@@ -243,6 +263,9 @@ export async function updateProductAction(_prevState: ActionState | null, formDa
     .from("products")
     .update({
       category_id: fields.categoryId,
+      genre: fields.genre,
+      tailles: fields.tailles,
+      couleurs: fields.couleurs,
       title: fields.title,
       description: fields.description || null,
       price_gnf: fields.priceGnf,

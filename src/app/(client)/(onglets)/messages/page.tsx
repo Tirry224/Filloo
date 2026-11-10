@@ -25,7 +25,7 @@ export default async function ClientMessagesPage() {
           <EmptyState
             icon={MessageCircle}
             title="Aucune conversation"
-            description="Quand un produit vous intéresse, écrivez au vendeur depuis sa fiche. Vos échanges apparaîtront ici."
+            description="Quand un article vous intéresse, écrivez au vendeur depuis sa fiche. Vos échanges apparaîtront ici."
           >
             <Button href="/">Parcourir les produits</Button>
           </EmptyState>

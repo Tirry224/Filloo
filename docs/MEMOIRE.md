@@ -645,12 +645,22 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-433 commits, du plus récent au plus ancien.
+440 commits, du plus récent au plus ancien.
+
+### 2026-11-08
+
+- `4fdc1e2` Merge pull request #11 from Tirry224/dev
+- `a6d4caa` Merge pull request #10 from Tirry224/claude/amazing-planck-f8i52c
 
 ### 2026-11-09
 
+- `de082fa` Ramener claude/amazing-planck-f8i52c dans dev : mémoire de la connexion Google
+- `5e3f074` Mémoire : réglage Supabase de la connexion Google et comment le vérifier
+- `daae624` Ramener claude/amazing-planck-f8i52c dans dev : connexion avec Google (0073)
 - `6c0a865` Connexion et inscription avec Google (0073)
+- `f224b0e` Ramener claude/amazing-planck-f8i52c dans dev : bienvenue sans « créer votre boutique » (0072)
 - `8a95378` 0072 : la bienvenue ne dit plus « créer votre boutique »
+- `0b4bda7` Ramener claude/amazing-planck-f8i52c dans dev : mot de bienvenue des boutiques (0070, 0071)
 - `e8f59a5` 0071 : le mot de bienvenue écrit par le porteur du projet
 - `14256a0` 0070 : un mot de bienvenue plus chaleureux pour les nouvelles boutiques
 

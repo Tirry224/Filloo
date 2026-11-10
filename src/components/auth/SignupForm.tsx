@@ -112,7 +112,7 @@ export function SignupForm({
           <RoleCard
             icon={Search}
             title="Acheter"
-            description="Je parcours les produits et je contacte les vendeurs."
+            description="Je parcours les vêtements et accessoires, et je contacte les vendeurs."
             selected={role === "client"}
             onSelect={() => setRole("client")}
           />
@@ -121,7 +121,7 @@ export function SignupForm({
           <RoleCard
             icon={Package}
             title="Vendre"
-            description="Je publie mes produits et je reçois les messages des clients."
+            description="Je publie mes articles de mode et je reçois les messages des clients."
             selected={role === "merchant"}
             onSelect={() => setRole("merchant")}
           />

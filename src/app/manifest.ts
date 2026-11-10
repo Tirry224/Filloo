@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Filloo — produits et commerçants près de chez vous",
+    name: "Filloo — la mode en Guinée",
     short_name: "Filloo",
     description:
-      "Trouvez des produits et les commerçants qui les vendent, en Guinée. Parcourez le catalogue et contactez le vendeur pour conclure la vente.",
+      "Vêtements, chaussures et accessoires vendus par les boutiques de Guinée. Filtrez par taille, couleur et prix, puis contactez le vendeur.",
     lang: "fr",
     start_url: "/",
     scope: "/",

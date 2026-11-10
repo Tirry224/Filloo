@@ -231,22 +231,28 @@ export type Database = {
       }
       categories: {
         Row: {
+          famille: string | null
           id: number
           name: string
           position: number
           slug: string
+          visible: boolean
         }
         Insert: {
+          famille?: string | null
           id?: number
           name: string
           position?: number
           slug: string
+          visible?: boolean
         }
         Update: {
+          famille?: string | null
           id?: number
           name?: string
           position?: number
           slug?: string
+          visible?: boolean
         }
         Relationships: []
       }
@@ -666,8 +672,10 @@ export type Database = {
         Row: {
           category_id: number
           contact_count: number
+          couleurs: string[]
           created_at: string
           description: string | null
+          genre: string | null
           id: string
           is_featured: boolean
           is_negotiable: boolean
@@ -675,14 +683,17 @@ export type Database = {
           merchant_id: string
           price_gnf: number
           status: Database["public"]["Enums"]["product_status"]
+          tailles: string[]
           title: string
           updated_at: string
         }
         Insert: {
           category_id: number
           contact_count?: number
+          couleurs?: string[]
           created_at?: string
           description?: string | null
+          genre?: string | null
           id?: string
           is_featured?: boolean
           is_negotiable?: boolean
@@ -690,14 +701,17 @@ export type Database = {
           merchant_id: string
           price_gnf: number
           status?: Database["public"]["Enums"]["product_status"]
+          tailles?: string[]
           title: string
           updated_at?: string
         }
         Update: {
           category_id?: number
           contact_count?: number
+          couleurs?: string[]
           created_at?: string
           description?: string | null
+          genre?: string | null
           id?: string
           is_featured?: boolean
           is_negotiable?: boolean
@@ -705,6 +719,7 @@ export type Database = {
           merchant_id?: string
           price_gnf?: number
           status?: Database["public"]["Enums"]["product_status"]
+          tailles?: string[]
           title?: string
           updated_at?: string
         }
@@ -1198,10 +1213,15 @@ export type Database = {
         Args: {
           p_category_id?: number
           p_city_id?: number
+          p_couleur?: string
+          p_genre?: string
           p_limit?: number
           p_offset?: number
+          p_prix_max?: number
+          p_prix_min?: number
           p_query?: string
           p_sort?: string
+          p_taille?: string
         }
         Returns: {
           category_id: number

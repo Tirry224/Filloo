@@ -22,7 +22,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     getMyMerchant(supabase),
     supabase
       .from("products")
-      .select("id, title, category_id, price_gnf, is_negotiable, description, status")
+      .select("id, title, category_id, genre, tailles, couleurs, price_gnf, is_negotiable, description, status")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("product_images").select("storage_path, position").eq("product_id", id).order("position"),
@@ -43,7 +43,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         categories={categories}
         initial={{
           title: product.title,
-          categoryId: product.category_id,
+          /* Une catégorie masquée (ancien catalogue, 0074) n'est pas dans
+             la liste : le commerçant en choisit une de la mode. */
+          categoryId: categories.some((c) => c.id === product.category_id) ? product.category_id : null,
+          genre: product.genre,
+          tailles: product.tailles,
+          couleurs: product.couleurs,
           priceGnf: product.price_gnf,
           isNegotiable: product.is_negotiable,
           description: product.description ?? "",

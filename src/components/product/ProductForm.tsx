@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Field, Input, Textarea } from "@/components/ui/Field";
 import { PriceInput } from "@/components/ui/PriceInput";
 import { ScreenBody, ScreenFooter, Section } from "@/components/ui/Screen";
 import { Toggle } from "@/components/ui/Toggle";
 import { PhotoPicker } from "@/components/product/PhotoPicker";
+import { ChoixMode } from "@/components/product/ChoixMode";
 import { createProductAction, updateProductAction } from "@/lib/actions/products";
 import type { CategoryOption } from "@/lib/data/reference";
 import { PHOTOS_MAX } from "@/lib/storage";
@@ -26,7 +27,10 @@ type ProductFormProps = {
       isDraft: boolean;
       initial: {
         title: string;
-        categoryId: number;
+        categoryId: number | null;
+        genre: string | null;
+        tailles: string[];
+        couleurs: string[];
         priceGnf: number;
         isNegotiable: boolean;
         description: string;
@@ -59,21 +63,10 @@ export function ProductForm(props: ProductFormProps) {
           </Field>
 
           <Field label="Titre" htmlFor="title">
-            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Nom du produit" />
+            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Ex. : Robe en wax, baskets en cuir" />
           </Field>
 
-          <Field label="Catégorie" htmlFor="categoryId">
-            <Select id="categoryId" name="categoryId" defaultValue={initial?.categoryId ?? ""}>
-              <option value="" disabled>
-                Choisir une catégorie
-              </option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <ChoixMode categories={categories} initial={initial} />
 
           <Field label="Prix" htmlFor="priceGnf">
             <PriceInput
@@ -101,7 +94,7 @@ export function ProductForm(props: ProductFormProps) {
               maxLength={2000}
               rows={4}
               defaultValue={initial?.description}
-              placeholder="Décrivez le produit : état, quantité, lieu de retrait"
+              placeholder="Décrivez l'article : matière, coupe, état (neuf ou occasion), lieu de retrait"
             />
           </Field>
 

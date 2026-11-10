@@ -18,7 +18,7 @@ export default async function LoginPage({
         <Section className="gap-4 p-7">
           <div className="mb-1 flex flex-col gap-2">
             <Wordmark size="lg" />
-            <p className="text-base text-ink-soft">Trouvez des produits et des commerçants près de chez vous.</p>
+            <p className="text-base text-ink-soft">Vêtements, chaussures et accessoires près de chez vous.</p>
           </div>
 
           {params.erreur === "lien_confirmation" ? (

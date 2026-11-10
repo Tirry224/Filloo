@@ -30,10 +30,10 @@ export default function Image() {
       >
         <div style={{ fontSize: 150, fontWeight: 800, color: "#182b49", letterSpacing: -4 }}>Filloo</div>
         <div style={{ marginTop: 24, fontSize: 56, fontWeight: 600, lineHeight: 1.2 }}>
-          Trouvez des produits et des commerçants près de chez vous
+          La mode près de chez vous
         </div>
         <div style={{ marginTop: 32, fontSize: 36, color: "#334155" }}>
-          Parcourez le catalogue, contactez le vendeur. En Guinée.
+          Vêtements, chaussures, accessoires. En Guinée.
         </div>
       </div>
     ),

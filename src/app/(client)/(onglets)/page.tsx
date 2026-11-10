@@ -26,6 +26,7 @@ import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { categoriesParGouts, melanger } from "@/lib/melange";
 import { RetenirGout } from "@/components/product/RetenirGout";
 import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
+import { GENRES_FILTRE } from "@/lib/mode";
 import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 
 /** Les trois ordres de l'accueil. « Pour vous », le mélange, est celui par défaut (2026-11-06). */
@@ -42,7 +43,7 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const filtree = estFiltree(await searchParams, ["categorie", "tri"]);
+  const filtree = estFiltree(await searchParams, ["genre", "categorie", "tri"]);
   return {
     alternates: { canonical: "/" },
     robots: filtree ? { index: false, follow: true } : undefined,
@@ -52,11 +53,13 @@ export async function generateMetadata({
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ categorie?: string | string[]; tri?: string | string[] }>;
+  searchParams: Promise<{ genre?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
 }) {
   // Même lecture prudente que `/recherche` : un paramètre peut être répété.
   const brut = await searchParams;
   const categorie = premier(brut.categorie) ?? "Tout";
+  // Femme, Homme, Enfant (2026-11-10) ; une valeur inconnue est ignorée.
+  const genre = GENRES_FILTRE.find((g) => g.valeur === premier(brut.genre))?.valeur ?? "";
   const tri = TRIS.find((t) => t.valeur === premier(brut.tri))?.valeur ?? "pour-vous";
   const supabase = await createClient();
 
@@ -74,7 +77,7 @@ export default async function HomePage({
   const categories = categoriesParGouts(await categoriesEnCache(), gouts);
 
   const sort = tri === "populaire" ? "popular" : "recent";
-  const tous = await rechercheEnCache({ sort, limit: 50 });
+  const tous = await rechercheEnCache({ sort, genre: genre || null, limit: 50 });
   const filtres = categorie === "Tout" ? tous : tous.filter((p) => p.category === categorie);
   /* Le mélange se fait APRÈS le cache, à chaque affichage : la liste
      partagée reste lue une fois par minute, l'ordre change à chaque visite. */
@@ -83,16 +86,25 @@ export default async function HomePage({
   /* La publicité (0047) : au plus deux produits sponsorisés de cet
      emplacement, et les boutiques mises en avant sur l'accueil complet. */
   const idCategorie = categories.find((c) => c.name === categorie)?.id ?? null;
+  // Une campagne ne connaît pas le genre : pas de publicité sur un accueil filtré par genre.
   const [sponsorises, boutiquesEnAvant] = await Promise.all([
-    produitsSponsorises({ categoryId: idCategorie, limit: 2 }),
-    categorie === "Tout" ? boutiquesMisesEnAvant() : Promise.resolve([]),
+    genre ? Promise.resolve([]) : produitsSponsorises({ categoryId: idCategorie, limit: 2 }),
+    categorie === "Tout" && !genre ? boutiquesMisesEnAvant() : Promise.resolve([]),
   ]);
   await compterAffichages([...sponsorises, ...boutiquesEnAvant].map((x) => x.campagneId));
   const idsSponsorises = new Set(sponsorises.map((p) => p.id));
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 
-  const triHref = (valeur: string) =>
-    `/?categorie=${encodeURIComponent(categorie)}&tri=${valeur}`;
+  /** L'adresse de l'accueil avec un filtre changé, les autres gardés. */
+  const accueil = (modifs: { genre?: string; categorie?: string; tri?: string }) => {
+    const suivant = { genre, categorie, tri, ...modifs };
+    const params = new URLSearchParams();
+    if (suivant.genre) params.set("genre", suivant.genre);
+    params.set("categorie", suivant.categorie);
+    if (suivant.tri !== "pour-vous") params.set("tri", suivant.tri);
+    return `/?${params.toString()}`;
+  };
+  const triHref = (valeur: string) => accueil({ tri: valeur });
   // Un produit sponsorisé n'apparaît pas une seconde fois plus bas.
   const ordinaires = (featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible).filter(
     (p) => !idsSponsorises.has(p.id),
@@ -145,33 +157,40 @@ export default async function HomePage({
         {categorie !== "Tout" ? <RetenirGout categorie={categorie} /> : null}
         <Section className="gap-3 pb-1">
           <ChipRow>
-            <Link href="/?categorie=Tout">
+            <Link href={accueil({ genre: "" })}>
+              <Chip selected={genre === ""}>Tout le monde</Chip>
+            </Link>
+            {GENRES_FILTRE.map((g) => (
+              <Link key={g.valeur} href={accueil({ genre: g.valeur })}>
+                <Chip selected={g.valeur === genre}>{g.libelle}</Chip>
+              </Link>
+            ))}
+          </ChipRow>
+          <ChipRow>
+            <Link href={accueil({ categorie: "Tout" })}>
               <Chip selected={categorie === "Tout"}>Tout</Chip>
             </Link>
             {categories.map((c) => (
-              <Link
-                key={c.id}
-                href={`/?categorie=${encodeURIComponent(c.name)}`}
-              >
+              <Link key={c.id} href={accueil({ categorie: c.name })}>
                 <Chip selected={c.name === categorie}>{c.name}</Chip>
               </Link>
             ))}
           </ChipRow>
         </Section>
 
-        {visible.length === 0 && categorie !== "Tout" && tous.length > 0 ? (
+        {visible.length === 0 && (categorie !== "Tout" || genre) ? (
           <EmptyState
             icon={Package}
-            title={`Aucun produit « ${categorie} » pour le moment`}
+            title={categorie !== "Tout" ? `Aucun article « ${categorie} » pour le moment` : "Aucun article pour le moment"}
             description="Essayez une autre catégorie, ou regardez tout ce qui est en vente."
           >
-            <Button href="/">Voir toutes les catégories</Button>
+            <Button href="/">Voir tous les articles</Button>
           </EmptyState>
         ) : visible.length === 0 ? (
           <EmptyState
             icon={Package}
-            title="Aucun produit pour le moment"
-            description="Inscrivez-vous comme vendeur pour être le premier à publier."
+            title="Aucun article pour le moment"
+            description="Vous vendez des vêtements, des chaussures ou des accessoires ? Ouvrez votre boutique et publiez les premiers."
           >
             <Button variant="secondary" href="/inscription">
               Devenir vendeur

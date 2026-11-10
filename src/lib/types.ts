@@ -24,6 +24,11 @@ export type Product = {
   isFeatured: boolean;
   contactCount: number;
   imageUrls: string[];
+  /** La mode (0074) : lus seulement par la fiche produit (`getProduct`) ;
+   * absents des cartes de liste. */
+  genre?: string | null;
+  tailles?: string[];
+  couleurs?: string[];
 };
 
 export type Message = {

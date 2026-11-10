@@ -34,7 +34,7 @@ export const CATALOGUE = "catalogue";
  * d'activer Cache Components pour tout le site : changement trop large
  * pour ce seul besoin, à reprendre le jour où on l'active.
  */
-export const categoriesEnCache = unstable_cache(() => getCategories(createPublicClient()), ["categories"], {
+export const categoriesEnCache = unstable_cache(() => getCategories(createPublicClient()), ["categories-mode"], {
   revalidate: 3600,
   tags: [CATALOGUE],
 });

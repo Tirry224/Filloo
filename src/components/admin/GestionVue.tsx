@@ -592,7 +592,9 @@ export function CatalogueVue({ categories, villes, ...m }: { categories: Categor
           <Avis {...m} />
           <Liste
             titre="Catégories"
-            elements={categories.map((c) => ({ id: c.id, nom: c.name, position: c.position }))}
+            /* Seulement les catégories de la mode : les anciennes (0074)
+               restent en base, masquées, et ne se gèrent plus d'ici. */
+            elements={categories.filter((c) => c.visible).map((c) => ({ id: c.id, nom: c.name, position: c.position }))}
             fixer={fixerCategorieAction}
             retirer={retirerCategorieAction}
             note="Renommer garde l'adresse de la catégorie (et l'app la suit). Une catégorie qui a des produits ne se retire pas."

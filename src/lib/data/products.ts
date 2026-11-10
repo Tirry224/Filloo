@@ -42,6 +42,9 @@ type ProductDetailRow = {
   status: Database["public"]["Enums"]["product_status"];
   is_featured: boolean;
   contact_count: number;
+  genre: string | null;
+  tailles: string[];
+  couleurs: string[];
   categories: { name: string } | null;
   merchants: {
     id: string;
@@ -73,6 +76,9 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
     isFeatured: row.is_featured,
     contactCount: row.contact_count,
     imageUrls,
+    genre: row.genre,
+    tailles: row.tailles,
+    couleurs: row.couleurs,
   };
 }
 
@@ -84,7 +90,7 @@ export async function getProduct(supabase: SupabaseClient<Database>, id: string)
     supabase
       .from("products")
       .select(
-        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name))",
+        "id, title, description, price_gnf, is_negotiable, status, is_featured, contact_count, genre, tailles, couleurs, categories(name), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name))",
       )
       .eq("id", id)
       .maybeSingle<ProductDetailRow>(),
@@ -110,6 +116,12 @@ export async function searchProducts(
     query?: string;
     cityId?: number;
     categoryId?: number | null;
+    /** Filtres de la mode (0074). « femme » et « homme » ramènent aussi le mixte. */
+    genre?: string | null;
+    taille?: string | null;
+    couleur?: string | null;
+    prixMin?: number | null;
+    prixMax?: number | null;
     sort?: "recent" | "popular";
     limit?: number;
   },
@@ -118,6 +130,11 @@ export async function searchProducts(
     p_query: opts.query || undefined,
     p_city_id: opts.cityId ?? undefined,
     p_category_id: opts.categoryId ?? undefined,
+    p_genre: opts.genre ?? undefined,
+    p_taille: opts.taille ?? undefined,
+    p_couleur: opts.couleur ?? undefined,
+    p_prix_min: opts.prixMin ?? undefined,
+    p_prix_max: opts.prixMax ?? undefined,
     p_sort: opts.sort ?? "recent",
     p_limit: opts.limit ?? 24,
   });
