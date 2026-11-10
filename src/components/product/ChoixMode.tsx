@@ -15,7 +15,7 @@ import { COULEURS, FAMILLES, GENRES, groupesDeTailles } from "@/lib/mode";
  */
 
 const PASTILLE =
-  "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium";
+  "relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium";
 const ACTIVE = "border-ink bg-ink text-paper";
 const INACTIVE = "border-line bg-surface text-ink";
 
@@ -59,7 +59,7 @@ export function ChoixMode({
         </Select>
       </Field>
 
-      <fieldset className="flex flex-col gap-1.5">
+      <fieldset className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Pour qui</legend>
         <div className="flex flex-wrap gap-2">
           {GENRES.map((g) => (
@@ -78,7 +78,7 @@ export function ChoixMode({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-1.5">
+      <fieldset className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Tailles disponibles</legend>
         <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
         {groupes.length === 0 ? (
@@ -87,7 +87,14 @@ export function ChoixMode({
           groupes.map((g) => (
             <div key={g.titre} className="flex flex-col gap-1.5 pt-1">
               {groupes.length > 1 ? <span className="text-xs font-semibold text-ink-soft">{g.titre}</span> : null}
-              <div className="flex flex-wrap gap-2">
+              {/* Une ligne par groupe, qui défile de côté (demande du porteur du
+                  projet, 2026-11-10) : 19 tours de taille tiennent sur une
+                  ligne au lieu de trois. Le dernier bouton dépasse du bord,
+                  ce qui montre qu'on peut faire défiler. `relative` sur chaque
+                  bouton (PASTILLE) : sans lui, les cases invisibles
+                  (`sr-only`, en position absolue) sortaient de la ligne et
+                  élargissaient toute la page (constaté, 954 px). */}
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
                 {g.tailles.map((t) => {
                   const coche = tailles.includes(t);
                   return (
@@ -110,7 +117,7 @@ export function ChoixMode({
         )}
       </fieldset>
 
-      <fieldset className="flex flex-col gap-1.5">
+      <fieldset className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Couleurs disponibles</legend>
         <div className="flex flex-wrap gap-2">
           {COULEURS.map((c) => {
