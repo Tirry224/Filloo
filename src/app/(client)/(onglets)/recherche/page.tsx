@@ -25,8 +25,8 @@ import {
   libelleGenre,
   lireTranchePrix,
   NOMS_COULEURS,
-  TAILLES,
-  TOUTES_TAILLES,
+  aPlat,
+  groupesDeTailles,
   TRANCHES_PRIX,
 } from "@/lib/mode";
 
@@ -82,8 +82,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   // Les filtres de la mode (2026-11-10), chacun relu contre sa liste.
   const genre = GENRES_FILTRE.find((g) => g.valeur === premier(brut.genre))?.valeur ?? "";
-  // Les tailles du rayon de la catégorie choisie ; toutes sans catégorie.
-  const taillesProposees = category ? TAILLES[category.famille] : TOUTES_TAILLES;
+  /* Les tailles qui ont un sens pour ce choix : celles de la catégorie et
+     du genre choisis ; sans catégorie, vêtements puis pointures. */
+  const taillesProposees = category
+    ? aPlat(groupesDeTailles(category.famille, genre, category.slug))
+    : aPlat([...groupesDeTailles("vetements", genre, "pantalons"), ...groupesDeTailles("chaussures", genre)]);
   const taille = taillesProposees.find((t) => t === premier(brut.taille)) ?? "";
   const couleur = NOMS_COULEURS.find((c) => c === premier(brut.couleur)) ?? "";
   const tranche = lireTranchePrix(premier(brut.prix));

@@ -5,7 +5,7 @@ import { familleDe, type Famille } from "@/lib/mode";
 export type CityOption = { id: number; name: string };
 
 /** `famille` : le rayon (vêtements, chaussures, accessoires), voir `lib/mode.ts`. */
-export type CategoryOption = { id: number; name: string; famille: Famille };
+export type CategoryOption = { id: number; name: string; slug: string; famille: Famille };
 
 export async function getCities(supabase: SupabaseClient<Database>): Promise<CityOption[]> {
   const { data, error } = await supabase.from("cities").select("id, name").order("position");
@@ -22,9 +22,9 @@ export async function getCities(supabase: SupabaseClient<Database>): Promise<Cit
 export async function getCategories(supabase: SupabaseClient<Database>): Promise<CategoryOption[]> {
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, famille")
+    .select("id, name, slug, famille")
     .eq("visible", true)
     .order("position");
   if (error) throw error;
-  return data.map((c) => ({ id: c.id, name: c.name, famille: familleDe(c.famille) }));
+  return data.map((c) => ({ id: c.id, name: c.name, slug: c.slug, famille: familleDe(c.famille) }));
 }

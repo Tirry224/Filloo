@@ -7,7 +7,8 @@ import {
   lireGenre,
   lireTranchePrix,
   NOMS_COULEURS,
-  TAILLES,
+  groupesDeTailles,
+  aPlat,
   TAILLES_MAX,
   TOUTES_TAILLES,
   TRANCHES_PRIX,
@@ -32,7 +33,16 @@ test("une saisie multiple ne garde que les valeurs permises, sans doublon, dans 
 
 test("les listes tiennent dans les bornes de la base (0074)", () => {
   // Un produit qui coche tout doit encore passer la contrainte de cardinalité.
-  for (const tailles of Object.values(TAILLES)) assert.ok(tailles.length <= TAILLES_MAX);
+  for (const famille of ["vetements", "chaussures", "accessoires"] as const) {
+    for (const genre of ["femme", "homme", "enfant", "mixte", null]) {
+      for (const slug of ["pantalons", "robes", null]) {
+        const tailles = aPlat(groupesDeTailles(famille, genre, slug));
+        assert.ok(tailles.length <= TAILLES_MAX, `${famille}/${genre}/${slug} : ${tailles.length}`);
+        // Toute taille proposée doit être acceptée par le serveur.
+        for (const t of tailles) assert.ok(TOUTES_TAILLES.includes(t), t);
+      }
+    }
+  }
   assert.ok(NOMS_COULEURS.length <= COULEURS_MAX);
 });
 
@@ -42,4 +52,17 @@ test("les tranches de prix se suivent sans trou", () => {
   }
   assert.equal(lireTranchePrix("100k-250k")?.min, 100_000);
   assert.equal(lireTranchePrix("gratuit"), null);
+});
+
+test("tailles en groupes : âges pour un enfant, lettres et tour de taille pour un bas adulte", () => {
+  const enfant = aPlat(groupesDeTailles("vetements", "enfant", "pantalons"));
+  assert.ok(enfant.includes("4 ans") && !enfant.includes("M") && !enfant.includes("30"));
+  const jean = groupesDeTailles("vetements", "femme", "pantalons");
+  assert.deepEqual(jean.map((g) => g.titre), ["Tailles (S, M, L…)", "Tour de taille (jeans, pantalons)", "Autre"]);
+  assert.equal(jean[1].tailles[0], "25");
+  // Une robe n'a pas de tour de taille chiffré.
+  assert.ok(!aPlat(groupesDeTailles("vetements", "femme", "robes")).includes("30"));
+  // Pointures : enfant à part.
+  assert.ok(aPlat(groupesDeTailles("chaussures", "enfant")).includes("20"));
+  assert.ok(!aPlat(groupesDeTailles("chaussures", "homme")).includes("20"));
 });

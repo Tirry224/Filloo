@@ -645,10 +645,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-444 commits, du plus récent au plus ancien.
+445 commits, du plus récent au plus ancien.
 
 ### 2026-11-10
 
+- `25dc978` Formulaire vendeur : « Publier l'article »
 - `9b7caf3` Espace vendeur : ajouter en un geste, articles en onglets, fiches à compléter
 - `700e6d8` Accueil condensé : pour qui (une barre) et rayon (quatre tuiles)
 - `f33aed3` Migration 0074 écrite : catalogue de mode seulement (pas encore appliquée)

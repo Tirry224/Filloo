@@ -45,22 +45,71 @@ export function familleDe(famille: string | null | undefined): Famille {
 
 export const TAILLE_UNIQUE = "Taille unique";
 
-/** Les tailles par rayon. « Taille unique » vaut pour tous. */
-export const TAILLES: Record<Famille, readonly string[]> = {
-  vetements: [
-    "XS", "S", "M", "L", "XL", "XXL", "3XL",
-    "0-2 ans", "3-5 ans", "6-9 ans", "10-14 ans",
-    TAILLE_UNIQUE,
-  ],
-  chaussures: [
-    "28", "30", "32", "34", "35", "36", "37", "38", "39", "40",
-    "41", "42", "43", "44", "45", "46", "47",
-  ],
-  accessoires: [TAILLE_UNIQUE],
-};
+const suite = (de: number, a: number, pas = 1) =>
+  Array.from({ length: Math.floor((a - de) / pas) + 1 }, (_, i) => String(de + i * pas));
 
-/** Toutes les tailles, sans doublon, dans l'ordre des rayons. */
-export const TOUTES_TAILLES: readonly string[] = [...new Set(Object.values(TAILLES).flat())];
+/**
+ * Les tailles, rangées en GROUPES (demande du porteur du projet,
+ * 2026-11-10) : un enfant se mesure à son âge, une personne de plus de
+ * 15 ans en lettres (S, M, L…) ET, pour un bas (jean, pantalon, jupe), au
+ * tour de taille chiffré à partir de 25 ; les pieds ont leurs pointures,
+ * enfant à part. Même système pour femme et homme.
+ */
+export const TAILLES_BEBE = ["0-3 mois", "3-6 mois", "6-12 mois", "12-18 mois", "18-24 mois"] as const;
+export const TAILLES_ENFANT = ["2 ans", "3 ans", "4 ans", "5 ans", "6 ans", "8 ans", "10 ans", "12 ans", "14 ans"] as const;
+export const TAILLES_LETTRES = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"] as const;
+/** Tour de taille des jeans et pantalons : 25 à 40, puis de deux en deux jusqu'à 46. */
+export const TAILLES_CHIFFREES: readonly string[] = [...suite(25, 40), ...suite(42, 46, 2)];
+export const POINTURES_ENFANT: readonly string[] = suite(18, 34);
+export const POINTURES: readonly string[] = suite(35, 47);
+
+/** Les catégories où l'on donne aussi un tour de taille chiffré (slugs, 0074). */
+const BAS = new Set(["pantalons", "jupes", "ensembles", "tenues-sport"]);
+
+export type GroupeTailles = { titre: string; tailles: readonly string[] };
+
+/**
+ * Les groupes de tailles à proposer pour un article, d'après son rayon,
+ * sa catégorie et pour qui il est. Sans genre choisi, ce sont les tailles
+ * adultes : le cas le plus courant.
+ */
+export function groupesDeTailles(famille: Famille, genre: string | null | undefined, slug?: string | null): GroupeTailles[] {
+  const enfant = genre === "enfant";
+  if (famille === "accessoires") return [{ titre: "Taille", tailles: [TAILLE_UNIQUE] }];
+  if (famille === "chaussures") {
+    return enfant
+      ? [{ titre: "Pointures enfant", tailles: POINTURES_ENFANT }]
+      : [{ titre: "Pointures", tailles: POINTURES }];
+  }
+  if (enfant) {
+    return [
+      { titre: "Bébé", tailles: TAILLES_BEBE },
+      { titre: "Enfant (par âge)", tailles: TAILLES_ENFANT },
+      { titre: "Autre", tailles: [TAILLE_UNIQUE] },
+    ];
+  }
+  return [
+    { titre: "Tailles (S, M, L…)", tailles: TAILLES_LETTRES },
+    ...(slug && BAS.has(slug) ? [{ titre: "Tour de taille (jeans, pantalons)", tailles: TAILLES_CHIFFREES }] : []),
+    { titre: "Autre", tailles: [TAILLE_UNIQUE] },
+  ];
+}
+
+/** Les tailles d'une liste de groupes, à plat et sans doublon. */
+export function aPlat(groupes: readonly GroupeTailles[]): string[] {
+  return [...new Set(groupes.flatMap((g) => g.tailles))];
+}
+
+/** Toutes les tailles permises : la liste que le serveur accepte. */
+export const TOUTES_TAILLES: readonly string[] = aPlat([
+  { titre: "", tailles: TAILLES_BEBE },
+  { titre: "", tailles: TAILLES_ENFANT },
+  { titre: "", tailles: TAILLES_LETTRES },
+  { titre: "", tailles: TAILLES_CHIFFREES },
+  { titre: "", tailles: POINTURES_ENFANT },
+  { titre: "", tailles: POINTURES },
+  { titre: "", tailles: [TAILLE_UNIQUE] },
+]);
 
 export const COULEURS = [
   { nom: "Noir", teinte: "#111111" },
@@ -83,7 +132,7 @@ export const NOMS_COULEURS: readonly string[] = COULEURS.map((c) => c.nom);
 
 /** Au plus autant que la base accepte (0074). */
 export const COULEURS_MAX = 20;
-export const TAILLES_MAX = 25;
+export const TAILLES_MAX = 40;
 
 /** Tranches de prix du filtre, en GNF, bornes incluses. */
 export const TRANCHES_PRIX = [
@@ -123,6 +172,3 @@ export function ficheIncomplete(p: {
   if (p.status === "sold") return false;
   return !p.genre || !p.tailles?.length || !p.couleurs?.length;
 }
-
-/** Les tailles d'enfant (par âge), proposées seulement pour un article « Enfant ». */
-export const TAILLES_ENFANT: readonly string[] = ["0-2 ans", "3-5 ans", "6-9 ans", "10-14 ans"];

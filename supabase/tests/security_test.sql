@@ -5572,10 +5572,10 @@ select pg_temp.check('0074 : il deplace un produit vers une autre categorie visi
 select pg_temp.check('0074 : genre invalide refuse',
   pg_temp.erreur_de($q$update public.products set genre = 'unisexe' where id = 'a0740000-0000-0000-0000-0000000000f1'$q$)
     like '%products_genre_check%');
-select pg_temp.check('0074 : 26 tailles refusees, 25 acceptees',
-  pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 26) g)
+select pg_temp.check('0074 : 41 tailles refusees, 40 acceptees',
+  pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 41) g)
                        where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) like '%products_tailles_check%'
-  and pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 25) g)
+  and pg_temp.erreur_de($q$update public.products set tailles = (select array_agg(g::text) from generate_series(1, 40) g)
                        where id = 'a0740000-0000-0000-0000-0000000000f1'$q$) is null);
 select pg_temp.check('0074 : 21 couleurs refusees, 20 acceptees (le site en propose 15)',
   pg_temp.erreur_de($q$update public.products set couleurs = (select array_agg('C' || g) from generate_series(1, 21) g)

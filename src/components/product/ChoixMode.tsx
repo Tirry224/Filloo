@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { Field, Select } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import type { CategoryOption } from "@/lib/data/reference";
-import { COULEURS, FAMILLES, GENRES, TAILLE_UNIQUE, TAILLES, TAILLES_ENFANT } from "@/lib/mode";
+import { COULEURS, FAMILLES, GENRES, groupesDeTailles } from "@/lib/mode";
 
 /**
  * Catégorie, genre, tailles et couleurs d'un produit (la mode, 0074).
@@ -31,14 +31,10 @@ export function ChoixMode({
   const [tailles, setTailles] = useState<string[]>(initial?.tailles ?? []);
   const [couleurs, setCouleurs] = useState<string[]>(initial?.couleurs ?? []);
 
-  const famille = categories.find((c) => String(c.id) === categoryId)?.famille;
-  /* Vêtements : les âges pour un article « Enfant », les tailles adultes
-     sinon — mêlées, elles faisaient une liste de douze à parcourir. */
-  const taillesProposees = !famille
-    ? []
-    : famille !== "vetements"
-      ? TAILLES[famille]
-      : TAILLES.vetements.filter((t) => (genre === "enfant") === TAILLES_ENFANT.includes(t) || t === TAILLE_UNIQUE);
+  const categorie = categories.find((c) => String(c.id) === categoryId);
+  /* Les tailles en groupes titrés (`groupesDeTailles`) : âges pour un
+     enfant ; lettres, et tour de taille chiffré pour un bas, pour un adulte. */
+  const groupes = categorie ? groupesDeTailles(categorie.famille, genre, categorie.slug) : [];
   const basculer = (liste: string[], valeur: string) =>
     liste.includes(valeur) ? liste.filter((v) => v !== valeur) : [...liste, valeur];
 
@@ -85,27 +81,32 @@ export function ChoixMode({
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Tailles disponibles</legend>
         <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
-        {taillesProposees.length === 0 ? (
+        {groupes.length === 0 ? (
           <p className="text-xs text-ink-soft">Choisissez d&apos;abord une catégorie.</p>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {taillesProposees.map((t) => {
-              const coche = tailles.includes(t);
-              return (
-                <label key={t} className={cn(PASTILLE, coche ? ACTIVE : INACTIVE)}>
-                  <input
-                    type="checkbox"
-                    name="tailles"
-                    value={t}
-                    checked={coche}
-                    onChange={() => setTailles((l) => basculer(l, t))}
-                    className="sr-only"
-                  />
-                  {t}
-                </label>
-              );
-            })}
-          </div>
+          groupes.map((g) => (
+            <div key={g.titre} className="flex flex-col gap-1.5 pt-1">
+              {groupes.length > 1 ? <span className="text-xs font-semibold text-ink-soft">{g.titre}</span> : null}
+              <div className="flex flex-wrap gap-2">
+                {g.tailles.map((t) => {
+                  const coche = tailles.includes(t);
+                  return (
+                    <label key={t} className={cn(PASTILLE, coche ? ACTIVE : INACTIVE)}>
+                      <input
+                        type="checkbox"
+                        name="tailles"
+                        value={t}
+                        checked={coche}
+                        onChange={() => setTailles((l) => basculer(l, t))}
+                        className="sr-only"
+                      />
+                      {t}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))
         )}
       </fieldset>
 

@@ -25,11 +25,11 @@
 -- 2. Les produits de `mode` passent dans `chaussures` (le seul constaté
 --    est une paire de baskets).
 -- 3. `products.genre` ('femme', 'homme', 'enfant', 'mixte' ou rien),
---    `products.tailles` (au plus 25) et `products.couleurs` (au plus 20 : le site en propose 15),
+--    `products.tailles` (au plus 40 : un jean adulte en propose 28) et `products.couleurs` (au plus 20 : le site en propose 15),
 --    jamais nuls. Les VALEURS permises sont celles du site
 --    (`src/lib/mode.ts`) ; la base ne fait que borner : nombre, aucun
 --    élément nul, longueur totale (500 et 400 caractères, de quoi tenir
---    25 tailles et 20 couleurs de 20 caractères), pour qu'un appel direct
+--    40 tailles et 20 couleurs de 20 caractères), pour qu'un appel direct
 --    à l'API ne range pas n'importe quel volume dans ces colonnes. Les
 --    produits existants gardent un genre vide et des listes vides.
 -- 4. Le commerçant écrit ces trois colonnes à la création et à la
@@ -128,7 +128,7 @@ alter table public.products
     constraint products_genre_check check (genre in ('femme', 'homme', 'enfant', 'mixte')),
   add column tailles text[] not null default '{}'
     constraint products_tailles_check check (
-      cardinality(tailles) <= 25
+      cardinality(tailles) <= 40
       and array_position(tailles, null) is null
       and char_length(array_to_string(tailles, '')) <= 500),
   add column couleurs text[] not null default '{}'
