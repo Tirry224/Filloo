@@ -34,7 +34,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   return (
     <Screen>
-      <TopBar title="Modifier le produit" backHref={`/vendeur/produits/${id}/actions`} />
+      <TopBar title="Modifier l'article" backHref={`/vendeur/produits/${id}/actions`} />
       <ProductForm
         mode="edit"
         productId={product.id}

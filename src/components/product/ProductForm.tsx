@@ -58,7 +58,7 @@ export function ProductForm(props: ProductFormProps) {
       <input type="hidden" name="productId" value={productId} />
       <ScreenBody>
         <Section className="gap-4">
-          <Field label="Photos" hint={`1 photo minimum, ${PHOTOS_MAX} maximum. Sans photo, un produit ne se vend pas.`}>
+          <Field label="Photos" hint={`De 1 à ${PHOTOS_MAX} photos, à la lumière du jour : l'article entier, de face, puis un détail (tissu, étiquette).`}>
             <PhotoPicker merchantId={merchantId} productId={productId} initialPaths={initial?.imagePaths} />
           </Field>
 

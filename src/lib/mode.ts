@@ -107,3 +107,22 @@ export function garderPermises(saisies: readonly string[], permises: readonly st
   const choisies = new Set(saisies);
   return permises.filter((p) => choisies.has(p));
 }
+
+/**
+ * Une fiche à compléter : sans genre, taille ou couleur, l'article
+ * n'apparaît dans AUCUN filtre de la recherche — c'est le cas de tout
+ * produit publié avant la mode (0074). Un article vendu n'est plus à
+ * compléter : il ne se cherche plus.
+ */
+export function ficheIncomplete(p: {
+  status: string;
+  genre?: string | null;
+  tailles?: readonly string[];
+  couleurs?: readonly string[];
+}): boolean {
+  if (p.status === "sold") return false;
+  return !p.genre || !p.tailles?.length || !p.couleurs?.length;
+}
+
+/** Les tailles d'enfant (par âge), proposées seulement pour un article « Enfant ». */
+export const TAILLES_ENFANT: readonly string[] = ["0-2 ans", "3-5 ans", "6-9 ans", "10-14 ans"];

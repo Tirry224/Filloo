@@ -67,6 +67,9 @@ type MerchantProductRow = {
   status: Database["public"]["Enums"]["product_status"];
   is_featured: boolean;
   contact_count: number;
+  genre: string | null;
+  tailles: string[];
+  couleurs: string[];
   categories: { name: string } | null;
   product_images: { storage_path: string; position: number }[];
 };
@@ -81,7 +84,7 @@ export async function getMerchantProducts(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, title, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), product_images(storage_path, position)",
+      "id, title, price_gnf, is_negotiable, status, is_featured, contact_count, genre, tailles, couleurs, categories(name), product_images(storage_path, position)",
     )
     .eq("merchant_id", merchant.id)
     .order("created_at", { ascending: false })
@@ -108,6 +111,9 @@ export async function getMerchantProducts(
       isFeatured: row.is_featured,
       contactCount: row.contact_count,
       imageUrls: cover ? [productImageUrl(cover.storage_path)] : [],
+      genre: row.genre,
+      tailles: row.tailles,
+      couleurs: row.couleurs,
     };
   });
 }

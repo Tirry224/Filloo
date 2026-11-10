@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { MessageCircle, Package, Plus, Users } from "lucide-react";
+import { ChevronRight, MessageCircle, Package, Plus, TriangleAlert, Users } from "lucide-react";
+import { ficheIncomplete } from "@/lib/mode";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -34,6 +35,7 @@ export default async function MerchantHomePage({
   const published = catalogue.filter((p) => p.status === "active").length;
   const contacts = catalogue.reduce((total, p) => total + p.contactCount, 0);
   const dernieres = threads.slice(0, 3);
+  const aCompleter = catalogue.filter(ficheIncomplete).length;
 
   return (
     <TabScreen largeur="rangees">
@@ -48,6 +50,28 @@ export default async function MerchantHomePage({
             <p className="text-sm text-ink-soft">Voici où en est votre boutique aujourd&apos;hui.</p>
           </div>
 
+          {/* L'action principale d'un commerçant, toujours à portée de pouce. */}
+          {catalogue.length > 0 ? (
+            <Button href="/vendeur/produits/nouveau" icon={Plus}>
+              Ajouter un article
+            </Button>
+          ) : null}
+
+          {aCompleter > 0 ? (
+            <Link href="/vendeur/produits?liste=a-completer">
+              <Card className="flex items-center gap-3 border-warn bg-warn-soft p-3.5 text-warn-ink">
+                <TriangleAlert size={20} strokeWidth={1.9} className="shrink-0" aria-hidden />
+                <span className="flex-1 text-sm">
+                  <b>
+                    {aCompleter} article{aCompleter > 1 ? "s" : ""} à compléter
+                  </b>{" "}
+                  : ajoutez la taille et la couleur pour apparaître dans les recherches.
+                </span>
+                <ChevronRight size={18} strokeWidth={2} className="shrink-0" aria-hidden />
+              </Card>
+            </Link>
+          ) : null}
+
           <div className="flex flex-col gap-2.5">
             <SectionLabel>Votre activité</SectionLabel>
             <div className="flex gap-2.5">
@@ -56,7 +80,7 @@ export default async function MerchantHomePage({
                   <Package size={18} strokeWidth={1.9} className="text-ink-soft" aria-hidden />
                   <span className="font-display text-2xl font-bold">{published}</span>
                   <span className="text-2xs text-ink-soft">
-                    produit{published > 1 ? "s" : ""} actif{published > 1 ? "s" : ""}
+                    article{published > 1 ? "s" : ""} en vente
                   </span>
                 </Card>
               </Link>
@@ -85,9 +109,9 @@ export default async function MerchantHomePage({
             <EmptyState
               icon={Plus}
               title="Votre boutique est vide"
-              description="Un premier produit avec une photo nette et un prix clair suffit pour recevoir vos premiers messages."
+              description="Une photo nette, la taille, la couleur et un prix clair : c'est tout ce qu'il faut pour recevoir vos premiers messages."
             >
-              <Button href="/vendeur/produits/nouveau">Ajouter mon premier produit</Button>
+              <Button href="/vendeur/produits/nouveau">Ajouter mon premier article</Button>
             </EmptyState>
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -96,7 +120,7 @@ export default async function MerchantHomePage({
               {dernieres.length === 0 ? (
                 <Card className="p-3.5">
                   <p className="text-sm text-ink-soft">
-                    Aucune demande pour l&apos;instant. Vos clients vous écriront depuis vos produits.
+                    Aucune demande pour l&apos;instant. Vos clients vous écriront depuis vos articles.
                   </p>
                 </Card>
               ) : (

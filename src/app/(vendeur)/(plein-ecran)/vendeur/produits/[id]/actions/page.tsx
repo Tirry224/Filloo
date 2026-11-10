@@ -70,7 +70,7 @@ export default async function ProductActionsPage({ params }: { params: Promise<{
 
         <ActionRow
           icon={Pencil}
-          label="Modifier le produit"
+          label="Modifier l'article"
           description="Titre, prix, photos, description."
           href={`/vendeur/produits/${product.id}/modifier`}
         />

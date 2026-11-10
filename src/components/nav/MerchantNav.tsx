@@ -13,7 +13,7 @@ const TABS: readonly NavTab[] = [
     match: (p: string) => p === "/vendeur",
   },
   {
-    label: "Produits",
+    label: "Articles",
     href: "/vendeur/produits",
     icon: Package,
     match: (p: string) => p.startsWith("/vendeur/produits"),

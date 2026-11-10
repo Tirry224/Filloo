@@ -13,7 +13,7 @@ export default async function NewProductPage() {
 
   return (
     <Screen>
-      <TopBar title="Nouveau produit" backHref="/vendeur/produits" />
+      <TopBar title="Nouvel article" backHref="/vendeur/produits" />
       <ProductForm mode="create" merchantId={merchant.id} categories={categories} />
     </Screen>
   );

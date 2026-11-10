@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { Field, Select } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import type { CategoryOption } from "@/lib/data/reference";
-import { COULEURS, FAMILLES, GENRES, TAILLES } from "@/lib/mode";
+import { COULEURS, FAMILLES, GENRES, TAILLE_UNIQUE, TAILLES, TAILLES_ENFANT } from "@/lib/mode";
 
 /**
  * Catégorie, genre, tailles et couleurs d'un produit (la mode, 0074).
@@ -32,7 +32,13 @@ export function ChoixMode({
   const [couleurs, setCouleurs] = useState<string[]>(initial?.couleurs ?? []);
 
   const famille = categories.find((c) => String(c.id) === categoryId)?.famille;
-  const taillesProposees = famille ? TAILLES[famille] : [];
+  /* Vêtements : les âges pour un article « Enfant », les tailles adultes
+     sinon — mêlées, elles faisaient une liste de douze à parcourir. */
+  const taillesProposees = !famille
+    ? []
+    : famille !== "vetements"
+      ? TAILLES[famille]
+      : TAILLES.vetements.filter((t) => (genre === "enfant") === TAILLES_ENFANT.includes(t) || t === TAILLE_UNIQUE);
   const basculer = (liste: string[], valeur: string) =>
     liste.includes(valeur) ? liste.filter((v) => v !== valeur) : [...liste, valeur];
 
@@ -78,6 +84,7 @@ export function ChoixMode({
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Tailles disponibles</legend>
+        <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
         {taillesProposees.length === 0 ? (
           <p className="text-xs text-ink-soft">Choisissez d&apos;abord une catégorie.</p>
         ) : (

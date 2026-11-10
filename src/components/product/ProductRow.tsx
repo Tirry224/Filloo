@@ -5,15 +5,16 @@ import { PriceTag } from "./PriceTag";
 import { cn } from "@/lib/cn";
 import type { Product, ProductStatus } from "@/lib/types";
 
-const STATUS: Record<ProductStatus, { label: string; tone: "success" | "neutral" } | null> = {
+const STATUS: Record<ProductStatus, { label: string; tone: "success" | "neutral" | "warn" } | null> = {
   active: { label: "Publié", tone: "success" },
   draft: { label: "Brouillon", tone: "neutral" },
   sold: { label: "Vendu", tone: "neutral" },
   hidden: { label: "Masqué", tone: "neutral" },
 };
 
-export function ProductRow({ product }: { product: Product }) {
-  const status = STATUS[product.status];
+/** `aCompleter` : la fiche n'a pas encore genre, taille ou couleur (`ficheIncomplete`). */
+export function ProductRow({ product, aCompleter = false }: { product: Product; aCompleter?: boolean }) {
+  const status = aCompleter ? { label: "À compléter", tone: "warn" as const } : STATUS[product.status];
   return (
     <Card className={cn("flex items-center gap-3 p-2.5", product.status === "sold" && "opacity-60")}>
       <Photo src={product.imageUrls[0]} ratio="free" className="size-14 shrink-0 rounded-md" iconSize={20} />
