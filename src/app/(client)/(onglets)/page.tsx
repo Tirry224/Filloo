@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Chip, ChipRow } from "@/components/ui/Chip";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar, Wordmark } from "@/components/ui/TopBar";
@@ -13,6 +12,7 @@ import { PriceTag } from "@/components/product/PriceTag";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Package } from "lucide-react";
+import { FiltresAccueil, lireRayon } from "@/components/product/FiltresAccueil";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProfiles, landingForSession } from "@/lib/data/session";
@@ -23,18 +23,20 @@ import { premier } from "@/lib/next-param";
 import { estFiltree, jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
-import { categoriesParGouts, melanger } from "@/lib/melange";
-import { RetenirGout } from "@/components/product/RetenirGout";
+import { melanger } from "@/lib/melange";
 import { BoutiquesADecouvrir } from "@/components/product/BoutiquesADecouvrir";
 import { GENRES_FILTRE } from "@/lib/mode";
 import { boutiquesMisesEnAvant, compterAffichages, produitsSponsorises } from "@/lib/data/publicite";
 
-/** Les trois ordres de l'accueil. « Pour vous », le mélange, est celui par défaut (2026-11-06). */
-const TRIS = [
-  { valeur: "pour-vous", libelle: "Pour vous" },
-  { valeur: "recent", libelle: "Récents" },
-  { valeur: "populaire", libelle: "Populaires" },
-] as const;
+/*
+ * L'accueil condensé (demande du porteur du projet, 2026-11-10 : « très
+ * très facile à utiliser et à comprendre ») : deux choix seulement, POUR
+ * QUI (une barre) et QUEL RAYON (trois tuiles). Les 16 catégories, la
+ * taille, la couleur, le prix et le tri sont dans Recherche, où on va
+ * quand on sait ce qu'on cherche. Ordre « Pour vous » (le mélange) fixe ;
+ * un ancien lien `?tri=` ou `?categorie=` est simplement ignoré. Les deux
+ * choix sont dans `FiltresAccueil`.
+ */
 
 /** L'accueil filtré (`?categorie=…`, `?tri=…`) n'est qu'une variante de
  * l'accueil ; un paramètre de suivi (`?fbclid=…`) n'en fait pas une. */
@@ -43,7 +45,7 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const filtree = estFiltree(await searchParams, ["genre", "categorie", "tri"]);
+  const filtree = estFiltree(await searchParams, ["genre", "rayon"]);
   return {
     alternates: { canonical: "/" },
     robots: filtree ? { index: false, follow: true } : undefined,
@@ -53,14 +55,13 @@ export async function generateMetadata({
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ genre?: string | string[]; categorie?: string | string[]; tri?: string | string[] }>;
+  searchParams: Promise<{ genre?: string | string[]; rayon?: string | string[] }>;
 }) {
   // Même lecture prudente que `/recherche` : un paramètre peut être répété.
   const brut = await searchParams;
-  const categorie = premier(brut.categorie) ?? "Tout";
-  // Femme, Homme, Enfant (2026-11-10) ; une valeur inconnue est ignorée.
+  // Une valeur inconnue est ignorée, jamais affichée comme un filtre actif.
   const genre = GENRES_FILTRE.find((g) => g.valeur === premier(brut.genre))?.valeur ?? "";
-  const tri = TRIS.find((t) => t.valeur === premier(brut.tri))?.valeur ?? "pour-vous";
+  const rayon = lireRayon(premier(brut.rayon));
   const supabase = await createClient();
 
   const landing = await landingForSession(supabase);
@@ -73,38 +74,29 @@ export default async function HomePage({
      porte une ville, affichée sur chaque carte. Un ancien lien
      `?ville=…` est simplement ignoré. */
   const gouts = await goutsDeLaRequete();
-  // Les catégories regardées souvent viennent d'abord ; l'ordre des autres ne bouge pas, pour s'y retrouver.
-  const categories = categoriesParGouts(await categoriesEnCache(), gouts);
+  // Le rayon d'un produit se lit par sa catégorie (les cartes ne portent que son nom).
+  const categories = await categoriesEnCache();
+  const rayonDe = new Map(categories.map((c) => [c.name, c.famille]));
 
-  const sort = tri === "populaire" ? "popular" : "recent";
-  const tous = await rechercheEnCache({ sort, genre: genre || null, limit: 50 });
-  const filtres = categorie === "Tout" ? tous : tous.filter((p) => p.category === categorie);
+  const tous = await rechercheEnCache({ sort: "recent", genre: genre || null, limit: 50 });
+  const filtres = rayon ? tous.filter((p) => rayonDe.get(p.category) === rayon) : tous;
   /* Le mélange se fait APRÈS le cache, à chaque affichage : la liste
      partagée reste lue une fois par minute, l'ordre change à chaque visite. */
-  const visible = tri === "pour-vous" ? melanger(filtres, gouts) : filtres;
+  const visible = melanger(filtres, gouts);
 
-  /* La publicité (0047) : au plus deux produits sponsorisés de cet
-     emplacement, et les boutiques mises en avant sur l'accueil complet. */
-  const idCategorie = categories.find((c) => c.name === categorie)?.id ?? null;
-  // Une campagne ne connaît pas le genre : pas de publicité sur un accueil filtré par genre.
+  /* La publicité (0047) : au plus deux produits sponsorisés, et les
+     boutiques mises en avant, sur l'accueil NON filtré seulement : une
+     campagne ne connaît ni le genre ni le rayon, elle afficherait un
+     article qui ne correspond pas au choix. */
+  const filtre = Boolean(genre || rayon);
   const [sponsorises, boutiquesEnAvant] = await Promise.all([
-    genre ? Promise.resolve([]) : produitsSponsorises({ categoryId: idCategorie, limit: 2 }),
-    categorie === "Tout" && !genre ? boutiquesMisesEnAvant() : Promise.resolve([]),
+    filtre ? Promise.resolve([]) : produitsSponsorises({ categoryId: null, limit: 2 }),
+    filtre ? Promise.resolve([]) : boutiquesMisesEnAvant(),
   ]);
   await compterAffichages([...sponsorises, ...boutiquesEnAvant].map((x) => x.campagneId));
   const idsSponsorises = new Set(sponsorises.map((p) => p.id));
   const featuredHere = visible.find((p) => p.isFeatured) ?? null;
 
-  /** L'adresse de l'accueil avec un filtre changé, les autres gardés. */
-  const accueil = (modifs: { genre?: string; categorie?: string; tri?: string }) => {
-    const suivant = { genre, categorie, tri, ...modifs };
-    const params = new URLSearchParams();
-    if (suivant.genre) params.set("genre", suivant.genre);
-    params.set("categorie", suivant.categorie);
-    if (suivant.tri !== "pour-vous") params.set("tri", suivant.tri);
-    return `/?${params.toString()}`;
-  };
-  const triHref = (valeur: string) => accueil({ tri: valeur });
   // Un produit sponsorisé n'apparaît pas une seconde fois plus bas.
   const ordinaires = (featuredHere ? visible.filter((p) => p.id !== featuredHere.id) : visible).filter(
     (p) => !idsSponsorises.has(p.id),
@@ -154,35 +146,13 @@ export default async function HomePage({
       <TopBar title={<Wordmark size="lg" />} right={<PushBell connecte={connecte} />} />
 
       <ScreenBody>
-        {categorie !== "Tout" ? <RetenirGout categorie={categorie} /> : null}
-        <Section className="gap-3 pb-1">
-          <ChipRow>
-            <Link href={accueil({ genre: "" })}>
-              <Chip selected={genre === ""}>Tout le monde</Chip>
-            </Link>
-            {GENRES_FILTRE.map((g) => (
-              <Link key={g.valeur} href={accueil({ genre: g.valeur })}>
-                <Chip selected={g.valeur === genre}>{g.libelle}</Chip>
-              </Link>
-            ))}
-          </ChipRow>
-          <ChipRow>
-            <Link href={accueil({ categorie: "Tout" })}>
-              <Chip selected={categorie === "Tout"}>Tout</Chip>
-            </Link>
-            {categories.map((c) => (
-              <Link key={c.id} href={accueil({ categorie: c.name })}>
-                <Chip selected={c.name === categorie}>{c.name}</Chip>
-              </Link>
-            ))}
-          </ChipRow>
-        </Section>
+        <FiltresAccueil genre={genre} rayon={rayon} />
 
-        {visible.length === 0 && (categorie !== "Tout" || genre) ? (
+        {visible.length === 0 && filtre ? (
           <EmptyState
             icon={Package}
-            title={categorie !== "Tout" ? `Aucun article « ${categorie} » pour le moment` : "Aucun article pour le moment"}
-            description="Essayez une autre catégorie, ou regardez tout ce qui est en vente."
+            title="Aucun article ici pour le moment"
+            description="Essayez un autre choix, ou regardez tout ce qui est en vente."
           >
             <Button href="/">Voir tous les articles</Button>
           </EmptyState>
@@ -223,17 +193,7 @@ export default async function HomePage({
         ) : null}
 
         <Section className="gap-2 pt-3.5">
-          <div className="flex items-baseline gap-4">
-            {TRIS.map((t) =>
-              t.valeur === tri ? (
-                <SectionLabel key={t.valeur}>{t.libelle}</SectionLabel>
-              ) : (
-                <Link key={t.valeur} href={triHref(t.valeur)} className="text-sm font-semibold text-accent">
-                  {t.libelle}
-                </Link>
-              ),
-            )}
-          </div>
+          <SectionLabel>Pour vous</SectionLabel>
           <ProductGrid>
             {gridItems.map(({ p, s }, i) => (
               <ProductCard

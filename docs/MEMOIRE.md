@@ -645,10 +645,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-441 commits, du plus récent au plus ancien.
+442 commits, du plus récent au plus ancien.
 
 ### 2026-11-10
 
+- `f33aed3` Migration 0074 écrite : catalogue de mode seulement (pas encore appliquée)
 - `b4d8209` Site recentré sur la mode : genre, tailles, couleurs, filtres et textes
 
 ### 2026-11-08
