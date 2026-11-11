@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 663 vérifications (compte du 2026-11-11, migrations jusqu'à 0075
+Les 701 vérifications (compte du 2026-11-11, migrations jusqu'à 0076
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -73,6 +73,20 @@ antérieures, après avoir gardé l'état des migrations pour la section 0074.
 Pour `0075` (le 2026-11-11), trois mutations arrêtent chacune la suite
 sur son contrôle : la garde d'équipe de `ranger_categorie` retirée, la
 garde « dernière catégorie visible » retirée, l'exécution rendue à `anon`.
+Pour `0076` (le 2026-11-11), quatorze mutations arrêtent chacune la suite
+sur son contrôle : le `delete` du déclencheur d'`equipe`, sa garde
+d'activité, chacun des six critères d'activité (boutique, conversation
+comme client, blocage, message, signalement, journal), le refus d'un
+profil pour un membre, le `update of auth_user_id` de ce refus, le filtre
+d'`equipe_comptes`, celui de `suivi_chiffres`, la garde du nettoyage, un
+`revoke` ; puis trois de `effacer_profil_decide` (le cas d'Alpha Nouhou
+tranché le 2026-11-11) : le nom du membre retiré de ses deux filtres,
+la borne « autre conversation », la borne « signalement fait ». Omettre `0076` ne prouve que l'absence du déclencheur (la
+section 0067 le lève). Depuis `0076`, un membre n'a plus de profil : la
+section 0043 fait entrer une connexion neuve (Q43) au lieu de D, qui a
+une activité, et les contrôles qui ont besoin d'un membre AVEC profil
+(fiche `est_de_l_equipe`, filtres) lèvent le déclencheur
+`profil_hors_equipe` dans un `begin … rollback`.
 
 ## Ce que ces tests protègent
 

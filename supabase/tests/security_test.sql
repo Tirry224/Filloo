@@ -2445,10 +2445,14 @@ select pg_temp.check('0042 : les fonctions de l''equipe sont fermees a anon',
 select pg_temp.check('0043 : un membre de l''equipe est marque sur sa connexion',
   (select raw_app_meta_data ->> 'equipe' from auth.users where id = 'a0420000-0000-0000-0000-000000000005') = 'true');
 
--- Entrer dans l'équipe marque ; en sortir démarque.
-insert into public.equipe (auth_user_id, nom) values ('44444444-4444-4444-4444-444444444444', 'D');
+-- Entrer dans l'équipe marque ; en sortir démarque. Depuis 0076, un
+-- compte qui a une activité (comme D) n'entre plus dans l'équipe : Q43
+-- est une connexion neuve, sans activité.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0430000-0000-0000-0000-0000000000d4', 'q0043@test.gn', '{"role":"client","full_name":"Collegue Q43","phone":"620004304"}');
+insert into public.equipe (auth_user_id, nom) values ('a0430000-0000-0000-0000-0000000000d4', 'Q43');
 select pg_temp.check('0043 : entrer dans l''equipe marque la connexion',
-  (select raw_app_meta_data ->> 'equipe' from auth.users where id = '44444444-4444-4444-4444-444444444444') = 'true');
+  (select raw_app_meta_data ->> 'equipe' from auth.users where id = 'a0430000-0000-0000-0000-0000000000d4') = 'true');
 
 -- Une annonce publiée maintenant n'atteint pas l'équipe.
 set role authenticated;
@@ -2459,14 +2463,14 @@ reset role;
 select pg_temp.check('0043 : une annonce ne part pas vers l''equipe',
   not exists (select 1 from public.annonce_destinataires
                where annonce_id = 'a0430000-0000-0000-0000-0000000000a1'
-                 and auth_user_id in ('a0420000-0000-0000-0000-000000000005', '44444444-4444-4444-4444-444444444444'))
+                 and auth_user_id in ('a0420000-0000-0000-0000-000000000005', 'a0430000-0000-0000-0000-0000000000d4'))
   and exists (select 1 from public.annonce_destinataires
                where annonce_id = 'a0430000-0000-0000-0000-0000000000a1'
                  and auth_user_id = '33333333-3333-3333-3333-333333333333'));
 
-delete from public.equipe where auth_user_id = '44444444-4444-4444-4444-444444444444';
+delete from public.equipe where auth_user_id = 'a0430000-0000-0000-0000-0000000000d4';
 select pg_temp.check('0043 : sortir de l''equipe retire la marque, et elle seule',
-  (select not (raw_app_meta_data ? 'equipe') from auth.users where id = '44444444-4444-4444-4444-444444444444'));
+  (select not (raw_app_meta_data ? 'equipe') from auth.users where id = 'a0430000-0000-0000-0000-0000000000d4'));
 
 -- Personne ne se marque soi-même : ni `equipe` ni `auth.users` ne
 -- s'écrivent depuis un écran.
@@ -4642,8 +4646,22 @@ select pg_temp.check('0067 : fiche d''un client : pas de boutique, ses conversat
   exists (select 1 from public.equipe_compte('a0630000-0000-0000-0000-0000000000c1') x
            where x.role = 'client' and x.merchant_id is null and x.shop_name is null
              and x.produits = 0 and x.conversations = 1 and not x.est_de_l_equipe));
+-- Depuis 0076, un membre n'a plus de profil : son ancien profil est remis
+-- un instant, déclencheur levé, pour prouver que la fiche le signale
+-- encore (le site s'en sert avant une suppression).
+reset role;
+begin;
+alter table public.profiles disable trigger profil_hors_equipe;
+insert into public.profiles (id, auth_user_id, role, full_name, phone)
+  values ('a0630000-0000-0000-0000-0000000000e1', 'a0630000-0000-0000-0000-0000000000e1', 'client', 'Equipier T63', '620006301')
+  on conflict (id) do nothing;
+alter table public.profiles enable trigger profil_hors_equipe;
+set role authenticated;
 select pg_temp.check('0067 : fiche d''un membre de l''equipe : est_de_l_equipe',
   (select x.est_de_l_equipe from public.equipe_compte('a0630000-0000-0000-0000-0000000000e1') x));
+reset role;
+rollback;
+set role authenticated;
 select pg_temp.check('0067 : fiche d''un compte supprime, et d''un profil inconnu (aucune ligne)',
   (select x.is_deleted and x.deleted_at is not null from public.equipe_compte('a0630000-0000-0000-0000-0000000000c2') x)
   and not exists (select 1 from public.equipe_compte('a0670000-0000-0000-0000-00000000ffff')));
@@ -5831,6 +5849,310 @@ select pg_temp.check('0075 : avec une autre categorie visible, elle se masque',
 reset role;
 select pg_temp.check('0075 : ... et elle est masquee',
   (select not visible from public.categories where id = :cat75));
+
+-- =====================================================================
+-- Un membre de l'équipe n'a ni profil client ni profil vendeur (0076)
+-- =====================================================================
+-- T63 : propriétaire (0067). Connexions neuves, email confirmé :
+-- E76 : sans activité, un profil client ET un profil vendeur sans
+--       boutique ; entre dans l'équipe par `ajouter_membre`.
+-- Une connexion par critère d'activité, ce critère SEUL (données posées
+-- en `postgres`, hors RLS, pour isoler chaque garde) :
+-- B76 boutique · C76 conversation comme client · K76 fil qu'il a bloqué
+-- (sans y être client) · M76 message envoyé (sans y être client) ·
+-- R76 signalement fait · J76 visé par le journal de l'équipe.
+-- X76 : cliente ordinaire, client de la conversation de K76 et M76.
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0760000-0000-0000-0000-0000000000e1', 'e0076@test.gn', '{"role":"client","full_name":"Mbalou Equipe76","phone":"620007601"}', now()),
+  ('a0760000-0000-0000-0000-0000000000b1', 'b0076@test.gn', '{"role":"merchant","full_name":"Boutiquier B76","phone":"620007602"}', now()),
+  ('a0760000-0000-0000-0000-0000000000c1', 'c0076@test.gn', '{"role":"client","full_name":"Client C76","phone":"620007603"}', now()),
+  ('a0760000-0000-0000-0000-0000000000a1', 'k0076@test.gn', '{"role":"client","full_name":"Bloqueur K76","phone":"620007604"}', now()),
+  ('a0760000-0000-0000-0000-0000000000d1', 'm0076@test.gn', '{"role":"client","full_name":"Auteur M76","phone":"620007605"}', now()),
+  ('a0760000-0000-0000-0000-0000000000f1', 'r0076@test.gn', '{"role":"client","full_name":"Signaleur R76","phone":"620007606"}', now()),
+  ('a0760000-0000-0000-0000-0000000000f2', 'j0076@test.gn', '{"role":"client","full_name":"Suspendu J76","phone":"620007607"}', now()),
+  ('a0760000-0000-0000-0000-0000000000c9', 'x0076@test.gn', '{"role":"client","full_name":"Mbalou Cliente76","phone":"620007609"}', now());
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0760000-%';
+insert into public.profiles (id, auth_user_id, role, full_name, phone) values
+  ('a0760000-0000-0000-0000-0000000000e2', 'a0760000-0000-0000-0000-0000000000e1', 'merchant', 'Mbalou Equipe76', '620007601');
+insert into public.notifications (profile_id, kind) values
+  ('a0760000-0000-0000-0000-0000000000e1', 'profile_suspended');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0760000-0000-0000-0000-0000000000b2', 'a0760000-0000-0000-0000-0000000000b1', 'Chez B76', 1);
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0760000-0000-0000-0000-00000000c0c1', 'a0760000-0000-0000-0000-0000000000c1', 'aaaaaaaa-0000-0000-0000-000000000001');
+insert into public.conversations (id, client_id, merchant_id, blocked_by) values
+  ('a0760000-0000-0000-0000-00000000c0c9', 'a0760000-0000-0000-0000-0000000000c9', 'aaaaaaaa-0000-0000-0000-000000000001',
+   'a0760000-0000-0000-0000-0000000000a1');
+insert into public.messages (conversation_id, sender_id, product_id, body) values
+  ('a0760000-0000-0000-0000-00000000c0c9', 'a0760000-0000-0000-0000-0000000000d1', 'cccccccc-0000-0000-0000-000000000001', 'Bonjour M76');
+insert into public.reports (reporter_id, target_type, target_id, reason) values
+  ('a0760000-0000-0000-0000-0000000000f1', 'merchant', 'aaaaaaaa-0000-0000-0000-000000000001', 'Signalement R76');
+insert into public.journal_equipe (auteur, auteur_nom, action, cible_type, cible_id, motif) values
+  ('a0630000-0000-0000-0000-0000000000e1', 'T63', 'suspendre', 'profil', 'a0760000-0000-0000-0000-0000000000f2', 'Motif J76');
+
+select pg_temp.check('0076 : fixtures : chaque connexion n''a que son critere d''activite',
+  (select count(*) from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1') = 2
+  and not exists (select 1 from public.conversations
+                   where client_id in ('a0760000-0000-0000-0000-0000000000a1', 'a0760000-0000-0000-0000-0000000000d1'))
+  and not exists (select 1 from public.messages where sender_id = 'a0760000-0000-0000-0000-0000000000a1')
+  and (select count(*) from public.messages where sender_id = 'a0760000-0000-0000-0000-0000000000d1') = 1);
+
+select pg_temp.check('0076 : les fonctions sont fermees a public, anon, authenticated ; triggers definer, search_path vide',
+  (select bool_and(not has_function_privilege('anon', f, 'execute')
+                   and not has_function_privilege('authenticated', f, 'execute')
+                   and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                                    where p.oid = f::regprocedure and a.grantee = 0)
+                   and (select pp.proconfig = array['search_path=""'] from pg_proc pp where pp.oid = f::regprocedure))
+     from unnest(array['public.profil_a_une_activite(uuid)', 'public.equipe_sans_profil()',
+                       'public.profil_hors_equipe()', 'public.retirer_les_profils_de_l_equipe()']) f)
+  and (select bool_and(prosecdef) from pg_proc
+        where oid in ('public.equipe_sans_profil()'::regprocedure, 'public.profil_hors_equipe()'::regprocedure)));
+
+-- --- 1. Entrer dans l'équipe sans activité : les profils partent -------
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.ajouter_membre('e0076@test.gn', 'Mbalou');
+reset role;
+select pg_temp.check('0076 : ajout d''un membre sans activite : ses deux profils sont supprimes',
+  exists (select 1 from public.equipe where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1')
+  and not exists (select 1 from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1')
+  and not exists (select 1 from public.notifications
+                   where profile_id in ('a0760000-0000-0000-0000-0000000000e1', 'a0760000-0000-0000-0000-0000000000e2')));
+select pg_temp.check('0076 : ... la connexion est marquee et l''ajout journalise',
+  (select raw_app_meta_data ->> 'equipe' from auth.users where id = 'a0760000-0000-0000-0000-0000000000e1') = 'true'
+  and exists (select 1 from public.journal_equipe
+               where action = 'ajouter_membre' and cible_id = 'a0760000-0000-0000-0000-0000000000e1'));
+
+-- --- 2. Une activité refuse l'entrée, rien n'est détruit ---------------
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0076 : ajouter_membre d''un client qui a une conversation : refuse, message clair',
+  pg_temp.erreur_de($q$select public.ajouter_membre('c0076@test.gn', 'C')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+reset role;
+select pg_temp.check('0076 : ... il n''est pas dans l''equipe, pas marque, son profil et sa conversation restent, rien au journal',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0760000-0000-0000-0000-0000000000c1')
+  and (select not (coalesce(raw_app_meta_data, '{}') ? 'equipe') from auth.users where id = 'a0760000-0000-0000-0000-0000000000c1')
+  and exists (select 1 from public.profiles where id = 'a0760000-0000-0000-0000-0000000000c1')
+  and exists (select 1 from public.conversations where id = 'a0760000-0000-0000-0000-00000000c0c1')
+  and not exists (select 1 from public.journal_equipe
+                   where action = 'ajouter_membre' and cible_id = 'a0760000-0000-0000-0000-0000000000c1'));
+
+select pg_temp.check('0076 : une boutique refuse l''entree (insert du tableau de bord)',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000b1', 'B')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : une conversation comme client refuse l''entree',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000c1', 'C')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : un fil bloque par lui refuse l''entree',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000a1', 'K')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : un message envoye refuse l''entree',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000d1', 'M')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : un signalement fait refuse l''entree',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000f1', 'R')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : une trace au journal de l''equipe refuse l''entree',
+  pg_temp.erreur_de($q$insert into public.equipe (auth_user_id, nom) values ('a0760000-0000-0000-0000-0000000000f2', 'J')$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : changer la connexion d''un membre vers un compte actif est refuse aussi',
+  pg_temp.erreur_de($q$update public.equipe set auth_user_id = 'a0760000-0000-0000-0000-0000000000b1'
+                        where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1'$q$)
+    = 'Ce compte a déjà une activité sur Filloo : utilisez un compte séparé pour l''équipe.');
+select pg_temp.check('0076 : ... et toutes ces donnees sont intactes',
+  (select count(*) from public.profiles where auth_user_id::text like 'a0760000-%') = 7
+  and exists (select 1 from public.merchants where id = 'a0760000-0000-0000-0000-0000000000b2')
+  and (select count(*) from public.conversations where id::text like 'a0760000-%') = 2
+  and exists (select 1 from public.messages where sender_id = 'a0760000-0000-0000-0000-0000000000d1')
+  and exists (select 1 from public.reports where reporter_id = 'a0760000-0000-0000-0000-0000000000f1')
+  and (select count(*) from public.equipe where auth_user_id::text like 'a0760000-%') = 1);
+
+-- --- 3. Aucun profil pour une connexion de l'équipe ---------------------
+set role authenticated;
+select pg_temp.login('a0760000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0076 : un membre ne se cree pas de profil (completion Google, compte lie)',
+  pg_temp.erreur_de($q$insert into public.profiles (auth_user_id, role, full_name, phone)
+                       values ('a0760000-0000-0000-0000-0000000000e1', 'client', 'Mbalou', '620007601')$q$)
+    = 'Ce compte fait partie de l''équipe Filloo : il n''a ni profil client ni profil vendeur.'
+  and pg_temp.erreur_de($q$insert into public.profiles (auth_user_id, role, full_name, phone)
+                       values ('a0760000-0000-0000-0000-0000000000e1', 'merchant', 'Mbalou', '620007601')$q$)
+    = 'Ce compte fait partie de l''équipe Filloo : il n''a ni profil client ni profil vendeur.');
+reset role;
+select pg_temp.check('0076 : meme le serveur ne cree ni ne rattache un profil a un membre',
+  pg_temp.erreur_de($q$insert into public.profiles (auth_user_id, role, full_name, phone)
+                       values ('a0760000-0000-0000-0000-0000000000e1', 'client', 'Mbalou', '620007601')$q$)
+    = 'Ce compte fait partie de l''équipe Filloo : il n''a ni profil client ni profil vendeur.'
+  and pg_temp.erreur_de($q$update public.profiles set auth_user_id = 'a0760000-0000-0000-0000-0000000000e1'
+                        where id = 'a0760000-0000-0000-0000-0000000000f1'$q$)
+    = 'Ce compte fait partie de l''équipe Filloo : il n''a ni profil client ni profil vendeur.');
+select pg_temp.check('0076 : ... aucun profil n''est apparu',
+  not exists (select 1 from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1'));
+
+-- --- 4. Un non-membre s'inscrit comme avant ------------------------------
+insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values
+  ('a0760000-0000-0000-0000-00000000e0e1', 'n0076@test.gn', '{"role":"merchant","full_name":"Nouveau N76","phone":"620007611"}', '{"provider":"email","providers":["email"]}'),
+  ('a0760000-0000-0000-0000-00000000e0e2', 'g0076@test.gn', '{"full_name":"Google G76"}', '{"provider":"google","providers":["google"]}');
+select pg_temp.check('0076 : inscription par email d''un non-membre : profil cree par handle_new_user',
+  (select count(*) from public.profiles
+    where auth_user_id = 'a0760000-0000-0000-0000-00000000e0e1' and role = 'merchant' and full_name = 'Nouveau N76') = 1);
+set role authenticated;
+select pg_temp.login('a0760000-0000-0000-0000-00000000e0e2');
+insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0760000-0000-0000-0000-00000000e0e2', 'client', 'Google G76', '620007612');
+insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0760000-0000-0000-0000-00000000e0e2', 'merchant', 'Google G76', '620007612');
+reset role;
+select pg_temp.check('0076 : completion Google puis compte lie d''un non-membre : acceptes',
+  (select count(*) from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-00000000e0e2') = 2);
+
+-- --- 5. Retiré de l'équipe : il peut se refaire un profil ----------------
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select public.retirer_membre('a0760000-0000-0000-0000-0000000000e1');
+reset role;
+select pg_temp.check('0076 : retire de l''equipe : demarque, toujours sans profil, non banni',
+  not exists (select 1 from public.equipe where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1')
+  and (select not (raw_app_meta_data ? 'equipe') and banned_until is null
+         from auth.users where id = 'a0760000-0000-0000-0000-0000000000e1')
+  and not exists (select 1 from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1'));
+set role authenticated;
+select pg_temp.login('a0760000-0000-0000-0000-0000000000e1');
+insert into public.profiles (auth_user_id, role, full_name, phone)
+  values ('a0760000-0000-0000-0000-0000000000e1', 'client', 'Mbalou Equipe76', '620007601');
+reset role;
+select pg_temp.check('0076 : ... et se refait un profil client par l''ecran « Completez votre compte »',
+  (select count(*) from public.profiles where auth_user_id = 'a0760000-0000-0000-0000-0000000000e1' and role = 'client') = 1);
+
+-- --- 6. La page admin et les statistiques ignorent l'équipe -------------
+-- Un membre n'a plus de profil : on en remet un à E75, déclencheur levé,
+-- pour que le filtre soit seul à l'écarter. X76 porte le même prénom.
+begin;
+alter table public.profiles disable trigger profil_hors_equipe;
+insert into public.profiles (id, auth_user_id, role, full_name, phone) values
+  ('a0760000-0000-0000-0000-0000000075e1', 'a0750000-0000-0000-0000-0000000000e1', 'client', 'Mbalou Equipe75', '620007599');
+alter table public.profiles enable trigger profil_hors_equipe;
+set role authenticated;
+select pg_temp.login('a0630000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0076 : equipe_comptes ne liste pas un membre, meme s''il avait un profil',
+  (select array_agg(x.auth_user_id order by x.auth_user_id) from public.equipe_comptes('Mbalou', 200) x)
+    = array['a0760000-0000-0000-0000-0000000000c9', 'a0760000-0000-0000-0000-0000000000e1']::uuid[]
+  and not exists (select 1 from public.equipe_comptes(null, 200, 'client') x
+                   where x.auth_user_id = 'a0750000-0000-0000-0000-0000000000e1')
+  and not exists (select 1 from public.equipe_comptes('620007599', 200) x));
+-- `postgres` et non `service_role` : le stub ne donne pas les tables à
+-- `service_role` ; la fonction est `security invoker`, son filtre est le
+-- même pour les deux.
+reset role;
+select pg_temp.check('0076 : suivi_chiffres ne compte pas un membre parmi les clients',
+  (public.suivi_chiffres(now() - interval '1 day') -> 'profils' ->> 'clients')::int
+    = (select count(*) from public.profiles p
+        where p.role = 'client' and not p.is_deleted
+          and not exists (select 1 from public.equipe e where e.auth_user_id = p.auth_user_id))
+  and (public.suivi_chiffres(now() - interval '1 day') -> 'profils' ->> 'clients')::int
+    = (select count(*) from public.profiles p where p.role = 'client' and not p.is_deleted) - 1);
+reset role;
+rollback;
+select pg_temp.check('0076 : equipe_comptes et suivi_chiffres gardent leurs droits',
+  has_function_privilege('authenticated', 'public.equipe_comptes(text, int, text)', 'execute')
+  and not has_function_privilege('anon', 'public.equipe_comptes(text, int, text)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.equipe_comptes(text, int, text)'::regprocedure and a.grantee = 0)
+  and (select prosecdef from pg_proc where oid = 'public.equipe_comptes(text, int, text)'::regprocedure)
+  and has_function_privilege('service_role', 'public.suivi_chiffres(timestamptz)', 'execute')
+  and not has_function_privilege('authenticated', 'public.suivi_chiffres(timestamptz)', 'execute')
+  and not has_function_privilege('anon', 'public.suivi_chiffres(timestamptz)', 'execute')
+  and not (select prosecdef from pg_proc where oid = 'public.suivi_chiffres(timestamptz)'::regprocedure));
+set role authenticated;
+select pg_temp.login('a0760000-0000-0000-0000-00000000e0e1');
+select pg_temp.check('0076 : equipe_comptes reste fermee a un non-membre',
+  pg_temp.erreur_de($q$select * from public.equipe_comptes()$q$) = 'Réservé à l''équipe Filloo.');
+reset role;
+
+-- --- 7. Le nettoyage de la migration, rejoué ----------------------------
+-- S (0042) reçoit un profil sans activité et E75 un profil avec une
+-- conversation (déclencheurs levés : état d'avant 0076).
+begin;
+alter table public.profiles disable trigger profil_hors_equipe;
+insert into public.profiles (id, auth_user_id, role, full_name, phone) values
+  ('a0760000-0000-0000-0000-0000000042e1', 'a0420000-0000-0000-0000-000000000005', 'client', 'Collegue S', '620004201'),
+  ('a0760000-0000-0000-0000-0000000075e1', 'a0750000-0000-0000-0000-0000000000e1', 'client', 'Equipier E75', '620007501');
+alter table public.profiles enable trigger profil_hors_equipe;
+insert into public.conversations (client_id, merchant_id) values
+  ('a0760000-0000-0000-0000-0000000075e1', 'bbbbbbbb-0000-0000-0000-000000000002');
+select pg_temp.check('0076 : nettoyage : un membre actif arrete tout, en le nommant',
+  pg_temp.erreur_de('select public.retirer_les_profils_de_l_equipe()')
+    like '0076 : rien n''est supprimé, ces membres de l''équipe ont déjà une activité sur Filloo : E75.%');
+select pg_temp.check('0076 : ... et rien n''est supprime, pas meme le profil sans activite',
+  (select count(*) from public.profiles
+    where id in ('a0760000-0000-0000-0000-0000000042e1', 'a0760000-0000-0000-0000-0000000075e1')) = 2);
+delete from public.conversations where client_id = 'a0760000-0000-0000-0000-0000000075e1';
+select pg_temp.check('0076 : nettoyage sans activite : deux profils supprimes',
+  public.retirer_les_profils_de_l_equipe() = 2);
+select pg_temp.check('0076 : ... ceux des membres, eux seuls',
+  not exists (select 1 from public.profiles p join public.equipe e on e.auth_user_id = p.auth_user_id)
+  and exists (select 1 from public.profiles where id = 'a0760000-0000-0000-0000-0000000000c9'));
+rollback;
+
+-- --- 8. Le cas tranché par le porteur du projet (2026-11-11) -------------
+-- S (0042) joue Alpha Nouhou : profil client avec UNE conversation (chez
+-- A) et son message ; E75 joue un autre membre actif (conversation chez
+-- B). Déclencheur levé : état d'avant 0076.
+begin;
+alter table public.profiles disable trigger profil_hors_equipe;
+insert into public.profiles (id, auth_user_id, role, full_name, phone) values
+  ('a0760000-0000-0000-0000-0000000042e1', 'a0420000-0000-0000-0000-000000000005', 'client', 'Collegue S', '620004201'),
+  ('a0760000-0000-0000-0000-0000000075e1', 'a0750000-0000-0000-0000-0000000000e1', 'client', 'Equipier E75', '620007501');
+alter table public.profiles enable trigger profil_hors_equipe;
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0760000-0000-0000-0000-0000000c0042', 'a0760000-0000-0000-0000-0000000042e1', 'aaaaaaaa-0000-0000-0000-000000000001'),
+  ('a0760000-0000-0000-0000-0000000c0075', 'a0760000-0000-0000-0000-0000000075e1', 'bbbbbbbb-0000-0000-0000-000000000002');
+insert into public.messages (id, conversation_id, sender_id, product_id, body) values
+  ('a0760000-0000-0000-0000-0000000e0042', 'a0760000-0000-0000-0000-0000000c0042', 'a0760000-0000-0000-0000-0000000042e1',
+   'cccccccc-0000-0000-0000-000000000001', 'Bonjour S');
+select pg_temp.check('0076 : decision : un id qui ne designe plus le profil client de ce membre n''efface rien',
+  public.effacer_profil_decide('a0760000-0000-0000-0000-0000000042e1', 'Autre nom', 'a0760000-0000-0000-0000-0000000c0042') = 0
+  and public.effacer_profil_decide('a0760000-0000-0000-0000-0000000075e1', 'S', 'a0760000-0000-0000-0000-0000000c0075') = 0
+  and public.effacer_profil_decide('a0760000-0000-0000-0000-0000000000c1', 'C76', 'a0760000-0000-0000-0000-00000000c0c1') = 0);
+select pg_temp.check('0076 : decision : une activite au-dela de la conversation decidee arrete tout',
+  pg_temp.erreur_de($q$select public.effacer_profil_decide('a0760000-0000-0000-0000-0000000042e1', 'S',
+                                                             'a0760000-0000-0000-0000-0000000c0075')$q$)
+    like '0076 : le profil de S a une activité au-delà de la conversation décidée%');
+insert into public.conversations (id, client_id, merchant_id) values
+  ('a0760000-0000-0000-0000-0000000c4202', 'a0760000-0000-0000-0000-0000000042e1', 'bbbbbbbb-0000-0000-0000-000000000002');
+select pg_temp.check('0076 : decision : une seconde conversation, sans message, arrete tout aussi',
+  pg_temp.erreur_de($q$select public.effacer_profil_decide('a0760000-0000-0000-0000-0000000042e1', 'S',
+                                                             'a0760000-0000-0000-0000-0000000c0042')$q$)
+    like '0076 : le profil de S a une activité au-delà de la conversation décidée%');
+delete from public.conversations where id = 'a0760000-0000-0000-0000-0000000c4202';
+insert into public.reports (id, reporter_id, target_type, target_id, reason) values
+  ('a0760000-0000-0000-0000-0000000f0042', 'a0760000-0000-0000-0000-0000000042e1', 'merchant', 'bbbbbbbb-0000-0000-0000-000000000002', 'Signalement S');
+select pg_temp.check('0076 : decision : un signalement fait arrete tout aussi',
+  pg_temp.erreur_de($q$select public.effacer_profil_decide('a0760000-0000-0000-0000-0000000042e1', 'S',
+                                                             'a0760000-0000-0000-0000-0000000c0042')$q$)
+    like '0076 : le profil de S a une activité au-delà de la conversation décidée%');
+delete from public.reports where id = 'a0760000-0000-0000-0000-0000000f0042';
+select pg_temp.check('0076 : decision : ... et rien n''a ete efface',
+  (select count(*) from public.profiles
+    where id in ('a0760000-0000-0000-0000-0000000042e1', 'a0760000-0000-0000-0000-0000000075e1')) = 2
+  and exists (select 1 from public.messages where id = 'a0760000-0000-0000-0000-0000000e0042'));
+select pg_temp.check('0076 : decision : le membre nomme est efface malgre son activite',
+  public.effacer_profil_decide('a0760000-0000-0000-0000-0000000042e1', 'S', 'a0760000-0000-0000-0000-0000000c0042') = 1);
+select pg_temp.check('0076 : decision : ... sa conversation et son message partent, l''autre membre reste',
+  not exists (select 1 from public.profiles where id = 'a0760000-0000-0000-0000-0000000042e1')
+  and not exists (select 1 from public.conversations where id = 'a0760000-0000-0000-0000-0000000c0042')
+  and not exists (select 1 from public.messages where id = 'a0760000-0000-0000-0000-0000000e0042')
+  and exists (select 1 from public.profiles where id = 'a0760000-0000-0000-0000-0000000075e1')
+  and exists (select 1 from public.conversations where id = 'a0760000-0000-0000-0000-0000000c0075'));
+select pg_temp.check('0076 : decision : un autre membre actif fait toujours echouer le nettoyage',
+  pg_temp.erreur_de('select public.retirer_les_profils_de_l_equipe()')
+    like '0076 : rien n''est supprimé, ces membres de l''équipe ont déjà une activité sur Filloo : E75.%');
+select pg_temp.check('0076 : decision : la fonction est fermee a public, anon, authenticated',
+  not has_function_privilege('anon', 'public.effacer_profil_decide(uuid, text, uuid)', 'execute')
+  and not has_function_privilege('authenticated', 'public.effacer_profil_decide(uuid, text, uuid)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.effacer_profil_decide(uuid, text, uuid)'::regprocedure and a.grantee = 0));
+rollback;
 
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

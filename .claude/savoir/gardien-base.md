@@ -10,23 +10,13 @@ source, constaté ou supposé.
   organisation passée en **Pro** (constaté 2026-11-06, `docs/MEMOIRE.md`) :
   la base a une sauvegarde quotidienne (7 jours), PAS les fichiers du
   stockage. `max_connections` = 60 (constaté 2026-10-14).
-- **Migrations appliquées (constaté 2026-11-07 soir, `list_migrations`)** :
-  `0001`–`0047`, `0052`–`0057`, `0063`–`0067` (`0067` inscrite avec la
-  version `0067`, pas un horodatage). Sur `dev` les numéros
-  sautent `0048`–`0062` : `monetisation` porte `0058`–`0062`
-  (renumérotées, constaté `origin/monetisation`), non appliquées.
-  `0068` appliquée (version `0068`, constaté `list_migrations` le
-  2026-11-07 tard). `0069` (push à la dernière connexion, triggers fermés,
-  non-lus) ÉCRITE et testée le 2026-11-07, non appliquée à la fin de la
-  mission. `0069`–`0073` appliquées (constaté `list_migrations` le
-  2026-11-10). `0074` (catalogue mode : `categories.visible`/`famille`,
-  `products.genre`/`tailles`/`couleurs`, trigger
-  `products_categorie_visible`, `search_products` à 11 paramètres)
-  appliquée (constaté `list_migrations` le 2026-11-11, version
-  horodatée). `0075` (`ranger_categorie`, action de journal
-  `ranger_categorie`) ÉCRITE et testée le 2026-11-11, non appliquée en
-  fin de mission. `scripts/migrations.mjs`
-  n'exige pas la continuité. Ordre réel non numérique autour de
+- **Migrations appliquées (constaté 2026-11-11 soir, `list_migrations`)** :
+  `0001`–`0047`, `0052`–`0057`, `0063`–`0075` (`0067`, `0068` inscrites
+  sous leur numéro, les autres horodatées). `0048`–`0062` absentes de
+  `dev` : `monetisation` porte `0058`–`0062`, non appliquées. `0076`
+  (l'équipe sans profil) ÉCRITE et testée le 2026-11-11, prête, non
+  appliquée en fin de mission (voir « Équipe et profils »). `scripts/migrations.mjs`
+  n'exige pas la continuité ; ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
 - **Volume** : 5 boutiques, 15 Mo (2026-10-22), ≤ 2 produits publiés par
@@ -61,6 +51,22 @@ source, constaté ou supposé.
   posé sur le plus ancien : Tirry, 2026-11-05 21:15, aucune égalité,
   constaté 2026-11-07). Toutes les autres fonctions d'équipe restent
   ouvertes à tout membre.
+- **Équipe et profils (`0076`, constaté 2026-11-11)** : les 3 membres
+  avaient un profil `client` (`handle_new_user`) ; Tirry et Laouratou sans
+  activité, **Alpha Nouhou a une conversation comme client** (créée le
+  2026-11-01, avant son entrée le 2026-11-05 ; message d'une boutique le
+  2026-11-09, non lu). Décision du porteur du projet (2026-11-11,
+  option b, via la session principale) : `0076` efface ce profil par
+  `effacer_profil_decide` (id + nom + conversation vérifiés, sinon rien)
+  AVANT le nettoyage gardé ; la garde reste pour tout autre membre.
+  Simulé sur une base aux uuid de production : 3 profils partis,
+  conversation et message aussi, déclencheurs créés. Après `0076` : entrer dans
+  `equipe` supprime les profils sans activité ou est refusé ; aucun
+  profil pour un membre ; un membre retiré = connexion sans profil, comme
+  un Google non complété (`/inscription` mode « complete »).
+  `suivi_chiffres` en production n'a PAS les commentaires du fichier
+  (même logique) ; `equipe_comptes`/`je_suis_de_l_equipe` ont des fins de
+  ligne CRLF : comparer `md5(replace(prosrc, E'\r', ''))`.
 - **Pièges de cette série** : une policy dépend de sa fonction (remplacer
   AVANT de supprimer) ; le RLS refuse avant NOT NULL ; le stub ne donne
   pas `auth` à `authenticated` ; une instruction ne voit pas son propre
@@ -202,7 +208,7 @@ source, constaté ou supposé.
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
   2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
-  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
+  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075`, 701 avec `0076` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve
@@ -267,6 +273,17 @@ source, constaté ou supposé.
   de données d'une migration (déplacer un produit) se prouve en insérant
   la ligne ENTRE la migration précédente et la nouvelle (script de passe
   locale), la suite tronquant tout ensuite.
+- **Un déclencheur qui rend un état impossible casse les fixtures
+  d'avant** (`0076`) : relancer la suite AVANT d'écrire la section, lire
+  chaque arrêt ; pour prouver un filtre devenu redondant, recréer l'état
+  interdit dans `begin; alter table … disable trigger …; … rollback;`.
+  Un `update` d'`equipe.auth_user_id` bute d'abord sur les FK
+  (`journal_equipe.auteur`) : prendre un membre sans référence. Le stub ne
+  donne pas les tables à `service_role` : une fonction `invoker` se
+  teste en `postgres`. Une migration avec étape de données qui peut
+  s'arrêter met cette étape AVANT ses `create trigger` (appliquée hors
+  transaction, elle ne laisse rien de bloquant) ; simuler la production
+  dans une base à part (migrations jusqu'à N-1, données, puis N).
 - **Divers PG** (constaté 2026-11-07) : nom de policy > 63 octets tronqué
   (NOTICE) ; `has_any_column_privilege` refuse `delete` ; une colonne
   `generated always as identity` s'insère sans droit sur la séquence.
