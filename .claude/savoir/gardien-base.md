@@ -21,8 +21,11 @@ source, constaté ou supposé.
   mission. `0069`–`0073` appliquées (constaté `list_migrations` le
   2026-11-10). `0074` (catalogue mode : `categories.visible`/`famille`,
   `products.genre`/`tailles`/`couleurs`, trigger
-  `products_categorie_visible`, `search_products` à 11 paramètres) ÉCRITE
-  et testée le 2026-11-10, non appliquée en fin de mission. `scripts/migrations.mjs`
+  `products_categorie_visible`, `search_products` à 11 paramètres)
+  appliquée (constaté `list_migrations` le 2026-11-11, version
+  horodatée). `0075` (`ranger_categorie`, action de journal
+  `ranger_categorie`) ÉCRITE et testée le 2026-11-11, non appliquée en
+  fin de mission. `scripts/migrations.mjs`
   n'exige pas la continuité. Ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -75,8 +78,7 @@ source, constaté ou supposé.
   `0064`–`0067` (`demasquer_produit`, `ajouter_membre`, `retirer_membre`,
   `fixer_categorie`, `retirer_categorie`, `fixer_ville`, `retirer_ville`,
   `supprimer_produit`, `supprimer_compte` ; cibles `membre`, `categorie`,
-  `ville`). À sa publication (renumérotée
-  après `0066`) : ajouter ces valeurs à ses trois réécritures, sinon le
+  `ville`), ni `ranger_categorie` (`0075`). À sa publication : ajouter ces valeurs à ses trois réécritures, sinon le
   `add constraint` échoue (lignes existantes) ou, journal sans ces
   lignes, chaque geste de gestion échoue ensuite au journal.
 - **pg_cron 1.6.4** (constaté 2026-11-07) : `purger-mesures`,
@@ -109,7 +111,11 @@ source, constaté ou supposé.
   d'`alimentation`) ; la base de TEST en a 9 (`alimentation` id 1 de
   0003). Après `0074` : seize de mode visibles (1..16), anciennes masquées
   (17..) ; policy de lecture toujours `true` (le SITE filtre `visible`).
-  Unicité : `slug` seul (le nom par `fixer_categorie`). Le site code les
+  Unicité : `slug` seul (le nom par `fixer_categorie`). Production le
+  2026-11-11 : ids 11..26 = les seize de la mode (rangées), 2..9
+  masquées SANS rayon ; aucun trigger sur `categories`. Depuis `0075`,
+  `ranger_categorie` exige un rayon : réafficher une ancienne demande
+  donc de lui en choisir un. Le site code les
   écrans en parallèle : `database.types.ts` portait déjà `0074` avant
   la migration (lire `git status`/`src/` avant d'écrire une signature).
 - **Supprimer un produit emporte** (constaté 2026-11-07, `pg_constraint`) :
@@ -196,7 +202,7 @@ source, constaté ou supposé.
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
   2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
-  avec `0069`, 644 avec `0074` (2026-11-10) (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
+  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve

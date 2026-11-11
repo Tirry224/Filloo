@@ -5686,5 +5686,151 @@ select pg_temp.check('0074 : produits_sponsorises garde sa signature et ses droi
                    where p.oid = 'public.produits_sponsorises(text, int, int)'::regprocedure and a.grantee = 0)
   and (select prosecdef from pg_proc where oid = 'public.produits_sponsorises(text, int, int)'::regprocedure));
 
+-- =====================================================================
+-- L'équipe range les catégories : visible ou masquée, et rayon (0075)
+-- =====================================================================
+-- E75 : membre de l'équipe · N75 : connecté, hors équipe. cat75 : une
+-- catégorie de test, visible, rayon vêtements, avec un produit publié
+-- « T75 » (boutique MA74) : la masquer est permis et le sort de la
+-- recherche.
+insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) values
+  ('a0750000-0000-0000-0000-0000000000e1', 't0075@test.gn', '{"role":"client","full_name":"Equipier E75","phone":"620007501"}', now()),
+  ('a0750000-0000-0000-0000-0000000000c9', 'n0075@test.gn', '{"role":"client","full_name":"Curieux N75","phone":"620007509"}', now());
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0750000-%';
+insert into public.equipe (auth_user_id, nom) values ('a0750000-0000-0000-0000-0000000000e1', 'E75');
+insert into public.categories (slug, name, position, visible, famille) values ('test-0075', 'Test 75', 950, true, 'vetements');
+select id as cat75 from public.categories where slug = 'test-0075' \gset
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0750000-0000-0000-0000-0000000000f1', 'a0740000-0000-0000-0000-0000000000b1', :cat75, 'Pagne T75', 50000, 'draft');
+insert into public.product_images (product_id, storage_path, position)
+  values ('a0750000-0000-0000-0000-0000000000f1', 'a0750000/f1/0.webp', 0);
+update public.products set status = 'active' where id = 'a0750000-0000-0000-0000-0000000000f1';
+
+create or replace function pg_temp.n75() returns bigint language sql as $$
+  select count(*) from public.search_products(p_query => 'T75')
+$$;
+
+select pg_temp.check('0075 : ranger_categorie fermee a anon et a public, ouverte a authenticated, definer, search_path vide',
+  not has_function_privilege('anon', 'public.ranger_categorie(int, boolean, text)', 'execute')
+  and has_function_privilege('authenticated', 'public.ranger_categorie(int, boolean, text)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.ranger_categorie(int, boolean, text)'::regprocedure and a.grantee = 0)
+  and (select p.prosecdef and p.proconfig = array['search_path=""']
+         from pg_proc p where p.oid = 'public.ranger_categorie(int, boolean, text)'::regprocedure));
+select pg_temp.check('0075 : le journal accepte ranger_categorie et garde toutes les actions d''avant',
+  (select bool_and(pg_get_constraintdef(c.oid) like '%''' || a || '''%')
+     from pg_constraint c,
+          unnest(array['suspendre', 'reactiver', 'masquer_produit', 'classer_signalement',
+                       'valider_campagne', 'refuser_campagne', 'interrompre_campagne',
+                       'demasquer_produit', 'ajouter_membre', 'retirer_membre',
+                       'fixer_categorie', 'retirer_categorie', 'fixer_ville', 'retirer_ville',
+                       'supprimer_produit', 'supprimer_compte', 'ranger_categorie']) a
+    where c.conname = 'journal_equipe_action_check' and c.conrelid = 'public.journal_equipe'::regclass));
+
+-- --- 1. Les refus ------------------------------------------------------
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select pg_temp.check('0075 : anon ne range rien (droit refuse)',
+  pg_temp.refuse(format('select public.ranger_categorie(%s, false, %L)', :cat75, 'vetements')));
+reset role;
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000c9');
+select pg_temp.check('0075 : un non-membre ne masque ni ne range rien',
+  pg_temp.erreur_de(format('select public.ranger_categorie(%s, false, %L)', :cat75, 'vetements')) = 'Réservé à l''équipe Filloo.'
+  and pg_temp.erreur_de(format('select public.ranger_categorie(%s, true, %L)', :cat75, 'accessoires')) = 'Réservé à l''équipe Filloo.');
+reset role;
+select pg_temp.check('0075 : rien n''a change sous le non-membre',
+  (select visible and famille = 'vetements' from public.categories where id = :cat75)
+  and not exists (select 1 from public.journal_equipe where action = 'ranger_categorie'));
+
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0075 : rayon invalide ou absent refuse, visibilite absente refusee, id inconnu',
+  pg_temp.erreur_de(format('select public.ranger_categorie(%s, true, %L)', :cat75, 'meubles'))
+    = 'Choisissez un rayon : vêtements, chaussures ou accessoires.'
+  and pg_temp.erreur_de(format('select public.ranger_categorie(%s, true, %L)', :cat75, 'Vetements'))
+    = 'Choisissez un rayon : vêtements, chaussures ou accessoires.'
+  and pg_temp.erreur_de(format('select public.ranger_categorie(%s, true, null)', :cat75))
+    = 'Choisissez un rayon : vêtements, chaussures ou accessoires.'
+  and pg_temp.erreur_de(format('select public.ranger_categorie(%s, null, %L)', :cat75, 'vetements'))
+    = 'Dites si la catégorie est visible ou masquée.'
+  and pg_temp.erreur_de($q$select public.ranger_categorie(999999, true, 'vetements')$q$) = 'Catégorie introuvable.');
+reset role;
+select pg_temp.check('0075 : ... et rien n''a change',
+  (select visible and famille = 'vetements' from public.categories where id = :cat75)
+  and not exists (select 1 from public.journal_equipe where action = 'ranger_categorie'));
+
+-- --- 2. Masquer, réafficher, ranger --------------------------------------
+set role anon;
+select pg_temp.check('0075 : avant : le produit de la categorie est trouve',
+  pg_temp.n75() = 1);
+reset role;
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000e1');
+select public.ranger_categorie(:cat75, false, 'vetements');
+reset role;
+select pg_temp.check('0075 : un membre masque une categorie qui a des produits, signe au journal',
+  (select not visible and famille = 'vetements' from public.categories where id = :cat75)
+  and (select count(*) = 1 from public.journal_equipe
+        where action = 'ranger_categorie' and cible_type = 'categorie'
+          and cible_id = public.cible_journal_entier(:cat75)
+          and auteur = 'a0750000-0000-0000-0000-0000000000e1' and auteur_nom = 'E75'
+          and motif = 'Test 75 : visible → masquée'));
+set role anon;
+select pg_temp.check('0075 : une categorie masquee sort de search_products',
+  pg_temp.n75() = 0);
+reset role;
+select pg_temp.check('0075 : ... sans que son produit soit supprime ni depublie',
+  exists (select 1 from public.products
+           where id = 'a0750000-0000-0000-0000-0000000000f1' and status = 'active' and category_id = :cat75));
+
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000e1');
+select public.ranger_categorie(:cat75, true, 'accessoires');
+select public.ranger_categorie(:cat75, true, 'accessoires');
+select public.ranger_categorie(p_id => :cat75, p_visible => true, p_famille => 'accessoires');
+select public.ranger_categorie(:cat74_maison, false, 'chaussures');
+reset role;
+select pg_temp.check('0075 : un membre reaffiche et change de rayon, motif lisible ; sans changement rien n''est ecrit',
+  (select visible and famille = 'accessoires' from public.categories where id = :cat75)
+  and (select count(*) = 2 from public.journal_equipe
+        where action = 'ranger_categorie' and cible_id = public.cible_journal_entier(:cat75))
+  and exists (select 1 from public.journal_equipe
+               where action = 'ranger_categorie' and cible_id = public.cible_journal_entier(:cat75)
+                 and motif = 'Test 75 : masquée → visible, rayon vêtements → accessoires'));
+select pg_temp.check('0075 : une ancienne categorie sans rayon se range en restant masquee',
+  (select not visible and famille = 'chaussures' from public.categories where id = :cat74_maison)
+  and exists (select 1 from public.journal_equipe
+               where action = 'ranger_categorie' and cible_id = public.cible_journal_entier(:cat74_maison)
+                 and motif = 'Maison & Meubles : rayon aucun → chaussures'));
+set role anon;
+select pg_temp.check('0075 : reaffichee, la categorie revient dans search_products',
+  pg_temp.n75() = 1);
+reset role;
+
+-- --- 3. La dernière catégorie visible ------------------------------------
+-- Toutes masquées sauf cat75 (état remis ensuite) : seule la garde peut
+-- refuser, les autres contrôles passent.
+create temp table visibles_avant_0075 as select id from public.categories where visible;
+update public.categories set visible = false where id <> :cat75;
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0075 : la derniere categorie visible ne se masque pas',
+  pg_temp.erreur_de(format('select public.ranger_categorie(%s, false, %L)', :cat75, 'accessoires'))
+    = 'Impossible de masquer « Test 75 » : c''est la dernière catégorie visible, le site n''aurait plus rien à proposer.');
+select pg_temp.check('0075 : ... mais elle change de rayon en restant visible',
+  pg_temp.erreur_de(format('select public.ranger_categorie(%s, true, %L)', :cat75, 'chaussures')) is null);
+reset role;
+select pg_temp.check('0075 : ... et elle est toujours visible, au nouveau rayon',
+  (select visible and famille = 'chaussures' from public.categories where id = :cat75));
+update public.categories set visible = true where id in (select id from visibles_avant_0075);
+set role authenticated;
+select pg_temp.login('a0750000-0000-0000-0000-0000000000e1');
+select pg_temp.check('0075 : avec une autre categorie visible, elle se masque',
+  pg_temp.erreur_de(format('select public.ranger_categorie(%s, false, %L)', :cat75, 'chaussures')) is null);
+reset role;
+select pg_temp.check('0075 : ... et elle est masquee',
+  (select not visible from public.categories where id = :cat75));
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='

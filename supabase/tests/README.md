@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 644 vérifications (compte du 2026-11-10, migrations jusqu'à 0074
+Les 663 vérifications (compte du 2026-11-11, migrations jusqu'à 0075
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -70,6 +70,9 @@ femme/homme ; la borne basse du prix rendue stricte ; le droit de
 colonne sur genre/tailles/couleurs retiré. La tête du fichier rend
 visibles les catégories 1 à 3 (masquées par 0074) pour les sections
 antérieures, après avoir gardé l'état des migrations pour la section 0074.
+Pour `0075` (le 2026-11-11), trois mutations arrêtent chacune la suite
+sur son contrôle : la garde d'équipe de `ranger_categorie` retirée, la
+garde « dernière catégorie visible » retirée, l'exécution rendue à `anon`.
 
 ## Ce que ces tests protègent
 

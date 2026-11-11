@@ -661,10 +661,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-450 commits, du plus récent au plus ancien.
+451 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `3698aac` Admin : ranger une catégorie (rayon et affichage), en attente de 0075
 - `09b0f2f` Mémoire : la mode, 0074 appliquée et ce qui reste
 - `fefb18b` Formulaire : couleurs plus étroites, trois et demie visibles
 
