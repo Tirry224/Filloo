@@ -34,6 +34,22 @@ mis à jour et raccourci ; l'ancienne version se relit par
 - **Parcours vus marcher sur téléphone** (2026-10-15) : inscription
   commerçant jusqu'à la boutique en ligne, photo, messagerie,
   notifications navigateur et app, application fermée.
+- **Filloo ne présente plus que la MODE** (décision du porteur du projet,
+  2026-11-10). `0074` appliquée le 2026-11-11 (collée par le porteur du
+  projet dans le SQL Editor, le connecteur ne recevant pas sa
+  confirmation ; inscrite ensuite à la main dans
+  `supabase_migrations.schema_migrations`). 16 catégories de mode
+  visibles en 3 rayons (`categories.famille`), les 8 anciennes MASQUÉES
+  (`visible = false`), jamais supprimées ; un trigger refuse d'y ranger
+  un article. `products.genre`, `tailles` (≤ 40), `couleurs` (≤ 20) ; les
+  valeurs permises vivent dans `src/lib/mode.ts` (tailles en groupes :
+  bébé/enfant par âge, lettres, tour de taille 25-46 pour les bas,
+  pointures enfant et adulte). Accueil réduit à « pour qui » + rayon ;
+  le détail (catégorie, taille, couleur, prix) est dans Recherche.
+  Les produits d'avant (1 au 2026-11-11) n'ont ni genre, ni taille, ni
+  couleur : ils n'apparaissent dans aucun filtre et l'espace vendeur les
+  signale « à compléter ». `/admin` ne sait ni masquer une catégorie ni
+  lui donner un rayon : à faire si l'équipe en a besoin.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -645,7 +661,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-448 commits, du plus récent au plus ancien.
+449 commits, du plus récent au plus ancien.
+
+### 2026-11-11
+
+- `fefb18b` Formulaire : couleurs plus étroites, trois et demie visibles
 
 ### 2026-11-10
 
