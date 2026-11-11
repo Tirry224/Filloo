@@ -664,10 +664,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-453 commits, du plus récent au plus ancien.
+454 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `cf9d64e` Connexion : l'échec oriente les comptes Google vers leur bouton
 - `13cd048` Mémoire : 0075 appliquée, l'équipe range les catégories
 - `ed31e62` Migration 0075 écrite : l'équipe range une catégorie (pas encore appliquée)
 - `3698aac` Admin : ranger une catégorie (rayon et affichage), en attente de 0075

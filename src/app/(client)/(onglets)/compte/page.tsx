@@ -11,6 +11,7 @@ import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/se
 import { getMyMerchant } from "@/lib/data/merchants";
 import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
+import { aUnMotDePasse } from "@/lib/password";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -61,10 +62,12 @@ export default async function AccountPage() {
           )}
 
           <MenuList>
-            {merchant ? null : (
+            {merchant ? null : aUnMotDePasse(user) ? (
               <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
                 <ChangePasswordForm />
               </MenuPanel>
+            ) : (
+              <MenuItem icon={KeyRound} label="Vous vous connectez avec Google" />
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />

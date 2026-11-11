@@ -113,3 +113,13 @@ test("un numéro absent ou fautif ne produit AUCUN lien", () => {
     assert.equal(lienWhatsApp(inutilisable), null, String(inutilisable));
   }
 });
+
+test("un compte créé avec Google n'a pas de mot de passe à modifier", async () => {
+  const { aUnMotDePasse } = await import("../src/lib/password.ts");
+  assert.equal(aUnMotDePasse({ app_metadata: { providers: ["google"] } }), false);
+  assert.equal(aUnMotDePasse({ app_metadata: { providers: ["email"] } }), true);
+  assert.equal(aUnMotDePasse({ app_metadata: { providers: ["google", "email"] } }), true);
+  // Faute d'information, le formulaire reste.
+  assert.equal(aUnMotDePasse({ app_metadata: {} }), true);
+  assert.equal(aUnMotDePasse(null), true);
+});

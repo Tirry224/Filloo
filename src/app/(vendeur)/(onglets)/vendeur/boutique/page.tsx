@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
+import { aUnMotDePasse } from "@/lib/password";
 import type { Merchant } from "@/lib/types";
 import { shopPhotoUrl } from "@/lib/storage";
 import { formaterSaisieTelephone } from "@/lib/telephone";
@@ -124,9 +125,13 @@ export default async function EditShopPage() {
               value={nonLusEquipe > 0 ? `${nonLusEquipe} non lu(s)` : undefined}
               href="/vendeur/equipe"
             />
-            <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
-              <ChangePasswordForm />
-            </MenuPanel>
+            {aUnMotDePasse(user) ? (
+              <MenuPanel icon={KeyRound} label="Modifier mon mot de passe" title="Modifier mon mot de passe">
+                <ChangePasswordForm />
+              </MenuPanel>
+            ) : (
+              <MenuItem icon={KeyRound} label="Vous vous connectez avec Google" />
+            )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/vendeur/confidentialite" />
             <MenuItem icon={LifeBuoy} label="Nous contacter" href="/vendeur/contact" />

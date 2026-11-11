@@ -1,3 +1,5 @@
+import type { User } from "@supabase/supabase-js";
+
 /**
  * La vérification est CÔTÉ SERVEUR, seul endroit où elle garantit quelque
  * chose : les formulaires marchent sans JavaScript (docs/PERFORMANCE.md,
@@ -27,4 +29,15 @@ export function erreurNouveauMotDePasse(motDePasse: string, confirmation: string
     return "Les deux mots de passe sont différents.";
   }
   return null;
+}
+
+/** Un compte créé avec Google n'a AUCUN mot de passe (constaté en base le
+ *  2026-11-11 : 0 sur 3) : « Modifier mon mot de passe », qui exige
+ *  l'actuel, ne peut que l'égarer. Faute d'information, on suppose un mot
+ *  de passe : mieux vaut un formulaire de trop qu'un compte sans moyen
+ *  d'en changer. */
+export function aUnMotDePasse(user: Pick<User, "app_metadata"> | null): boolean {
+  const fournisseurs = user?.app_metadata?.providers;
+  if (!Array.isArray(fournisseurs) || fournisseurs.length === 0) return true;
+  return fournisseurs.includes("email");
 }
