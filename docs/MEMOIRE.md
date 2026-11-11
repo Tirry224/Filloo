@@ -645,10 +645,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-447 commits, du plus récent au plus ancien.
+448 commits, du plus récent au plus ancien.
 
 ### 2026-11-10
 
+- `ba19980` Formulaire : les couleurs défilent sur une ligne, trois visibles
 - `a449f66` Formulaire : chaque groupe de tailles défile sur une ligne
 - `a561990` Tailles en groupes : enfant par âge, adulte en lettres et tour de taille
 - `25dc978` Formulaire vendeur : « Publier l'article »

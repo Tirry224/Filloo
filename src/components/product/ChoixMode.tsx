@@ -118,16 +118,17 @@ export function ChoixMode({
 
       <fieldset className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Couleurs disponibles</legend>
-        {/* Une seule ligne qui défile, trois couleurs visibles à la fois
-            (demande du porteur du projet, 2026-11-10) : quinze pastilles
-            sur quatre lignes prenaient un écran entier. */}
+        <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
+        {/* Une seule ligne qui défile : trois couleurs visibles et la
+            quatrième à moitié, pour montrer qu'il y a une suite (demande du
+            porteur du projet, 2026-11-11). Plusieurs se cochent. */}
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
           {COULEURS.map((c) => {
             const coche = couleurs.includes(c.nom);
             return (
               <label
                 key={c.nom}
-                className={cn(PASTILLE, "basis-[calc((100%-1rem)/3)] justify-center", coche ? ACTIVE : INACTIVE)}
+                className={cn(PASTILLE, "basis-[calc((100%-1.5rem)/3.5)] justify-center px-2", coche ? ACTIVE : INACTIVE)}
               >
                 <input
                   type="checkbox"
