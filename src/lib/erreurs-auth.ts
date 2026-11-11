@@ -13,8 +13,12 @@ export function messageErreurAuth(message: string): string {
   if (message.includes("Email not confirmed")) {
     return "Email pas encore confirmé. Ouvrez le lien reçu (voyez aussi les indésirables).";
   }
+  /* Un compte créé avec Google n'a AUCUN mot de passe (constaté en base
+     le 2026-11-11) : 5 essais de suite échoués ce jour-là juste après une
+     inscription Google. La phrase est la même pour tous les échecs, sans
+     dire si l'adresse est inscrite ni comment : elle ne révèle rien. */
   if (message.includes("Invalid login credentials")) {
-    return "Email ou mot de passe incorrect.";
+    return "Email ou mot de passe incorrect. Inscrit avec Google ? Utilisez « Se connecter avec Google ».";
   }
   /* Le chiffre se lit DANS la réponse : c'est le réglage de Supabase qui
      décide, pas la constante du site. Le 2026-10-22, Supabase exigeait 10

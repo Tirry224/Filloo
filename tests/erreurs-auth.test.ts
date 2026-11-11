@@ -30,7 +30,7 @@ test("« attendez N secondes » dit combien de temps attendre", () => {
 });
 
 test("les refus déjà traduits le restent", () => {
-  assert.equal(messageErreurAuth("Invalid login credentials"), "Email ou mot de passe incorrect.");
+  assert.match(messageErreurAuth("Invalid login credentials"), /^Email ou mot de passe incorrect\./);
   assert.match(messageErreurAuth("Email not confirmed"), /pas encore confirmé/);
   assert.match(messageErreurAuth("User is banned"), /supprimé ou fermé/);
 });
@@ -50,4 +50,8 @@ test("le mot de passe exige un chiffre, pas seulement des lettres", async () => 
   assert.equal(erreurNouveauMotDePasse("seulementdeslettres", "seulementdeslettres"), "Ajoutez au moins un chiffre au mot de passe.");
   assert.equal(erreurNouveauMotDePasse("lettres2026", "lettres2026"), null);
   assert.match(erreurNouveauMotDePasse("court1", "court1") ?? "", /8 caractères minimum, dont un chiffre/);
+});
+
+test("un échec de connexion oriente les comptes Google vers leur bouton", () => {
+  assert.match(messageErreurAuth("Invalid login credentials"), /Inscrit avec Google \? Utilisez « Se connecter avec Google »/);
 });
