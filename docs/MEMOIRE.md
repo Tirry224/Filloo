@@ -207,7 +207,9 @@ mis à jour et raccourci ; l'ancienne version se relit par
   2026-11-09 par `0070`, `0071` puis `0072` (appliquées) : celui ÉCRIT par le
   porteur du projet, dans `texte_de_bienvenue_boutique()` — conseils
   pour attirer des clients, sans menace ni mot sur litiges/signalements.
-  Le changer = remplacer cette seule fonction. Sans notification ; l'app
+  Le changer = remplacer cette seule fonction. Les 2 boutiques créées
+  avant (2026-10-22) l'ont reçu à la main le 2026-11-11 (insert, accord
+  du porteur du projet) : toutes les boutiques l'ont désormais. Sans notification ; l'app
   des stores ne lit pas ce fil (la branche `dev` de `filloo-mobile`, si).
 - **Connexion et inscription avec Google** (2026-11-09, `0073`
   appliquée ; Facebook écarté par le porteur du projet) : bouton sur
@@ -678,10 +680,12 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-456 commits, du plus récent au plus ancien.
+458 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `ca19217` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre
+- `5f052b1` Mémoire : création d'un mot de passe pour les comptes Google
 - `ca4f0cd` Mémoire : comptes Google sans mot de passe, écart 8/10 revenu sur Supabase
 - `7b19304` Compte : plus de « Modifier mon mot de passe » pour un compte Google
 - `cf9d64e` Connexion : l'échec oriente les comptes Google vers leur bouton
