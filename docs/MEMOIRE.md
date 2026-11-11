@@ -53,6 +53,13 @@ mis à jour et raccourci ; l'ancienne version se relit par
   (rayon obligatoire, visible ou masquée, `ranger_categorie`, journal) ;
   la dernière catégorie visible ne se masque pas. Les 8 anciennes n'ont
   pas de rayon : en réafficher une demande d'en choisir un.
+- **L'équipe n'a aucun profil client ni vendeur** (`0076`, demande du
+  porteur du projet, appliquée le 2026-11-11 au SQL Editor) : entrer dans
+  `equipe` supprime le profil, ou est REFUSÉ s'il a une activité (compte
+  séparé exigé) ; aucun profil ne se crée pour un membre ; page admin et
+  statistiques ignorent l'équipe. Le profil client d'Alpha Nouhou et sa
+  conversation avec KÉRÉ A ANDA ont été effacés sur sa décision. Pour
+  tester comme client ou vendeur : un second compte, autre email.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -680,10 +687,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-460 commits, du plus récent au plus ancien.
+461 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `dd912c1` Migration 0076 écrite : l'équipe n'a ni profil client ni profil vendeur (pas encore appliquée)
 - `3dfe6a4` Mémoire : longueur du mot de passe remise à 8 dans Supabase
 - `1ac3917` Session : un compte supprimé pendant la connexion déconnecte au lieu de planter
 - `fe03bf4` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre

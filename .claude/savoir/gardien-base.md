@@ -14,8 +14,10 @@ source, constaté ou supposé.
   `0001`–`0047`, `0052`–`0057`, `0063`–`0075` (`0067`, `0068` inscrites
   sous leur numéro, les autres horodatées). `0048`–`0062` absentes de
   `dev` : `monetisation` porte `0058`–`0062`, non appliquées. `0076`
-  (l'équipe sans profil) ÉCRITE et testée le 2026-11-11, prête, non
-  appliquée en fin de mission (voir « Équipe et profils »). `scripts/migrations.mjs`
+  (l'équipe sans profil) APPLIQUÉE le 2026-11-11 (collée au SQL Editor
+  par le porteur du projet, connecteur annulé ; inscrite à la main sous
+  `20261111231600`). Constaté : 0 profil d'équipe, conversation d'Alpha
+  effacée, 2 déclencheurs, fermés à `anon` (voir « Équipe et profils »). `scripts/migrations.mjs`
   n'exige pas la continuité ; ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
