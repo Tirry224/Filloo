@@ -48,8 +48,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
   le détail (catégorie, taille, couleur, prix) est dans Recherche.
   Les produits d'avant (1 au 2026-11-11) n'ont ni genre, ni taille, ni
   couleur : ils n'apparaissent dans aucun filtre et l'espace vendeur les
-  signale « à compléter ». `/admin` ne sait ni masquer une catégorie ni
-  lui donner un rayon : à faire si l'équipe en a besoin.
+  signale « à compléter ». `0075` (appliquée le 2026-11-11, même
+  chemin que 0074) : l'équipe range une catégorie depuis `/admin`
+  (rayon obligatoire, visible ou masquée, `ranger_categorie`, journal) ;
+  la dernière catégorie visible ne se masque pas. Les 8 anciennes n'ont
+  pas de rayon : en réafficher une demande d'en choisir un.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -661,10 +664,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-451 commits, du plus récent au plus ancien.
+452 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `ed31e62` Migration 0075 écrite : l'équipe range une catégorie (pas encore appliquée)
 - `3698aac` Admin : ranger une catégorie (rayon et affichage), en attente de 0075
 - `09b0f2f` Mémoire : la mode, 0074 appliquée et ce qui reste
 - `fefb18b` Formulaire : couleurs plus étroites, trois et demie visibles
