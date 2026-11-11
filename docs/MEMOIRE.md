@@ -607,7 +607,14 @@ Chaque ligne a coûté du temps.
   inscriptions refusées le 2026-10-22 avec « 8 caractères minimum ». Le
   site lit désormais le chiffre dans la réponse (`src/lib/erreurs-auth.ts`).
   Supabase remis à 8 le 2026-10-23, `LONGUEUR_MIN_MOT_DE_PASSE` aussi. Les journaux
-  d'authentification (`auth_logs`) disent le vrai refus.
+  d'authentification (`auth_logs`) disent le vrai refus. **Écart revenu** :
+  le 2026-11-11 à 20:35 UTC, Supabase a refusé une inscription avec « at
+  least 10 characters » alors que le site annonce 8 — réglage du tableau
+  de bord à revoir par le porteur du projet.
+- **Un compte Google n'a aucun mot de passe** (constaté le 2026-11-11 :
+  0 sur 3). L'échec de connexion le renvoie vers le bouton Google, et
+  « Modifier mon mot de passe » est remplacé pour lui par « Vous vous
+  connectez avec Google » (`aUnMotDePasse`, `src/lib/password.ts`).
 - **« Faux » n'est pas « incorrect »** : la vérification du mot de passe
   répondait faux pour un « trop d'essais » comme pour un mauvais mot de
   passe. `refusMotDePasse` distingue les deux.
@@ -664,10 +671,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-454 commits, du plus récent au plus ancien.
+455 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `7b19304` Compte : plus de « Modifier mon mot de passe » pour un compte Google
 - `cf9d64e` Connexion : l'échec oriente les comptes Google vers leur bouton
 - `13cd048` Mémoire : 0075 appliquée, l'équipe range les catégories
 - `ed31e62` Migration 0075 écrite : l'équipe range une catégorie (pas encore appliquée)
