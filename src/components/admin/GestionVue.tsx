@@ -16,6 +16,7 @@ import {
   fixerCategorieAction,
   fixerVilleAction,
   masquerProduitGestionAction,
+  rangerCategorieAction,
   reactiverCompteGestionAction,
   retirerCategorieAction,
   retirerMembreAction,
@@ -25,6 +26,7 @@ import {
   suspendreCompteAction,
 } from "@/lib/actions/gestion";
 import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
+import { FAMILLES } from "@/lib/mode";
 import {
   ESPACES,
   FILTRES_PRODUITS,
@@ -592,12 +594,15 @@ export function CatalogueVue({ categories, villes, ...m }: { categories: Categor
           <Avis {...m} />
           <Liste
             titre="Catégories"
-            /* Seulement les catégories de la mode : les anciennes (0074)
-               restent en base, masquées, et ne se gèrent plus d'ici. */
-            elements={categories.filter((c) => c.visible).map((c) => ({ id: c.id, nom: c.name, position: c.position }))}
+            /* Les visibles d'abord, rangées par rayon ; les masquées (dont
+               les anciennes d'avant la mode, 0074) ensuite, réaffichables. */
+            elements={[...categories]
+              .sort((x, y) => Number(y.visible) - Number(x.visible) || x.position - y.position)
+              .map((c) => ({ id: c.id, nom: c.name, position: c.position, visible: c.visible, famille: c.famille }))}
             fixer={fixerCategorieAction}
             retirer={retirerCategorieAction}
-            note="Renommer garde l'adresse de la catégorie (et l'app la suit). Une catégorie qui a des produits ne se retire pas."
+            ranger={rangerCategorieAction}
+            note="Renommer garde l'adresse de la catégorie. Une catégorie qui a des produits ne se retire pas, mais elle peut se masquer : ses articles sortent alors de la recherche, sans être supprimés."
           />
           <Liste
             titre="Villes"
@@ -617,12 +622,15 @@ function Liste({
   elements,
   fixer,
   retirer,
+  ranger,
   note,
 }: {
   titre: string;
-  elements: { id: number; nom: string; position: number }[];
+  elements: { id: number; nom: string; position: number; visible?: boolean; famille?: string | null }[];
   fixer: (formData: FormData) => Promise<void>;
   retirer: (formData: FormData) => Promise<void>;
+  /** Catégories seulement (0075) : rayon et affichage. */
+  ranger?: (formData: FormData) => Promise<void>;
   note: string;
 }) {
   const retour = "/admin/gestion/catalogue";
@@ -633,6 +641,11 @@ function Liste({
       <p className="text-sm text-ink-soft">{note} L&apos;ordre : le plus petit nombre en premier ; il se refait seul après un retrait.</p>
       {elements.map((e) => (
         <Card key={e.id} padded className="flex flex-col gap-2">
+          {e.visible === false ? (
+            <Badge tone="warn" className="self-start">
+              Masquée : invisible pour les clients et les vendeurs
+            </Badge>
+          ) : null}
           <form action={fixer} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="id" value={e.id} />
             <input type="hidden" name="retour" value={retour} />
@@ -652,6 +665,39 @@ function Liste({
               Enregistrer
             </PendingSubmit>
           </form>
+          {ranger ? (
+            <form action={ranger} className="flex flex-wrap items-end gap-2">
+              <input type="hidden" name="id" value={e.id} />
+              <input type="hidden" name="retour" value={retour} />
+              <div className="flex min-w-32 flex-1 flex-col gap-1">
+                <label className="text-2xs text-ink-soft" htmlFor={`${cle}-rayon-${e.id}`}>
+                  Rayon
+                </label>
+                <select id={`${cle}-rayon-${e.id}`} name="famille" defaultValue={e.famille ?? ""} required className={CHAMP}>
+                  <option value="" disabled>
+                    Choisir
+                  </option>
+                  {FAMILLES.map((f) => (
+                    <option key={f.valeur} value={f.valeur}>
+                      {f.libelle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex min-w-32 flex-1 flex-col gap-1">
+                <label className="text-2xs text-ink-soft" htmlFor={`${cle}-visible-${e.id}`}>
+                  Affichage
+                </label>
+                <select id={`${cle}-visible-${e.id}`} name="visible" defaultValue={e.visible === false ? "non" : "oui"} className={CHAMP}>
+                  <option value="oui">Visible</option>
+                  <option value="non">Masquée</option>
+                </select>
+              </div>
+              <PendingSubmit className="flex h-tap cursor-pointer items-center justify-center rounded-lg border border-line bg-surface px-4 text-base font-semibold text-ink">
+                Ranger
+              </PendingSubmit>
+            </form>
+          ) : null}
           <form action={retirer}>
             <input type="hidden" name="id" value={e.id} />
             <input type="hidden" name="retour" value={retour} />

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { FAMILLES } from "@/lib/mode";
 import { CATALOGUE } from "@/lib/data/catalogue-public";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -230,6 +231,26 @@ export async function retirerCategorieAction(formData: FormData): Promise<void> 
   if (error) retour(chemin, messagePourErreur(error, "catalogue"));
   rafraichir();
   retour(chemin, undefined, "Catégorie retirée.");
+}
+
+/**
+ * Rayon et affichage d'une catégorie (0075) : la base vérifie l'équipe,
+ * le rayon et qu'il reste au moins une catégorie visible. Masquer une
+ * catégorie qui a des articles les retire de la recherche, sans rien
+ * supprimer.
+ */
+export async function rangerCategorieAction(formData: FormData): Promise<void> {
+  const chemin = cheminRetour(formData);
+  const id = lireIdEntier(formData.get("id"));
+  if (id === null) retour(chemin, "Catégorie introuvable.");
+  const famille = FAMILLES.find((f) => f.valeur === formData.get("famille"))?.valeur;
+  if (!famille) retour(chemin, "Choisissez un rayon.");
+  const visible = formData.get("visible") === "oui";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ranger_categorie", { p_id: id, p_visible: visible, p_famille: famille! });
+  if (error) retour(chemin, messagePourErreur(error, "catalogue"));
+  rafraichir();
+  retour(chemin, undefined, visible ? "Catégorie rangée et affichée." : "Catégorie masquée : elle n'est plus proposée.");
 }
 
 export async function fixerVilleAction(formData: FormData): Promise<void> {

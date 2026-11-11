@@ -1045,6 +1045,10 @@ export type Database = {
         Args: { p_id?: number; p_nom?: string; p_position?: number }
         Returns: number
       }
+      ranger_categorie: {
+        Args: { p_famille: string; p_id: number; p_visible: boolean }
+        Returns: undefined
+      }
       retirer_categorie: { Args: { p_id: number }; Returns: undefined }
       retirer_membre: { Args: { p_auth: string }; Returns: undefined }
       retirer_ville: { Args: { p_id: number }; Returns: undefined }
