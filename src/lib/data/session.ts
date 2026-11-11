@@ -7,6 +7,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { naQueLAdmin } from "@/lib/proprietaire";
+import { estCompteDisparu } from "@/lib/erreurs-auth";
 import { connexionGoogleRecente } from "@/lib/password";
 
 export type SessionProfile = {
@@ -33,6 +34,18 @@ export const getSessionUser = cache(async (supabase: SupabaseClient<Database>): 
   // connecté que quand le serveur est injoignable. « Pas de session » est
   // une réponse ; tout le reste est une panne et doit se propager, sinon
   // une coupure réseau se lit comme une déconnexion.
+  if (error && estCompteDisparu(error)) {
+    /* On efface la session morte quand la réponse le permet (action,
+       route) ; dans une page, l'écriture du cookie est avalée par
+       `createClient` et la personne est simplement vue déconnectée,
+       sans plantage. Le refus éventuel de Supabase est sans importance. */
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Rien à faire : la session est déjà inutilisable.
+    }
+    return null;
+  }
   if (error && !isAuthSessionMissingError(error)) throw error;
   return user;
 });

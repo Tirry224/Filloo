@@ -66,3 +66,13 @@ export function messageErreurAuth(message: string): string {
   console.error("[auth]", message);
   return "Une erreur est survenue. Réessayez.";
 }
+
+/** Le jeton est valide mais son compte n'existe plus (supprimé, depuis le
+ *  site ou le tableau de bord Supabase, pendant que la personne restait
+ *  connectée). Supabase répond 403 `user_not_found`. Ce n'est PAS une
+ *  panne : c'est « plus de session ». Constaté le 2026-11-11 : le
+ *  téléphone du porteur du projet gardait la session d'un compte supprimé,
+ *  chaque page plantait, et l'inscription Google ne pouvait plus aboutir. */
+export function estCompteDisparu(erreur: { code?: string; status?: number } | null | undefined): boolean {
+  return erreur?.code === "user_not_found";
+}

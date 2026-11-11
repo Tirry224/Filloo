@@ -55,3 +55,11 @@ test("le mot de passe exige un chiffre, pas seulement des lettres", async () => 
 test("un échec de connexion oriente les comptes Google vers leur bouton", () => {
   assert.match(messageErreurAuth("Invalid login credentials"), /Inscrit avec Google \? Utilisez « Se connecter avec Google »/);
 });
+
+test("un compte supprimé pendant la session se lit « plus de session », pas « panne »", async () => {
+  const { estCompteDisparu } = await import("../src/lib/erreurs-auth.ts");
+  assert.equal(estCompteDisparu({ code: "user_not_found", status: 403 }), true);
+  assert.equal(estCompteDisparu({ code: "session_not_found", status: 403 }), false);
+  assert.equal(estCompteDisparu({ status: 500 }), false);
+  assert.equal(estCompteDisparu(null), false);
+});

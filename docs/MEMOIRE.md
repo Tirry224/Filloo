@@ -684,7 +684,7 @@ s'écrit pas en TypeScript.
 
 ### 2026-11-11
 
-- `ca19217` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre
+- `fe03bf4` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre
 - `5f052b1` Mémoire : création d'un mot de passe pour les comptes Google
 - `ca4f0cd` Mémoire : comptes Google sans mot de passe, écart 8/10 revenu sur Supabase
 - `7b19304` Compte : plus de « Modifier mon mot de passe » pour un compte Google
