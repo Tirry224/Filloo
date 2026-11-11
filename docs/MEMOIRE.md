@@ -611,8 +611,8 @@ Chaque ligne a coûté du temps.
   Supabase remis à 8 le 2026-10-23, `LONGUEUR_MIN_MOT_DE_PASSE` aussi. Les journaux
   d'authentification (`auth_logs`) disent le vrai refus. **Écart revenu** :
   le 2026-11-11 à 20:35 UTC, Supabase a refusé une inscription avec « at
-  least 10 characters » alors que le site annonce 8 — réglage du tableau
-  de bord à revoir par le porteur du projet.
+  least 10 characters » alors que le site annonce 8. Remis à 8 par le
+  porteur du projet le soir même.
 - **Un compte Google n'a aucun mot de passe** (constaté le 2026-11-11 :
   0 sur 3). L'échec de connexion le renvoie vers le bouton Google. À la
   place de « Modifier mon mot de passe », il a « Créer un mot de passe »
@@ -680,10 +680,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-458 commits, du plus récent au plus ancien.
+459 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `1ac3917` Session : un compte supprimé pendant la connexion déconnecte au lieu de planter
 - `fe03bf4` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre
 - `5f052b1` Mémoire : création d'un mot de passe pour les comptes Google
 - `ca4f0cd` Mémoire : comptes Google sans mot de passe, écart 8/10 revenu sur Supabase
