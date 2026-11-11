@@ -123,3 +123,16 @@ test("un compte créé avec Google n'a pas de mot de passe à modifier", async (
   assert.equal(aUnMotDePasse({ app_metadata: {} }), true);
   assert.equal(aUnMotDePasse(null), true);
 });
+
+test("une connexion Google ne prouve l'identité que dix minutes", async () => {
+  const { connexionGoogleRecente, aUnMotDePasse } = await import("../src/lib/password.ts");
+  const maintenant = 1_800_000_000;
+  assert.equal(connexionGoogleRecente([{ method: "oauth", timestamp: maintenant - 60 }], maintenant), true);
+  assert.equal(connexionGoogleRecente([{ method: "oauth", timestamp: maintenant - 601 }], maintenant), false);
+  // Une connexion par mot de passe ne vaut pas preuve Google.
+  assert.equal(connexionGoogleRecente([{ method: "password", timestamp: maintenant }], maintenant), false);
+  assert.equal(connexionGoogleRecente(undefined, maintenant), false);
+  assert.equal(connexionGoogleRecente(["oauth"], maintenant), false);
+  // Un compte Google qui s'est créé un mot de passe passe à « Modifier ».
+  assert.equal(aUnMotDePasse({ app_metadata: { providers: ["google"], mot_de_passe_cree: true } }), true);
+});

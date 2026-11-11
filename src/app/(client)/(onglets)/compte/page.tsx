@@ -3,11 +3,12 @@ import { Ban, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Stor
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { CreatePasswordForm } from "@/components/auth/CreatePasswordForm";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { clientSpaceFallback, getMyProfile, getSessionUser } from "@/lib/data/session";
+import { clientSpaceFallback, connexionGoogleDeMoinsDeDixMinutes, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { getMyMerchant } from "@/lib/data/merchants";
 import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
@@ -19,9 +20,10 @@ export default async function AccountPage() {
   if (!profile) redirect(await clientSpaceFallback(supabase));
   if (profile.isSuspended) redirect("/compte/suspendu");
 
-  const [merchant, nonLusEquipe] = await Promise.all([
+  const [merchant, nonLusEquipe, googleRecent] = await Promise.all([
     getMyMerchant(supabase),
     user ? compterNonLusEquipe(supabase, user.id, "client") : 0,
+    aUnMotDePasse(user) ? false : connexionGoogleDeMoinsDeDixMinutes(supabase),
   ]);
 
   return (
@@ -67,7 +69,9 @@ export default async function AccountPage() {
                 <ChangePasswordForm />
               </MenuPanel>
             ) : (
-              <MenuItem icon={KeyRound} label="Vous vous connectez avec Google" />
+              <MenuPanel icon={KeyRound} label="Créer un mot de passe" title="Créer un mot de passe">
+                <CreatePasswordForm googleRecent={googleRecent} retour="/compte" />
+              </MenuPanel>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />

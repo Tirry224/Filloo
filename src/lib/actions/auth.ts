@@ -3,11 +3,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrlOuLocalhost } from "@/lib/site-url";
-import { getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
+import { connexionGoogleDeMoinsDeDixMinutes, getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { destinationApresAuthentification } from "@/lib/destination";
 import { headers } from "next/headers";
-import { erreurNouveauMotDePasse } from "@/lib/password";
+import { aUnMotDePasse, erreurNouveauMotDePasse } from "@/lib/password";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { messageErreurAuth } from "@/lib/erreurs-auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { refusMotDePasse } from "@/lib/supabase/verify";
@@ -278,6 +279,47 @@ export async function changeMyPasswordAction(
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: messageErreurAuth(error.message) };
 
+  return { sent: true };
+}
+
+/**
+ * « Créer un mot de passe » : pour un compte venu de Google, qui n'en a
+ * aucun (demande du porteur du projet, 2026-11-11). Pas de mot de passe
+ * actuel à vérifier : la preuve est une connexion Google de moins de dix
+ * minutes, relue ICI dans le jeton signé — l'écran ne fait que l'annoncer.
+ */
+export async function createMyPasswordAction(
+  _prevState: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
+
+  const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
+  if (erreurMotDePasse) return { error: erreurMotDePasse };
+
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user?.email) return { error: "Connectez-vous d'abord." };
+  if (aUnMotDePasse(user)) return { error: "Votre compte a déjà un mot de passe : modifiez-le." };
+  if (!(await connexionGoogleDeMoinsDeDixMinutes(supabase))) {
+    return { error: "Par sécurité, confirmez d'abord avec Google, puis recommencez dans les 10 minutes." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: messageErreurAuth(error.message) };
+
+  /* La marque qui fait passer l'écran à « Modifier ». Si elle échoue, le
+     mot de passe est quand même créé : on le journalise, sans inquiéter
+     la personne. */
+  const { error: erreurMarque } = await createAdminClient().auth.admin.updateUserById(user.id, {
+    app_metadata: { mot_de_passe_cree: true },
+  });
+  if (erreurMarque) console.error("[mot de passe cree]", erreurMarque.message);
+
+  /* Pas de `revalidatePath` : l'écran passerait aussitôt à « Modifier »
+     et le message de réussite disparaîtrait avec le formulaire. La
+     prochaine visite de la page, dynamique, lira la marque. */
   return { sent: true };
 }
 

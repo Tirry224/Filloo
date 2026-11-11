@@ -612,9 +612,16 @@ Chaque ligne a coûté du temps.
   least 10 characters » alors que le site annonce 8 — réglage du tableau
   de bord à revoir par le porteur du projet.
 - **Un compte Google n'a aucun mot de passe** (constaté le 2026-11-11 :
-  0 sur 3). L'échec de connexion le renvoie vers le bouton Google, et
-  « Modifier mon mot de passe » est remplacé pour lui par « Vous vous
-  connectez avec Google » (`aUnMotDePasse`, `src/lib/password.ts`).
+  0 sur 3). L'échec de connexion le renvoie vers le bouton Google. À la
+  place de « Modifier mon mot de passe », il a « Créer un mot de passe »
+  (demande du porteur du projet, 2026-11-11 ; client et commerçant) :
+  sans mot de passe actuel, la preuve est une connexion Google de moins
+  de 10 minutes (`amr` du jeton, relu par `createMyPasswordAction`),
+  sinon bouton « Confirmer avec Google ». Une fois créé, la marque
+  `app_metadata.mot_de_passe_cree` (posée par `service_role`) fait passer
+  l'écran à « Modifier » : Supabase garde « google » seul dans
+  `providers`. Pas encore essayé en vrai : la connexion par email avec
+  ce nouveau mot de passe est à constater sur la préversion.
 - **« Faux » n'est pas « incorrect »** : la vérification du mot de passe
   répondait faux pour un « trop d'essais » comme pour un mauvais mot de
   passe. `refusMotDePasse` distingue les deux.
@@ -671,10 +678,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-455 commits, du plus récent au plus ancien.
+456 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `ca4f0cd` Mémoire : comptes Google sans mot de passe, écart 8/10 revenu sur Supabase
 - `7b19304` Compte : plus de « Modifier mon mot de passe » pour un compte Google
 - `cf9d64e` Connexion : l'échec oriente les comptes Google vers leur bouton
 - `13cd048` Mémoire : 0075 appliquée, l'équipe range les catégories

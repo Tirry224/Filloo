@@ -7,6 +7,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { naQueLAdmin } from "@/lib/proprietaire";
+import { connexionGoogleRecente } from "@/lib/password";
 
 export type SessionProfile = {
   id: string;
@@ -166,4 +167,12 @@ export async function requireClientSpace(
   if (refus) redirect(refus);
 
   return profiles.find((p) => p.role === "client")!;
+}
+
+/** La session vient-elle d'une connexion Google de moins de dix minutes ?
+ *  Lu dans le jeton VÉRIFIÉ (`getClaims`), jamais dans le cookie brut. */
+export async function connexionGoogleDeMoinsDeDixMinutes(supabase: SupabaseClient<Database>): Promise<boolean> {
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data) return false;
+  return connexionGoogleRecente(data.claims.amr, Math.floor(Date.now() / 1000));
 }

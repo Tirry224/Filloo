@@ -5,12 +5,13 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { CreatePasswordForm } from "@/components/auth/CreatePasswordForm";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
-import { getMyProfile, getSessionUser } from "@/lib/data/session";
+import { connexionGoogleDeMoinsDeDixMinutes, getMyProfile, getSessionUser } from "@/lib/data/session";
 import { compterNonLusEquipe } from "@/lib/data/equipe";
 import { signOutAction } from "@/lib/actions/auth";
 import { aUnMotDePasse } from "@/lib/password";
@@ -37,7 +38,10 @@ export default async function EditShopPage() {
     getMyProfile(supabase, "client"),
     getSessionUser(supabase),
   ]);
-  const nonLusEquipe = user ? await compterNonLusEquipe(supabase, user.id, "merchant") : 0;
+  const [nonLusEquipe, googleRecent] = await Promise.all([
+    user ? compterNonLusEquipe(supabase, user.id, "merchant") : 0,
+    aUnMotDePasse(user) ? false : connexionGoogleDeMoinsDeDixMinutes(supabase),
+  ]);
   /* Rôle et suspension sont traités par `(vendeur)/layout.tsx`. Ce test
      porte sur la BOUTIQUE, qu'un profil commerçant neuf n'a pas encore :
      le seul cas que le layout laisse passer. */
@@ -130,7 +134,9 @@ export default async function EditShopPage() {
                 <ChangePasswordForm />
               </MenuPanel>
             ) : (
-              <MenuItem icon={KeyRound} label="Vous vous connectez avec Google" />
+              <MenuPanel icon={KeyRound} label="Créer un mot de passe" title="Créer un mot de passe">
+                <CreatePasswordForm googleRecent={googleRecent} retour="/vendeur/boutique" />
+              </MenuPanel>
             )}
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/vendeur/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/vendeur/confidentialite" />

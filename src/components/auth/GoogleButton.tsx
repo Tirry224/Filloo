@@ -38,17 +38,30 @@ function Bouton({ label }: { label: string }) {
  * ne connaît pas. Il ne fait que PRÉCOCHER l'écran « Complétez votre
  * compte » : rien n'est créé avant que la personne y valide.
  */
-export function GoogleButton({ label, role, next }: { label: string; role?: "client" | "merchant"; next?: string }) {
+export function GoogleButton({
+  label,
+  role,
+  next,
+  separateur = true,
+}: {
+  label: string;
+  role?: "client" | "merchant";
+  next?: string;
+  /** « ou avec votre email » sous le bouton, quand un formulaire suit. */
+  separateur?: boolean;
+}) {
   return (
     <form action={googleSignInAction} className="flex flex-col gap-2.5">
       {role ? <input type="hidden" name="role" value={role} /> : null}
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Bouton label={label} />
-      <div className="my-1 flex items-center gap-3 text-sm text-ink-soft">
-        <span className="h-px flex-1 bg-line" />
-        ou avec votre email
-        <span className="h-px flex-1 bg-line" />
-      </div>
+      {separateur ? (
+        <div className="my-1 flex items-center gap-3 text-sm text-ink-soft">
+          <span className="h-px flex-1 bg-line" />
+          ou avec votre email
+          <span className="h-px flex-1 bg-line" />
+        </div>
+      ) : null}
     </form>
   );
 }
