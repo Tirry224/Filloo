@@ -687,10 +687,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-464 commits, du plus récent au plus ancien.
+465 commits, du plus récent au plus ancien.
 
 ### 2026-11-12
 
+- `78a9226` Aperçu WhatsApp : photo de la boutique, photo du produit, sinon Filloo
 - `801c985` Merge branch 'claude/elegant-darwin-q6mmwk' into dev
 - `b479b2a` SEO accueil : h1, titre et description raccourcis, og:url et og:type
 
