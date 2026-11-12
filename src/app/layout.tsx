@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s · Filloo",
   },
   description:
-    "Vêtements, chaussures et accessoires pour femme, homme et enfant, vendus par les boutiques de Guinée. Trouvez votre taille et contactez le vendeur.",
+    "Vêtements en Guinée pour femme, homme et enfant, chaussures et accessoires, vendus par des boutiques locales. Trouvez votre taille et contactez le vendeur.",
   /* `apple-touch-icon` est le SEUL format qu'iOS lit pour l'écran
      d'accueil, les icônes du manifeste étant ignorées. Sans lui,
      l'application installée porte une capture de la page — et sur iPhone

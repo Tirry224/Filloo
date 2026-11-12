@@ -78,7 +78,7 @@ export const AIDE: RubriqueAide[] = [
       {
         question: "Les boutiques sont-elles vérifiées ?",
         reponse:
-          "Filloo ne vérifie pas les boutiques avant leur mise en ligne. Prenez les mêmes précautions qu'avec un vendeur que vous ne connaissez pas.",
+          "L'équipe Filloo examine les boutiques et les signalements, mais ne peut pas garantir le sérieux de chaque vendeur. Prenez les mêmes précautions qu'avec un vendeur que vous ne connaissez pas.",
       },
       {
         question: "Comment acheter en confiance ?",
