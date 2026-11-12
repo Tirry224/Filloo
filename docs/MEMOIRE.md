@@ -687,10 +687,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-461 commits, du plus récent au plus ancien.
+462 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `9fce77a` Mémoire : 0076 appliquée, l'équipe n'a plus de profil client ni vendeur
 - `dd912c1` Migration 0076 écrite : l'équipe n'a ni profil client ni profil vendeur (pas encore appliquée)
 - `3dfe6a4` Mémoire : longueur du mot de passe remise à 8 dans Supabase
 - `1ac3917` Session : un compte supprimé pendant la connexion déconnecte au lieu de planter

@@ -43,7 +43,7 @@ export async function generateMetadata({
     title: titre,
     description,
     alternates: { canonical: `/boutique/${id}` },
-    openGraph: { type: "website", title: titre, description },
+    openGraph: { type: "website", url: `/boutique/${id}`, siteName: "Filloo", title: titre, description },
   };
 }
 
