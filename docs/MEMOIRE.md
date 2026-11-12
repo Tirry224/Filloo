@@ -687,7 +687,12 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-462 commits, du plus récent au plus ancien.
+464 commits, du plus récent au plus ancien.
+
+### 2026-11-12
+
+- `801c985` Merge branch 'claude/elegant-darwin-q6mmwk' into dev
+- `b479b2a` SEO accueil : h1, titre et description raccourcis, og:url et og:type
 
 ### 2026-11-11
 

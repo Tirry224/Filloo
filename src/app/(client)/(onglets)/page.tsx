@@ -20,7 +20,7 @@ import { PushBell } from "@/components/push/PushBell";
 import { categoriesEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
 import { premier } from "@/lib/next-param";
-import { estFiltree, jsonLd } from "@/lib/seo";
+import { estFiltree, IMAGE_APERCU_FILLOO, jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import { goutsDeLaRequete } from "@/lib/data/gouts-serveur";
 import { melanger } from "@/lib/melange";
@@ -57,7 +57,7 @@ export async function generateMetadata({
       type: "website",
       url: "/",
       siteName: "Filloo",
-      images: [{ url: "/opengraph-image", width: 1200, height: 630, type: "image/png", alt: "Filloo" }],
+      images: [IMAGE_APERCU_FILLOO],
     },
     robots: filtree ? { index: false, follow: true } : undefined,
   };

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { jsonLd } from "@/lib/seo";
+import { IMAGE_APERCU_FILLOO, jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
@@ -77,7 +77,9 @@ export async function generateMetadata({
       description,
       /* Une seule photo : les aperçus n'en affichent qu'une, et les
          suivantes ne feraient qu'alourdir la page lue par le robot. */
-      images: product.imageUrls.length > 0 ? [{ url: product.imageUrls[0], alt: product.title }] : undefined,
+      images: [
+        product.imageUrls.length > 0 ? { url: product.imageUrls[0], alt: product.title } : IMAGE_APERCU_FILLOO,
+      ],
     },
     robots: vendu ? { index: false, follow: true } : undefined,
   };

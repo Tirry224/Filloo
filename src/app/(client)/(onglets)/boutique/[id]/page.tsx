@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
 import { boutiqueEnCache, produitsBoutiqueEnCache } from "@/lib/data/catalogue-public";
 import { compter } from "@/lib/analytics";
+import { IMAGE_APERCU_FILLOO } from "@/lib/seo";
 
 /**
  * La boutique telle que le public la voit, depuis le cache partagé ;
@@ -43,7 +44,15 @@ export async function generateMetadata({
     title: titre,
     description,
     alternates: { canonical: `/boutique/${id}` },
-    openGraph: { type: "website", url: `/boutique/${id}`, siteName: "Filloo", title: titre, description },
+    openGraph: {
+      type: "website",
+      url: `/boutique/${id}`,
+      siteName: "Filloo",
+      title: titre,
+      description,
+      // La photo (ou le logo) de la boutique ; à défaut, l'image de Filloo.
+      images: [merchant.photoUrl ? { url: merchant.photoUrl, alt: merchant.shopName } : IMAGE_APERCU_FILLOO],
+    },
   };
 }
 

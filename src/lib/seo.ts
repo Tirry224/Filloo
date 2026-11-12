@@ -26,3 +26,17 @@ export function estFiltree(
 export function jsonLd(donnees: unknown): string {
   return JSON.stringify(donnees).replace(/</g, "\\u003c");
 }
+
+/**
+ * L'image d'aperçu de Filloo (`app/opengraph-image.tsx`), pour une page
+ * qui déclare son propre `openGraph` : celui-ci remplace celui du layout
+ * EN ENTIER, image comprise. Sans cette reprise, une boutique sans photo
+ * ou un produit sans photo se partageait sur WhatsApp sans aucune image.
+ */
+export const IMAGE_APERCU_FILLOO = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: "Filloo",
+};
