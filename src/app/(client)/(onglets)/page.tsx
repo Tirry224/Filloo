@@ -228,6 +228,21 @@ export default async function HomePage({
         </Section>
           </>
         )}
+
+        {/* Le pied de page de l'accueil : le site n'en a pas d'autre (la
+            barre d'onglets en tient lieu), et un visiteur sans compte n'a
+            pas accès au menu « Compte » où vivent ces liens. */}
+        <footer className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 px-4 pt-6 pb-4 text-sm text-ink-soft">
+          <Link href="/aide" className="font-semibold text-accent underline">
+            Comment ça marche
+          </Link>
+          <Link href="/conditions" className="underline">
+            Conditions
+          </Link>
+          <Link href="/contact" className="underline">
+            Contact
+          </Link>
+        </footer>
       </ScreenBody>
     </TabScreen>
   );

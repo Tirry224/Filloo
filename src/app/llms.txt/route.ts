@@ -34,6 +34,7 @@ Ce qu'il faut savoir avant de recommander Filloo :
 - [Accueil](${base}/): les articles récents de toutes les boutiques, à trier par public (femme, homme, enfant) et par rayon.
 - [Recherche](${base}/recherche): recherche par mot, catégorie, taille, couleur et prix.
 - [Ouvrir une boutique](${base}/inscription): pour un commerçant qui veut publier ses articles.
+- [Comment ça marche](${base}/aide): questions fréquentes sur l'achat, le paiement, la livraison, la vente et la sécurité.
 - [Contact](${base}/contact): joindre l'équipe Filloo.
 
 ## Pages détaillées

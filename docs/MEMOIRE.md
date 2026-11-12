@@ -687,10 +687,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-466 commits, du plus récent au plus ancien.
+467 commits, du plus récent au plus ancien.
 
 ### 2026-11-12
 
+- `c6ae853` /llms.txt : une présentation de Filloo pour les assistants IA
 - `3d62357` Aperçu de l'accueil : carte Filloo refaite, avec la police du site
 - `78a9226` Aperçu WhatsApp : photo de la boutique, photo du produit, sinon Filloo
 - `801c985` Merge branch 'claude/elegant-darwin-q6mmwk' into dev

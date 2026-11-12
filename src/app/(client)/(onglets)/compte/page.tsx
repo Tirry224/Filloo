@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Ban, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Store, Trash2, User } from "lucide-react";
+import { Ban, CircleHelp, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Store, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -73,6 +73,7 @@ export default async function AccountPage() {
                 <CreatePasswordForm googleRecent={googleRecent} retour="/compte" />
               </MenuPanel>
             )}
+            <MenuItem icon={CircleHelp} label="Comment ça marche" href="/aide" />
             <MenuItem icon={FileText} label="Conditions d'utilisation" href="/conditions" />
             <MenuItem icon={ShieldCheck} label="Politique de confidentialité" href="/confidentialite" />
             <MenuItem icon={LifeBuoy} label="Nous contacter" href="/contact" />

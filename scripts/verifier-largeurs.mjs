@@ -48,6 +48,7 @@ const PUBLICS = [
   "/conditions",
   "/confidentialite",
   "/contact",
+  "/aide",
   "/adresse-qui-nexiste-pas",
 ];
 
