@@ -29,11 +29,13 @@ export const metadata: Metadata = {
      250 000 GNF · Filloo ») ; `default` sert à l'accueil et aux pages
      sans titre propre. */
   title: {
-    default: "Filloo — La mode en Guinée : vêtements, chaussures et accessoires",
+    /* Moins de 60 caractères, moins de 160 pour la description : au-delà,
+       Google coupe l'affichage par « … » (audit SEO du 2026-11-12). */
+    default: "Filloo — Vêtements, chaussures et accessoires en Guinée",
     template: "%s · Filloo",
   },
   description:
-    "Filloo, la mode en Guinée : vêtements, chaussures et accessoires pour femme, homme et enfant, vendus par les boutiques près de chez vous. Filtrez par taille, couleur et prix, puis contactez le vendeur.",
+    "Vêtements, chaussures et accessoires pour femme, homme et enfant, vendus par les boutiques de Guinée. Trouvez votre taille et contactez le vendeur.",
   /* `apple-touch-icon` est le SEUL format qu'iOS lit pour l'écran
      d'accueil, les icônes du manifeste étant ignorées. Sans lui,
      l'application installée porte une capture de la page — et sur iPhone

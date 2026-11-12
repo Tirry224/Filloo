@@ -48,6 +48,17 @@ export async function generateMetadata({
   const filtree = estFiltree(await searchParams, ["genre", "rayon"]);
   return {
     alternates: { canonical: "/" },
+    /* `og:url` et `og:type` : sans eux, WhatsApp et Facebook devinent
+       l'adresse et le genre de la page (audit SEO du 2026-11-12). Le titre
+       et la description viennent du layout ; l'IMAGE, non : un `openGraph`
+       de page remplace celui du layout en entier, y compris l'image de
+       `opengraph-image.tsx` (constaté au build). D'où sa reprise ici. */
+    openGraph: {
+      type: "website",
+      url: "/",
+      siteName: "Filloo",
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, type: "image/png", alt: "Filloo" }],
+    },
     robots: filtree ? { index: false, follow: true } : undefined,
   };
 }
@@ -143,7 +154,17 @@ export default async function HomePage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: donneesStructurees }} />
       ) : null}
       {/* La cloche prend la place de l'ancienne puce de ville. */}
-      <TopBar title={<Wordmark size="lg" />} right={<PushBell connecte={connecte} />} />
+      {/* Le seul `<h1>` de l'accueil : le logo, complété pour les moteurs
+          et les lecteurs d'écran de ce que le site vend et où. */}
+      <TopBar
+        title={
+          <h1>
+            <Wordmark size="lg" />
+            <span className="sr-only"> — vêtements, chaussures et accessoires en Guinée</span>
+          </h1>
+        }
+        right={<PushBell connecte={connecte} />}
+      />
 
       <ScreenBody>
         <FiltresAccueil genre={genre} rayon={rayon} />

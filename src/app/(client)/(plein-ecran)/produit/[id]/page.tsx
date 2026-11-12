@@ -71,6 +71,8 @@ export async function generateMetadata({
     alternates: { canonical: `/produit/${id}` },
     openGraph: {
       type: "website",
+      url: `/produit/${id}`,
+      siteName: "Filloo",
       title: titre,
       description,
       /* Une seule photo : les aperçus n'en affichent qu'une, et les

@@ -680,10 +680,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-458 commits, du plus récent au plus ancien.
+459 commits, du plus récent au plus ancien.
 
 ### 2026-11-11
 
+- `1ac3917` Session : un compte supprimé pendant la connexion déconnecte au lieu de planter
 - `fe03bf4` Mémoire : bienvenue envoyée aux 2 boutiques d'octobre
 - `5f052b1` Mémoire : création d'un mot de passe pour les comptes Google
 - `ca4f0cd` Mémoire : comptes Google sans mot de passe, écart 8/10 revenu sur Supabase
