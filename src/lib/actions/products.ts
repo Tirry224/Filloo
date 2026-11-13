@@ -11,7 +11,7 @@ import { alerter } from "@/lib/telegram";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
 import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
-import { COULEURS_MAX, garderPermises, lireGenre, NOMS_COULEURS, TAILLES_MAX, TOUTES_TAILLES, type Genre } from "@/lib/mode";
+import { COULEURS_MAX, garderPermises, lireGenre, NOMS_COULEURS, TAILLES_MAX, taillesCompatibles, TOUTES_TAILLES, type Genre } from "@/lib/mode";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
  * en brouillon) ; seule la PUBLICATION est bloquée par le trigger
@@ -60,6 +60,8 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
   if (!categoryId) return { error: "Choisissez une catégorie." };
   if (!genre) return { error: "Choisissez pour qui : femme, homme, enfant ou mixte." };
   if (tailles.length === 0) return { error: "Cochez au moins une taille (ou « Taille unique »)." };
+  // « Taille unique » exclut les autres tailles (porteur du projet, 2026-11-13).
+  if (!taillesCompatibles(tailles)) return { error: "« Taille unique » ne va pas avec d'autres tailles : gardez l'un ou l'autre." };
   if (couleurs.length === 0) return { error: "Cochez au moins une couleur." };
   // Bornes de la base (0074) : un formulaire forgé ne doit pas finir en erreur brute.
   if (tailles.length > TAILLES_MAX || couleurs.length > COULEURS_MAX) return { error: "Trop de tailles ou de couleurs cochées." };

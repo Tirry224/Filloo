@@ -124,6 +124,11 @@ export function rangerTailles(tailles: readonly string[]): string[] {
   ];
 }
 
+/** « Taille unique » exclut toute autre taille (porteur du projet, 2026-11-13). */
+export function taillesCompatibles(tailles: readonly string[]): boolean {
+  return !tailles.includes(TAILLE_UNIQUE) || tailles.length === 1;
+}
+
 /** Les tailles d'une liste de groupes, à plat, sans doublon et rangées. */
 export function aPlat(groupes: readonly GroupeTailles[]): string[] {
   return rangerTailles(groupes.flatMap((g) => g.tailles));

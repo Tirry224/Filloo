@@ -10,6 +10,7 @@ import {
   groupesDeTailles,
   aPlat,
   rangerTailles,
+  taillesCompatibles,
   TAILLES_MAX,
   TOUTES_TAILLES,
   TRANCHES_PRIX,
@@ -82,4 +83,10 @@ test("les tailles se lisent du plus petit au plus grand, quel que soit l'ordre c
   assert.equal(filtre.at(-1), "Taille unique");
   // Toute la liste de référence est elle-même rangée.
   assert.deepEqual(rangerTailles(TOUTES_TAILLES), [...TOUTES_TAILLES]);
+});
+
+test("« Taille unique » exclut toute autre taille", () => {
+  assert.ok(taillesCompatibles(["Taille unique"]));
+  assert.ok(taillesCompatibles(["S", "M"]));
+  assert.ok(!taillesCompatibles(["XS", "Taille unique"]));
 });

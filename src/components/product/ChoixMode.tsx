@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Field, Select } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import type { CategoryOption } from "@/lib/data/reference";
-import { COULEURS, FAMILLES, GENRES, groupesDeTailles } from "@/lib/mode";
+import { COULEURS, FAMILLES, GENRES, groupesDeTailles, TAILLE_UNIQUE } from "@/lib/mode";
+
+const tailleExclusive = (t: string) => t === TAILLE_UNIQUE;
 
 /**
  * Catégorie, genre, tailles et couleurs d'un produit (la mode, 0074).
@@ -34,6 +36,10 @@ export function ChoixMode({
   /* Les tailles en groupes titrés (`groupesDeTailles`) : âges pour un
      enfant ; lettres, et tour de taille chiffré pour un bas, pour un adulte. */
   const groupes = categorie ? groupesDeTailles(categorie.famille, genre, categorie.slug) : [];
+  // Seules les tailles affichées comptent : une taille cochée puis cachée
+  // par un changement de catégorie n'est pas envoyée et ne bloque rien.
+  const visibles = groupes.flatMap((g) => g.tailles);
+  const cochees = tailles.filter((t) => visibles.includes(t));
   const basculer = (liste: string[], valeur: string) =>
     liste.includes(valeur) ? liste.filter((v) => v !== valeur) : [...liste, valeur];
 
@@ -96,13 +102,23 @@ export function ChoixMode({
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
                 {g.tailles.map((t) => {
                   const coche = tailles.includes(t);
+                  /* « Taille unique » exclut toute autre taille (décision du
+                     porteur du projet, 2026-11-13) : cochée, les autres ne se
+                     cochent plus ; une autre cochée, elle ne se coche plus.
+                     Une case DÉJÀ cochée reste décochable, pour qu'un ancien
+                     produit qui a les deux puisse être corrigé. */
+                  const bloquee = !coche && cochees.some((x) => tailleExclusive(x) !== tailleExclusive(t));
                   return (
-                    <label key={t} className={cn(PASTILLE, coche ? ACTIVE : INACTIVE)}>
+                    <label
+                      key={t}
+                      className={cn(PASTILLE, coche ? ACTIVE : INACTIVE, bloquee && "cursor-not-allowed opacity-40")}
+                    >
                       <input
                         type="checkbox"
                         name="tailles"
                         value={t}
                         checked={coche}
+                        disabled={bloquee}
                         onChange={() => setTailles((l) => basculer(l, t))}
                         className="sr-only"
                       />
