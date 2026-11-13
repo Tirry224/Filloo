@@ -362,6 +362,39 @@ export type Database = {
         }
         Relationships: []
       }
+      favoris: {
+        Row: {
+          client_id: string
+          created_at: string
+          merchant_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          merchant_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favoris_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favoris_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expo_push_tokens: {
         Row: {
           auth_user_id: string

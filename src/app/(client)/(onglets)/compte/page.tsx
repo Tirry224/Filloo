@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Ban, CircleHelp, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Store, Trash2, User } from "lucide-react";
+import { Ban, CircleHelp, Heart, FileText, LifeBuoy, Megaphone, ShieldCheck, KeyRound, LogOut, Store, Trash2, User } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MenuItem, MenuList, MenuPanel } from "@/components/ui/MenuList";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
@@ -41,6 +41,7 @@ export default async function AccountPage() {
           </div>
 
           <MenuList>
+            <MenuItem icon={Heart} label="Mes boutiques favorites" href="/compte/favoris" />
             <MenuItem icon={User} label="Mes informations" href="/compte/informations" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/compte/bloques" />
             <MenuItem

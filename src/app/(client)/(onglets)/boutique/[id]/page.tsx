@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MapPin } from "lucide-react";
+import Link from "next/link";
+import { Heart, MapPin } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
@@ -8,9 +9,13 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TopBar } from "@/components/ui/TopBar";
 import { CARTES_PRIORITAIRES, ProductCard } from "@/components/product/ProductCard";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { FavoriButton } from "@/components/product/FavoriButton";
+import { PartagerBoutiqueButton } from "@/components/product/PartagerBoutique";
 import { createClient } from "@/lib/supabase/server";
 import { getMerchant, getMerchantProducts, getMyMerchant } from "@/lib/data/merchants";
 import { boutiqueEnCache, produitsBoutiqueEnCache } from "@/lib/data/catalogue-public";
+import { estFavori } from "@/lib/data/favoris";
+import { getMyProfiles } from "@/lib/data/session";
 import { compter } from "@/lib/analytics";
 import { IMAGE_APERCU_FILLOO } from "@/lib/seo";
 
@@ -65,16 +70,44 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
      depuis le cache public. Un visiteur sans compte ne touche pas la base
      ici (`getMyMerchant` ne lit rien sans session). */
   const supabase = await createClient();
-  const proprietaire = (await getMyMerchant(supabase))?.id === merchant.id;
-  const catalogue = proprietaire
-    ? await getMerchantProducts(supabase, merchant)
-    : await produitsBoutiqueEnCache(merchant);
+  const [profils, monCommerce] = await Promise.all([getMyProfiles(supabase), getMyMerchant(supabase)]);
+  const proprietaire = monCommerce?.id === merchant.id;
+  const client = profils.find((p) => p.role === "client");
+  const [catalogue, favori] = await Promise.all([
+    proprietaire ? getMerchantProducts(supabase, merchant) : produitsBoutiqueEnCache(merchant),
+    client && !proprietaire ? estFavori(supabase, client.id, merchant.id) : false,
+  ]);
+
+  /* Le cœur : à un client (pas sur sa propre boutique) ; à un visiteur
+     sans compte, il mène à la connexion puis le ramène ici. Un compte
+     seulement commerçant n'en a pas : les favoris sont de l'espace client. */
+  const coeur =
+    client && !proprietaire ? (
+      <FavoriButton merchantId={merchant.id} initial={favori} />
+    ) : profils.length === 0 ? (
+      <Link
+        href={`/connexion?next=${encodeURIComponent(`/boutique/${merchant.id}`)}`}
+        aria-label="Se connecter pour ajouter aux favoris"
+        className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface"
+      >
+        <Heart size={20} strokeWidth={2.5} aria-hidden className="text-black" />
+      </Link>
+    ) : null;
 
   await compter("boutique_vue", { merchantId: merchant.id });
 
   return (
     <TabScreen largeur="grille">
-      <TopBar title={merchant.shopName} backHref="/" />
+      <TopBar
+        title={merchant.shopName}
+        backHref="/"
+        right={
+          <>
+            <PartagerBoutiqueButton merchantId={merchant.id} shopName={merchant.shopName} city={merchant.city} />
+            {coeur}
+          </>
+        }
+      />
 
       <ScreenBody>
         <Section className="gap-4">
