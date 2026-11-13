@@ -95,21 +95,39 @@ export function groupesDeTailles(famille: Famille, genre: string | null | undefi
   ];
 }
 
-/** Les tailles d'une liste de groupes, à plat et sans doublon. */
-export function aPlat(groupes: readonly GroupeTailles[]): string[] {
-  return [...new Set(groupes.flatMap((g) => g.tailles))];
+/**
+ * Toutes les tailles permises (la liste que le serveur accepte), dans
+ * l'ORDRE où un client les lit : âges, lettres, nombres du plus petit au
+ * plus grand, puis « Taille unique ». Les nombres sont fusionnés et triés
+ * comme nombres : tours de taille (25-46) et pointures (18-47) se
+ * chevauchent, et les mettre bout à bout donnait « 39 40 42 44 41 43 »
+ * sur une chaussure (constaté en production le 2026-11-13).
+ */
+export const TOUTES_TAILLES: readonly string[] = [
+  ...TAILLES_BEBE,
+  ...TAILLES_ENFANT,
+  ...TAILLES_LETTRES,
+  ...[...new Set([...TAILLES_CHIFFREES, ...POINTURES_ENFANT, ...POINTURES])].sort((a, b) => Number(a) - Number(b)),
+  TAILLE_UNIQUE,
+];
+
+/**
+ * Range des tailles dans l'ordre de `TOUTES_TAILLES`, sans doublon. Une
+ * taille inconnue (retirée de la liste depuis) reste, à la fin, plutôt
+ * que de disparaître de la fiche.
+ */
+export function rangerTailles(tailles: readonly string[]): string[] {
+  const uniques = [...new Set(tailles)];
+  return [
+    ...TOUTES_TAILLES.filter((t) => uniques.includes(t)),
+    ...uniques.filter((t) => !TOUTES_TAILLES.includes(t)),
+  ];
 }
 
-/** Toutes les tailles permises : la liste que le serveur accepte. */
-export const TOUTES_TAILLES: readonly string[] = aPlat([
-  { titre: "", tailles: TAILLES_BEBE },
-  { titre: "", tailles: TAILLES_ENFANT },
-  { titre: "", tailles: TAILLES_LETTRES },
-  { titre: "", tailles: TAILLES_CHIFFREES },
-  { titre: "", tailles: POINTURES_ENFANT },
-  { titre: "", tailles: POINTURES },
-  { titre: "", tailles: [TAILLE_UNIQUE] },
-]);
+/** Les tailles d'une liste de groupes, à plat, sans doublon et rangées. */
+export function aPlat(groupes: readonly GroupeTailles[]): string[] {
+  return rangerTailles(groupes.flatMap((g) => g.tailles));
+}
 
 export const COULEURS = [
   { nom: "Noir", teinte: "#111111" },

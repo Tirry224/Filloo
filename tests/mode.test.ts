@@ -9,6 +9,7 @@ import {
   NOMS_COULEURS,
   groupesDeTailles,
   aPlat,
+  rangerTailles,
   TAILLES_MAX,
   TOUTES_TAILLES,
   TRANCHES_PRIX,
@@ -65,4 +66,20 @@ test("tailles en groupes : âges pour un enfant, lettres et tour de taille pour 
   // Pointures : enfant à part.
   assert.ok(aPlat(groupesDeTailles("chaussures", "enfant")).includes("20"));
   assert.ok(!aPlat(groupesDeTailles("chaussures", "homme")).includes("20"));
+});
+
+test("les tailles se lisent du plus petit au plus grand, quel que soit l'ordre coché", () => {
+  // Cas constaté en production le 2026-11-13 : 41 et 43 après 44.
+  assert.deepEqual(garderPermises(["39", "40", "42", "44", "41", "43"], TOUTES_TAILLES), ["39", "40", "41", "42", "43", "44"]);
+  assert.deepEqual(rangerTailles(["Taille unique", "XL", "S", "M"]), ["S", "M", "XL", "Taille unique"]);
+  assert.deepEqual(rangerTailles(["10 ans", "2 ans", "6-12 mois"]), ["6-12 mois", "2 ans", "10 ans"]);
+  // Une taille inconnue (ancienne) reste, à la fin.
+  assert.deepEqual(rangerTailles(["XXXXL", "M"]), ["M", "XXXXL"]);
+  // Le filtre de la recherche, sans catégorie : nombres triés, « Taille unique » en dernier.
+  const filtre = aPlat([...groupesDeTailles("vetements", "femme", "pantalons"), ...groupesDeTailles("chaussures", "femme")]);
+  const nombres = filtre.filter((t) => /^\d+$/.test(t)).map(Number);
+  assert.deepEqual(nombres, [...nombres].sort((a, b) => a - b));
+  assert.equal(filtre.at(-1), "Taille unique");
+  // Toute la liste de référence est elle-même rangée.
+  assert.deepEqual(rangerTailles(TOUTES_TAILLES), [...TOUTES_TAILLES]);
 });

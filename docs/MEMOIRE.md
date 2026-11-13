@@ -722,10 +722,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-479 commits, du plus récent au plus ancien.
+480 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `608b547` Mot de passe obligatoire pour les comptes Google, créé une seule fois
 - `c017c5d` Alertes Telegram : inscriptions, boutiques, signalements, refus de publication, erreurs
 - `ef9419d` Logo servi en fichier (public/logo.svg) : le budget de poids des pages repasse
 - `5339eef` En-têtes avec logo : marge verticale réduite (py-2.5 au lieu de py-3.5)

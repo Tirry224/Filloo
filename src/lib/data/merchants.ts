@@ -5,6 +5,7 @@ import type { Merchant, Product } from "@/lib/types";
 import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import { getMyProfile } from "@/lib/data/session";
 import { estUuid } from "@/lib/saisie";
+import { rangerTailles } from "@/lib/mode";
 
 type MerchantRow = {
   id: string;
@@ -112,7 +113,7 @@ export async function getMerchantProducts(
       contactCount: row.contact_count,
       imageUrls: cover ? [productImageUrl(cover.storage_path)] : [],
       genre: row.genre,
-      tailles: row.tailles,
+      tailles: rangerTailles(row.tailles ?? []),
       couleurs: row.couleurs,
     };
   });

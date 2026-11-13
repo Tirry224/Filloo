@@ -3,6 +3,7 @@ import type { Database } from "@/lib/database.types";
 import type { Product } from "@/lib/types";
 import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 import { estUuid } from "@/lib/saisie";
+import { rangerTailles } from "@/lib/mode";
 
 type SearchRow = Database["public"]["Functions"]["search_products"]["Returns"][number];
 
@@ -77,7 +78,7 @@ function mapDetailRow(row: ProductDetailRow, imageUrls: string[]): Product {
     contactCount: row.contact_count,
     imageUrls,
     genre: row.genre,
-    tailles: row.tailles,
+    tailles: rangerTailles(row.tailles ?? []),
     couleurs: row.couleurs,
   };
 }
