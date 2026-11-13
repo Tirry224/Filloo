@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { IMAGE_APERCU_FILLOO, jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, Flag, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, Flag, Heart, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -13,6 +13,9 @@ import { CaracteristiquesMode } from "@/components/product/CaracteristiquesMode"
 import { MerchantCard } from "@/components/product/MerchantCard";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { ShareButton } from "@/components/product/ShareButton";
+import { FavoriButton } from "@/components/product/FavoriButton";
+import { estProduitFavori } from "@/lib/data/favoris";
+import { getMyProfiles } from "@/lib/data/session";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct } from "@/lib/data/products";
 import { produitEnCache, rechercheEnCache } from "@/lib/data/catalogue-public";
@@ -110,8 +113,10 @@ export default async function ProductPage({
   /* Les deux comptes étant liés (décision 8), un client peut tomber sur un
      produit de sa propre boutique. « Contacter le vendeur » ne mènerait
      nulle part : on ne se contacte pas soi-même. */
-  const myMerchant = await getMyMerchant(supabase);
+  const [myMerchant, profils] = await Promise.all([getMyMerchant(supabase), getMyProfiles(supabase)]);
   const own = myMerchant?.id === product.merchant.id;
+  const client = profils.find((p) => p.role === "client");
+  const favori = client && !own ? await estProduitFavori(supabase, client.id, product.id) : false;
 
   await compter("produit_vu", { productId: product.id, merchantId: product.merchant.id });
 
@@ -172,6 +177,21 @@ export default async function ProductPage({
             price={formatGnf(product.priceGnf)}
             shopName={product.merchant.shopName}
           />
+          {/* Le cœur, à gauche du partage : mêmes règles que sur la boutique
+              (client, pas sur son propre produit ; visiteur → connexion). */}
+          <div className="absolute top-3.5 right-16">
+            {client && !own ? (
+              <FavoriButton cible="produit" id={product.id} initial={favori} />
+            ) : profils.length === 0 ? (
+              <Link
+                href={`/connexion?next=${encodeURIComponent(`/produit/${product.id}`)}`}
+                aria-label="Se connecter pour ajouter aux favoris"
+                className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface"
+              >
+                <Heart size={20} strokeWidth={2.5} aria-hidden className="text-black" />
+              </Link>
+            ) : null}
+          </div>
           {sold ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full bg-ink px-4 py-2 text-sm font-bold tracking-wide text-paper">

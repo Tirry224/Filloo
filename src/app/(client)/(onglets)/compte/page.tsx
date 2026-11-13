@@ -41,7 +41,7 @@ export default async function AccountPage() {
           </div>
 
           <MenuList>
-            <MenuItem icon={Heart} label="Mes boutiques favorites" href="/compte/favoris" />
+            <MenuItem icon={Heart} label="Mes favoris" href="/compte/favoris" />
             <MenuItem icon={User} label="Mes informations" href="/compte/informations" />
             <MenuItem icon={Ban} label="Personnes bloquées" href="/compte/bloques" />
             <MenuItem

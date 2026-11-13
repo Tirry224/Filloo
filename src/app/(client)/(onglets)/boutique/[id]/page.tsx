@@ -83,7 +83,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
      seulement commerçant n'en a pas : les favoris sont de l'espace client. */
   const coeur =
     client && !proprietaire ? (
-      <FavoriButton merchantId={merchant.id} initial={favori} />
+      <FavoriButton cible="boutique" id={merchant.id} initial={favori} />
     ) : profils.length === 0 ? (
       <Link
         href={`/connexion?next=${encodeURIComponent(`/boutique/${merchant.id}`)}`}

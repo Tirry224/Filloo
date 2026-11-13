@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { Heart } from "lucide-react";
-import { definirFavoriAction } from "@/lib/actions/favoris";
+import { definirFavoriAction, type CibleFavori } from "@/lib/actions/favoris";
 import { cn } from "@/lib/cn";
 
 /**
- * Le cœur de la page boutique, pour un client connecté. Il change tout
- * de suite ; si la base refuse, il revient et l'erreur s'affiche dessous.
+ * Le cœur d'une boutique ou d'un produit, pour un client connecté. Il
+ * change tout de suite ; si la base refuse, il revient et l'erreur
+ * s'affiche dessous.
  */
-export function FavoriButton({ merchantId, initial }: { merchantId: string; initial: boolean }) {
+export function FavoriButton({ cible, id, initial }: { cible: CibleFavori; id: string; initial: boolean }) {
   const [favori, setFavori] = useState(initial);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, startTransition] = useTransition();
@@ -19,7 +20,7 @@ export function FavoriButton({ merchantId, initial }: { merchantId: string; init
     setFavori(voulu);
     setErreur(null);
     startTransition(async () => {
-      const etat = await definirFavoriAction(merchantId, voulu);
+      const etat = await definirFavoriAction(cible, id, voulu);
       setFavori(etat.favori);
       if (etat.error) setErreur(etat.error);
     });

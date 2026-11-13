@@ -696,10 +696,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-471 commits, du plus récent au plus ancien.
+472 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `c2ce229` Migration 0077 : table favoris (appliquée en production), tests de sécurité
 - `e28f221` Boutiques favorites : cœur sur la page boutique, liste dans le compte client, partage de la boutique
 - `468744f` Partager une boutique : lien avec aperçu, depuis « Ma boutique » du commerçant
 

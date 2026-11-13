@@ -395,6 +395,39 @@ export type Database = {
           },
         ]
       }
+      favoris_produits: {
+        Row: {
+          client_id: string
+          created_at: string
+          product_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          product_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favoris_produits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favoris_produits_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expo_push_tokens: {
         Row: {
           auth_user_id: string

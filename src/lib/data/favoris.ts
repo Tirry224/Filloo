@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import type { Merchant } from "@/lib/types";
-import { shopPhotoUrl } from "@/lib/storage";
+import type { Merchant, Product } from "@/lib/types";
+import { productImageUrl, shopPhotoUrl } from "@/lib/storage";
 
 /**
  * Les boutiques favorites d'un client (table `favoris`, 0077). Le RLS ne
@@ -64,4 +64,89 @@ export async function getMesFavoris(supabase: SupabaseClient<Database>, clientId
         ]
       : [],
   );
+}
+
+/* ---------------------------------------------------------------------
+ * Produits favoris (`favoris_produits`, 0078). Même logique : un produit
+ * que le RLS de `products` ne laisse plus lire (masqué, brouillon,
+ * boutique suspendue) sort de la liste sans quitter les favoris.
+ * ------------------------------------------------------------------- */
+
+export async function estProduitFavori(
+  supabase: SupabaseClient<Database>,
+  clientId: string,
+  productId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("favoris_produits")
+    .select("product_id")
+    .eq("client_id", clientId)
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
+
+type ProduitFavoriRow = {
+  products: {
+    id: string;
+    title: string;
+    price_gnf: number;
+    is_negotiable: boolean;
+    status: Database["public"]["Enums"]["product_status"];
+    is_featured: boolean;
+    contact_count: number;
+    categories: { name: string } | null;
+    product_images: { storage_path: string; position: number }[];
+    merchants: {
+      id: string;
+      shop_name: string;
+      address_hint: string | null;
+      whatsapp_phone: string | null;
+      photo_path: string | null;
+      cities: { name: string } | null;
+    } | null;
+  } | null;
+};
+
+/** Du plus récent au plus ancien ajout ; un produit vendu reste (badge VENDU). */
+export async function getMesProduitsFavoris(supabase: SupabaseClient<Database>, clientId: string): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("favoris_produits")
+    .select(
+      "products(id, title, price_gnf, is_negotiable, status, is_featured, contact_count, categories(name), product_images(storage_path, position), merchants(id, shop_name, address_hint, whatsapp_phone, photo_path, cities(name)))",
+    )
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .returns<ProduitFavoriRow[]>();
+  if (error) throw error;
+  return data.flatMap(({ products: p }) => {
+    /* Le propriétaire (comptes liés) lit aussi ses brouillons et produits
+       masqués : la liste ne montre que ce que le public voit. */
+    if (!p || !p.merchants || (p.status !== "active" && p.status !== "sold")) return [];
+    const m = p.merchants;
+    const couverture = [...p.product_images].sort((a, b) => a.position - b.position)[0];
+    return [
+      {
+        id: p.id,
+        merchant: {
+          id: m.id,
+          shopName: m.shop_name,
+          city: m.cities?.name ?? "",
+          addressHint: m.address_hint,
+          whatsappPhone: m.whatsapp_phone,
+          photoUrl: m.photo_path ? shopPhotoUrl(m.photo_path) : null,
+        },
+        category: p.categories?.name ?? "",
+        title: p.title,
+        description: null,
+        priceGnf: p.price_gnf,
+        isNegotiable: p.is_negotiable,
+        status: p.status,
+        isFeatured: p.is_featured,
+        contactCount: p.contact_count,
+        imageUrls: couverture ? [productImageUrl(couverture.storage_path)] : [],
+      },
+    ];
+  });
 }
