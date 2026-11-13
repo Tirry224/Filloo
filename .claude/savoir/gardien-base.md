@@ -11,13 +11,11 @@ source, constaté ou supposé.
   la base a une sauvegarde quotidienne (7 jours), PAS les fichiers du
   stockage. `max_connections` = 60 (constaté 2026-10-14).
 - **Migrations appliquées (constaté 2026-11-11 soir, `list_migrations`)** :
-  `0001`–`0047`, `0052`–`0057`, `0063`–`0075` (`0067`, `0068` inscrites
-  sous leur numéro, les autres horodatées). `0048`–`0062` absentes de
-  `dev` : `monetisation` porte `0058`–`0062`, non appliquées. `0076`
-  (l'équipe sans profil) APPLIQUÉE le 2026-11-11 (collée au SQL Editor
-  par le porteur du projet, connecteur annulé ; inscrite à la main sous
-  `20261111231600`). Constaté : 0 profil d'équipe, conversation d'Alpha
-  effacée, 2 déclencheurs, fermés à `anon` (voir « Équipe et profils »). `scripts/migrations.mjs`
+  `0001`–`0047`, `0052`–`0057`, `0063`–`0076` (`0067`, `0068` inscrites
+  sous leur numéro, `0076` à la main sous `20261111231600`, les autres
+  horodatées). Re-constaté le 2026-11-13. `0048`–`0062` absentes de
+  `dev` : `monetisation` porte `0058`–`0062`, non appliquées. `0077`
+  (favoris) ÉCRITE le 2026-11-13, à appliquer par la session principale. `scripts/migrations.mjs`
   n'exige pas la continuité ; ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -53,19 +51,13 @@ source, constaté ou supposé.
   posé sur le plus ancien : Tirry, 2026-11-05 21:15, aucune égalité,
   constaté 2026-11-07). Toutes les autres fonctions d'équipe restent
   ouvertes à tout membre.
-- **Équipe et profils (`0076`, constaté 2026-11-11)** : les 3 membres
-  avaient un profil `client` (`handle_new_user`) ; Tirry et Laouratou sans
-  activité, **Alpha Nouhou a une conversation comme client** (créée le
-  2026-11-01, avant son entrée le 2026-11-05 ; message d'une boutique le
-  2026-11-09, non lu). Décision du porteur du projet (2026-11-11,
-  option b, via la session principale) : `0076` efface ce profil par
-  `effacer_profil_decide` (id + nom + conversation vérifiés, sinon rien)
-  AVANT le nettoyage gardé ; la garde reste pour tout autre membre.
-  Simulé sur une base aux uuid de production : 3 profils partis,
-  conversation et message aussi, déclencheurs créés. Après `0076` : entrer dans
+- **Équipe et profils (`0076`, constaté 2026-11-11)** : les profils
+  `client` des 3 membres effacés (celui d'Alpha Nouhou avec sa
+  conversation, décision du porteur du projet, option b). Après `0076` : entrer dans
   `equipe` supprime les profils sans activité ou est refusé ; aucun
   profil pour un membre ; un membre retiré = connexion sans profil, comme
-  un Google non complété (`/inscription` mode « complete »).
+  un Google non complété (`/inscription` mode « complete »). Ne sont PAS
+  une activité : `notifications`, `favoris` (0077) — partent en cascade.
   `suivi_chiffres` en production n'a PAS les commentaires du fichier
   (même logique) ; `equipe_comptes`/`je_suis_de_l_equipe` ont des fins de
   ligne CRLF : comparer `md5(replace(prosrc, E'\r', ''))`.
@@ -153,7 +145,12 @@ source, constaté ou supposé.
   rafraîchissement — écartée, à ne pas ajouter sans décision.
 - **Suspension** : effective aussitôt par `is_active_profile` & co ;
   restent ouverts EXPRÈS au suspendu : bloquer/débloquer (0032), marquer
-  lu, annuler sa campagne (0047), retirer téléphone/abonnement.
+  lu, annuler sa campagne (0047), retirer téléphone/abonnement, lire et
+  retirer ses favoris (0077).
+- **Suppression de compte = `is_deleted = true` par le site** : ce qui
+  doit partir avec le profil se fait par déclencheur `after update of
+  is_deleted … when (new.is_deleted)` (`favoris_partent_avec_le_profil`,
+  0077), pas dans `suppression-compte.ts`.
 
 ## Alertes Supabase ouvertes (get_advisors, constaté 2026-11-07)
 
@@ -204,13 +201,25 @@ source, constaté ou supposé.
   défaut aux suivants. Le site code souvent les écrans EN PARALLÈLE :
   lire ses `rpc(` (`src/lib/actions/*`, `src/lib/data/*`) AVANT de figer
   une signature (`0066` : `p_id` d'abord → défauts partout).
+- **« Une boutique que je peux voir » ≠ boutique publique** (constaté
+  2026-11-13, `pg_policy`) : la lecture de `merchants` montre aussi MA
+  boutique et toute boutique avec qui j'ai un fil (`i_talk_with_merchant`),
+  même suspendue. Une écriture « vers une boutique visible » appelle
+  `merchant_is_public(merchant_id)` (comme `conversations`, `favoris`),
+  jamais `exists (select … from merchants)` à travers le RLS.
+- **Un `delete`/`update` AVEC `where` passe aussi par la policy de
+  LECTURE** (prouvé 0077) : une policy de suppression ouverte à tous ne
+  se voit qu'avec un `delete` SANS `where`. Compter les lignes touchées :
+  `pg_temp.lignes_touchees(q)` (un `with … delete` ne s'imbrique pas).
+  Un `upsert … ignoreDuplicates` du site = `on conflict do nothing` :
+  droit `insert` seul, aucune policy d'update.
 - **Fonction publique `security definer`** (vitrine) : refaire à la main
   les filtres du catalogue (`merchant_is_public` de 0013, `status`,
   `masque_par_equipe`), et prouver chaque filtre par mutation (0047).
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
   2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
-  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075`, 701 avec `0076` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
+  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075`, 701 avec `0076`, 732 avec `0077` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve

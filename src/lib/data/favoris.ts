@@ -6,8 +6,11 @@ import { shopPhotoUrl } from "@/lib/storage";
 /**
  * Les boutiques favorites d'un client (table `favoris`, 0077). Le RLS ne
  * laisse lire que MES lignes, et `merchants` ne rend que les boutiques
- * visibles : une boutique suspendue ou fermée depuis l'ajout disparaît
- * de la liste sans être retirée des favoris (elle revient si elle rouvre).
+ * que je peux lire : une boutique suspendue depuis l'ajout disparaît de
+ * la liste sans être retirée des favoris (elle revient si elle rouvre),
+ * SAUF si j'ai un fil avec elle (règle `i_talk_with_merchant`) : elle
+ * reste alors, comme sa page reste lisible. Un compte supprimé, lui,
+ * emporte ses favoris (déclencheur de 0077).
  */
 
 export async function estFavori(

@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 701 vérifications (compte du 2026-11-11, migrations jusqu'à 0076
+Les 732 vérifications (compte du 2026-11-13, migrations jusqu'à 0077
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -87,6 +87,15 @@ section 0043 fait entrer une connexion neuve (Q43) au lieu de D, qui a
 une activité, et les contrôles qui ont besoin d'un membre AVEC profil
 (fiche `est_de_l_equipe`, filtres) lèvent le déclencheur
 `profil_hors_equipe` dans un `begin … rollback`.
+Pour `0077` (le 2026-11-13), dix mutations arrêtent chacune la suite sur
+son contrôle : la boutique jugée par le RLS de `merchants` au lieu de
+`merchant_is_public` (une boutique suspendue vue par un fil devenait
+ajoutable), le profil actif retiré de l'ajout, puis `client_id` retiré
+de l'ajout ; la lecture, puis la suppression, ouvertes à tous (la
+seconde ne se voit que sur un `delete` SANS `where` : avec un `where`,
+la policy de lecture borne déjà) ; chacune des deux branches du
+déclencheur de suppression ; le droit d'insérer `created_at` ; les
+droits d'`anon`.
 
 ## Ce que ces tests protègent
 

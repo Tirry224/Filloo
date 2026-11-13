@@ -6154,5 +6154,231 @@ select pg_temp.check('0076 : decision : la fonction est fermee a public, anon, a
                    where p.oid = 'public.effacer_profil_decide(uuid, text, uuid)'::regprocedure and a.grantee = 0));
 rollback;
 
+
+-- =====================================================================
+-- 0077. Un client garde ses boutiques favorites
+-- =====================================================================
+-- K1, K2 : clients · K3 : client suspendu · MA : boutique publique ·
+-- MS : boutique au propriétaire suspendu, avec qui K1 a un fil (donc
+-- visible de K1 par `i_talk_with_merchant`) · MD : boutique dont le
+-- propriétaire supprimera son compte.
+-- Nombre de lignes touchées par une écriture (le RLS écarte sans erreur).
+create or replace function pg_temp.lignes_touchees(q text) returns bigint
+language plpgsql as $$
+declare n bigint;
+begin
+  execute q;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0770000-0000-0000-0000-0000000000c1', 'k1@test0077.gn', '{"role":"client","full_name":"Client K1","phone":"620007701"}'),
+  ('a0770000-0000-0000-0000-0000000000c2', 'k2@test0077.gn', '{"role":"client","full_name":"Client K2","phone":"620007702"}'),
+  ('a0770000-0000-0000-0000-0000000000c3', 'k3@test0077.gn', '{"role":"client","full_name":"Client K3","phone":"620007703"}'),
+  ('a0770000-0000-0000-0000-0000000000a1', 'ma@test0077.gn', '{"role":"merchant","full_name":"Marchand MA","phone":"620007711"}'),
+  ('a0770000-0000-0000-0000-0000000000a2', 'ms@test0077.gn', '{"role":"merchant","full_name":"Marchand MS","phone":"620007712"}'),
+  ('a0770000-0000-0000-0000-0000000000a3', 'md@test0077.gn', '{"role":"merchant","full_name":"Marchand MD","phone":"620007713"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0770000-%';
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0770000-0000-0000-0000-0000000000b1', 'a0770000-0000-0000-0000-0000000000a1', 'Chez MA', 1),
+  ('a0770000-0000-0000-0000-0000000000b2', 'a0770000-0000-0000-0000-0000000000a2', 'Chez MS', 1),
+  ('a0770000-0000-0000-0000-0000000000b3', 'a0770000-0000-0000-0000-0000000000a3', 'Chez MD', 1);
+insert into public.conversations (client_id, merchant_id) values
+  ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b2');
+-- Une ligne de K2 et une de K3 posées par le serveur, avant la suspension.
+insert into public.favoris (client_id, merchant_id) values
+  ('a0770000-0000-0000-0000-0000000000c2', 'a0770000-0000-0000-0000-0000000000b1'),
+  ('a0770000-0000-0000-0000-0000000000c3', 'a0770000-0000-0000-0000-0000000000b1');
+update public.profiles set is_suspended = true
+ where id in ('a0770000-0000-0000-0000-0000000000a2', 'a0770000-0000-0000-0000-0000000000c3');
+
+-- --- Droits et règles posés --------------------------------------------
+select pg_temp.check('0077 : anon n''a aucun droit sur favoris',
+  not has_table_privilege('anon', 'public.favoris', 'select')
+  and not has_table_privilege('anon', 'public.favoris', 'insert')
+  and not has_table_privilege('anon', 'public.favoris', 'update')
+  and not has_table_privilege('anon', 'public.favoris', 'delete')
+  and not has_any_column_privilege('anon', 'public.favoris', 'insert'));
+select pg_temp.check('0077 : authenticated lit, ajoute (client_id, merchant_id) et retire ; rien d''autre',
+  has_table_privilege('authenticated', 'public.favoris', 'select')
+  and has_table_privilege('authenticated', 'public.favoris', 'delete')
+  and has_column_privilege('authenticated', 'public.favoris', 'client_id', 'insert')
+  and has_column_privilege('authenticated', 'public.favoris', 'merchant_id', 'insert')
+  and not has_column_privilege('authenticated', 'public.favoris', 'created_at', 'insert')
+  and not has_any_column_privilege('authenticated', 'public.favoris', 'update')
+  and not has_table_privilege('authenticated', 'public.favoris', 'truncate')
+  and not has_table_privilege('authenticated', 'public.favoris', 'references')
+  and not has_table_privilege('authenticated', 'public.favoris', 'trigger'));
+select pg_temp.check('0077 : RLS active, trois policies (lire, ajouter, retirer), pour authenticated seul',
+  (select relrowsecurity from pg_class where oid = 'public.favoris'::regclass)
+  and (select array_agg(cmd::text order by cmd) from pg_policies
+        where schemaname = 'public' and tablename = 'favoris') = array['DELETE', 'INSERT', 'SELECT']
+  and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'favoris'
+                   and roles <> array['authenticated']::name[]));
+select pg_temp.check('0077 : la fonction du declencheur est fermee a public, anon, authenticated',
+  not has_function_privilege('anon', 'public.favoris_partent_avec_le_profil()', 'execute')
+  and not has_function_privilege('authenticated', 'public.favoris_partent_avec_le_profil()', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.favoris_partent_avec_le_profil()'::regprocedure and a.grantee = 0));
+select pg_temp.check('0077 : index sur merchant_id',
+  exists (select 1 from pg_index i where i.indrelid = 'public.favoris'::regclass
+           and i.indkey::text = (select attnum::text from pg_attribute
+                                  where attrelid = 'public.favoris'::regclass and attname = 'merchant_id')));
+
+-- --- anon ------------------------------------------------------------------
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0077 : anon ne lit rien, n''ajoute rien',
+  pg_temp.refuse('select * from public.favoris')
+  and pg_temp.refuse($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b1')$q$));
+reset role;
+
+-- --- K1 : ajouter, lire, retirer --------------------------------------------
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c1');
+insert into public.favoris (client_id, merchant_id)
+  values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b1');
+-- Le second appui du site : `upsert … ignoreDuplicates` = `on conflict do nothing`.
+insert into public.favoris (client_id, merchant_id)
+  values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b1')
+  on conflict do nothing;
+select pg_temp.check('0077 : un client ajoute une boutique publique, deux fois sans erreur ni doublon',
+  (select count(*) from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c1') = 1);
+select pg_temp.check('0077 : un client ne lit que ses favoris (pas ceux de K2 ni K3)',
+  (select array_agg(client_id::text) from public.favoris) = array['a0770000-0000-0000-0000-0000000000c1']);
+select pg_temp.check('0077 : la liste avec la boutique jointe, comme le site',
+  (select m.shop_name from public.favoris f join public.merchants m on m.id = f.merchant_id) = 'Chez MA');
+select pg_temp.check('0077 : un client n''ajoute pas pour un autre client',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c2', 'a0770000-0000-0000-0000-0000000000b3')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0077 : ... ni en reprenant la ligne d''un autre par on conflict',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c2', 'a0770000-0000-0000-0000-0000000000b1')
+                       on conflict do nothing$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0077 : un client ne retire pas le favori d''un autre (0 ligne)',
+  pg_temp.lignes_touchees($q$delete from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c2'$q$) = 0);
+-- Sans `where`, aucune policy de lecture ne s'applique : seule celle de
+-- suppression borne ce `delete`.
+begin;
+select pg_temp.check('0077 : « tout effacer » n''efface que mes favoris',
+  pg_temp.lignes_touchees('delete from public.favoris') = 1);
+reset role;
+select pg_temp.check('0077 : ... ceux de K2 et K3 restent',
+  (select count(*) from public.favoris
+    where client_id in ('a0770000-0000-0000-0000-0000000000c2', 'a0770000-0000-0000-0000-0000000000c3')) = 2);
+rollback;
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0077 : aucune modification, aucune date choisie',
+  pg_temp.refuse('update public.favoris set created_at = now()')
+  and pg_temp.refuse($q$insert into public.favoris (client_id, merchant_id, created_at)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b3', now() - interval '1 year')$q$));
+-- MS est visible de K1 par son fil : la règle n'est PAS « une boutique
+-- que je peux lire », c'est « une boutique publique ».
+select pg_temp.check('0077 : (K1 voit bien la boutique MS par son fil)',
+  exists (select 1 from public.merchants where id = 'a0770000-0000-0000-0000-0000000000b2'));
+select pg_temp.check('0077 : pas d''ajout vers une boutique au proprietaire suspendu, meme vue par un fil',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b2')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0077 : pas d''ajout vers une boutique inconnue',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000ff')$q$)
+    like 'new row violates row-level security policy%');
+reset role;
+
+-- Une boutique non approuvée : impossible depuis 0033 (contrainte), on
+-- lève la contrainte le temps du contrôle.
+begin;
+alter table public.merchants drop constraint merchants_always_approved;
+update public.merchants set status = 'pending' where id = 'a0770000-0000-0000-0000-0000000000b3';
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0077 : pas d''ajout vers une boutique non approuvee',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b3')$q$)
+    like 'new row violates row-level security policy%');
+rollback;
+reset role;
+
+-- --- K3 suspendu -------------------------------------------------------------
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c3');
+select pg_temp.check('0077 : un client suspendu n''ajoute pas',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c3', 'a0770000-0000-0000-0000-0000000000b3')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0077 : ... mais lit et retire encore les siens',
+  (select count(*) from public.favoris) = 1
+  and pg_temp.lignes_touchees($q$delete from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c3' and merchant_id = 'a0770000-0000-0000-0000-0000000000b1'$q$) = 1);
+
+-- --- Le commerçant ne voit pas qui l'a mis en favori -------------------------
+select pg_temp.login('a0770000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0077 : le commercant MA ne voit aucun favori, meme ceux de sa boutique',
+  not exists (select 1 from public.favoris));
+
+-- --- K2 ajoute MD, puis K1 retire MA -------------------------------------------
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c2');
+insert into public.favoris (client_id, merchant_id)
+  values ('a0770000-0000-0000-0000-0000000000c2', 'a0770000-0000-0000-0000-0000000000b3');
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0077 : un client retire son favori',
+  pg_temp.lignes_touchees($q$delete from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c1' and merchant_id = 'a0770000-0000-0000-0000-0000000000b1'$q$) = 1);
+insert into public.favoris (client_id, merchant_id)
+  values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b1'),
+         ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b3');
+reset role;
+select pg_temp.check('0077 : (etat avant suppressions : K1 x2, K2 x2)',
+  (select count(*) from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c1') = 2
+  and (select count(*) from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c2') = 2);
+
+-- --- Suppression de compte : l'anonymisation du site ----------------------------
+-- Même écriture que `effacerProfil` (`src/lib/suppression-compte.ts`).
+update public.profiles
+   set full_name = 'Compte supprimé', phone = '000000000', is_deleted = true, deleted_at = now()
+ where id = 'a0770000-0000-0000-0000-0000000000c1';
+select pg_temp.check('0077 : supprimer un compte client vide ses favoris, pas ceux des autres',
+  not exists (select 1 from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c1')
+  and (select count(*) from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c2') = 2);
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0077 : un compte client supprime n''ajoute plus (jeton encore valable)',
+  pg_temp.erreur_de($q$insert into public.favoris (client_id, merchant_id)
+                       values ('a0770000-0000-0000-0000-0000000000c1', 'a0770000-0000-0000-0000-0000000000b1')$q$)
+    like 'new row violates row-level security policy%');
+reset role;
+update public.profiles
+   set full_name = 'Compte supprimé', phone = '000000000', is_deleted = true, deleted_at = now()
+ where id = 'a0770000-0000-0000-0000-0000000000a3';
+select pg_temp.check('0077 : supprimer un compte commercant retire sa boutique des favoris de tous',
+  not exists (select 1 from public.favoris where merchant_id = 'a0770000-0000-0000-0000-0000000000b3')
+  and exists (select 1 from public.favoris
+               where client_id = 'a0770000-0000-0000-0000-0000000000c2'
+                 and merchant_id = 'a0770000-0000-0000-0000-0000000000b1'));
+-- Une suspension (pas une suppression) ne touche à rien.
+update public.profiles set is_suspended = true where id = 'a0770000-0000-0000-0000-0000000000a1';
+select pg_temp.check('0077 : suspendre la boutique garde ses favoris',
+  exists (select 1 from public.favoris where merchant_id = 'a0770000-0000-0000-0000-0000000000b1'));
+set role authenticated;
+select pg_temp.login('a0770000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0077 : ... qui sortent de la liste jointe du client tant qu''elle est suspendue',
+  (select count(*) from public.favoris) = 1
+  and not exists (select 1 from public.favoris f join public.merchants m on m.id = f.merchant_id));
+reset role;
+update public.profiles set is_suspended = false where id = 'a0770000-0000-0000-0000-0000000000a1';
+
+-- --- 0076 : un favori n'est pas une activité, la cascade suffit ------------------
+select pg_temp.check('0077 : un profil dont la seule trace est un favori n''a pas d''activite',
+  not public.profil_a_une_activite('a0770000-0000-0000-0000-0000000000c2'));
+begin;
+delete from public.profiles where id = 'a0770000-0000-0000-0000-0000000000c2';
+select pg_temp.check('0077 : effacer le profil (0076) emporte ses favoris par la cascade',
+  not exists (select 1 from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c2'));
+rollback;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
