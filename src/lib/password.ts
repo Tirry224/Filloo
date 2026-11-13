@@ -46,6 +46,10 @@ export function aUnMotDePasse(user: Pick<User, "app_metadata"> | null): boolean 
   return fournisseurs.includes("email");
 }
 
+/** La page où un compte Google crée son mot de passe, OBLIGATOIRE depuis
+ *  le 2026-11-13 : le middleware y renvoie tant qu'il n'en a pas. */
+export const CHEMIN_CREER_MOT_DE_PASSE = "/creer-mot-de-passe";
+
 /** Délai pendant lequel une connexion Google vaut preuve d'identité pour
  *  CRÉER un mot de passe. Un compte Google n'a pas de mot de passe actuel
  *  à demander : sans cette preuve, un téléphone emprunté trente secondes

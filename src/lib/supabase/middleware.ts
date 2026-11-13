@@ -3,6 +3,7 @@ import { isAuthSessionMissingError, type JwtPayload, type User } from "@supabase
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { naQueLAdmin } from "@/lib/proprietaire";
+import { aUnMotDePasse, CHEMIN_CREER_MOT_DE_PASSE } from "@/lib/password";
 
 /**
  * Les préfixes qui exigent une session, quels que soient les rôles
@@ -136,6 +137,40 @@ export async function updateSession(request: NextRequest) {
     // Les cookies que `getClaims()` vient peut-être de rafraîchir partent
     // avec la redirection, sinon la session expirerait au tour suivant.
     const redirection = NextResponse.redirect(admin);
+    supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));
+    return redirection;
+  }
+
+  /* UN MOT DE PASSE POUR TOUS (décision du porteur du projet,
+     2026-11-13) : un compte venu de Google en crée un, une fois, avant
+     d'aller plus loin. Ici et non dans un layout, pour la même raison que
+     ci-dessus : toutes les pages passent par là. Restent ouverts : la page
+     de création elle-même, les actions serveur (la déconnexion, la
+     création du mot de passe), les routes techniques, l'écran
+     « Complétez votre compte » (`/inscription`, exactement : la boutique
+     vient APRÈS le mot de passe) et les fichiers. L'équipe n'est pas
+     concernée : elle ne voit que `/admin`, déjà tranché plus haut.
+
+     `aUnMotDePasse` lit `app_metadata`, signé dans le jeton : la marque
+     posée à la création y entre au rafraîchissement que fait
+     `createMyPasswordAction`. */
+  if (
+    user &&
+    !aUnMotDePasse(user) &&
+    // Sans cette ligne, un membre de l'équipe venu de Google tournerait
+    // sans fin entre `/admin` et la page de création.
+    !naQueLAdmin(user) &&
+    !actionServeur &&
+    chemin !== CHEMIN_CREER_MOT_DE_PASSE &&
+    chemin !== "/inscription" &&
+    !["/api", "/auth"].some((p) => chemin === p || chemin.startsWith(`${p}/`)) &&
+    !/\.[a-z0-9]+$/i.test(chemin)
+  ) {
+    const creer = request.nextUrl.clone();
+    creer.pathname = CHEMIN_CREER_MOT_DE_PASSE;
+    creer.search = "";
+    creer.searchParams.set("next", chemin + request.nextUrl.search);
+    const redirection = NextResponse.redirect(creer);
     supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));
     return redirection;
   }

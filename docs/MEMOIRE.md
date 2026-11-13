@@ -84,6 +84,17 @@ mis à jour et raccourci ; l'ancienne version se relit par
   `publication_refusee`), erreur serveur (`onRequestError`, une fois par
   10 min et par instance). Inactif sans `TELEGRAM_BOT_TOKEN` et
   `TELEGRAM_CHAT_ID` sur Vercel. À constater : réception sur Telegram.
+- **Mot de passe OBLIGATOIRE pour les comptes Google** (décision du
+  porteur du projet, 2026-11-13, « créer une fois », pas à chaque
+  connexion) : le middleware renvoie tout compte sans mot de passe
+  (`aUnMotDePasse`) sur `/creer-mot-de-passe` ; seuls restent ouverts
+  cette page, `/inscription` exactement, `/api`, `/auth`, les actions et
+  les fichiers. L'équipe n'est pas concernée (boucle avec `/admin`).
+  `createMyPasswordAction` rafraîchit la session (la marque
+  `mot_de_passe_cree` doit entrer dans le jeton, seul lu par le
+  middleware) et échoue si la marque n'est pas posée. 6 comptes sur 19
+  concernés au 2026-11-13. À constater sur téléphone : inscription Google
+  client et commerçant, connexion Google d'un compte existant.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -711,10 +722,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-478 commits, du plus récent au plus ancien.
+479 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `c017c5d` Alertes Telegram : inscriptions, boutiques, signalements, refus de publication, erreurs
 - `ef9419d` Logo servi en fichier (public/logo.svg) : le budget de poids des pages repasse
 - `5339eef` En-têtes avec logo : marge verticale réduite (py-2.5 au lieu de py-3.5)
 - `af6420f` Logo : marine officiel #1C2541 (token --color-logo) au lieu de l'indigo de la palette

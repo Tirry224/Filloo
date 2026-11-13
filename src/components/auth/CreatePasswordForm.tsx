@@ -15,7 +15,18 @@ import { useFormulaire } from "@/lib/use-formulaire";
  * connexion Google récente (`connexionGoogleRecente`). `googleRecent` ne
  * fait que choisir l'écran ; l'action serveur revérifie.
  */
-export function CreatePasswordForm({ googleRecent, retour }: { googleRecent: boolean; retour: string }) {
+export function CreatePasswordForm({
+  googleRecent,
+  retour,
+  suite,
+}: {
+  googleRecent: boolean;
+  retour: string;
+  /** Sur la page OBLIGATOIRE : où reprendre une fois le mot de passe créé.
+   *  Sa seule présence fait rediriger l'action au lieu d'afficher un
+   *  message. */
+  suite?: string;
+}) {
   const { state, formAction, onSubmit, pending } = useFormulaire(createMyPasswordAction);
   const formulaire = useRef<HTMLFormElement>(null);
 
@@ -37,6 +48,7 @@ export function CreatePasswordForm({ googleRecent, retour }: { googleRecent: boo
 
   return (
     <form ref={formulaire} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+      {suite !== undefined ? <input type="hidden" name="suite" value={suite} /> : null}
       <p className="text-sm text-ink-soft">
         Vous pourrez ensuite vous connecter avec Google ou avec votre email et ce mot de passe.
       </p>

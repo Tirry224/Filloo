@@ -318,7 +318,20 @@ export async function createMyPasswordAction(
   const { error: erreurMarque } = await createAdminClient().auth.admin.updateUserById(user.id, {
     app_metadata: { mot_de_passe_cree: true },
   });
-  if (erreurMarque) console.error("[mot de passe cree]", erreurMarque.message);
+  /* Depuis que le mot de passe est OBLIGATOIRE (2026-11-13), la marque
+     ouvre le site : sans elle, le middleware renverrait ici sans fin.
+     Réessayer refait les deux étapes, sans danger. */
+  if (erreurMarque) {
+    console.error("[mot de passe cree]", erreurMarque.message);
+    return { error: "Le mot de passe n'a pas pu être enregistré. Réessayez." };
+  }
+  // Un jeton neuf, qui porte la marque : le middleware ne lit que lui.
+  await supabase.auth.refreshSession();
+
+  /* Venu de la page obligatoire : on reprend là où la personne allait. */
+  if (formData.get("suite") !== null) {
+    redirect(await destinationApresAuthentification(supabase, formData.get("suite")));
+  }
 
   /* Pas de `revalidatePath` : l'écran passerait aussitôt à « Modifier »
      et le message de réussite disparaîtrait avec le formulaire. La
