@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { TRACES_LOGO, VIEWBOX_LOGO } from "@/lib/logo";
 
 export function TopBar({
   title,
@@ -46,21 +45,21 @@ export function TopBar({
   );
 }
 
-/** Le logo officiel de Filloo, en SVG (voir `lib/logo.ts`). La hauteur est
-    en `rem` (`h-11`, `h-14`) : elle suit la taille de texte du téléphone. */
+/** Le logo officiel de Filloo, servi comme fichier (`public/logo.svg`,
+    marine #1C2541) et non écrit dans la page : en SVG intégré, ses tracés
+    se répétaient 4 fois dans le HTML de chaque page (page et pages
+    d'erreur, HTML et données React) et faisaient passer `/conditions` à
+    13,8 Ko, au-delà du budget de 13 Ko (2026-11-13). En fichier, le
+    navigateur le télécharge une fois et le garde en cache.
+    Vectoriel ; hauteur en `rem` (`h-11`, `h-14`), largeur déduite. */
 export function Wordmark({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
   return (
-    <svg
-      viewBox={VIEWBOX_LOGO}
-      role="img"
-      aria-label="Filloo"
-      className={cn("block w-auto shrink-0 text-logo", size === "lg" ? "h-14" : "h-11", className)}
-    >
-      <g fill="currentColor" fillRule="evenodd">
-        {TRACES_LOGO.map((d) => (
-          <path key={d} d={d} />
-        ))}
-      </g>
-    </svg>
+    <img
+      src="/logo.svg"
+      alt="Filloo"
+      width={930}
+      height={586}
+      className={cn("block w-auto shrink-0", size === "lg" ? "h-14" : "h-11", className)}
+    />
   );
 }

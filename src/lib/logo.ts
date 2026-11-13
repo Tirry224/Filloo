@@ -3,9 +3,9 @@
    taille. Le `viewBox` est recadré au plus près des tracés, sans la marge du
    fichier d'origine, pour que la hauteur donnée soit celle du logo.
 
-   Partagés entre le composant `Wordmark` (`components/ui/TopBar.tsx`) et
-   l'aperçu de partage (`app/opengraph-image.tsx`). Couleur d'origine du
-   fichier : marine #1C2541, token `--color-logo` ; peints en `currentColor`. */
+   Utilisés par l'aperçu de partage (`app/opengraph-image.tsx`) ; le même
+   logo est dans `public/logo.svg`, affiché par `Wordmark`. Couleur d'origine du
+   fichier : marine #1C2541, celle de `public/logo.svg`. */
 export const VIEWBOX_LOGO = "4 12 930 586";
 
 export const TRACES_LOGO = [
