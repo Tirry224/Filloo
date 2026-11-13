@@ -27,6 +27,9 @@
   --color-accent-hover: #0f1d33;
   --color-accent-soft: #e8ecf3;
 
+  --color-logo: #1c2541;        /* marine du logo officiel (2026-11-13),
+                                   distinct de l'indigo de la palette */
+
   --color-success: #10b981;
   --color-success-soft: #e7f8f1;
   --color-success-ink: #047857;

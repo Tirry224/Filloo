@@ -5,7 +5,7 @@
 
    Partagés entre le composant `Wordmark` (`components/ui/TopBar.tsx`) et
    l'aperçu de partage (`app/opengraph-image.tsx`). Couleur d'origine du
-   fichier : marine #1C2541 ; le site les peint en `currentColor`. */
+   fichier : marine #1C2541, token `--color-logo` ; peints en `currentColor`. */
 export const VIEWBOX_LOGO = "4 12 930 586";
 
 export const TRACES_LOGO = [

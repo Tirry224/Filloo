@@ -54,7 +54,7 @@ export function Wordmark({ size = "md", className }: { size?: "md" | "lg"; class
       viewBox={VIEWBOX_LOGO}
       role="img"
       aria-label="Filloo"
-      className={cn("block w-auto shrink-0 text-accent", size === "lg" ? "h-14" : "h-11", className)}
+      className={cn("block w-auto shrink-0 text-logo", size === "lg" ? "h-14" : "h-11", className)}
     >
       <g fill="currentColor" fillRule="evenodd">
         {TRACES_LOGO.map((d) => (
