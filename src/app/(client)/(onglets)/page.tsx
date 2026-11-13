@@ -157,6 +157,7 @@ export default async function HomePage({
       {/* Le seul `<h1>` de l'accueil : le logo, complété pour les moteurs
           et les lecteurs d'écran de ce que le site vend et où. */}
       <TopBar
+        className="py-2.5"
         title={
           <h1>
             <Wordmark size="lg" />

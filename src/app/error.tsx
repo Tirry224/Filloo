@@ -22,7 +22,7 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <Screen>
-      <TopBar title={<Wordmark />} />
+      <TopBar className="py-2.5" title={<Wordmark />} />
       <ScreenBody>
         <EmptyState
           icon={CircleAlert}

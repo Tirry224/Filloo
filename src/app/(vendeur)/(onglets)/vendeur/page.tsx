@@ -39,7 +39,7 @@ export default async function MerchantHomePage({
 
   return (
     <TabScreen largeur="rangees">
-      <TopBar title={<Wordmark />} right={<PushBell connecte />} />
+      <TopBar className="py-2.5" title={<Wordmark />} right={<PushBell connecte />} />
 
       <ScreenBody>
         {erreur ? <Notice>{erreur}</Notice> : null}

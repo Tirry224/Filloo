@@ -702,10 +702,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-475 commits, du plus récent au plus ancien.
+476 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `af6420f` Logo : marine officiel #1C2541 (token --color-logo) au lieu de l'indigo de la palette
 - `7ffbc28` Logo officiel : en-têtes, favicons, icônes d'appli et aperçu de partage
 - `20e8795` Migration 0078 : table favoris_produits (appliquée en production), tests de sécurité
 - `93c4bc1` Produits favoris : cœur sur la fiche produit, « Mes favoris » en deux onglets (boutiques, produits)

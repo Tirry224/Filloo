@@ -19,6 +19,7 @@ export async function AdminTopBar() {
   const { data: proprietaire } = await supabase.rpc("je_suis_proprietaire");
   return (
     <TopBar
+      className="py-2.5"
       title={
         <span className="flex items-center gap-2">
           <Wordmark />

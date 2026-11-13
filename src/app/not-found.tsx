@@ -7,7 +7,7 @@ import { TopBar, Wordmark } from "@/components/ui/TopBar";
 export default function NotFound() {
   return (
     <Screen>
-      <TopBar title={<Wordmark />} />
+      <TopBar className="py-2.5" title={<Wordmark />} />
       <ScreenBody>
         <EmptyState
           icon={Compass}

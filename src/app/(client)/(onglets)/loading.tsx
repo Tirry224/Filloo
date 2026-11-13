@@ -8,7 +8,7 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 export default function Loading() {
   return (
     <TabScreen largeur="grille">
-      <TopBar title={<Wordmark size="lg" />} right={<Bell size={21} strokeWidth={1.9} aria-hidden className="text-ink-soft" />} />
+      <TopBar className="py-2.5" title={<Wordmark size="lg" />} right={<Bell size={21} strokeWidth={1.9} aria-hidden className="text-ink-soft" />} />
       <ScreenBody>
         <Section className="gap-3 pb-1">
           <div className="flex gap-2">
