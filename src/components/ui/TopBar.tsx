@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { TRACES_LOGO, VIEWBOX_LOGO } from "@/lib/logo";
 
 export function TopBar({
   title,
@@ -45,15 +46,21 @@ export function TopBar({
   );
 }
 
-export function Wordmark({ size = "md" }: { size?: "md" | "lg" }) {
+/** Le logo officiel de Filloo, en SVG (voir `lib/logo.ts`). La hauteur est
+    en `rem` (`h-11`, `h-14`) : elle suit la taille de texte du téléphone. */
+export function Wordmark({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
   return (
-    <span
-      className={cn(
-        "font-display font-extrabold tracking-tight text-accent",
-        size === "lg" ? "text-2xl" : "text-xl",
-      )}
+    <svg
+      viewBox={VIEWBOX_LOGO}
+      role="img"
+      aria-label="Filloo"
+      className={cn("block w-auto shrink-0 text-accent", size === "lg" ? "h-14" : "h-11", className)}
     >
-      Filloo
-    </span>
+      <g fill="currentColor" fillRule="evenodd">
+        {TRACES_LOGO.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+    </svg>
   );
 }

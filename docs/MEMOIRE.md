@@ -702,10 +702,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-473 commits, du plus récent au plus ancien.
+474 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `20e8795` Migration 0078 : table favoris_produits (appliquée en production), tests de sécurité
 - `93c4bc1` Produits favoris : cœur sur la fiche produit, « Mes favoris » en deux onglets (boutiques, produits)
 - `c2ce229` Migration 0077 : table favoris (appliquée en production), tests de sécurité
 - `e28f221` Boutiques favorites : cœur sur la page boutique, liste dans le compte client, partage de la boutique

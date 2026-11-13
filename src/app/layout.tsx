@@ -39,9 +39,11 @@ export const metadata: Metadata = {
   /* `apple-touch-icon` est le SEUL format qu'iOS lit pour l'écran
      d'accueil, les icônes du manifeste étant ignorées. Sans lui,
      l'application installée porte une capture de la page — et sur iPhone
-     l'installation est la condition pour recevoir un push. */
+     l'installation est la condition pour recevoir un push. Il est servi
+     par `app/apple-icon.png` (convention de fichiers) : déclarer `icons`
+     ici masquait les favicons `app/icon1.svg` et `app/icon2.png`
+     (constaté au build le 2026-11-13). */
   appleWebApp: { capable: true, title: "Filloo", statusBarStyle: "default" },
-  icons: { apple: "/icons/icone-180.png" },
   /* Preuve de propriété pour Google Search Console (méthode « balise
      HTML ») : le code donné par la console va dans cette variable sur
      Vercel. Absente, aucune balise n'est écrite. La méthode DNS

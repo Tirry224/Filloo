@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { TRACES_LOGO, VIEWBOX_LOGO } from "@/lib/logo";
 
 /**
  * L'aperçu d'un lien vers Filloo partagé sur WhatsApp, Facebook ou
@@ -70,10 +71,16 @@ export default async function Image() {
         <Rond taille={260} couleur={VERT} style={{ bottom: -120, right: -60, opacity: 0.9 }} />
         <Rond taille={90} couleur={MANGUE} style={{ bottom: 70, left: 110 }} />
 
-        <div style={{ fontSize: 170, fontWeight: 800, letterSpacing: -6, lineHeight: 1 }}>Filloo</div>
-        <div style={{ width: 140, height: 10, borderRadius: 10, background: MANGUE, marginTop: 22 }} />
+        {/* Le logo officiel (2026-11-13), à la place du mot écrit en Figtree. */}
+        <svg width={381} height={240} viewBox={VIEWBOX_LOGO}>
+          <g fill={BLANC} fillRule="evenodd">
+            {TRACES_LOGO.map((d) => (
+              <path key={d} d={d} />
+            ))}
+          </g>
+        </svg>
 
-        <div style={{ marginTop: 38, fontSize: 54, fontWeight: 700, textAlign: "center" }}>
+        <div style={{ marginTop: 26, fontSize: 54, fontWeight: 700, textAlign: "center" }}>
           Achetez et vendez la mode en Guinée
         </div>
 
