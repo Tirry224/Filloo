@@ -19,6 +19,7 @@ import { notifyNewMessage } from "@/lib/notifications";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import { compter } from "@/lib/analytics";
+import { alerter, lien } from "@/lib/telegram";
 
 function backToThread(
   conversationId: string,
@@ -287,6 +288,7 @@ export async function reportConversationAction(formData: FormData) {
   if (!data || data.length === 0) {
     backToThread(conversationId, context.iAmMerchant, "Signalement impossible. Reconnectez-vous.");
   }
+  alerter(`🚩 Signalement d'une conversation : ${reason}\n${lien(`/admin/signalement/${data[0].id}`)}`);
   backToThread(conversationId, context.iAmMerchant, undefined, "Signalement envoyé. Notre équipe va lire cette conversation.");
 }
 
@@ -322,5 +324,6 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
     return { error: "Signalement impossible. Reconnectez-vous." };
   }
 
+  alerter(`🚩 Signalement d'un produit : ${reason}\n${lien(`/admin/signalement/${data[0].id}`)}`);
   redirect(`/produit/${productId}?info=${encodeURIComponent("Signalement envoyé. Notre équipe va examiner ce produit.")}`);
 }

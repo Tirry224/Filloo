@@ -13,6 +13,7 @@ import { messageErreurAuth } from "@/lib/erreurs-auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
 import { refusMotDePasse } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
+import { alerter, libelleRole } from "@/lib/telegram";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurChampsManquants, erreurNom, texteNettoye } from "@/lib/saisie";
 
@@ -77,6 +78,7 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   if (error) return { error: messageErreurAuth(error.message) };
 
   await compter("inscription", { role });
+  alerter(`🆕 Inscription ${libelleRole(role)} : ${fullName}`);
 
   // `data.session` est null quand la confirmation par email est activée
   // (réglage Supabase) : aucune session tant que le lien n'est pas cliqué.
@@ -133,6 +135,7 @@ export async function createLinkedProfileAction(
   }
 
   await compter("inscription", { role });
+  alerter(`🆕 Inscription ${libelleRole(role)} : ${existant.fullName} (second compte sur une connexion existante)`);
 
   if (role === "merchant") redirect("/inscription/boutique");
   redirect(safeNextPath(formData.get("next")) ?? "/");
@@ -406,6 +409,7 @@ export async function completeSignupAction(_prevState: ActionState | null, formD
   }
 
   await compter("inscription", { role });
+  alerter(`🆕 Inscription ${libelleRole(role)} : ${fullName} (Google)`);
 
   if (role === "merchant") redirect("/inscription/boutique");
   redirect(safeNextPath(formData.get("next")) ?? "/");

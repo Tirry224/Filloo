@@ -29,4 +29,17 @@ export function register() {
   });
 }
 
-export const onRequestError = Sentry.captureRequestError;
+/**
+ * Chaque erreur du serveur part aussi sur Telegram (2026-11-13), une fois
+ * par fenêtre de dix minutes pour un même message et une même route
+ * (`alerterErreur`). Seuls le nom, le message et la route partent : ni
+ * pile, ni en-têtes, ni cookies.
+ */
+export const onRequestError: typeof Sentry.captureRequestError = async (erreur, requete, contexte) => {
+  Sentry.captureRequestError(erreur, requete, contexte);
+  const { alerterErreur } = await import("@/lib/telegram");
+  const e = erreur instanceof Error ? erreur : new Error(String(erreur));
+  const route = contexte.routePath ?? requete.path.split("?")[0];
+  const message = e.message.slice(0, 300);
+  await alerterErreur(`${route}|${message}`, `🔥 Erreur serveur sur ${route}\n${e.name} : ${message}`);
+};

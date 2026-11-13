@@ -38,6 +38,9 @@ export type NomEvenement =
   | "inscription"
   | "boutique_creee"
   | "produit_cree"
+  /* Un refus de création ou de modification de produit (2026-11-13) : la
+     raison part sur Telegram (`lib/telegram.ts`), pas ici. */
+  | "publication_refusee"
   /* La publicité (0047) : un affichage et un clic, rattachés à la campagne. */
   | "pub_vue"
   | "pub_clic";

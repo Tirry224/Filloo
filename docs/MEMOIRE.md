@@ -75,6 +75,15 @@ mis à jour et raccourci ; l'ancienne version se relit par
   l'équipe, boutique publique ; pas le RLS de `products`, qui montre ses
   brouillons au commerçant). Cœur sur la photo de `/produit/[id]` ;
   `/compte/favoris` devient « Mes favoris », onglets Boutiques et Produits.
+- **Alertes Telegram du porteur du projet** (demande du 2026-11-13,
+  après les 4 essais ratés de « Shopping Rama » sur iPhone, refus jamais
+  visible de notre côté) : `src/lib/telegram.ts`. Partent : inscription
+  (une par une ; résumé quotidien quand il y en aura trop), boutique à
+  approuver, signalement (motif seul, jamais les précisions), refus de
+  création/modification de produit avec sa raison (+ compteur
+  `publication_refusee`), erreur serveur (`onRequestError`, une fois par
+  10 min et par instance). Inactif sans `TELEGRAM_BOT_TOKEN` et
+  `TELEGRAM_CHAT_ID` sur Vercel. À constater : réception sur Telegram.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -702,10 +711,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-477 commits, du plus récent au plus ancien.
+478 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `ef9419d` Logo servi en fichier (public/logo.svg) : le budget de poids des pages repasse
 - `5339eef` En-têtes avec logo : marge verticale réduite (py-2.5 au lieu de py-3.5)
 - `af6420f` Logo : marine officiel #1C2541 (token --color-logo) au lieu de l'indigo de la palette
 - `7ffbc28` Logo officiel : en-têtes, favicons, icônes d'appli et aperçu de partage

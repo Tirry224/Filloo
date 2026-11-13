@@ -8,6 +8,7 @@ import { CHEMIN_PHOTO, ecrireMaBoutique, lireBoutique } from "@/lib/ecritures-pr
 import { getMyProfile, getSessionUser } from "@/lib/data/session";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
+import { alerter, lien } from "@/lib/telegram";
 import { messagePourErreur } from "@/lib/erreurs";
 import { SHOP_PHOTOS_BUCKET } from "@/lib/storage";
 
@@ -40,6 +41,7 @@ export async function createMerchantAction(_prevState: ActionState | null, formD
   }
 
   await compter("boutique_creee", { role: "merchant", cityId: cityId });
+  alerter(`🏪 Nouvelle boutique à approuver : ${shopName}\n${lien("/admin")}`);
 
   redirect("/vendeur");
 }

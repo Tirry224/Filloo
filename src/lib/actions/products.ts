@@ -7,6 +7,7 @@ import { getSessionUser } from "@/lib/data/session";
 import { DECONNECTE, messagePourErreur } from "@/lib/erreurs";
 import type { ActionState } from "@/lib/actions/auth";
 import { compter } from "@/lib/analytics";
+import { alerter } from "@/lib/telegram";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
 import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
@@ -102,6 +103,41 @@ function photosRangees(chemins: string[], merchantId: string, productId: string)
 }
 
 /**
+ * Un REFUS de publication se compte et se signale au porteur du projet
+ * (Telegram), avec sa raison. Le 2026-11-13, une commerçante sur iPhone a
+ * échoué quatre fois sans qu'aucune trace ne dise pourquoi : le refus
+ * s'affichait chez elle, et nulle part ailleurs.
+ *
+ * Un succès finit par `redirect`, qui traverse ce filet sans s'y arrêter.
+ */
+async function signalerRefus(etape: "création" | "modification", resultat: ActionState, formData: FormData): Promise<ActionState> {
+  if (!resultat?.error) return resultat;
+  let boutique = "boutique inconnue";
+  let merchantId: string | null = null;
+  try {
+    const merchant = await getMyMerchant(await createClient());
+    if (merchant) {
+      boutique = merchant.shopName;
+      merchantId = merchant.id;
+    }
+  } catch {
+    // Le refus compte plus que le nom : on signale quand même.
+  }
+  const intention = formData.get("intent") === "publish" ? "publication" : "enregistrement";
+  await compter("publication_refusee", { role: "merchant", merchantId });
+  alerter(`⛔ ${intention} refusée (${etape}) — ${boutique}\n« ${resultat.error} »`);
+  return resultat;
+}
+
+export async function createProductAction(prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+  return signalerRefus("création", await creerProduit(prevState, formData), formData);
+}
+
+export async function updateProductAction(prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+  return signalerRefus("modification", await modifierProduit(prevState, formData), formData);
+}
+
+/**
  * INSERTION EN DEUX TEMPS : le trigger
  * `products_check_publishable` (0002, élargi par 0018) exige une ligne
  * `product_images`, impossible à satisfaire dans l'insert qui crée le
@@ -110,7 +146,7 @@ function photosRangees(chemins: string[], merchantId: string, productId: string)
  * `productId` vient du navigateur, `PhotoPicker` ayant déjà rangé les
  * photos sous cet identifiant dans Storage.
  */
-export async function createProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+async function creerProduit(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const owner = await requireMerchantId();
   if ("error" in owner) return owner;
 
@@ -223,7 +259,7 @@ export async function createProductAction(_prevState: ActionState | null, formDa
  * Ne touche jamais `status` : un produit vendu ou masqué le reste après
  * une correction de prix, ce sont des actions séparées (voir plus bas).
  */
-export async function updateProductAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+async function modifierProduit(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const productId = String(formData.get("productId") ?? "");
   if (!estUuid(productId)) return { error: "Page plus à jour. Rechargez-la." };
 
