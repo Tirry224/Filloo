@@ -17,7 +17,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d filloo_test -f
 psql -d filloo_test -f supabase/tests/security_test.sql
 ```
 
-Les 732 vérifications (compte du 2026-11-13, migrations jusqu'à 0077
+Les 776 vérifications (compte du 2026-11-13, migrations jusqu'à 0078
 comprise) affichent `OK`. La première qui échoue interrompt tout
 avec `ECHEC`.
 
@@ -96,6 +96,18 @@ seconde ne se voit que sur un `delete` SANS `where` : avec un `where`,
 la policy de lecture borne déjà) ; chacune des deux branches du
 déclencheur de suppression ; le droit d'insérer `created_at` ; les
 droits d'`anon`.
+Pour `0078` (le 2026-11-13), quinze mutations arrêtent chacune la suite
+sur son contrôle : le produit jugé par le RLS de `products` au lieu de
+`produit_est_public` (le profil client d'un commerçant, comptes liés,
+mettait son propre brouillon en favori) ; dans `produit_est_public`, le
+filtre de statut retiré, réduit à `active` (un produit vendu n'était plus
+ajoutable), le filtre `masque_par_equipe` retiré (prouvé en levant le
+trigger de 0046 dans `begin … rollback`), la boutique publique retirée ;
+le profil actif, puis `client_id`, retirés de l'ajout ; la lecture, puis
+la suppression, ouvertes à tous ; chacune des deux branches ajoutées au
+déclencheur de suppression ; le droit d'insérer `created_at` ; les droits
+d'`anon` sur la table, puis sur la fonction ; le commentaire de
+`profil_a_une_activite`.
 
 ## Ce que ces tests protègent
 

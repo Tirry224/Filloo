@@ -15,7 +15,8 @@ source, constaté ou supposé.
   sous leur numéro, `0076` à la main sous `20261111231600`, les autres
   horodatées). Re-constaté le 2026-11-13. `0048`–`0062` absentes de
   `dev` : `monetisation` porte `0058`–`0062`, non appliquées. `0077`
-  (favoris) ÉCRITE le 2026-11-13, à appliquer par la session principale. `scripts/migrations.mjs`
+  (favoris) appliquée le 2026-11-13 (`20261113001602`, constaté) ; `0078`
+  (favoris produits) ÉCRITE le 2026-11-13, à appliquer par la session principale. `scripts/migrations.mjs`
   n'exige pas la continuité ; ordre réel non numérique autour de
   `0035`–`0040`, noms d'avant `0015` sans numéro : comparer avec
   `npm run migrations`, pas à l'œil.
@@ -57,14 +58,16 @@ source, constaté ou supposé.
   `equipe` supprime les profils sans activité ou est refusé ; aucun
   profil pour un membre ; un membre retiré = connexion sans profil, comme
   un Google non complété (`/inscription` mode « complete »). Ne sont PAS
-  une activité : `notifications`, `favoris` (0077) — partent en cascade.
+  une activité : `notifications`, `favoris` (0077), `favoris_produits`
+  (0078) — partent en cascade.
   `suivi_chiffres` en production n'a PAS les commentaires du fichier
   (même logique) ; `equipe_comptes`/`je_suis_de_l_equipe` ont des fins de
   ligne CRLF : comparer `md5(replace(prosrc, E'\r', ''))`.
 - **Pièges de cette série** : une policy dépend de sa fonction (remplacer
   AVANT de supprimer) ; le RLS refuse avant NOT NULL ; le stub ne donne
   pas `auth` à `authenticated` ; une instruction ne voit pas son propre
-  changement (agir puis vérifier = deux instructions) ; `postgres` a
+  changement (agir puis vérifier = deux instructions, y compris
+  `check(erreur_de(insert) is null and count(*) = n)`, faux à tort) ; `postgres` a
   `UPDATE` sur `auth.users`.
 - **Nouvelle table de `public` : tout (`arwdDxtm`) à anon, authenticated,
   service_role par défaut** (constaté 2026-11-07, `pg_default_acl`) : une
@@ -146,11 +149,16 @@ source, constaté ou supposé.
 - **Suspension** : effective aussitôt par `is_active_profile` & co ;
   restent ouverts EXPRÈS au suspendu : bloquer/débloquer (0032), marquer
   lu, annuler sa campagne (0047), retirer téléphone/abonnement, lire et
-  retirer ses favoris (0077).
+  retirer ses favoris (0077, 0078).
 - **Suppression de compte = `is_deleted = true` par le site** : ce qui
   doit partir avec le profil se fait par déclencheur `after update of
   is_deleted … when (new.is_deleted)` (`favoris_partent_avec_le_profil`,
-  0077), pas dans `suppression-compte.ts`.
+  0077, étendu aux produits par 0078), pas dans `suppression-compte.ts`.
+- **« Produit public » = `produit_est_public(pid)` (0078)** : `status in
+  ('active','sold')` (le catalogue montre le vendu, 0008/0020 ; la fiche
+  vendue porte le cœur), `not masque_par_equipe`, `merchant_is_public`.
+  Le RLS de `products` montre au commerçant SES brouillons/masqués (et
+  donc à son profil client lié) : ne jamais l'utiliser comme « public ».
 
 ## Alertes Supabase ouvertes (get_advisors, constaté 2026-11-07)
 
@@ -219,7 +227,7 @@ source, constaté ou supposé.
 - **Tests locaux** : dossier NEUF à chaque passe, pas de `rm -rf` dans un
   `su -c` (recette : `.claude/savoir/testeur.md`). 477 contrôles OK le
   2026-11-07 (`0001`–`0066`), 524 avec `0067`, 561 avec `0068`, 611
-  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075`, 701 avec `0076`, 732 avec `0077` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
+  avec `0069`, 644 avec `0074` (2026-11-10), 663 avec `0075`, 701 avec `0076`, 732 avec `0077`, 776 avec `0078` (`/var/tmp/rejouer.sh` n'existe plus en session neuve : recette de `testeur.md`).
   Une garde ajoutée à `using` ET `with check` se mute dans les deux, sinon
   la suite tombe sur une erreur brute du `with check`, pas sur l'`ECHEC`.
   Une garde redondante pour la donnée (profil déjà supprimé) ne se prouve

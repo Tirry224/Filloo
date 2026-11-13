@@ -69,6 +69,12 @@ mis à jour et raccourci ; l'ancienne version se relit par
   `/vendeur/boutique`. Un commerçant qui a aussi un compte client voit le
   cœur sur les autres boutiques, jamais sur la sienne (validé par le
   porteur du projet). À constater sur téléphone : feuille de partage.
+  `0078` (même jour, même chemin, constatée : 3 règles, RLS, rien pour
+  anon, déclencheur à 4 `delete`) : `favoris_produits`, ajout réservé à un
+  produit PUBLIC (`produit_est_public` : active ou sold, non masqué par
+  l'équipe, boutique publique ; pas le RLS de `products`, qui montre ses
+  brouillons au commerçant). Cœur sur la photo de `/produit/[id]` ;
+  `/compte/favoris` devient « Mes favoris », onglets Boutiques et Produits.
 - **App mobile ABANDONNÉE** (décision du porteur du projet, 2026-11-07) :
   le projet ne garde que le site. `/api/app/*`, l'envoi Expo et l'agent
   `relecteur-compat` sont retirés ; `expo_push_tokens` reste en base, plus
@@ -696,10 +702,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-472 commits, du plus récent au plus ancien.
+473 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `93c4bc1` Produits favoris : cœur sur la fiche produit, « Mes favoris » en deux onglets (boutiques, produits)
 - `c2ce229` Migration 0077 : table favoris (appliquée en production), tests de sécurité
 - `e28f221` Boutiques favorites : cœur sur la page boutique, liste dans le compte client, partage de la boutique
 - `468744f` Partager une boutique : lien avec aperçu, depuis « Ma boutique » du commerçant

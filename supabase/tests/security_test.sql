@@ -6380,5 +6380,296 @@ select pg_temp.check('0077 : effacer le profil (0076) emporte ses favoris par la
   not exists (select 1 from public.favoris where client_id = 'a0770000-0000-0000-0000-0000000000c2'));
 rollback;
 
+
+-- =====================================================================
+-- 0078. Un client garde ses produits favoris
+-- =====================================================================
+-- K1, K2 : clients · K3 : client suspendu · MA : boutique publique, dont
+-- le propriétaire a aussi un profil client (C4, comptes liés) · MS :
+-- boutique au propriétaire suspendu, avec qui K1 a un fil · MD : boutique
+-- dont le propriétaire supprimera son compte.
+-- Produits : F1 actif, F2 vendu, F3 brouillon, F4 masqué (MA) ; F5 actif
+-- (MS) ; F6 actif (MD).
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('a0780000-0000-0000-0000-0000000000c1', 'k1@test0078.gn', '{"role":"client","full_name":"Client K1","phone":"620007801"}'),
+  ('a0780000-0000-0000-0000-0000000000c2', 'k2@test0078.gn', '{"role":"client","full_name":"Client K2","phone":"620007802"}'),
+  ('a0780000-0000-0000-0000-0000000000c3', 'k3@test0078.gn', '{"role":"client","full_name":"Client K3","phone":"620007803"}'),
+  ('a0780000-0000-0000-0000-0000000000a1', 'ma@test0078.gn', '{"role":"merchant","full_name":"Marchand MA","phone":"620007811"}'),
+  ('a0780000-0000-0000-0000-0000000000a2', 'ms@test0078.gn', '{"role":"merchant","full_name":"Marchand MS","phone":"620007812"}'),
+  ('a0780000-0000-0000-0000-0000000000a3', 'md@test0078.gn', '{"role":"merchant","full_name":"Marchand MD","phone":"620007813"}');
+update public.profiles set id = auth_user_id where auth_user_id::text like 'a0780000-%';
+insert into public.profiles (id, auth_user_id, role, full_name, phone) values
+  ('a0780000-0000-0000-0000-0000000000c4', 'a0780000-0000-0000-0000-0000000000a1', 'client', 'Marchand MA', '620007811');
+insert into public.merchants (id, profile_id, shop_name, city_id) values
+  ('a0780000-0000-0000-0000-0000000000b1', 'a0780000-0000-0000-0000-0000000000a1', 'Chez MA 78', 1),
+  ('a0780000-0000-0000-0000-0000000000b2', 'a0780000-0000-0000-0000-0000000000a2', 'Chez MS 78', 1),
+  ('a0780000-0000-0000-0000-0000000000b3', 'a0780000-0000-0000-0000-0000000000a3', 'Chez MD 78', 1);
+insert into public.products (id, merchant_id, category_id, title, price_gnf, status) values
+  ('a0780000-0000-0000-0000-0000000000f1', 'a0780000-0000-0000-0000-0000000000b1', 1, 'Pagne F1', 1000, 'draft'),
+  ('a0780000-0000-0000-0000-0000000000f2', 'a0780000-0000-0000-0000-0000000000b1', 1, 'Pagne F2', 1000, 'draft'),
+  ('a0780000-0000-0000-0000-0000000000f3', 'a0780000-0000-0000-0000-0000000000b1', 1, 'Pagne F3', 1000, 'draft'),
+  ('a0780000-0000-0000-0000-0000000000f4', 'a0780000-0000-0000-0000-0000000000b1', 1, 'Pagne F4', 1000, 'draft'),
+  ('a0780000-0000-0000-0000-0000000000f5', 'a0780000-0000-0000-0000-0000000000b2', 1, 'Pagne F5', 1000, 'draft'),
+  ('a0780000-0000-0000-0000-0000000000f6', 'a0780000-0000-0000-0000-0000000000b3', 1, 'Pagne F6', 1000, 'draft');
+insert into public.product_images (product_id, storage_path, position)
+select id, 'a0780000/' || right(id::text, 2) || '/0.webp', 0
+  from public.products where id::text like 'a0780000-%';
+update public.products set status = 'active'
+ where id in ('a0780000-0000-0000-0000-0000000000f1', 'a0780000-0000-0000-0000-0000000000f5',
+              'a0780000-0000-0000-0000-0000000000f6');
+update public.products set status = 'sold'   where id = 'a0780000-0000-0000-0000-0000000000f2';
+update public.products set status = 'hidden' where id = 'a0780000-0000-0000-0000-0000000000f4';
+insert into public.conversations (client_id, merchant_id) values
+  ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000b2');
+-- Une ligne de K2 et une de K3 posées par le serveur, avant la suspension.
+insert into public.favoris_produits (client_id, product_id) values
+  ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f1'),
+  ('a0780000-0000-0000-0000-0000000000c3', 'a0780000-0000-0000-0000-0000000000f1');
+update public.profiles set is_suspended = true
+ where id in ('a0780000-0000-0000-0000-0000000000a2', 'a0780000-0000-0000-0000-0000000000c3');
+
+-- --- Droits et règles posés --------------------------------------------
+select pg_temp.check('0078 : anon n''a aucun droit sur favoris_produits',
+  not has_table_privilege('anon', 'public.favoris_produits', 'select')
+  and not has_table_privilege('anon', 'public.favoris_produits', 'insert')
+  and not has_table_privilege('anon', 'public.favoris_produits', 'update')
+  and not has_table_privilege('anon', 'public.favoris_produits', 'delete')
+  and not has_any_column_privilege('anon', 'public.favoris_produits', 'insert'));
+select pg_temp.check('0078 : authenticated lit, ajoute (client_id, product_id) et retire ; rien d''autre',
+  has_table_privilege('authenticated', 'public.favoris_produits', 'select')
+  and has_table_privilege('authenticated', 'public.favoris_produits', 'delete')
+  and has_column_privilege('authenticated', 'public.favoris_produits', 'client_id', 'insert')
+  and has_column_privilege('authenticated', 'public.favoris_produits', 'product_id', 'insert')
+  and not has_column_privilege('authenticated', 'public.favoris_produits', 'created_at', 'insert')
+  and not has_any_column_privilege('authenticated', 'public.favoris_produits', 'update')
+  and not has_table_privilege('authenticated', 'public.favoris_produits', 'truncate')
+  and not has_table_privilege('authenticated', 'public.favoris_produits', 'references')
+  and not has_table_privilege('authenticated', 'public.favoris_produits', 'trigger'));
+select pg_temp.check('0078 : RLS active, trois policies (lire, ajouter, retirer), pour authenticated seul',
+  (select relrowsecurity from pg_class where oid = 'public.favoris_produits'::regclass)
+  and (select array_agg(cmd::text order by cmd) from pg_policies
+        where schemaname = 'public' and tablename = 'favoris_produits') = array['DELETE', 'INSERT', 'SELECT']
+  and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'favoris_produits'
+                   and roles <> array['authenticated']::name[]));
+select pg_temp.check('0078 : produit_est_public : definer, executable par authenticated seul',
+  (select prosecdef from pg_proc where oid = 'public.produit_est_public(uuid)'::regprocedure)
+  and has_function_privilege('authenticated', 'public.produit_est_public(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.produit_est_public(uuid)', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.produit_est_public(uuid)'::regprocedure and a.grantee = 0));
+select pg_temp.check('0078 : la fonction du declencheur reste fermee, le declencheur reste pose',
+  not has_function_privilege('anon', 'public.favoris_partent_avec_le_profil()', 'execute')
+  and not has_function_privilege('authenticated', 'public.favoris_partent_avec_le_profil()', 'execute')
+  and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                   where p.oid = 'public.favoris_partent_avec_le_profil()'::regprocedure and a.grantee = 0)
+  and exists (select 1 from pg_trigger where tgrelid = 'public.profiles'::regclass
+                and tgname = 'favoris_partent_avec_le_profil' and tgenabled = 'O'));
+select pg_temp.check('0078 : index sur product_id',
+  exists (select 1 from pg_index i where i.indrelid = 'public.favoris_produits'::regclass
+           and i.indkey::text = (select attnum::text from pg_attribute
+                                  where attrelid = 'public.favoris_produits'::regclass and attname = 'product_id')));
+select pg_temp.check('0078 : profil_a_une_activite dit que les favoris produits ne comptent pas',
+  obj_description('public.profil_a_une_activite(uuid)'::regprocedure, 'pg_proc') like '%produits (0078)%');
+
+-- --- anon ------------------------------------------------------------------
+set role anon;
+select pg_temp.login('00000000-0000-0000-0000-000000000000');
+select pg_temp.check('0078 : anon ne lit rien, n''ajoute rien',
+  pg_temp.refuse('select * from public.favoris_produits')
+  and pg_temp.refuse($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f1')$q$));
+reset role;
+
+-- --- K1 : ajouter, lire, retirer --------------------------------------------
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c1');
+insert into public.favoris_produits (client_id, product_id)
+  values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f1');
+insert into public.favoris_produits (client_id, product_id)
+  values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f1')
+  on conflict do nothing;
+select pg_temp.check('0078 : un client ajoute un produit actif, deux fois sans erreur ni doublon',
+  (select count(*) from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c1') = 1);
+select pg_temp.check('0078 : un produit vendu (public, 0008) s''ajoute aussi',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f2')$q$) is null);
+select pg_temp.check('0078 : (K1 a deux favoris produits)',
+  (select count(*) from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c1') = 2);
+select pg_temp.check('0078 : un client ne lit que ses favoris (pas ceux de K2 ni K3)',
+  (select array_agg(distinct client_id::text) from public.favoris_produits) = array['a0780000-0000-0000-0000-0000000000c1']);
+select pg_temp.check('0078 : la liste avec le produit joint, comme le site',
+  (select array_agg(p.title order by p.title) from public.favoris_produits f
+     join public.products p on p.id = f.product_id) = array['Pagne F1', 'Pagne F2']);
+select pg_temp.check('0078 : un client n''ajoute pas pour un autre client',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f2')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : ... ni en reprenant la ligne d''un autre par on conflict',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f1')
+                       on conflict do nothing$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : un client ne retire pas le favori d''un autre (0 ligne)',
+  pg_temp.lignes_touchees($q$delete from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c2'$q$) = 0);
+begin;
+select pg_temp.check('0078 : « tout effacer » n''efface que mes favoris',
+  pg_temp.lignes_touchees('delete from public.favoris_produits') = 2);
+reset role;
+select pg_temp.check('0078 : ... ceux de K2 et K3 restent',
+  (select count(*) from public.favoris_produits
+    where client_id in ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000c3')) = 2);
+rollback;
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0078 : aucune modification, aucune date choisie',
+  pg_temp.refuse('update public.favoris_produits set created_at = now()')
+  and pg_temp.refuse($q$insert into public.favoris_produits (client_id, product_id, created_at)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f6', now() - interval '1 year')$q$));
+select pg_temp.check('0078 : pas d''ajout d''un brouillon',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f3')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : pas d''ajout d''un produit masque',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f4')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : (K1 voit bien la boutique MS par son fil)',
+  exists (select 1 from public.merchants where id = 'a0780000-0000-0000-0000-0000000000b2'));
+select pg_temp.check('0078 : pas d''ajout d''un produit actif d''une boutique suspendue, meme vue par un fil',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f5')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : pas d''ajout d''un produit inconnu',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000ff')$q$)
+    like 'new row violates row-level security policy%');
+reset role;
+
+-- Un produit masqué par l'équipe resté `active` : impossible (trigger de
+-- 0046) ; on lève le trigger le temps du contrôle pour prouver le filtre.
+begin;
+alter table public.products disable trigger products_masque_par_equipe_reste_masque;
+update public.products set masque_par_equipe = true where id = 'a0780000-0000-0000-0000-0000000000f6';
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0078 : pas d''ajout d''un produit masque par l''equipe, meme reste actif',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f6')$q$)
+    like 'new row violates row-level security policy%');
+rollback;
+reset role;
+
+-- Une boutique non approuvée : impossible depuis 0033, contrainte levée.
+begin;
+alter table public.merchants drop constraint merchants_always_approved;
+update public.merchants set status = 'pending' where id = 'a0780000-0000-0000-0000-0000000000b3';
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0078 : pas d''ajout d''un produit d''une boutique non approuvee',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f6')$q$)
+    like 'new row violates row-level security policy%');
+rollback;
+reset role;
+
+-- --- Comptes liés : le RLS de products montre au commerçant ses brouillons
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000a1');
+select pg_temp.check('0078 : (MA voit son brouillon F3 par le RLS de products)',
+  exists (select 1 from public.products where id = 'a0780000-0000-0000-0000-0000000000f3'));
+select pg_temp.check('0078 : ... mais son profil client ne met pas ce brouillon en favori',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c4', 'a0780000-0000-0000-0000-0000000000f3')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : ... ni son produit masque',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c4', 'a0780000-0000-0000-0000-0000000000f4')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : ... ni pour son profil commercant',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000a1', 'a0780000-0000-0000-0000-0000000000f1')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : le commercant ne voit pas les favoris des autres sur ses produits',
+  not exists (select 1 from public.favoris_produits));
+
+-- --- K3 suspendu -------------------------------------------------------------
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c3');
+select pg_temp.check('0078 : un client suspendu n''ajoute pas',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c3', 'a0780000-0000-0000-0000-0000000000f2')$q$)
+    like 'new row violates row-level security policy%');
+select pg_temp.check('0078 : ... mais lit et retire encore les siens',
+  (select count(*) from public.favoris_produits) = 1
+  and pg_temp.lignes_touchees($q$delete from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c3' and product_id = 'a0780000-0000-0000-0000-0000000000f1'$q$) = 1);
+
+-- --- K2 ajoute F6 ; MD ne voit rien ----------------------------------------
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c2');
+insert into public.favoris_produits (client_id, product_id)
+  values ('a0780000-0000-0000-0000-0000000000c2', 'a0780000-0000-0000-0000-0000000000f6');
+select pg_temp.login('a0780000-0000-0000-0000-0000000000a3');
+select pg_temp.check('0078 : le commercant MD ne voit aucun favori, meme sur son produit',
+  not exists (select 1 from public.favoris_produits));
+reset role;
+
+-- --- Un produit qui sort du catalogue garde ses favoris -------------------
+update public.products set status = 'draft' where id = 'a0780000-0000-0000-0000-0000000000f1';
+select pg_temp.check('0078 : repasser un produit en brouillon garde ses favoris',
+  (select count(*) from public.favoris_produits where product_id = 'a0780000-0000-0000-0000-0000000000f1') = 2);
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0078 : ... qui sort de la liste jointe ; le vendu y reste',
+  (select count(*) from public.favoris_produits) = 2
+  and (select array_agg(p.title) from public.favoris_produits f
+         join public.products p on p.id = f.product_id) = array['Pagne F2']);
+reset role;
+update public.products set status = 'active' where id = 'a0780000-0000-0000-0000-0000000000f1';
+
+-- --- Suppression de compte : l'anonymisation du site ----------------------------
+update public.profiles
+   set full_name = 'Compte supprimé', phone = '000000000', is_deleted = true, deleted_at = now()
+ where id = 'a0780000-0000-0000-0000-0000000000c1';
+select pg_temp.check('0078 : supprimer un compte client vide ses favoris produits, pas ceux des autres',
+  not exists (select 1 from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c1')
+  and (select count(*) from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c2') = 2);
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c1');
+select pg_temp.check('0078 : un compte client supprime n''ajoute plus (jeton encore valable)',
+  pg_temp.erreur_de($q$insert into public.favoris_produits (client_id, product_id)
+                       values ('a0780000-0000-0000-0000-0000000000c1', 'a0780000-0000-0000-0000-0000000000f1')$q$)
+    like 'new row violates row-level security policy%');
+reset role;
+update public.profiles
+   set full_name = 'Compte supprimé', phone = '000000000', is_deleted = true, deleted_at = now()
+ where id = 'a0780000-0000-0000-0000-0000000000a3';
+select pg_temp.check('0078 : supprimer un compte commercant retire ses produits des favoris de tous',
+  not exists (select 1 from public.favoris_produits where product_id = 'a0780000-0000-0000-0000-0000000000f6')
+  and exists (select 1 from public.favoris_produits
+               where client_id = 'a0780000-0000-0000-0000-0000000000c2'
+                 and product_id = 'a0780000-0000-0000-0000-0000000000f1'));
+update public.profiles set is_suspended = true where id = 'a0780000-0000-0000-0000-0000000000a1';
+select pg_temp.check('0078 : suspendre la boutique garde les favoris de ses produits',
+  exists (select 1 from public.favoris_produits where product_id = 'a0780000-0000-0000-0000-0000000000f1'));
+set role authenticated;
+select pg_temp.login('a0780000-0000-0000-0000-0000000000c2');
+select pg_temp.check('0078 : ... qui sortent de la liste jointe du client tant qu''elle est suspendue',
+  (select count(*) from public.favoris_produits) = 1
+  and not exists (select 1 from public.favoris_produits f join public.products p on p.id = f.product_id));
+reset role;
+update public.profiles set is_suspended = false where id = 'a0780000-0000-0000-0000-0000000000a1';
+
+-- --- Cascades -----------------------------------------------------------------
+select pg_temp.check('0078 : un profil dont la seule trace est un favori produit n''a pas d''activite',
+  not public.profil_a_une_activite('a0780000-0000-0000-0000-0000000000c2'));
+begin;
+delete from public.profiles where id = 'a0780000-0000-0000-0000-0000000000c2';
+select pg_temp.check('0078 : effacer le profil (0076) emporte ses favoris produits par la cascade',
+  not exists (select 1 from public.favoris_produits where client_id = 'a0780000-0000-0000-0000-0000000000c2'));
+rollback;
+begin;
+delete from public.products where id = 'a0780000-0000-0000-0000-0000000000f1';
+select pg_temp.check('0078 : supprimer un produit emporte ses favoris',
+  not exists (select 1 from public.favoris_produits where product_id = 'a0780000-0000-0000-0000-0000000000f1'));
+rollback;
+
 \echo ''
 \echo '===== TOUS LES TESTS SONT PASSES ====='
