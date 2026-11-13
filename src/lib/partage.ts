@@ -19,8 +19,31 @@ export async function partagerProduit(produit: {
 }): Promise<"partage" | "copie"> {
   // L'origine et non `location.href` : l'adresse peut porter `?info=`,
   // et la feuille d'actions du commerçant n'est pas la page produit.
-  const url = `${window.location.origin}/produit/${produit.productId}`;
-  const text = `${produit.title}, ${produit.price}, chez ${produit.shopName} sur Filloo :`;
+  return partagerLien(
+    `${window.location.origin}/produit/${produit.productId}`,
+    `${produit.title}, ${produit.price}, chez ${produit.shopName} sur Filloo :`,
+  );
+}
+
+/**
+ * Partage le lien de la page boutique : même mécanique que
+ * `partagerProduit`. L'aperçu (photo ou logo, nom, ville) vient du
+ * `generateMetadata` de `/boutique/[id]`. Utilisé par le client ou le
+ * visiteur (en-tête de la boutique) ET par le commerçant (« Ma boutique »).
+ */
+export async function partagerBoutique(boutique: {
+  merchantId: string;
+  shopName: string;
+  city: string;
+}): Promise<"partage" | "copie"> {
+  const ou = boutique.city ? `, à ${boutique.city},` : "";
+  return partagerLien(
+    `${window.location.origin}/boutique/${boutique.merchantId}`,
+    `Découvrez la boutique ${boutique.shopName}${ou} sur Filloo :`,
+  );
+}
+
+async function partagerLien(url: string, text: string): Promise<"partage" | "copie"> {
   if (navigator.share) {
     try {
       await navigator.share({ text, url });

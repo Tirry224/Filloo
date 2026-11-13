@@ -687,10 +687,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-468 commits, du plus récent au plus ancien.
+469 commits, du plus récent au plus ancien.
 
 ### 2026-11-12
 
+- `dfa314b` Description « vêtements en Guinée », réponse sur la vérification des boutiques
 - `c8f76eb` Page /aide « Comment ça marche », liée depuis l'accueil et Compte
 - `c6ae853` /llms.txt : une présentation de Filloo pour les assistants IA
 - `3d62357` Aperçu de l'accueil : carte Filloo refaite, avec la police du site

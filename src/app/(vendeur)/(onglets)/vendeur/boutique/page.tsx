@@ -9,6 +9,7 @@ import { CreatePasswordForm } from "@/components/auth/CreatePasswordForm";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScreenBody, Section, TabScreen } from "@/components/ui/Screen";
 import { SwitchSpaceCard } from "@/components/ui/SwitchSpaceCard";
+import { PartagerBoutiqueRow } from "@/components/product/PartagerBoutique";
 import { TopBar } from "@/components/ui/TopBar";
 import { createClient } from "@/lib/supabase/server";
 import { connexionGoogleDeMoinsDeDixMinutes, getMyProfile, getSessionUser } from "@/lib/data/session";
@@ -96,6 +97,10 @@ export default async function EditShopPage() {
               <span className="truncate text-sm text-ink-soft">{merchant.city}</span>
             </div>
           </div>
+
+          <Card className="px-3.5">
+            <PartagerBoutiqueRow merchantId={merchant.id} shopName={merchant.shopName} city={merchant.city} />
+          </Card>
 
           <div className="flex flex-col gap-2.5">
             <SectionLabel>Informations</SectionLabel>
