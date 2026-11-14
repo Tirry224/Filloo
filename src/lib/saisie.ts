@@ -59,6 +59,23 @@ export function erreurChampsManquants(champs: ReadonlyArray<readonly [libelle: s
   return `Il manque ${liste}.`;
 }
 
+/** Un refus de formulaire : le message, et le champ (son `name`) sous
+ * lequel l'afficher. Sans `champ`, il reste au pied du formulaire. */
+export type Refus = { error: string; champ?: string };
+
+/**
+ * `erreurChampsManquants`, avec le `name` de chaque champ : le message
+ * nomme tous les manquants et s'affiche sous le PREMIER, celui que
+ * l'écran montre en remontant.
+ */
+export function refusChampsManquants(
+  champs: ReadonlyArray<readonly [libelle: string, valeur: unknown, champ: string]>,
+): Refus | null {
+  const error = erreurChampsManquants(champs.map(([libelle, valeur]) => [libelle, valeur] as const));
+  if (!error) return null;
+  return { error, champ: champs.find(([, valeur]) => !valeur)?.[2] };
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**

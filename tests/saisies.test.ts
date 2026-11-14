@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { erreurTelephone, estTelephone, lienWhatsApp, nettoyerTelephone } from "../src/lib/telephone.ts";
-import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE } from "../src/lib/password.ts";
+import { erreurNouveauMotDePasse, LONGUEUR_MIN_MOT_DE_PASSE, refusNouveauMotDePasse } from "../src/lib/password.ts";
 import { formatGnf } from "../src/lib/format.ts";
 
 /**
@@ -136,3 +136,14 @@ test("une connexion Google ne prouve l'identité que dix minutes", async () => {
   // Un compte Google qui s'est créé un mot de passe passe à « Modifier ».
   assert.equal(aUnMotDePasse({ app_metadata: { providers: ["google"], mot_de_passe_cree: true } }), true);
 });
+
+test("l'erreur de mot de passe va sous le champ fautif", () => {
+  /* Deux saisies différentes : c'est la confirmation qu'il faut
+     retaper. Trop court ou sans chiffre : c'est le mot de passe. */
+  const noms = { motDePasse: "password", confirmation: "passwordConfirmation" };
+  assert.equal(refusNouveauMotDePasse("motdepasse1", "motdepasse2", noms)?.champ, "passwordConfirmation");
+  assert.equal(refusNouveauMotDePasse("court1", "court1", noms)?.champ, "password");
+  assert.equal(refusNouveauMotDePasse("sanschiffre", "autrechose", noms)?.champ, "password");
+  assert.equal(refusNouveauMotDePasse("motdepasse1", "motdepasse1", noms), null);
+});
+

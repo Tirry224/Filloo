@@ -10,7 +10,7 @@ import { compter } from "@/lib/analytics";
 import { alerter } from "@/lib/telegram";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { lirePrixGnf } from "@/lib/prix";
-import { estUuid, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { estUuid, lireIdEntier, longueur, texteNettoye, type Refus } from "@/lib/saisie";
 import { COULEURS_MAX, garderPermises, lireGenre, NOMS_COULEURS, TAILLES_MAX, taillesCompatibles, TOUTES_TAILLES, type Genre } from "@/lib/mode";
 
 /** Un commerçant approuvé ou non peut préparer des produits (ils resteront
@@ -41,7 +41,7 @@ type ProductFields = {
 
 /** Lire ET valider en un seul geste : le prix n'existe comme nombre
  * qu'une fois la saisie acceptée par `lirePrixGnf`. */
-function readProductFields(formData: FormData): { fields: ProductFields } | { error: string } {
+function readProductFields(formData: FormData): { fields: ProductFields } | Refus {
   // Sans les caractères invisibles : six U+200B faisaient un titre de
   // « 6 caractères » qui s'affichait vide dans le catalogue (2026-09-25).
   const title = texteNettoye(formData.get("title"));
@@ -55,24 +55,27 @@ function readProductFields(formData: FormData): { fields: ProductFields } | { er
   const couleurs = garderPermises(formData.getAll("couleurs").map(String), NOMS_COULEURS);
 
   if (longueur(title) < 3 || longueur(title) > 120) {
-    return { error: "Titre : entre 3 et 120 caractères." };
+    return { error: "Titre : entre 3 et 120 caractères.", champ: "title" };
   }
-  if (!categoryId) return { error: "Choisissez une catégorie." };
-  if (!genre) return { error: "Choisissez pour qui : femme, homme, enfant ou mixte." };
-  if (tailles.length === 0) return { error: "Cochez au moins une taille (ou « Taille unique »)." };
+  if (!categoryId) return { error: "Choisissez une catégorie.", champ: "categoryId" };
+  if (!genre) return { error: "Choisissez pour qui : femme, homme, enfant ou mixte.", champ: "genre" };
+  if (tailles.length === 0) return { error: "Cochez au moins une taille (ou « Taille unique »).", champ: "tailles" };
   // « Taille unique » exclut les autres tailles (porteur du projet, 2026-11-13).
-  if (!taillesCompatibles(tailles)) return { error: "« Taille unique » ne va pas avec d'autres tailles : gardez l'un ou l'autre." };
-  if (couleurs.length === 0) return { error: "Cochez au moins une couleur." };
+  if (!taillesCompatibles(tailles)) {
+    return { error: "« Taille unique » ne va pas avec d'autres tailles : gardez l'un ou l'autre.", champ: "tailles" };
+  }
+  if (couleurs.length === 0) return { error: "Cochez au moins une couleur.", champ: "couleurs" };
   // Bornes de la base (0074) : un formulaire forgé ne doit pas finir en erreur brute.
-  if (tailles.length > TAILLES_MAX || couleurs.length > COULEURS_MAX) return { error: "Trop de tailles ou de couleurs cochées." };
-  if ("erreur" in prix) return { error: prix.erreur };
-  if (longueur(description) > 2000) return { error: "Description : 2 000 caractères maximum." };
-  if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos maximum.` };
+  if (tailles.length > TAILLES_MAX) return { error: "Trop de tailles cochées.", champ: "tailles" };
+  if (couleurs.length > COULEURS_MAX) return { error: "Trop de couleurs cochées.", champ: "couleurs" };
+  if ("erreur" in prix) return { error: prix.erreur, champ: "priceGnf" };
+  if (longueur(description) > 2000) return { error: "Description : 2 000 caractères maximum.", champ: "description" };
+  if (imagePaths.length > PHOTOS_MAX) return { error: `${PHOTOS_MAX} photos maximum.`, champ: "imagePaths" };
   /* `PhotoPicker` pose ce champ tant qu'une photo s'envoie encore : le
      bouton restait actif, et publier à ce moment-là répondait « ajoutez
      au moins une photo » à quelqu'un qui venait d'en ajouter une. */
   if (formData.get("photosEnCours")) {
-    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche." };
+    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche.", champ: "imagePaths" };
   }
 
   return {
@@ -165,7 +168,7 @@ async function creerProduit(_prevState: ActionState | null, formData: FormData):
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
-    return { error: "Ajoutez au moins une photo." };
+    return { error: "Ajoutez au moins une photo.", champ: "imagePaths" };
   }
 
   const supabase = await createClient();
@@ -278,7 +281,7 @@ async function modifierProduit(_prevState: ActionState | null, formData: FormDat
 
   const publish = formData.get("intent") === "publish";
   if (publish && fields.imagePaths.length === 0) {
-    return { error: "Ajoutez au moins une photo." };
+    return { error: "Ajoutez au moins une photo.", champ: "imagePaths" };
   }
 
   const supabase = await createClient();
@@ -295,7 +298,7 @@ async function modifierProduit(_prevState: ActionState | null, formData: FormDat
       .eq("id", productId)
       .maybeSingle();
     if (current?.status === "active") {
-      return { error: "Gardez au moins une photo." };
+      return { error: "Gardez au moins une photo.", champ: "imagePaths" };
     }
   }
 

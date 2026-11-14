@@ -28,6 +28,8 @@ export function ConfirmPasswordSave({
           <Field
             label="Mot de passe actuel"
             htmlFor={`${formId}-currentPassword`}
+            champ="currentPassword"
+            formulaire={formId}
             hint={hint ?? "Il confirme que c'est bien vous. Il n'est pas modifié ici."}
           >
             <PasswordInput

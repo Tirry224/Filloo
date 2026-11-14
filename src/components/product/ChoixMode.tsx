@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Field, Select } from "@/components/ui/Field";
+import { ErreurChamp } from "@/components/ui/ErreurChamp";
 import { cn } from "@/lib/cn";
 import type { CategoryOption } from "@/lib/data/reference";
 import { COULEURS, FAMILLES, GENRES, groupesDeTailles, TAILLE_UNIQUE } from "@/lib/mode";
@@ -64,7 +65,7 @@ export function ChoixMode({
         </Select>
       </Field>
 
-      <fieldset className="flex min-w-0 flex-col gap-1.5">
+      <fieldset data-champ="genre" className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Pour qui</legend>
         <div className="flex flex-wrap gap-2">
           {GENRES.map((g) => (
@@ -81,9 +82,10 @@ export function ChoixMode({
             </label>
           ))}
         </div>
+        <ErreurChamp champ="genre" />
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-1.5">
+      <fieldset data-champ="tailles" className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Tailles disponibles</legend>
         <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
         {groupes.length === 0 ? (
@@ -130,9 +132,10 @@ export function ChoixMode({
             </div>
           ))
         )}
+        <ErreurChamp champ="tailles" />
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-1.5">
+      <fieldset data-champ="couleurs" className="flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Couleurs disponibles</legend>
         <p className="-mt-1 text-xs text-ink-soft">Cochez toutes celles que vous avez.</p>
         {/* Une seule ligne qui défile : trois couleurs visibles et la
@@ -164,6 +167,7 @@ export function ChoixMode({
             );
           })}
         </div>
+        <ErreurChamp champ="couleurs" />
       </fieldset>
     </>
   );

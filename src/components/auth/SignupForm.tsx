@@ -16,6 +16,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import Link from "next/link";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 function RoleCard({
   icon: Icon,
@@ -137,109 +138,111 @@ export function SignupForm({
 
       {mode === "new" ? <GoogleButton label="Continuer avec Google" role={role} next={next} /> : null}
 
-      <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-        <input type="hidden" name="role" value={role} />
-        {next ? <input type="hidden" name="next" value={next} /> : null}
+      <ErreursFormulaire etat={state}>
+        <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+          <input type="hidden" name="role" value={role} />
+          {next ? <input type="hidden" name="next" value={next} /> : null}
 
-        {/* En mode lié, le nom et le téléphone ne sont pas envoyés au serveur :
-            `createLinkedProfileAction` recopie ce qui est DÉJÀ en base.
-            Accepter ces valeurs-là depuis le formulaire aurait ouvert un
-            contournement de la confirmation par mot de passe — créer un
-            second compte pour réécrire le nom et le numéro du premier, sur
-            un téléphone emprunté. */}
-        {mode === "linked" ? (
-          <div className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-3.5 py-3">
-            <span className="text-2xs text-ink-soft">Ce compte sera créé à votre nom</span>
-            <span className="text-base font-semibold">{defaultFullName}</span>
-            <span className="text-sm text-ink-soft">{defaultPhone}</span>
-            <span className="mt-1 text-xs leading-normal text-ink-soft">
-              Pour les modifier, passez par « Mes informations » : le changement vaudra pour vos
-              deux comptes.
-            </span>
-          </div>
-        ) : (
-          <>
-            <Field label="Nom complet" htmlFor="fullName">
-              <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Prénom et nom" defaultValue={defaultFullName} />
-            </Field>
+          {/* En mode lié, le nom et le téléphone ne sont pas envoyés au serveur :
+              `createLinkedProfileAction` recopie ce qui est DÉJÀ en base.
+              Accepter ces valeurs-là depuis le formulaire aurait ouvert un
+              contournement de la confirmation par mot de passe — créer un
+              second compte pour réécrire le nom et le numéro du premier, sur
+              un téléphone emprunté. */}
+          {mode === "linked" ? (
+            <div className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-3.5 py-3">
+              <span className="text-2xs text-ink-soft">Ce compte sera créé à votre nom</span>
+              <span className="text-base font-semibold">{defaultFullName}</span>
+              <span className="text-sm text-ink-soft">{defaultPhone}</span>
+              <span className="mt-1 text-xs leading-normal text-ink-soft">
+                Pour les modifier, passez par « Mes informations » : le changement vaudra pour vos
+                deux comptes.
+              </span>
+            </div>
+          ) : (
+            <>
+              <Field label="Nom complet" htmlFor="fullName">
+                <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" placeholder="Prénom et nom" defaultValue={defaultFullName} />
+              </Field>
 
-            {/* Le numéro d'un commerçant devient le WhatsApp PUBLIC de sa boutique
-                (prérempli à l'étape 2) : lui dire « seulement pour vous
-                contacter » serait faux. Celui d'un client n'est montré à
-                personne. */}
-            <Field
-              label="Téléphone"
-              htmlFor="phone"
-              hint={
-                role === "merchant"
-                  ? "Il sera proposé comme numéro WhatsApp de votre boutique, visible des clients. Vous pourrez le changer."
-                  : "Il n'est montré à personne."
-              }
-            >
-              <PhoneInput
-                id="phone"
-                name="phone"
-                autoComplete="tel"
-                placeholder="Numéro de téléphone"
-                defaultValue={defaultPhone}
-              />
-            </Field>
-          </>
-        )}
+              {/* Le numéro d'un commerçant devient le WhatsApp PUBLIC de sa boutique
+                  (prérempli à l'étape 2) : lui dire « seulement pour vous
+                  contacter » serait faux. Celui d'un client n'est montré à
+                  personne. */}
+              <Field
+                label="Téléphone"
+                htmlFor="phone"
+                hint={
+                  role === "merchant"
+                    ? "Il sera proposé comme numéro WhatsApp de votre boutique, visible des clients. Vous pourrez le changer."
+                    : "Il n'est montré à personne."
+                }
+              >
+                <PhoneInput
+                  id="phone"
+                  name="phone"
+                  autoComplete="tel"
+                  placeholder="Numéro de téléphone"
+                  defaultValue={defaultPhone}
+                />
+              </Field>
+            </>
+          )}
 
-        {mode === "new" ? (
-          <>
-            <Field label="Email" htmlFor="email">
-              <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse email" />
-            </Field>
+          {mode === "new" ? (
+            <>
+              <Field label="Email" htmlFor="email">
+                <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse email" />
+              </Field>
 
-            <Field label="Mot de passe" htmlFor="password">
-              <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`} />
-            </Field>
+              <Field label="Mot de passe" htmlFor="password">
+                <PasswordInput id="password" name="password" autoComplete="new-password" placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`} />
+              </Field>
 
-            {/* La comparaison qui COMPTE est celle de `signUpAction`, côté
-                serveur : les formulaires de Filloo doivent fonctionner sans
-                JavaScript, et une requête forgée ne passe par aucun champ. */}
-            <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le, pour éviter une faute de frappe.">
-              <PasswordInput
-                id="passwordConfirmation"
-                name="passwordConfirmation"
-                autoComplete="new-password"
-                placeholder="Confirmer le mot de passe"
-              />
-            </Field>
-          </>
-        ) : null}
+              {/* La comparaison qui COMPTE est celle de `signUpAction`, côté
+                  serveur : les formulaires de Filloo doivent fonctionner sans
+                  JavaScript, et une requête forgée ne passe par aucun champ. */}
+              <Field label="Confirmer le mot de passe" htmlFor="passwordConfirmation" hint="Retapez-le, pour éviter une faute de frappe.">
+                <PasswordInput
+                  id="passwordConfirmation"
+                  name="passwordConfirmation"
+                  autoComplete="new-password"
+                  placeholder="Confirmer le mot de passe"
+                />
+              </Field>
+            </>
+          ) : null}
 
-        {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
+          <ErreurGenerale etat={state} />
 
-        <Button type="submit" disabled={pending}>
-          {pending ? "Création en cours" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
-        </Button>
+          <Button type="submit" disabled={pending}>
+            {pending ? "Création en cours" : mode === "linked" ? "Créer ce compte" : "Créer mon compte"}
+          </Button>
 
-        {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce
-            bouton. */}
-        <p className="text-center text-sm leading-normal text-ink-soft">
-          En créant un compte, vous acceptez les{" "}
-          <Link href="/conditions" target="_blank" className="font-semibold text-accent underline">
-            conditions d&apos;utilisation
-          </Link>{" "}
-          et la{" "}
-          <Link href="/confidentialite" target="_blank" className="font-semibold text-accent underline">
-            politique de confidentialité
-          </Link>
-          .
-        </p>
-
-        {mode === "new" ? (
-          <p className="text-center text-base text-ink-soft">
-            Déjà un compte ?{" "}
-            <Link href="/connexion" className="font-semibold text-accent">
-              Se connecter
+          {/* L'article 25 des conditions fait reposer leur ACCEPTATION sur ce
+              bouton. */}
+          <p className="text-center text-sm leading-normal text-ink-soft">
+            En créant un compte, vous acceptez les{" "}
+            <Link href="/conditions" target="_blank" className="font-semibold text-accent underline">
+              conditions d&apos;utilisation
+            </Link>{" "}
+            et la{" "}
+            <Link href="/confidentialite" target="_blank" className="font-semibold text-accent underline">
+              politique de confidentialité
             </Link>
+            .
           </p>
-        ) : null}
-      </form>
+
+          {mode === "new" ? (
+            <p className="text-center text-base text-ink-soft">
+              Déjà un compte ?{" "}
+              <Link href="/connexion" className="font-semibold text-accent">
+                Se connecter
+              </Link>
+            </p>
+          ) : null}
+        </form>
+      </ErreursFormulaire>
     </div>
   );
 }

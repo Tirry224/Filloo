@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { ErreurChamp } from "@/components/ui/ErreurChamp";
 
 export function Field({
   label,
@@ -7,19 +8,27 @@ export function Field({
   htmlFor,
   children,
   className,
+  champ = htmlFor,
+  formulaire,
 }: {
   label: string;
   hint?: string;
   htmlFor?: string;
   children: React.ReactNode;
   className?: string;
+  /** Le `name` du contrôle, s'il diffère de `htmlFor` : l'erreur qui le
+   * nomme s'affiche sous lui (voir `ErreurChamp`). */
+  champ?: string;
+  /** L'`id` du formulaire, pour un champ rendu hors de lui (`form=`). */
+  formulaire?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div data-champ={champ} className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={htmlFor} className="text-sm font-semibold text-ink-soft">
         {label}
       </label>
       {children}
+      {champ ? <ErreurChamp champ={champ} formulaire={formulaire} /> : null}
       {hint ? <p className="text-xs text-ink-soft">{hint}</p> : null}
     </div>
   );

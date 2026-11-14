@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { erreurChampsManquants, erreurNom, estUuid, lireIdEntier, longueur, NOM_MAX, texteNettoye } from "../src/lib/saisie.ts";
+import { erreurChampsManquants, erreurNom, refusChampsManquants, estUuid, lireIdEntier, longueur, NOM_MAX, texteNettoye } from "../src/lib/saisie.ts";
 import { messagePourErreur } from "../src/lib/erreurs.ts";
 
 /**
@@ -86,3 +86,18 @@ test("un champ obligatoire vide est nommé, et lui seul", () => {
     "Il manque le nom complet, l'email et le mot de passe.",
   );
 });
+
+test("un champ manquant s'affiche sous le PREMIER champ vide", () => {
+  /* Le 2026-11-13, « OTS SHOP » a tapé sept fois « Publier » : le
+     message tombait en bas de page, loin du champ. Il va désormais sous
+     le champ nommé ici ; le premier vide est celui que l'écran montre. */
+  const champs = (nom: string, tel: string) =>
+    refusChampsManquants([
+      ["le nom complet", nom, "fullName"],
+      ["le téléphone", tel, "phone"],
+    ]);
+  assert.deepEqual(champs("", ""), { error: "Il manque le nom complet et le téléphone.", champ: "fullName" });
+  assert.deepEqual(champs("Awa Barry", ""), { error: "Il manque le téléphone.", champ: "phone" });
+  assert.equal(champs("Awa Barry", "620000000"), null);
+});
+

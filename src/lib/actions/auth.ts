@@ -7,7 +7,7 @@ import { connexionGoogleDeMoinsDeDixMinutes, getMyProfiles, getSessionUser, land
 import { safeNextPath } from "@/lib/next-param";
 import { destinationApresAuthentification } from "@/lib/destination";
 import { headers } from "next/headers";
-import { aUnMotDePasse, erreurNouveauMotDePasse } from "@/lib/password";
+import { aUnMotDePasse, refusNouveauMotDePasse } from "@/lib/password";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { messageErreurAuth } from "@/lib/erreurs-auth";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
@@ -15,10 +15,13 @@ import { refusMotDePasse } from "@/lib/supabase/verify";
 import { compter } from "@/lib/analytics";
 import { alerter, libelleRole } from "@/lib/telegram";
 import { messagePourErreur } from "@/lib/erreurs";
-import { erreurChampsManquants, erreurNom, texteNettoye } from "@/lib/saisie";
+import { erreurNom, refusChampsManquants, texteNettoye } from "@/lib/saisie";
 
 export type ActionState = {
   error?: string;
+  /** Le `name` du champ que l'erreur concerne : elle s'affiche sous lui
+   * (`ErreurChamp`). Absent, elle reste au pied du formulaire. */
+  champ?: string;
   needsConfirmation?: boolean;
   sent?: boolean;
   /** L'adresse à qui renvoyer le lien de confirmation. */
@@ -47,19 +50,22 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-  const manquants = erreurChampsManquants([
-    ["le nom complet", fullName],
-    ["le téléphone", phone],
-    ["l'email", email],
-    ["le mot de passe", password],
+  const manquants = refusChampsManquants([
+    ["le nom complet", fullName, "fullName"],
+    ["le téléphone", phone, "phone"],
+    ["l'email", email, "email"],
+    ["le mot de passe", password, "password"],
   ]);
-  if (manquants) return { error: manquants };
+  if (manquants) return manquants;
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
-  if (erreurNomComplet) return { error: erreurNomComplet };
+  if (erreurNomComplet) return { error: erreurNomComplet, champ: "fullName" };
   const erreurNumero = erreurTelephone(phone, true);
-  if (erreurNumero) return { error: erreurNumero };
-  const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
-  if (erreurMotDePasse) return { error: erreurMotDePasse };
+  if (erreurNumero) return { error: erreurNumero, champ: "phone" };
+  const refusMotDePasseNeuf = refusNouveauMotDePasse(password, passwordConfirmation, {
+    motDePasse: "password",
+    confirmation: "passwordConfirmation",
+  });
+  if (refusMotDePasseNeuf) return refusMotDePasseNeuf;
 
   const supabase = await createClient();
 
@@ -144,11 +150,11 @@ export async function createLinkedProfileAction(
 export async function signInAction(_prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const manquants = erreurChampsManquants([
-    ["l'email", email],
-    ["le mot de passe", password],
+  const manquants = refusChampsManquants([
+    ["l'email", email, "email"],
+    ["le mot de passe", password, "password"],
   ]);
-  if (manquants) return { error: manquants };
+  if (manquants) return manquants;
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -173,7 +179,7 @@ export async function resendConfirmationAction(
   formData: FormData,
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim();
-  if (!email) return { error: "Entrez votre email." };
+  if (!email) return { error: "Entrez votre email.", champ: "email" };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resend({
@@ -242,8 +248,11 @@ export async function updatePasswordAction(_prevState: ActionState | null, formD
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-  const erreurMotDePasse = erreurNouveauMotDePasse(password, passwordConfirmation);
-  if (erreurMotDePasse) return { error: erreurMotDePasse };
+  const refusMotDePasseNeuf = refusNouveauMotDePasse(password, passwordConfirmation, {
+    motDePasse: "password",
+    confirmation: "passwordConfirmation",
+  });
+  if (refusMotDePasseNeuf) return refusMotDePasseNeuf;
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
@@ -268,16 +277,23 @@ export async function changeMyPasswordAction(
   const newPassword = String(formData.get("newPassword") ?? "");
   const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
 
-  const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
-  if (erreurMotDePasse) return { error: erreurMotDePasse };
+  const refusMotDePasseNeuf = refusNouveauMotDePasse(newPassword, newPasswordConfirmation, {
+    motDePasse: "newPassword",
+    confirmation: "newPasswordConfirmation",
+  });
+  if (refusMotDePasseNeuf) return refusMotDePasseNeuf;
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user?.email) return { error: "Connectez-vous d'abord." };
 
-  if (!currentPassword) return { error: "Entrez votre mot de passe actuel." };
+  if (!currentPassword) return { error: "Entrez votre mot de passe actuel.", champ: "currentPassword" };
   const refus = await refusMotDePasse({ id: user.id, email: user.email }, currentPassword);
-  if (refus) return { error: refus.incorrect ? "Mot de passe actuel incorrect." : refus.message };
+  if (refus) {
+    return refus.incorrect
+      ? { error: "Mot de passe actuel incorrect.", champ: "currentPassword" }
+      : { error: refus.message };
+  }
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: messageErreurAuth(error.message) };
@@ -298,8 +314,11 @@ export async function createMyPasswordAction(
   const newPassword = String(formData.get("newPassword") ?? "");
   const newPasswordConfirmation = String(formData.get("newPasswordConfirmation") ?? "");
 
-  const erreurMotDePasse = erreurNouveauMotDePasse(newPassword, newPasswordConfirmation);
-  if (erreurMotDePasse) return { error: erreurMotDePasse };
+  const refusMotDePasseNeuf = refusNouveauMotDePasse(newPassword, newPasswordConfirmation, {
+    motDePasse: "newPassword",
+    confirmation: "newPasswordConfirmation",
+  });
+  if (refusMotDePasseNeuf) return refusMotDePasseNeuf;
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
@@ -396,15 +415,15 @@ export async function completeSignupAction(_prevState: ActionState | null, formD
   const fullName = texteNettoye(formData.get("fullName"));
   const phone = String(formData.get("phone") ?? "").trim();
 
-  const manquants = erreurChampsManquants([
-    ["le nom complet", fullName],
-    ["le téléphone", phone],
+  const manquants = refusChampsManquants([
+    ["le nom complet", fullName, "fullName"],
+    ["le téléphone", phone, "phone"],
   ]);
-  if (manquants) return { error: manquants };
+  if (manquants) return manquants;
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
-  if (erreurNomComplet) return { error: erreurNomComplet };
+  if (erreurNomComplet) return { error: erreurNomComplet, champ: "fullName" };
   const erreurNumero = erreurTelephone(phone, true);
-  if (erreurNumero) return { error: erreurNumero };
+  if (erreurNumero) return { error: erreurNumero, champ: "phone" };
 
   const supabase = await createClient();
   const user = await getSessionUser(supabase);

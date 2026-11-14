@@ -6,6 +6,7 @@ import { updateProfileAction } from "@/lib/actions/account";
 import type { Espace } from "@/lib/espace";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 export function ProfileForm({
   id,
@@ -24,25 +25,27 @@ export function ProfileForm({
   const { state, formAction, onSubmit, pending } = useFormulaire(updateProfileAction);
 
   return (
-    <form id={id} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-      {/* L'espace voyage dans le formulaire parce que l'action serveur ne
-          peut pas le deviner : une connexion qui a les DEUX comptes est
-          légitime des deux côtés, donc le déduire des profils renverrait
-          la moitié des gens dans l'autre espace. Il ne choisit qu'entre
-          deux chemins internes fixes — voir `updateProfileAction`, qui ne
-          lui fait pas davantage confiance que ça. */}
-      <input type="hidden" name="espace" value={espace} />
-      <Field label="Nom complet" htmlFor="fullName">
-        <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" defaultValue={fullName} />
-      </Field>
-      <Field label="Téléphone" htmlFor="phone">
-        <PhoneInput id="phone" name="phone" autoComplete="tel" defaultValue={phone} />
-      </Field>
-      {/* Le mot de passe actuel est exigé pour écrire : il se demande AU
-          MOMENT d'enregistrer, dans le panneau de `ConfirmPasswordSave`,
-          dont le champ porte `form="profile-form"`. */}
+    <ErreursFormulaire etat={state}>
+      <form id={id} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+        {/* L'espace voyage dans le formulaire parce que l'action serveur ne
+            peut pas le deviner : une connexion qui a les DEUX comptes est
+            légitime des deux côtés, donc le déduire des profils renverrait
+            la moitié des gens dans l'autre espace. Il ne choisit qu'entre
+            deux chemins internes fixes — voir `updateProfileAction`, qui ne
+            lui fait pas davantage confiance que ça. */}
+        <input type="hidden" name="espace" value={espace} />
+        <Field label="Nom complet" htmlFor="fullName">
+          <Input id="fullName" name="fullName" maxLength={NOM_MAX} autoComplete="name" defaultValue={fullName} />
+        </Field>
+        <Field label="Téléphone" htmlFor="phone">
+          <PhoneInput id="phone" name="phone" autoComplete="tel" defaultValue={phone} />
+        </Field>
+        {/* Le mot de passe actuel est exigé pour écrire : il se demande AU
+            MOMENT d'enregistrer, dans le panneau de `ConfirmPasswordSave`,
+            dont le champ porte `form="profile-form"`. */}
 
-      {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-    </form>
+        <ErreurGenerale etat={state} />
+      </form>
+    </ErreursFormulaire>
   );
 }

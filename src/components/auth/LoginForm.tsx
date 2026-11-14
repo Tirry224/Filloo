@@ -8,6 +8,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { signInAction } from "@/lib/actions/auth";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 export function LoginForm({ next }: { next?: string }) {
   const { state, formAction, onSubmit, pending } = useFormulaire(signInAction);
@@ -15,32 +16,34 @@ export function LoginForm({ next }: { next?: string }) {
   return (
     <div className="flex flex-col gap-4">
       <GoogleButton label="Se connecter avec Google" next={next} />
-      <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-        {next ? <input type="hidden" name="next" value={next} /> : null}
-        <Field label="Email" htmlFor="email">
-          <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse email" />
-        </Field>
+      <ErreursFormulaire etat={state}>
+        <form action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+          {next ? <input type="hidden" name="next" value={next} /> : null}
+          <Field label="Email" htmlFor="email">
+            <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="Adresse email" />
+          </Field>
 
-        <Field label="Mot de passe" htmlFor="password">
-          <PasswordInput id="password" name="password" autoComplete="current-password" placeholder="Votre mot de passe" />
-        </Field>
+          <Field label="Mot de passe" htmlFor="password">
+            <PasswordInput id="password" name="password" autoComplete="current-password" placeholder="Votre mot de passe" />
+          </Field>
 
-        <Link
-          href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
-          className="-mt-1 self-end text-sm font-semibold text-accent"
-        >
-          Mot de passe oublié ?
-        </Link>
+          <Link
+            href={next ? `/mot-de-passe-oublie?next=${encodeURIComponent(next)}` : "/mot-de-passe-oublie"}
+            className="-mt-1 self-end text-sm font-semibold text-accent"
+          >
+            Mot de passe oublié ?
+          </Link>
 
-        {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
+          <ErreurGenerale etat={state} />
 
-        <Button type="submit" disabled={pending}>
-          {pending ? "Connexion en cours" : "Se connecter"}
-        </Button>
-        <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
-          Créer un compte
-        </Button>
-      </form>
+          <Button type="submit" disabled={pending}>
+            {pending ? "Connexion en cours" : "Se connecter"}
+          </Button>
+          <Button variant="secondary" href={next ? `/inscription?next=${encodeURIComponent(next)}` : "/inscription"}>
+            Créer un compte
+          </Button>
+        </form>
+      </ErreursFormulaire>
       {state?.email ? <ResendConfirmationForm email={state.email} /> : null}
     </div>
   );

@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/password";
 import { changeMyPasswordAction } from "@/lib/actions/auth";
 import { useFormulaire } from "@/lib/use-formulaire";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 /**
  * Le mot de passe ACTUEL prouve que c'est bien la personne : sans lui, un
@@ -28,48 +29,50 @@ export function ChangePasswordForm() {
   }, [state]);
 
   return (
-    <form ref={formulaire} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-      <Field label="Mot de passe actuel" htmlFor="currentPassword">
-        <PasswordInput
-          id="currentPassword"
-          name="currentPassword"
-          autoComplete="current-password"
-          placeholder="Mot de passe actuel"
-        />
-      </Field>
+    <ErreursFormulaire etat={state}>
+      <form ref={formulaire} action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+        <Field label="Mot de passe actuel" htmlFor="currentPassword">
+          <PasswordInput
+            id="currentPassword"
+            name="currentPassword"
+            autoComplete="current-password"
+            placeholder="Mot de passe actuel"
+          />
+        </Field>
 
-      <Field label="Nouveau mot de passe" htmlFor="newPassword">
-        <PasswordInput
-          id="newPassword"
-          name="newPassword"
-          autoComplete="new-password"
-          placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`}
-        />
-      </Field>
+        <Field label="Nouveau mot de passe" htmlFor="newPassword">
+          <PasswordInput
+            id="newPassword"
+            name="newPassword"
+            autoComplete="new-password"
+            placeholder={`${LONGUEUR_MIN_MOT_DE_PASSE} caractères, dont un chiffre`}
+          />
+        </Field>
 
-      <Field
-        label="Confirmer le nouveau mot de passe"
-        htmlFor="newPasswordConfirmation"
-        hint="Retapez-le, pour éviter une faute de frappe."
-      >
-        <PasswordInput
-          id="newPasswordConfirmation"
-          name="newPasswordConfirmation"
-          autoComplete="new-password"
-          placeholder="Confirmer le mot de passe"
-        />
-      </Field>
+        <Field
+          label="Confirmer le nouveau mot de passe"
+          htmlFor="newPasswordConfirmation"
+          hint="Retapez-le, pour éviter une faute de frappe."
+        >
+          <PasswordInput
+            id="newPasswordConfirmation"
+            name="newPasswordConfirmation"
+            autoComplete="new-password"
+            placeholder="Confirmer le mot de passe"
+          />
+        </Field>
 
-      {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-      {state?.sent ? (
-        <p className="text-sm font-semibold text-accent">
-          Mot de passe modifié. Utilisez le nouveau à votre prochaine connexion.
-        </p>
-      ) : null}
+        <ErreurGenerale etat={state} />
+        {state?.sent ? (
+          <p className="text-sm font-semibold text-accent">
+            Mot de passe modifié. Utilisez le nouveau à votre prochaine connexion.
+          </p>
+        ) : null}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Enregistrement en cours" : "OK"}
-      </Button>
-    </form>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Enregistrement en cours" : "OK"}
+        </Button>
+      </form>
+    </ErreursFormulaire>
   );
 }

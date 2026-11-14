@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { SHOP_PHOTOS_BUCKET, shopPhotoUrl } from "@/lib/storage";
+import { ErreurChamp } from "@/components/ui/ErreurChamp";
 
 /**
  * La photo de profil d'une boutique, dans « Modifier ma boutique ».
@@ -68,7 +69,7 @@ export function ShopPhotoPicker({
   }
 
   return (
-    <div className="flex items-center gap-3.5">
+    <div data-champ="photoPath" className="flex items-center gap-3.5">
       <input type="hidden" name="photoPath" value={path ?? ""} />
       {uploading ? <input type="hidden" name="photoEnCours" value="1" /> : null}
 
@@ -103,6 +104,7 @@ export function ShopPhotoPicker({
           </button>
         ) : null}
         {error ? <p className="text-xs text-danger">{error}</p> : null}
+        <ErreurChamp champ="photoPath" />
       </div>
 
       <input

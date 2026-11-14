@@ -28,7 +28,7 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   // commerçant rappelle, et le réécrire détournerait ces rappels.
   const currentPassword = String(formData.get("currentPassword") ?? "");
   if (!currentPassword) {
-    return { error: "Entrez votre mot de passe actuel pour enregistrer." };
+    return { error: "Entrez votre mot de passe actuel pour enregistrer.", champ: "currentPassword" };
   }
 
   const supabase = await createClient();
@@ -45,9 +45,9 @@ export async function updateProfileAction(_prevState: ActionState | null, formDa
   }
   const refus = await refusMotDePasse({ id: user.id, email: user.email }, currentPassword);
   if (refus) {
-    return {
-      error: refus.incorrect ? "Mot de passe incorrect. Rien n'est enregistré." : refus.message,
-    };
+    return refus.incorrect
+      ? { error: "Mot de passe incorrect. Rien n'est enregistré.", champ: "currentPassword" }
+      : { error: refus.message };
   }
 
   /* Écrits par le serveur, sur TOUS les profils de la connexion (0036,

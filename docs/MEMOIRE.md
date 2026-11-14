@@ -202,6 +202,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### À constater sur un téléphone
 
+- **Erreurs sous les champs** (2026-11-14) : publier un produit sans
+  titre, puis sans taille ; l'écran remonte au champ, message dessous.
+  Dans « Mes informations », un mauvais mot de passe s'écrit dans le
+  panneau ; un nom trop court ferme le panneau et montre le champ.
+
 - **Supprimer un seul des deux comptes liés** (2026-10-23) : l'autre
   reste accessible sans se reconnecter, ses conversations et
   notifications intactes. Jamais testé en vrai : à faire avec un compte
@@ -570,6 +575,13 @@ npm run memoire                # régénère l'historique de ce fichier
   signalements et comptes anonymisés sans limite, en attendant un avis
   sur la loi guinéenne L/2016/037.
 - **Pas de notation, aucune monétisation en v1.**
+- **Une erreur de formulaire s'affiche SOUS le champ qu'elle concerne**,
+  jamais en bas de page, sur tout le site (porteur du projet, 2026-11-14,
+  après « OTS SHOP » : sept « Publier » sans voir que le titre manquait).
+  L'action rend `champ` (le `name` du contrôle) ; `Field` affiche le
+  message et `useFormulaire` y fait défiler. Sans `champ` (réseau,
+  session), le message reste au pied du formulaire. Un nouveau formulaire
+  s'enveloppe dans `ErreursFormulaire` et finit par `ErreurGenerale`.
 - **App native iPhone et Android** dans son propre dépôt, même base,
   aucun code partagé ; ce qui exige un secret passe par `/api/app/*`.
 - **Direction visuelle « A — Marché »** : fond papier chaud, terre cuite,
@@ -722,10 +734,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-481 commits, du plus récent au plus ancien.
+482 commits, du plus récent au plus ancien.
 
 ### 2026-11-13
 
+- `bd60b54` « Taille unique » exclut les autres tailles
 - `f7d8398` Tailles rangées du plus petit au plus grand, sur la fiche et dans le filtre
 - `608b547` Mot de passe obligatoire pour les comptes Google, créé une seule fois
 - `c017c5d` Alertes Telegram : inscriptions, boutiques, signalements, refus de publication, erreurs

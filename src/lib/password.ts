@@ -70,3 +70,16 @@ export function connexionGoogleRecente(amr: unknown, maintenantS: number): boole
       maintenantS - (entree as { timestamp: number }).timestamp <= DELAI_PREUVE_GOOGLE_S,
   );
 }
+
+/** `erreurNouveauMotDePasse`, sous le bon champ : la confirmation quand
+ * les deux diffèrent, le mot de passe sinon. */
+export function refusNouveauMotDePasse(
+  motDePasse: string,
+  confirmation: string,
+  champs: { motDePasse: string; confirmation: string },
+): { error: string; champ: string } | null {
+  const error = erreurNouveauMotDePasse(motDePasse, confirmation);
+  if (!error) return null;
+  const fauteDeFrappe = erreurNouveauMotDePasse(motDePasse, motDePasse) === null;
+  return { error, champ: fauteDeFrappe ? champs.confirmation : champs.motDePasse };
+}

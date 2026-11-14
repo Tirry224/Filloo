@@ -8,6 +8,7 @@ import type { CityOption } from "@/lib/data/reference";
 import type { Merchant } from "@/lib/types";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { NOM_MAX } from "@/lib/saisie";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 export function ShopEditForm({
   merchant,
@@ -23,42 +24,44 @@ export function ShopEditForm({
   const { state, formAction, onSubmit, pending } = useFormulaire(updateMerchantAction);
 
   return (
-    <form id="shop-edit-form" action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
-      <ShopPhotoPicker merchantId={merchant.id} shopName={merchant.shopName} initialPath={photoPath} />
+    <ErreursFormulaire etat={state}>
+      <form id="shop-edit-form" action={formAction} onSubmit={onSubmit} className="flex flex-col gap-4">
+        <ShopPhotoPicker merchantId={merchant.id} shopName={merchant.shopName} initialPath={photoPath} />
 
-      <Field label="Nom de la boutique" htmlFor="shopName">
-        <Input id="shopName" name="shopName" maxLength={NOM_MAX} defaultValue={merchant.shopName} />
-      </Field>
+        <Field label="Nom de la boutique" htmlFor="shopName">
+          <Input id="shopName" name="shopName" maxLength={NOM_MAX} defaultValue={merchant.shopName} />
+        </Field>
 
-      <Field label="Ville" htmlFor="cityId">
-        <Select id="cityId" name="cityId" defaultValue={cityId}>
-          {cities.map((city) => (
-            <option key={city.id} value={city.id}>
-              {city.name}
-            </option>
-          ))}
-        </Select>
-      </Field>
+        <Field label="Ville" htmlFor="cityId">
+          <Select id="cityId" name="cityId" defaultValue={cityId}>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-      <Field label="Où vous trouver" htmlFor="addressHint">
-        <Input id="addressHint" name="addressHint" maxLength={200} defaultValue={merchant.addressHint ?? ""} />
-      </Field>
+        <Field label="Où vous trouver" htmlFor="addressHint">
+          <Input id="addressHint" name="addressHint" maxLength={200} defaultValue={merchant.addressHint ?? ""} />
+        </Field>
 
-      <Field label="Numéro WhatsApp" htmlFor="whatsappPhone">
-        <PhoneInput id="whatsappPhone" name="whatsappPhone" defaultValue={merchant.whatsappPhone} />
-      </Field>
+        <Field label="Numéro WhatsApp" htmlFor="whatsappPhone">
+          <PhoneInput id="whatsappPhone" name="whatsappPhone" defaultValue={merchant.whatsappPhone} />
+        </Field>
 
-      <Field label="Description" htmlFor="description">
-        <Textarea id="description" name="description" maxLength={1000} rows={3} defaultValue={merchant.description ?? ""} />
-      </Field>
+        <Field label="Description" htmlFor="description">
+          <Textarea id="description" name="description" maxLength={1000} rows={3} defaultValue={merchant.description ?? ""} />
+        </Field>
 
-      {/* La CONFIRMATION par mot de passe reste exigée pour enregistrer —
-          c'est ce qui distingue « cette session est ouverte » de « c'est
-          bien la bonne personne, maintenant » — mais elle se demande au
-          moment du geste, dans `ConfirmPasswordSave`, dont le champ porte
-          `form="shop-edit-form"`. */}
+        {/* La CONFIRMATION par mot de passe reste exigée pour enregistrer —
+            c'est ce qui distingue « cette session est ouverte » de « c'est
+            bien la bonne personne, maintenant » — mais elle se demande au
+            moment du geste, dans `ConfirmPasswordSave`, dont le champ porte
+            `form="shop-edit-form"`. */}
 
-      {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-    </form>
+        <ErreurGenerale etat={state} />
+      </form>
+    </ErreursFormulaire>
   );
 }

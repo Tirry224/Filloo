@@ -53,14 +53,14 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
   const photoPath = String(formData.get("photoPath") ?? "");
 
   if (formData.get("photoEnCours")) {
-    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche." };
+    return { error: "Photo en cours d'envoi. Attendez qu'elle s'affiche.", champ: "photoPath" };
   }
   if (photoPath && !CHEMIN_PHOTO.test(photoPath)) {
-    return { error: "Photo invalide. Choisissez-la de nouveau." };
+    return { error: "Photo invalide. Choisissez-la de nouveau.", champ: "photoPath" };
   }
 
   if (!currentPassword) {
-    return { error: "Entrez votre mot de passe actuel pour enregistrer." };
+    return { error: "Entrez votre mot de passe actuel pour enregistrer.", champ: "currentPassword" };
   }
 
   const supabase = await createClient();
@@ -85,9 +85,9 @@ export async function updateMerchantAction(_prevState: ActionState | null, formD
 
   const refus = await refusMotDePasse({ id: user.id, email: user.email }, currentPassword);
   if (refus) {
-    return {
-      error: refus.incorrect ? "Mot de passe incorrect. Rien n'est enregistré." : refus.message,
-    };
+    return refus.incorrect
+      ? { error: "Mot de passe incorrect. Rien n'est enregistré.", champ: "currentPassword" }
+      : { error: refus.message };
   }
 
   /* Écrite par le serveur (0036, 0037) : la session seule ne peut plus

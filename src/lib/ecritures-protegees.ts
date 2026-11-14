@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { erreurTelephone, nettoyerTelephone } from "@/lib/telephone";
-import { erreurChampsManquants, erreurNom, lireIdEntier, longueur, texteNettoye } from "@/lib/saisie";
+import { erreurNom, lireIdEntier, longueur, refusChampsManquants, texteNettoye, type Refus } from "@/lib/saisie";
 
 /**
  * Les écritures protégées par le mot de passe : nom et téléphone d'une
@@ -43,7 +43,7 @@ export type ChampsBoutique = {
  * premier : trois caractères invisibles ou 5 000 lettres passaient, et
  * une ville forgée (`1.5`, `999`) faisait répondre la base en anglais
  * (2026-09-25). */
-export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
+export function lireBoutique(lire: Lire): ChampsBoutique | Refus {
   const shopName = texteNettoye(lire("shopName"));
   const cityId = lireIdEntier(lire("cityId"));
   const addressHint = texteNettoye(lire("addressHint"));
@@ -53,37 +53,39 @@ export function lireBoutique(lire: Lire): ChampsBoutique | { error: string } {
   /* Le test reste écrit ici : c'est lui qui apprend à TypeScript que
      `cityId` n'est plus `null` ensuite. */
   if (!shopName || !cityId) {
-    const manquants = erreurChampsManquants([
-      ["le nom de la boutique", shopName],
-      ["la ville", cityId],
+    const manquants = refusChampsManquants([
+      ["le nom de la boutique", shopName, "shopName"],
+      ["la ville", cityId, "cityId"],
     ]);
-    return { error: manquants ?? "Il manque un champ obligatoire." };
+    return manquants ?? { error: "Il manque un champ obligatoire." };
   }
   const erreurNomBoutique = erreurNom(shopName, "Nom de la boutique");
-  if (erreurNomBoutique) return { error: erreurNomBoutique };
-  if (longueur(addressHint) > ADRESSE_MAX) return { error: `« Où vous trouver » : ${ADRESSE_MAX} caractères maximum.` };
+  if (erreurNomBoutique) return { error: erreurNomBoutique, champ: "shopName" };
+  if (longueur(addressHint) > ADRESSE_MAX) {
+    return { error: `« Où vous trouver » : ${ADRESSE_MAX} caractères maximum.`, champ: "addressHint" };
+  }
   if (longueur(description) > DESCRIPTION_BOUTIQUE_MAX) {
-    return { error: `Description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.` };
+    return { error: `Description : ${DESCRIPTION_BOUTIQUE_MAX} caractères maximum.`, champ: "description" };
   }
   const erreurWhatsapp = erreurTelephone(whatsappPhone, false, "WhatsApp");
-  if (erreurWhatsapp) return { error: erreurWhatsapp };
+  if (erreurWhatsapp) return { error: erreurWhatsapp, champ: "whatsappPhone" };
 
   return { shopName, cityId, addressHint, whatsappPhone, description };
 }
 
 /** Nom et téléphone d'une connexion, lus et validés. */
-export function lireInformations(lire: Lire): { fullName: string; phone: string } | { error: string } {
+export function lireInformations(lire: Lire): { fullName: string; phone: string } | Refus {
   const fullName = texteNettoye(lire("fullName"));
   const phone = String(lire("phone") ?? "").trim();
-  const manquants = erreurChampsManquants([
-    ["le nom complet", fullName],
-    ["le téléphone", phone],
+  const manquants = refusChampsManquants([
+    ["le nom complet", fullName, "fullName"],
+    ["le téléphone", phone, "phone"],
   ]);
-  if (manquants) return { error: manquants };
+  if (manquants) return manquants;
   const erreurNomComplet = erreurNom(fullName, "Nom complet");
-  if (erreurNomComplet) return { error: erreurNomComplet };
+  if (erreurNomComplet) return { error: erreurNomComplet, champ: "fullName" };
   const erreurNumero = erreurTelephone(phone, true);
-  if (erreurNumero) return { error: erreurNumero };
+  if (erreurNumero) return { error: erreurNumero, champ: "phone" };
   return { fullName, phone };
 }
 

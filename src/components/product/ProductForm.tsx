@@ -13,6 +13,7 @@ import type { CategoryOption } from "@/lib/data/reference";
 import { PHOTOS_MAX } from "@/lib/storage";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { demanderPermissionPush } from "@/components/push/usePushAbonnement";
+import { ErreurGenerale, ErreursFormulaire } from "@/components/ui/ErreurChamp";
 
 type ProductFormProps = {
   merchantId: string;
@@ -54,78 +55,80 @@ export function ProductForm(props: ProductFormProps) {
   const { state, formAction, onSubmit, pending } = useFormulaire(action);
 
   return (
-    <form action={formAction} onSubmit={onSubmit} className="flex flex-1 flex-col">
-      <input type="hidden" name="productId" value={productId} />
-      <ScreenBody>
-        <Section className="gap-4">
-          <Field label="Photos" hint={`De 1 à ${PHOTOS_MAX} photos, à la lumière du jour : l'article entier, de face, puis un détail (tissu, étiquette).`}>
-            <PhotoPicker merchantId={merchantId} productId={productId} initialPaths={initial?.imagePaths} />
-          </Field>
+    <ErreursFormulaire etat={state}>
+      <form action={formAction} onSubmit={onSubmit} className="flex flex-1 flex-col">
+        <input type="hidden" name="productId" value={productId} />
+        <ScreenBody>
+          <Section className="gap-4">
+            <Field label="Photos" champ="imagePaths" hint={`De 1 à ${PHOTOS_MAX} photos, à la lumière du jour : l'article entier, de face, puis un détail (tissu, étiquette).`}>
+              <PhotoPicker merchantId={merchantId} productId={productId} initialPaths={initial?.imagePaths} />
+            </Field>
 
-          <Field label="Titre" htmlFor="title">
-            <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Ex. : Robe en wax, baskets en cuir" />
-          </Field>
+            <Field label="Titre" htmlFor="title">
+              <Input id="title" name="title" maxLength={120} defaultValue={initial?.title} placeholder="Ex. : Robe en wax, baskets en cuir" />
+            </Field>
 
-          <ChoixMode categories={categories} initial={initial} />
+            <ChoixMode categories={categories} initial={initial} />
 
-          <Field label="Prix" htmlFor="priceGnf">
-            <PriceInput
-              id="priceGnf"
-              name="priceGnf"
-              defaultValue={initial?.priceGnf}
-              placeholder="Montant"
-              className="pr-14"
-            />
-          </Field>
+            <Field label="Prix" htmlFor="priceGnf">
+              <PriceInput
+                id="priceGnf"
+                name="priceGnf"
+                defaultValue={initial?.priceGnf}
+                placeholder="Montant"
+                className="pr-14"
+              />
+            </Field>
 
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3.5">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-semibold">Prix négociable</span>
-              <span className="text-xs text-ink-soft">Le client sait qu&apos;il peut discuter.</span>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-3.5">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-base font-semibold">Prix négociable</span>
+                <span className="text-xs text-ink-soft">Le client sait qu&apos;il peut discuter.</span>
+              </div>
+              <Toggle checked={isNegotiable} label="Prix négociable" onClick={() => setIsNegotiable((v) => !v)} />
             </div>
-            <Toggle checked={isNegotiable} label="Prix négociable" onClick={() => setIsNegotiable((v) => !v)} />
-          </div>
-          <input type="hidden" name="isNegotiable" value={isNegotiable ? "on" : ""} />
+            <input type="hidden" name="isNegotiable" value={isNegotiable ? "on" : ""} />
 
-          <Field label="Description" htmlFor="description">
-            <Textarea
-              id="description"
-              name="description"
-              maxLength={2000}
-              rows={4}
-              defaultValue={initial?.description}
-              placeholder="Décrivez l'article : matière, coupe, état (neuf ou occasion), lieu de retrait"
-            />
-          </Field>
+            <Field label="Description" htmlFor="description">
+              <Textarea
+                id="description"
+                name="description"
+                maxLength={2000}
+                rows={4}
+                defaultValue={initial?.description}
+                placeholder="Décrivez l'article : matière, coupe, état (neuf ou occasion), lieu de retrait"
+              />
+            </Field>
 
-          {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-        </Section>
-      </ScreenBody>
+            <ErreurGenerale etat={state} />
+          </Section>
+        </ScreenBody>
 
-      <ScreenFooter className="flex flex-col gap-2.5">
-        {!isDraft ? (
-          <Button type="submit" disabled={pending}>
-            {pending ? "Enregistrement en cours" : "Enregistrer"}
-          </Button>
-        ) : (
-          <>
-            {/* Publier : un client va écrire, c'est le moment de proposer
-                les notifications (`demanderPermissionPush`). */}
-            <Button
-              type="submit"
-              name="intent"
-              value="publish"
-              disabled={pending}
-              onClick={() => demanderPermissionPush("publication")}
-            >
-              {pending ? "Publication en cours" : "Publier l'article"}
+        <ScreenFooter className="flex flex-col gap-2.5">
+          {!isDraft ? (
+            <Button type="submit" disabled={pending}>
+              {pending ? "Enregistrement en cours" : "Enregistrer"}
             </Button>
-            <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
-              {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}
-            </Button>
-          </>
-        )}
-      </ScreenFooter>
-    </form>
+          ) : (
+            <>
+              {/* Publier : un client va écrire, c'est le moment de proposer
+                  les notifications (`demanderPermissionPush`). */}
+              <Button
+                type="submit"
+                name="intent"
+                value="publish"
+                disabled={pending}
+                onClick={() => demanderPermissionPush("publication")}
+              >
+                {pending ? "Publication en cours" : "Publier l'article"}
+              </Button>
+              <Button type="submit" name="intent" value="draft" variant="secondary" size="sm" disabled={pending}>
+                {isEdit ? "Enregistrer le brouillon" : "Garder en brouillon"}
+              </Button>
+            </>
+          )}
+        </ScreenFooter>
+      </form>
+    </ErreursFormulaire>
   );
 }

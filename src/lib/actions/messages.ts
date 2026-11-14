@@ -298,10 +298,10 @@ export async function reportProductAction(_prevState: ActionState | null, formDa
   const productId = String(formData.get("productId") ?? "");
   const reason = texteNettoye(formData.get("reason"));
   const details = texteNettoye(formData.get("details"));
-  if (longueur(details) > PRECISIONS_MAX) return { error: `Précisions : ${PRECISIONS_MAX} caractères maximum.` };
+  if (longueur(details) > PRECISIONS_MAX) return { error: `Précisions : ${PRECISIONS_MAX} caractères maximum.`, champ: "details" };
   const fullReason = details ? `${reason} — ${details}` : reason;
   if (!estUuid(productId)) return { error: "Ce produit n'existe plus." };
-  if (fullReason.length < 3) return { error: "Choisissez un motif." };
+  if (fullReason.length < 3) return { error: "Choisissez un motif.", champ: "reason" };
 
   const supabase = await createClient();
   const profiles = await getMyProfiles(supabase);
