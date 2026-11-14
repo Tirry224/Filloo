@@ -47,6 +47,24 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
 - **Chromium** : `/opt/pw-browsers/chromium` (`CHROME=` pour
   `npm run largeurs`, `CHROMIUM=` pour `e2e`).
 
+## Vérification navigateur SANS production (constaté le 2026-11-14)
+
+- `.env` est versionné et pointe sur la production ; les `NEXT_PUBLIC_*`
+  sont INSCRITS au build. Recette : `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54399
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=faux npm run build`, puis `next start -p 3123`
+  avec les mêmes variables ; script Playwright (`require` de
+  `node_modules/playwright`, `devices["iPhone 13"]`, `executablePath`
+  `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`) qui `abort`
+  toute requête non locale. Refaire un `npm run build` normal après.
+- Seules les validations faites AVANT tout appel à la base se testent
+  ainsi (champs vides, mots de passe différents ou trop courts).
+- Pièges : `/connexion` et `/inscription` ont un premier formulaire
+  Google ; viser `form:has(input[name=password])`. Un ancien
+  `next-server` qui garde le port sert de vieux morceaux (500 sur les
+  `chunks`) : `pkill -f next-server` avant de relancer.
+- Un `role="alert"` vide existe toujours : l'annonceur de route de Next,
+  pas un message en double.
+
 ## Échecs connus
 
 - Aucun au 2026-10-23.
@@ -72,6 +90,17 @@ Mémoire de l'agent `testeur`. État ACTUEL ; l'historique est dans
   supprimer l'un, vérifier que l'autre entre sans reconnexion.
 - L'app mobile en entier. Premiers candidats à un test unitaire :
   `src/lib/format.ts`, `src/lib/telephone.ts` — *supposé*.
+
+## Erreurs sous le champ (c99ec1c, 6de6427 ; constaté le 2026-11-14)
+
+- Unitaires 102/102 à 50d1965 ; typecheck, build, classes, espaces,
+  gardes, poids OK.
+- Navigateur (recette ci-dessus) : message sous le bon champ, un seul
+  exemplaire, défilement + focus, bordure corail sur le seul champ fautif,
+  double tape = 1 POST.
+- Non testé en machine : `ConfirmPasswordSave` (événement hors
+  formulaire), ProductForm, ShopEdit, signalement — tous demandent une
+  session, donc la base.
 
 ## Mise en production du 2026-11-08 (main @ 25e0e3a)
 

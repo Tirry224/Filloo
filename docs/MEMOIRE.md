@@ -739,10 +739,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-484 commits, du plus récent au plus ancien.
+485 commits, du plus récent au plus ancien.
 
 ### 2026-11-14
 
+- `50d1965` Liens cliquables dans les messages
 - `6de6427` Champ en erreur entouré de rouge : bordure et halo corail
 - `c99ec1c` Erreurs de formulaire sous le champ concerné, sur tout le site
 
