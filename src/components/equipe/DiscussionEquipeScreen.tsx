@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { CHEMINS_EQUIPE, lireDiscussionEquipe, type MessageEchange } from "@/lib/data/equipe";
 import type { Espace } from "@/lib/espace";
 import { formatMessageTime } from "@/lib/format";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 /**
  * LA discussion avec l'équipe pour cet espace (décision du 2026-11-05) :
@@ -68,7 +69,7 @@ export function DiscussionEquipeVue({
                       : "self-end rounded-lg rounded-br-xs bg-accent text-on-accent",
                   )}
                 >
-                  <p className="text-base leading-normal whitespace-pre-wrap">{m.texte}</p>
+                  <p className="text-base leading-normal whitespace-pre-wrap"><TexteAvecLiens texte={m.texte} /></p>
                   <time className={cn("self-end text-2xs", m.deLEquipe ? "text-ink-soft" : "text-on-accent/75")}>
                     {m.deLEquipe ? "Équipe Filloo · " : ""}
                     {formatMessageTime(m.quand)}

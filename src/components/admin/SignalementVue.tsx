@@ -13,6 +13,7 @@ import { traiterSignalementAction } from "@/lib/actions/moderation";
 import { cn } from "@/lib/cn";
 import { formatMessageTime } from "@/lib/format";
 import type { MessageSignale, Signalement } from "@/lib/data/moderation";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 type Suite = { valeur: string; libelle: string; aide: string; profil?: string };
 
@@ -123,7 +124,7 @@ export function SignalementVue({
                           boutique ? "bg-accent-soft" : "border border-line bg-surface",
                         )}
                       >
-                        {m.body}
+                        <TexteAvecLiens texte={m.body} />
                       </p>
                     </div>
                   );

@@ -6,6 +6,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { repondreAuFilAction } from "@/lib/actions/equipe";
 import { cn } from "@/lib/cn";
 import { formatMessageTime } from "@/lib/format";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 export type MessageDuFil = {
   id: string;
@@ -75,7 +76,7 @@ export function FilVue({
                     : "rounded-lg rounded-bl-xs border border-line bg-surface",
                 )}
               >
-                <p className="text-base leading-normal whitespace-pre-wrap">{m.corps}</p>
+                <p className="text-base leading-normal whitespace-pre-wrap"><TexteAvecLiens texte={m.corps} /></p>
                 <time className={cn("self-end text-2xs", m.de_l_equipe ? "text-on-accent/75" : "text-ink-soft")}>
                   {m.de_l_equipe ? `${(m.auteur_id && nomDe.get(m.auteur_id)) || "Équipe"} · ` : ""}
                   {formatMessageTime(m.created_at)}

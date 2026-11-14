@@ -1,5 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { Message } from "@/lib/types";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 export function MessageBubble({ message }: { message: Message }) {
   return (
@@ -11,7 +12,7 @@ export function MessageBubble({ message }: { message: Message }) {
           : "self-start rounded-lg rounded-bl-xs border border-line bg-surface",
       )}
     >
-      <p className="text-base leading-normal">{message.body}</p>
+      <p className="text-base leading-normal"><TexteAvecLiens texte={message.body} /></p>
       <time
         className={cn("self-end text-2xs", message.mine ? "text-on-accent/75" : "text-ink-soft")}
       >

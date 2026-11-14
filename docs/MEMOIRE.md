@@ -202,6 +202,11 @@ mis à jour et raccourci ; l'ancienne version se relit par
 
 ### À constater sur un téléphone
 
+- **Liens cliquables dans les messages** (2026-11-14, `src/lib/liens.ts`) :
+  `https://`, `http://` et `www.` seulement ; un lien Filloo reste dans
+  l'onglet, les autres s'ouvrent à côté. Messagerie, fil de l'équipe,
+  annonces, signalements.
+
 - **Erreurs sous les champs** (2026-11-14) : publier un produit sans
   titre, puis sans taille ; l'écran remonte au champ, message dessous.
   Dans « Mes informations », un mauvais mot de passe s'écrit dans le
@@ -734,10 +739,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-483 commits, du plus récent au plus ancien.
+484 commits, du plus récent au plus ancien.
 
 ### 2026-11-14
 
+- `6de6427` Champ en erreur entouré de rouge : bordure et halo corail
 - `c99ec1c` Erreurs de formulaire sous le champ concerné, sur tout le site
 
 ### 2026-11-13

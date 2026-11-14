@@ -13,6 +13,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { changerEtatAnnonceAction, modifierAnnonceAction } from "@/lib/actions/equipe";
 import { cn } from "@/lib/cn";
 import { PUBLICS, type AnnonceAdmin, type Lecteur } from "@/lib/data/equipe";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 /**
  * Une annonce, côté équipe (0045). Ce qu'on peut faire dépend de son état :
@@ -85,7 +86,7 @@ export function AnnonceAdminVue({
           ) : (
             <Card className="flex flex-col gap-2 p-4">
               <h2 className="text-lg font-bold">{a.titre}</h2>
-              <p className="text-base whitespace-pre-wrap">{a.corps}</p>
+              <p className="text-base whitespace-pre-wrap"><TexteAvecLiens texte={a.corps} /></p>
             </Card>
           )}
 

@@ -7,6 +7,7 @@ import { CHEMINS_EQUIPE, lireAnnonceEquipe } from "@/lib/data/equipe";
 import type { Espace } from "@/lib/espace";
 import { formatMessageTime } from "@/lib/format";
 import { estUuid } from "@/lib/saisie";
+import { TexteAvecLiens } from "@/components/ui/TexteAvecLiens";
 
 /** Une annonce, en lecture seule : on n'y répond pas (décision du 2026-11-05). */
 export async function AnnonceEquipeScreen({ espace, params }: { espace: Espace; params: Promise<{ id: string }> }) {
@@ -43,7 +44,7 @@ export function AnnonceEquipeVue({
               {modifieeAt ? ` · modifiée ${formatMessageTime(modifieeAt)}` : ""}
             </span>
             <h2 className="text-xl font-bold">{titre}</h2>
-            <p className="text-base leading-relaxed whitespace-pre-wrap">{texte}</p>
+            <p className="text-base leading-relaxed whitespace-pre-wrap"><TexteAvecLiens texte={texte} /></p>
           </article>
           <p className="text-center text-xs text-ink-soft">
             Les annonces ne reçoivent pas de réponse. Pour écrire à l&apos;équipe, touchez « Écrire » sur la page Équipe Filloo.
