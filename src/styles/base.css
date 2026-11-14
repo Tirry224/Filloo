@@ -74,3 +74,20 @@
     font-size: max(16px, 1em);
   }
 }
+
+/* Un champ en erreur se voit : bordure et halo corail autour de ce qu'il
+   faut corriger (porteur du projet, 2026-11-14). Le bloc `[data-champ]`
+   (`Field`, ou un groupe de cases) contient alors le message
+   `[data-erreur]` d'`ErreurChamp` : aucune classe à poser à la main, le
+   cadre part avec le message.
+   - Contrôles de saisie : touchés directement.
+   - Pastilles et boutons de choix : ceux qui portent `data-cadre`.
+   - Hors de `@layer` exprès, comme la règle iOS ci-dessus : il faut
+     passer devant le `border-line` des utilitaires Tailwind. */
+[data-champ]:has([data-erreur])
+  :is(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]), textarea, select),
+[data-champ]:has([data-erreur]) [data-cadre] {
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-erreur);
+}
+

@@ -734,7 +734,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-482 commits, du plus récent au plus ancien.
+483 commits, du plus récent au plus ancien.
+
+### 2026-11-14
+
+- `c99ec1c` Erreurs de formulaire sous le champ concerné, sur tout le site
 
 ### 2026-11-13
 

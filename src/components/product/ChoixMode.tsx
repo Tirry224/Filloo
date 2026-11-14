@@ -69,7 +69,7 @@ export function ChoixMode({
         <legend className="mb-1.5 text-sm font-semibold text-ink-soft">Pour qui</legend>
         <div className="flex flex-wrap gap-2">
           {GENRES.map((g) => (
-            <label key={g.valeur} className={cn(PASTILLE, genre === g.valeur ? ACTIVE : INACTIVE)}>
+            <label key={g.valeur} data-cadre className={cn(PASTILLE, genre === g.valeur ? ACTIVE : INACTIVE)}>
               <input
                 type="radio"
                 name="genre"
@@ -113,6 +113,7 @@ export function ChoixMode({
                   return (
                     <label
                       key={t}
+                      data-cadre
                       className={cn(PASTILLE, coche ? ACTIVE : INACTIVE, bloquee && "cursor-not-allowed opacity-40")}
                     >
                       <input
@@ -147,6 +148,7 @@ export function ChoixMode({
             return (
               <label
                 key={c.nom}
+                data-cadre
                 className={cn(PASTILLE, "basis-[calc((100%-1.5rem)/3.5)] justify-center px-2", coche ? ACTIVE : INACTIVE)}
               >
                 <input

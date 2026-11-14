@@ -120,4 +120,6 @@
   --shadow-*: initial;
   --shadow-sheet: 0 -8px 32px rgb(24 43 73 / 0.14);
   --shadow-focus: 0 0 0 3px rgb(24 43 73 / 0.28);
+  /* Halo d'un champ en erreur : le corail de `--color-danger`, adouci. */
+  --shadow-erreur: 0 0 0 3px rgb(239 68 68 / 0.22);
 }

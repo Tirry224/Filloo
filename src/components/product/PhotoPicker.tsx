@@ -135,6 +135,7 @@ export function PhotoPicker({
             type="button"
             onClick={() => inputRef.current?.click()}
             aria-label="Ajouter une photo"
+            data-cadre
             className="flex size-25 cursor-pointer items-center justify-center rounded-lg border border-dashed border-line text-ink-soft"
           >
             <Plus size={24} strokeWidth={2} aria-hidden />
