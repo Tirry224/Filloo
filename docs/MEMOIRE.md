@@ -554,6 +554,10 @@ npm run memoire                # régénère l'historique de ce fichier
 `docs/SPEC.md` fait foi ; rappel de ce qu'une session ne rouvre pas.
 
 - **Catalogue ouvert sans compte** ; compte exigé pour écrire.
+- **Meta Pixel sans bandeau de consentement** (2026-11-18, porteur du
+  projet, averti du risque) : `PageView` + `CompleteRegistration`
+  (acheteur/vendeur), actif seulement si `NEXT_PUBLIC_META_PIXEL_ID` est
+  réglé sur Vercel ; la politique de confidentialité le déclare.
 - **Un fil par couple (client, boutique)**, premier message citant un
   produit.
 - **Deux comptes liés derrière une connexion**, jamais mélangés sur un
@@ -739,10 +743,11 @@ s'écrit pas en TypeScript.
 
 <!-- DEBUT HISTORIQUE — généré par `npm run memoire`, ne pas éditer à la main -->
 
-485 commits, du plus récent au plus ancien.
+486 commits, du plus récent au plus ancien.
 
 ### 2026-11-14
 
+- `48c329f` Savoir du testeur : vérification navigateur sans production, erreurs sous le champ
 - `50d1965` Liens cliquables dans les messages
 - `6de6427` Champ en erreur entouré de rouge : bordure et halo corail
 - `c99ec1c` Erreurs de formulaire sous le champ concerné, sur tout le site

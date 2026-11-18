@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { pixelInscriptionEnAttente } from "@/lib/meta-pixel";
 import { ArrowLeftRight, Package, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ResendConfirmationForm } from "@/components/auth/ResendConfirmationForm";
@@ -82,6 +83,15 @@ export function SignupForm({
   const action =
     mode === "linked" ? createLinkedProfileAction : mode === "complete" ? completeSignupAction : signUpAction;
   const { state, formAction, onSubmit, pending } = useFormulaire(action);
+
+  /* Inscription par email avec confirmation : pas de redirection, donc
+     `MetaPixel` ne repasse pas — on envoie l'événement ici, dans le
+     navigateur qui vient de la pub (le lien du mail peut s'ouvrir
+     ailleurs). */
+  const enAttente = Boolean(state?.needsConfirmation);
+  useEffect(() => {
+    if (enAttente) pixelInscriptionEnAttente();
+  }, [enAttente]);
 
   if (state?.needsConfirmation) {
     return (

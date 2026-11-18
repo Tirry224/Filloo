@@ -6,7 +6,8 @@ import { siteUrlOuLocalhost } from "@/lib/site-url";
 import { connexionGoogleDeMoinsDeDixMinutes, getMyProfiles, getSessionUser, landingForSession, getMyDeletedRoles } from "@/lib/data/session";
 import { safeNextPath } from "@/lib/next-param";
 import { destinationApresAuthentification } from "@/lib/destination";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { COOKIE_INSCRIPTION } from "@/lib/meta-pixel";
 import { aUnMotDePasse, refusNouveauMotDePasse } from "@/lib/password";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { messageErreurAuth } from "@/lib/erreurs-auth";
@@ -16,6 +17,13 @@ import { compter } from "@/lib/analytics";
 import { alerter, libelleRole } from "@/lib/telegram";
 import { messagePourErreur } from "@/lib/erreurs";
 import { erreurNom, refusChampsManquants, texteNettoye } from "@/lib/saisie";
+
+/** Signale au navigateur qu'un compte vient d'être créé, pour le Meta
+ * Pixel (`MetaPixel`). Dix minutes : le temps d'arriver sur la page
+ * suivante, pas de quoi compter une inscription des jours plus tard. */
+async function marquerInscription(role: "client" | "merchant") {
+  (await cookies()).set(COOKIE_INSCRIPTION, role, { maxAge: 600, path: "/", sameSite: "lax" });
+}
 
 export type ActionState = {
   error?: string;
@@ -85,6 +93,7 @@ export async function signUpAction(_prevState: ActionState | null, formData: For
 
   await compter("inscription", { role });
   alerter(`🆕 Inscription ${libelleRole(role)} : ${fullName}`);
+  await marquerInscription(role);
 
   // `data.session` est null quand la confirmation par email est activée
   // (réglage Supabase) : aucune session tant que le lien n'est pas cliqué.
@@ -442,6 +451,7 @@ export async function completeSignupAction(_prevState: ActionState | null, formD
 
   await compter("inscription", { role });
   alerter(`🆕 Inscription ${libelleRole(role)} : ${fullName} (Google)`);
+  await marquerInscription(role);
 
   if (role === "merchant") redirect("/inscription/boutique");
   redirect(safeNextPath(formData.get("next")) ?? "/");

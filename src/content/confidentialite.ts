@@ -9,7 +9,7 @@
  * une tromperie, et contraire à la loi.
  */
 
-export const CONFIDENTIALITE_MISE_A_JOUR = "7 novembre 2026";
+export const CONFIDENTIALITE_MISE_A_JOUR = "18 novembre 2026";
 
 export const CONTACT_EMAIL = "filloo.gn@gmail.com";
 
@@ -75,19 +75,20 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
         "la mesure de fréquentation de l’application : pages et produits consultés, recherches tapées, contacts ouverts, messages envoyés, produits mis en avant affichés ou touchés. Ces relevés ne contiennent ni votre nom, ni votre email, ni votre téléphone, ni votre adresse IP, ni le texte de vos messages ;",
         "les rapports d’erreur techniques, débarrassés de tout ce qui pourrait vous identifier, pour corriger les pannes.",
       ],
-      "Filloo ne collecte pas votre position : la ville d’une boutique est toujours choisie à la main. Filloo ne fait aucun profilage publicitaire et ne vend aucune donnée, à personne.",
+      "Filloo ne collecte pas votre position : la ville d’une boutique est toujours choisie à la main. Filloo ne vend aucune donnée, à personne. Pour mesurer l’efficacité de ses publicités sur Facebook et Instagram, Filloo utilise l’outil de mesure de Meta (voir les parties 5 et 8).",
     ],
   },
   {
     numero: 5,
     titre: "Les cookies et ce qui reste sur votre appareil",
     blocs: [
-      "Filloo utilise uniquement ses propres cookies, sans aucun cookie publicitaire ni cookie de réseau social :",
+      "Filloo utilise ses propres cookies :",
       [
         "un cookie de connexion, qui vous garde connecté ;",
         "un cookie de fréquentation, qui contient un numéro tiré au hasard, relié ni à votre compte, ni à votre nom, ni à votre adresse IP. Il permet seulement de reconnaître qu’un même navigateur revient. Il dure 13 mois au plus ;",
         "un cookie de préférences, qui retient les catégories et les boutiques que vous regardez le plus, pour vous les montrer d’abord. Il ne contient aucun identifiant et dure 6 mois au plus.",
       ],
+      "Filloo utilise aussi le Meta Pixel, l’outil de mesure publicitaire de Meta (Facebook, Instagram). Il dépose ses propres cookies et transmet à Meta les pages que vous ouvrez sur Filloo et le fait que vous avez créé un compte (acheteur ou vendeur), avec les informations techniques de votre navigateur (dont l’adresse IP). Il ne reçoit ni votre nom, ni votre email, ni votre téléphone, ni vos messages. Filloo s’en sert pour savoir combien d’inscriptions viennent de ses publicités ; Meta l’utilise aussi selon sa propre politique de confidentialité. Vous pouvez gérer ces publicités dans les paramètres de votre compte Facebook ou Instagram, ou bloquer ces cookies dans votre navigateur.",
       "Vos recherches récentes et certains réglages (comme le choix d’installer l’application) restent dans votre navigateur, sur votre appareil seulement.",
       "Vider les données de votre navigateur efface tout cela.",
     ],
@@ -125,6 +126,7 @@ export const CONFIDENTIALITE: ArticleConfidentialite[] = [
         "Vercel : hébergement de l’application, avec des serveurs à Paris ;",
         "Resend : envoi des emails de l’application (confirmation d’inscription, mot de passe oublié) ;",
         "Sentry : réception des rapports d’erreur, anonymisés avant l’envoi ;",
+        "Meta (Facebook, Instagram) : mesure des inscriptions venues des publicités de Filloo, par le Meta Pixel (partie 5) ; Meta traite aussi ces données pour son propre compte ;",
         "les services de notification de votre navigateur (Google, Apple, Mozilla ou Microsoft selon votre appareil), qui acheminent les notifications si vous les avez activées ; ils ne reçoivent jamais le texte de vos messages ;",
         "des outils de développement et d’assistance, dont un assistant d’intelligence artificielle, utilisés pour concevoir, maintenir et dépanner l’application ; ils peuvent accéder ponctuellement aux données, toujours sous la responsabilité de Filloo.",
       ],
